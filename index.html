@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="bn" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory — ড্যাশবোর্ড</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="brand">
+            <div class="brand-icon">
+                <i class="fas fa-boxes-stacked"></i>
+            </div>
+            <span class="brand-name">Inventory</span>
+        </div>
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <span class="nav-section-label">প্রধান মেনু</span>
+            <a href="index.html" class="nav-item active">
+                <span class="nav-icon"><i class="fas fa-gauge-high"></i></span>
+                <span class="nav-label">ড্যাশবোর্ড</span>
+                <span class="nav-badge">নতুন</span>
+            </a>
+            <a href="customers.html" class="nav-item">
+                <span class="nav-icon"><i class="fas fa-users"></i></span>
+                <span class="nav-label">কাস্টমার</span>
+            </a>
+            <a href="items.html" class="nav-item">
+                <span class="nav-icon"><i class="fas fa-box-open"></i></span>
+                <span class="nav-label">আইটেমস</span>
+            </a>
+            <a href="stock.html" class="nav-item">
+                <span class="nav-icon"><i class="fas fa-warehouse"></i></span>
+                <span class="nav-label">স্টক</span>
+            </a>
+            <a href="suppliers.html" class="nav-item">
+                <span class="nav-icon"><i class="fas fa-truck"></i></span>
+                <span class="nav-label">সরবরাহকারী</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <span class="nav-section-label">লেনদেন</span>
+            <a href="purchase.html" class="nav-item">
+                <span class="nav-icon"><i class="fas fa-cart-plus"></i></span>
+                <span class="nav-label">গ্রহণ</span>
+            </a>
+            <a href="sales.html" class="nav-item">
+                <span class="nav-icon"><i class="fas fa-receipt"></i></span>
+                <span class="nav-label">বিক্রয়</span>
+            </a>
+            <a href="item-receipt.html" class="nav-item">
+                <span class="nav-icon"><i class="fas fa-file-invoice"></i></span>
+                <span class="nav-label">আইটেম রিসিভ</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <span class="nav-section-label">ব্যবস্থাপনা</span>
+            <a href="employees.html" class="nav-item">
+                <span class="nav-icon"><i class="fas fa-id-badge"></i></span>
+                <span class="nav-label">কর্মচারী</span>
+            </a>
+            <a href="extra-expense.html" class="nav-item">
+                <span class="nav-icon"><i class="fas fa-money-bill-transfer"></i></span>
+                <span class="nav-label">অতিরিক্ত খরচ</span>
+            </a>
+            <a href="reports.html" class="nav-item">
+                <span class="nav-icon"><i class="fas fa-chart-bar"></i></span>
+                <span class="nav-label">রিপোর্ট</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <span class="nav-section-label">সেটিংস</span>
+            <a href="store-config.html" class="nav-item">
+                <span class="nav-icon"><i class="fas fa-store"></i></span>
+                <span class="nav-label">স্টোর কনফিগ</span>
+            </a>
+            <a href="database.html" class="nav-item">
+                <span class="nav-icon"><i class="fas fa-database"></i></span>
+                <span class="nav-label">ডাটাবেজ</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-card">
+            <div class="user-avatar">H</div>
+            <div class="user-info">
+                <span class="user-name">Hasan</span>
+                <span class="user-role">অ্যাডমিন</span>
+            </div>
+            <a href="logout.html" class="logout-btn" title="লগআউট">
+                <i class="fas fa-right-from-bracket"></i>
+            </a>
+        </div>
+    </div>
+</aside>
+
+<!-- Main Content -->
+<div class="main-wrapper" id="mainWrapper">
+
+    <!-- Top Bar -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <button class="menu-btn" id="menuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="page-title">
+                <h1>ড্যাশবোর্ড</h1>
+                <span class="breadcrumb">স্বাগতম, <strong>Hasan</strong></span>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="অনুসন্ধান করুন...">
+            </div>
+            <button class="icon-btn" title="নোটিফিকেশন">
+                <i class="fas fa-bell"></i>
+                <span class="badge-dot"></span>
+            </button>
+            <button class="icon-btn" title="সেটিংস">
+                <i class="fas fa-gear"></i>
+            </button>
+            <div class="topbar-time" id="clock">
+                <span class="time">--:--</span>
+                <span class="date">--- --</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Content -->
+    <main class="content">
+
+        <!-- Stats Row -->
+        <div class="stats-grid">
+            <div class="stat-card stat-blue">
+                <div class="stat-icon"><i class="fas fa-users"></i></div>
+                <div class="stat-body">
+                    <span class="stat-label">মোট কাস্টমার</span>
+                    <span class="stat-value">১,২৪৮</span>
+                    <span class="stat-change up"><i class="fas fa-arrow-trend-up"></i> ১২% এই মাসে</span>
+                </div>
+            </div>
+            <div class="stat-card stat-green">
+                <div class="stat-icon"><i class="fas fa-box-open"></i></div>
+                <div class="stat-body">
+                    <span class="stat-label">মোট আইটেম</span>
+                    <span class="stat-value">৩,৫৬৭</span>
+                    <span class="stat-change up"><i class="fas fa-arrow-trend-up"></i> ৮% এই মাসে</span>
+                </div>
+            </div>
+            <div class="stat-card stat-orange">
+                <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+                <div class="stat-body">
+                    <span class="stat-label">আজকের বিক্রয়</span>
+                    <span class="stat-value">৳ ৪৫,৮০০</span>
+                    <span class="stat-change down"><i class="fas fa-arrow-trend-down"></i> ৩% গতকালের চেয়ে</span>
+                </div>
+            </div>
+            <div class="stat-card stat-purple">
+                <div class="stat-icon"><i class="fas fa-warehouse"></i></div>
+                <div class="stat-body">
+                    <span class="stat-label">স্টক মূল্য</span>
+                    <span class="stat-value">৳ ৮,৯২,৩৫০</span>
+                    <span class="stat-change up"><i class="fas fa-arrow-trend-up"></i> ৫% এই সপ্তাহে</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module Grid -->
+        <div class="section-header">
+            <h2>মডিউল সমূহ</h2>
+            <span class="section-sub">একটি মডিউলে ক্লিক করে শুরু করুন</span>
+        </div>
+
+        <div class="module-grid">
+            <a href="customers.html" class="module-card">
+                <div class="module-icon-wrap" style="--c: #3b82f6;">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="module-info">
+                    <h3>কাস্টমার</h3>
+                    <p>যোগ, হালনাগাদ, মুছে ফেলুন এবং কাস্টমার অনুসন্ধান</p>
+                </div>
+                <span class="module-arrow"><i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="items.html" class="module-card">
+                <div class="module-icon-wrap" style="--c: #10b981;">
+                    <i class="fas fa-box-open"></i>
+                </div>
+                <div class="module-info">
+                    <h3>আইটেমস</h3>
+                    <p>যোগ, হালনাগাদ, মুছে ফেলুন এবং আইটেম অনুসন্ধান</p>
+                </div>
+                <span class="module-arrow"><i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="suppliers.html" class="module-card">
+                <div class="module-icon-wrap" style="--c: #f59e0b;">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <div class="module-info">
+                    <h3>সরবরাহকারী</h3>
+                    <p>যোগ, হালনাগাদ, মুছে ফেলুন এবং সরবরাহকারী অনুসন্ধান</p>
+                </div>
+                <span class="module-arrow"><i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="reports.html" class="module-card">
+                <div class="module-icon-wrap" style="--c: #8b5cf6;">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <div class="module-info">
+                    <h3>রিপোর্ট</h3>
+                    <p>দেখুন এবং রিপোর্ট তৈরি করুন</p>
+                </div>
+                <span class="module-arrow"><i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="purchase.html" class="module-card">
+                <div class="module-icon-wrap" style="--c: #ef4444;">
+                    <i class="fas fa-cart-plus"></i>
+                </div>
+                <div class="module-info">
+                    <h3>গ্রহণ</h3>
+                    <p>ক্রয় অর্ডার প্রক্রিয়া করুন</p>
+                </div>
+                <span class="module-arrow"><i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="sales.html" class="module-card">
+                <div class="module-icon-wrap" style="--c: #f97316;">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <div class="module-info">
+                    <h3>বিক্রয়</h3>
+                    <p>বিক্রি এবং ফেরত প্রক্রিয়া করুন</p>
+                </div>
+                <span class="module-arrow"><i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="employees.html" class="module-card">
+                <div class="module-icon-wrap" style="--c: #06b6d4;">
+                    <i class="fas fa-id-badge"></i>
+                </div>
+                <div class="module-info">
+                    <h3>কর্মচারী</h3>
+                    <p>যোগ, হালনাগাদ, মুছে ফেলুন এবং কর্মচারী অনুসন্ধান</p>
+                </div>
+                <span class="module-arrow"><i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="store-config.html" class="module-card">
+                <div class="module-icon-wrap" style="--c: #6366f1;">
+                    <i class="fas fa-store"></i>
+                </div>
+                <div class="module-info">
+                    <h3>স্টোর কনফিগ</h3>
+                    <p>স্টোর এর কনফিগারেশন পরিবর্তন</p>
+                </div>
+                <span class="module-arrow"><i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="stock.html" class="module-card">
+                <div class="module-icon-wrap" style="--c: #14b8a6;">
+                    <i class="fas fa-warehouse"></i>
+                </div>
+                <div class="module-info">
+                    <h3>স্টক</h3>
+                    <p>স্টক ব্যবস্থাপনা</p>
+                </div>
+                <span class="module-arrow"><i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="item-receipt.html" class="module-card">
+                <div class="module-icon-wrap" style="--c: #84cc16;">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+                <div class="module-info">
+                    <h3>আইটেম রিসিভ</h3>
+                    <p>আইটেম রিসিভ তালিকা ও যাচাই</p>
+                </div>
+                <span class="module-arrow"><i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="database.html" class="module-card">
+                <div class="module-icon-wrap" style="--c: #64748b;">
+                    <i class="fas fa-database"></i>
+                </div>
+                <div class="module-info">
+                    <h3>ডাটাবেজ</h3>
+                    <p>ডাটাবেজ ব্যাকআপ ব্যবস্থাপনা</p>
+                </div>
+                <span class="module-arrow"><i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="extra-expense.html" class="module-card">
+                <div class="module-icon-wrap" style="--c: #ec4899;">
+                    <i class="fas fa-money-bill-transfer"></i>
+                </div>
+                <div class="module-info">
+                    <h3>অতিরিক্ত খরচ</h3>
+                    <p>অতিরিক্ত খরচের বিবরণ</p>
+                </div>
+                <span class="module-arrow"><i class="fas fa-arrow-right"></i></span>
+            </a>
+        </div>
+
+        <!-- Bottom Row -->
+        <div class="bottom-grid">
+            <!-- Recent Sales -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-clock-rotate-left"></i> সাম্প্রতিক বিক্রয়</h3>
+                    <a href="sales.html" class="card-link">সব দেখুন <i class="fas fa-chevron-right"></i></a>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ইনভয়েস</th>
+                                <th>কাস্টমার</th>
+                                <th>পরিমাণ</th>
+                                <th>স্ট্যাটাস</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="mono">#INV-0042</span></td>
+                                <td>রহিম উদ্দিন</td>
+                                <td>৳ ৩,২৫০</td>
+                                <td><span class="badge badge-green">সম্পন্ন</span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="mono">#INV-0041</span></td>
+                                <td>করিম সাহেব</td>
+                                <td>৳ ১,৮০০</td>
+                                <td><span class="badge badge-green">সম্পন্ন</span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="mono">#INV-0040</span></td>
+                                <td>সালমা বেগম</td>
+                                <td>৳ ৫,৬০০</td>
+                                <td><span class="badge badge-yellow">মুলতুবি</span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="mono">#INV-0039</span></td>
+                                <td>আবুল হাসান</td>
+                                <td>৳ ৯৫০</td>
+                                <td><span class="badge badge-red">বাতিল</span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="mono">#INV-0038</span></td>
+                                <td>মিনা রহমান</td>
+                                <td>৳ ২,১০০</td>
+                                <td><span class="badge badge-green">সম্পন্ন</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Low Stock Alert -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-triangle-exclamation"></i> কম স্টক সতর্কতা</h3>
+                    <a href="stock.html" class="card-link">স্টক দেখুন <i class="fas fa-chevron-right"></i></a>
+                </div>
+                <div class="alert-list">
+                    <div class="alert-item">
+                        <div class="alert-icon" style="background:#fee2e2;color:#ef4444"><i class="fas fa-box"></i></div>
+                        <div class="alert-body">
+                            <span class="alert-name">চকলেট বিস্কুট ৫০০গ্রা</span>
+                            <div class="stock-bar">
+                                <div class="stock-fill" style="width:8%;background:#ef4444"></div>
+                            </div>
+                        </div>
+                        <span class="alert-qty" style="color:#ef4444">৪ টি</span>
+                    </div>
+                    <div class="alert-item">
+                        <div class="alert-icon" style="background:#fef3c7;color:#f59e0b"><i class="fas fa-box"></i></div>
+                        <div class="alert-body">
+                            <span class="alert-name">মিনারেল ওয়াটার ১লিটার</span>
+                            <div class="stock-bar">
+                                <div class="stock-fill" style="width:22%;background:#f59e0b"></div>
+                            </div>
+                        </div>
+                        <span class="alert-qty" style="color:#f59e0b">১১ টি</span>
+                    </div>
+                    <div class="alert-item">
+                        <div class="alert-icon" style="background:#fef3c7;color:#f59e0b"><i class="fas fa-box"></i></div>
+                        <div class="alert-body">
+                            <span class="alert-name">আটা ২কেজি প্যাকেট</span>
+                            <div class="stock-bar">
+                                <div class="stock-fill" style="width:30%;background:#f59e0b"></div>
+                            </div>
+                        </div>
+                        <span class="alert-qty" style="color:#f59e0b">১৫ টি</span>
+                    </div>
+                    <div class="alert-item">
+                        <div class="alert-icon" style="background:#fee2e2;color:#ef4444"><i class="fas fa-box"></i></div>
+                        <div class="alert-body">
+                            <span class="alert-name">সাবান লাক্স ১০০গ্রা</span>
+                            <div class="stock-bar">
+                                <div class="stock-fill" style="width:6%;background:#ef4444"></div>
+                            </div>
+                        </div>
+                        <span class="alert-qty" style="color:#ef4444">৩ টি</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

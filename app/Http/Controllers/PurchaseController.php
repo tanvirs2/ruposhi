@@ -1,0 +1,133 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Purchase;
+use App\Models\PurchaseItem;
+use App\Models\Supplier;
+use App\Models\Item;
+use App\Models\Stock;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\StoreConfigController;
+
+class PurchaseController extends Controller
+{
+    public function index(Request $request)
+    {
+        $purchases = Purchase::with('supplier')
+            ->when($request->search, fn($q) =>
+                $q->whereHas('supplier', fn($s) => $s->where('name', 'like', "%{$request->search}%"))
+                  ->orWhere('id', $request->search)
+            )
+            ->latest()->paginate(15);
+
+        return view('purchases.index', compact('purchases'));
+    }
+
+    public function create()
+    {
+        $suppliers      = Supplier::orderBy('name')->get();
+        $items          = Item::with('stock')->orderBy('name')->get();
+        $paymentMethods = StoreConfigController::getGroupedPaymentMethods();
+        return view('purchases.create', compact('suppliers', 'items', 'paymentMethods'));
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'purchase_date'       => 'required|date',
+            'supplier_id'         => 'nullable|exists:suppliers,id',
+            'items'               => 'required|array|min:1',
+            'items.*.id'          => 'required|exists:items,id',
+            'items.*.qty'         => 'required|numeric|min:0.01',
+            'items.*.price'       => 'required|numeric|min:0',
+            'paid_amount'         => 'required|numeric|min:0',
+        ]);
+
+        DB::transaction(function () use ($request) {
+            $total = collect($request->items)->sum(fn($i) => $i['qty'] * $i['price']);
+            $due   = max(0, $total - $request->paid_amount);
+
+            $purchase = Purchase::create([
+                'supplier_id'    => $request->supplier_id ?: null,
+                'user_id'        => auth()->id(),
+                'total_amount'   => $total,
+                'paid_amount'    => $request->paid_amount,
+                'due_amount'     => $due,
+                'payment_method' => $request->payment_method ?? 'নগদ',
+                'notes'          => $request->notes,
+                'purchase_date'  => $request->purchase_date,
+            ]);
+
+            foreach ($request->items as $row) {
+                PurchaseItem::create([
+                    'purchase_id' => $purchase->id,
+                    'item_id'     => $row['id'],
+                    'quantity'    => $row['qty'],
+                    'price'       => $row['price'],
+                    'subtotal'    => $row['qty'] * $row['price'],
+                ]);
+
+                // Add to stock — create stock record if missing
+                $stock = Stock::firstOrCreate(
+                    ['item_id' => $row['id']],
+                    ['quantity' => 0, 'min_quantity' => 5]
+                );
+                $stock->increment('quantity', $row['qty']);
+
+                // Update the item's purchase_price to the latest received price
+                Item::where('id', $row['id'])->update(['purchase_price' => $row['price']]);
+            }
+
+            if ($request->supplier_id) {
+                $supplier = Supplier::find($request->supplier_id);
+                if ($due > 0) {
+                    // Under-paid — add remaining due to supplier
+                    $supplier->increment('due_amount', $due);
+                } else {
+                    // Over-paid — excess clears existing supplier due
+                    $excess  = $request->paid_amount - $total;
+                    $newDue  = max(0, $supplier->due_amount - $excess);
+                    $supplier->update(['due_amount' => $newDue]);
+                }
+            }
+        });
+
+        return redirect()->route('purchases.index')->with('success', 'মাল রিসিভ সম্পন্ন হয়েছে। স্টক আপডেট হয়েছে।');
+    }
+
+    public function show(Purchase $purchase)
+    {
+        $purchase->load('items.item', 'supplier', 'user');
+        return view('purchases.show', compact('purchase'));
+    }
+
+    public function destroy(Purchase $purchase)
+    {
+        DB::transaction(function () use ($purchase) {
+            // Restore stock
+            foreach ($purchase->items as $pi) {
+                Stock::where('item_id', $pi->item_id)->decrement('quantity', $pi->quantity);
+            }
+            // Reverse supplier due_amount effect
+            if ($purchase->supplier_id) {
+                $supplier = Supplier::find($purchase->supplier_id);
+                if ($purchase->due_amount > 0) {
+                    // Purchase had unpaid portion — remove it from supplier due
+                    $newDue = max(0, $supplier->due_amount - $purchase->due_amount);
+                    $supplier->update(['due_amount' => $newDue]);
+                } else {
+                    // Purchase was fully/over-paid — restore excess that cleared old dues
+                    $excess = $purchase->paid_amount - $purchase->total_amount;
+                    if ($excess > 0) {
+                        $supplier->increment('due_amount', $excess);
+                    }
+                }
+            }
+            $purchase->delete();
+        });
+
+        return redirect()->route('purchases.index')->with('success', 'রিসিভ মুছে ফেলা হয়েছে। স্টক কমানো হয়েছে।');
+    }
+}
