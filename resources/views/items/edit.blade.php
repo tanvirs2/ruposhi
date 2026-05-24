@@ -65,10 +65,10 @@
             </div>
 
             <div class="form-group-field">
-                <label>বিক্রয় মূল্য <span class="req">*</span>
+                <label>বিক্রয় মূল্য
                     <button type="button" class="info-btn" data-info="প্রতি বস্তা/ইউনিটের ডিফল্ট বিক্রয় মূল্য। বিক্রয়ের সময় প্রয়োজনে পরিবর্তন করা যাবে।">i</button>
                 </label>
-                <input type="text" inputmode="decimal" name="sale_price" value="{{ old('sale_price', $item->sale_price) }}" required>
+                <input type="text" inputmode="decimal" name="sale_price" value="{{ old('sale_price', $item->sale_price) }}">
             </div>
 
             <div class="form-group-field">

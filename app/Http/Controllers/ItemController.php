@@ -53,7 +53,7 @@ class ItemController extends Controller
         $request->validate([
             'name'           => 'required|string|max:255',
             'code'           => 'nullable|string|unique:items,code',
-            'sale_price'     => 'required|numeric|min:0',
+            'sale_price'     => 'nullable|numeric|min:0',
             'purchase_price' => 'required|numeric|min:0',
         ]);
 
@@ -74,7 +74,7 @@ class ItemController extends Controller
         $request->validate([
             'name'           => 'required|string|max:255',
             'code'           => 'nullable|string|unique:items,code,' . $item->id,
-            'sale_price'     => 'required|numeric|min:0',
+            'sale_price'     => 'nullable|numeric|min:0',
             'purchase_price' => 'required|numeric|min:0',
         ]);
 
