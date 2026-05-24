@@ -58,6 +58,16 @@
 <div class="card">
     <div class="table-wrap">
         <table class="data-table">
+            <colgroup>
+                <col style="width:50px">    {{-- # --}}
+                <col style="width:220px">   {{-- আইটেম --}}
+                <col style="width:110px">   {{-- বিক্রয় পরিমাণ --}}
+                <col style="width:110px">   {{-- রাজস্ব --}}
+                <col style="width:110px">   {{-- খরচ --}}
+                <col style="width:110px">   {{-- মুনাফা --}}
+                <col style="width:90px">    {{-- মার্জিন --}}
+                <col style="width:110px">   {{-- বর্তমান স্টক --}}
+            </colgroup>
             <thead>
                 <tr>
                     <th>#</th>

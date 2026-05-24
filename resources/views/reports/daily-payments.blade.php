@@ -56,6 +56,13 @@
     </div>
     <div class="table-wrap">
         <table class="data-table">
+            <colgroup>
+                <col style="width:180px">   {{-- কাস্টমার --}}
+                <col style="width:120px">   {{-- পরিমাণ --}}
+                <col style="width:120px">   {{-- পদ্ধতি --}}
+                <col style="width:200px">   {{-- মন্তব্য --}}
+                <col style="width:130px">   {{-- রেকর্ডকারী --}}
+            </colgroup>
             <thead>
                 <tr><th>কাস্টমার</th><th>পরিমাণ</th><th>পদ্ধতি</th><th>মন্তব্য</th><th>রেকর্ডকারী</th></tr>
             </thead>

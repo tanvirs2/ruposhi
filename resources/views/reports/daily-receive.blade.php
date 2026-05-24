@@ -68,6 +68,16 @@
     </div>
     <div class="table-wrap">
         <table class="data-table">
+            <colgroup>
+                <col style="width:50px">    {{-- # --}}
+                <col style="width:160px">   {{-- সরবরাহকারী --}}
+                <col style="width:200px">   {{-- আইটেম --}}
+                <col style="width:110px">   {{-- মোট --}}
+                <col style="width:110px">   {{-- পরিশোধ --}}
+                <col style="width:110px">   {{-- বাকী --}}
+                <col style="width:110px">   {{-- রেকর্ডকারী --}}
+                <col style="width:60px">    {{-- অ্যাকশন --}}
+            </colgroup>
             <thead>
                 <tr>
                     <th>#</th>

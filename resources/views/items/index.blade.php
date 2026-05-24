@@ -31,6 +31,16 @@
     </div>
     <div class="table-wrap">
         <table class="data-table">
+            <colgroup>
+                <col style="width:50px">    {{-- # --}}
+                <col style="width:220px">   {{-- নাম --}}
+                <col style="width:120px">   {{-- ব্র্যান্ড --}}
+                <col style="width:120px">   {{-- ক্যাটাগরি --}}
+                <col style="width:110px">   {{-- ক্রয় মূল্য --}}
+                <col style="width:110px">   {{-- বিক্রয় মূল্য --}}
+                <col style="width:80px">    {{-- স্টক --}}
+                <col style="width:90px">    {{-- অ্যাকশন --}}
+            </colgroup>
             <thead>
                 <tr>
                     <th>#</th>

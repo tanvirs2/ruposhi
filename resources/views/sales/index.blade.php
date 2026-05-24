@@ -22,6 +22,16 @@
     </div>
     <div class="table-wrap">
         <table class="data-table">
+            <colgroup>
+                <col style="width:110px">   {{-- ইনভয়েস --}}
+                <col style="width:180px">   {{-- কাস্টমার --}}
+                <col style="width:120px">   {{-- তারিখ --}}
+                <col style="width:110px">   {{-- মোট --}}
+                <col style="width:110px">   {{-- পরিশোধ --}}
+                <col style="width:110px">   {{-- বকেয়া --}}
+                <col style="width:100px">   {{-- স্ট্যাটাস --}}
+                <col style="width:80px">    {{-- অ্যাকশন --}}
+            </colgroup>
             <thead>
                 <tr><th>ইনভয়েস</th><th>কাস্টমার</th><th>তারিখ</th><th>মোট</th><th>পরিশোধ</th><th>বকেয়া</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr>
             </thead>

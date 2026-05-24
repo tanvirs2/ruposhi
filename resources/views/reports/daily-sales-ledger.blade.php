@@ -91,7 +91,7 @@
         <table class="data-table dsl-table">
             <colgroup>
                 <col style="width:100px">    {{-- তারিখ --}}
-                <col>                        {{-- বিবরণ --}}
+                <col style="width:200px">    {{-- বিবরণ --}}
                 <col style="width:80px">     {{-- পরিমাণ --}}
                 <col style="width:100px">    {{-- দর --}}
                 <col style="width:90px">     {{-- জমা --}}

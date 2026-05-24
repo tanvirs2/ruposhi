@@ -17,6 +17,14 @@
     </div>
     <div class="table-wrap">
         <table class="data-table">
+            <colgroup>
+                <col style="width:50px">    {{-- # --}}
+                <col style="width:180px">   {{-- নাম --}}
+                <col style="width:130px">   {{-- ফোন --}}
+                <col style="width:200px">   {{-- ঠিকানা --}}
+                <col style="width:120px">   {{-- বকেয়া --}}
+                <col style="width:90px">    {{-- অ্যাকশন --}}
+            </colgroup>
             <thead>
                 <tr><th>#</th><th>নাম</th><th>ফোন</th><th>ঠিকানা</th><th>বকেয়া</th><th>অ্যাকশন</th></tr>
             </thead>
