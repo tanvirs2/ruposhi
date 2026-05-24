@@ -229,7 +229,7 @@
                         <span class="nav-label">হোম / সারসংক্ষেপ</span>
                         <button type="button" class="info-btn" data-info="সামগ্রিক ব্যবসার হিসাব — মোট আয়, ব্যয়, লাভ ও বাকীর সারসংক্ষেপ এক পেজে।">i</button>
                     </a>
-                    <a href="{{ route('reports.sales') }}" class="nav-item nav-child {{ request()->routeIs('reports.sales') ? 'active' : '' }}">
+                    <a href="{{ route('reports.sales') }}" class="nav-item nav-child {{ (request()->routeIs('reports.sales') || request()->is('reports/sales')) ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-receipt"></i></span>
                         <span class="nav-label">বিক্রয় রিপোর্ট</span>
                         <button type="button" class="info-btn" data-info="তারিখ ভিত্তিক বিক্রয়ের বিস্তারিত ইতিহাস — কোন পণ্য কত বিক্রি হয়েছে, লাভ কত।">i</button>
