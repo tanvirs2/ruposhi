@@ -108,10 +108,10 @@
     <div class="table-wrap">
         <table class="data-table cl-table">
             <colgroup>
-                <col style="width:155px">   {{-- তারিখ --}}
-                <col>                       {{-- বিবরণ --}}
+                <col style="width:120px">   {{-- তারিখ --}}
+                <col style="width:220px">   {{-- বিবরণ --}}
                 <col style="width:70px">    {{-- পরিমাণ --}}
-                <col style="width:80px">    {{-- দর --}}
+                <col style="width:70px">    {{-- দর --}}
                 <col style="width:90px">    {{-- জমা --}}
                 <col style="width:90px">    {{-- বাকি --}}
                 <col style="width:110px">   {{-- অবশিষ্ট --}}
@@ -266,10 +266,10 @@
 
 .cl-payment-row td { background: #f0fdf4; }
 
-.cl-date  { color: #475569; font-size: .83rem; }
-.cl-time  { display:block; font-size: .75rem; color: #94a3b8; margin-top:1px; }
+.cl-date  { color: #475569; font-size: .78rem; white-space: nowrap; }
+.cl-time  { font-size: .72rem; color: #94a3b8; margin-top:1px; }
 
-.cl-item-name    { font-weight: 600; font-size: .9rem; }
+.cl-item-name    { font-weight: 600; font-size: .85rem; word-break: break-word; }
 .cl-payment-label { color: #15803d; font-weight: 600; font-size: .88rem; }
 
 .cl-debit  { color: #dc2626; font-weight: 600; }
