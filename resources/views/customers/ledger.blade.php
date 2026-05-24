@@ -147,12 +147,11 @@
                     if ($row['sale_id']) $prevSaleId = $row['sale_id'];
                 @endphp
                 <tr class="{{ $row['type'] === 'payment' ? 'cl-payment-row' : ($row['type'] === 'discount' ? 'cl-discount-row' : '') }} {{ $isNewSale && !$loop->first ? 'cl-new-sale' : '' }}">
-                    <td class="cl-date">
+                    <td class="cl-date" style="white-space:nowrap">
                         @php
                             $dt = \Carbon\Carbon::parse($row['datetime']);
                         @endphp
-                        <div>{{ $dt->format('Y-m-d') }}</div>
-                        <div class="cl-time">· {{ $dt->format('h:i:s a') }}</div>
+                        {{ $dt->format('Y-m-d') }} <span class="cl-time">{{ $dt->format('h:i:s a') }}</span>
                     </td>
                     <td>
                         @if($row['type'] === 'payment')
