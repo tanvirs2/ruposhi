@@ -1,10 +1,10 @@
-﻿@extends('layouts.app')
-@section('title', 'নতুন বিক্রয়')
-@section('page-title', 'নতুন বিক্রয়')
+@extends('layouts.app')
+@section('title', 'বিক্রয় সংশোধন — #' . str_pad($sale->id, 6, '0', STR_PAD_LEFT))
+@section('page-title', 'বিক্রয় সংশোধন')
 
 @section('content')
-<form method="POST" action="{{ route('sales.store') }}" id="saleForm">
-@csrf
+<form method="POST" action="{{ route('sales.update', $sale) }}" id="saleForm">
+@csrf @method('PUT')
 <div class="pos-grid">
 
     {{-- Left: Items --}}
@@ -35,9 +35,7 @@
                             <th>আইটেম</th>
                             <th>পরিমাণ</th>
                             <th class="col-secret" style="display:none">ক্রয়মূল্য</th>
-                            <th>বিক্রয়মূল্য <small style="font-weight:400;color:#94a3b8">(পরিবর্তনযোগ্য)</small>
-                                <button type="button" class="info-btn" data-info="প্রতিটি আইটেমের বিক্রয় মূল্য এখানে পরিবর্তন করা যাবে। ডিফল্ট মূল্য আইটেম সেটআপ থেকে নেওয়া হয়। বিশেষ ছাড় বা দরাদরির ক্ষেত্রে এই ঘরে নতুন মূল্য লিখুন।">i</button>
-                            </th>
+                            <th>বিক্রয়মূল্য <small style="font-weight:400;color:#94a3b8">(পরিবর্তনযোগ্য)</small></th>
                             <th class="col-secret" style="display:none">লাভ/বস্তা</th>
                             <th>মোট</th>
                             <th></th>
@@ -54,40 +52,50 @@
     {{-- Right: Summary --}}
     <div class="pos-right">
         <div class="card">
-            <div class="card-header"><h3><i class="fas fa-calculator"></i> বিক্রয় সারসংক্ষেপ</h3></div>
+            <div class="card-header">
+                <h3><i class="fas fa-pen-to-square"></i> বিক্রয় সংশোধন</h3>
+            </div>
             <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+
+                {{-- Edited notice --}}
+                <div style="padding:10px 14px;background:#fef9c3;border:1px solid #fde68a;border-radius:8px;font-size:.82rem;color:#92400e;font-weight:600">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    আপনি চালান <strong>#{{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</strong> সংশোধন করছেন।
+                    স্টক ও কাস্টমারের বাকী স্বয়ংক্রিয়ভাবে আপডেট হবে।
+                </div>
+
                 <div class="form-group-field">
-                    <label>কাস্টমার
-                        <button type="button" class="info-btn" data-info="কাস্টমার নির্বাচন না করলেও বিক্রয় সম্পন্ন করা যাবে। তবে কাস্টমার নির্বাচন করলে বাকির হিসাব সেই কাস্টমারের অ্যাকাউন্টে যোগ হবে।">i</button>
-                    </label>
-                    <input type="hidden" name="customer_id" id="customerIdInput">
-                    <input type="text" id="customerSearch" placeholder="নাম লিখুন বা খুঁজুন..."
-                        autocomplete="off" style="width:100%">
+                    <label>কাস্টমার</label>
+                    <input type="hidden" name="customer_id" id="customerIdInput" value="{{ $sale->customer_id }}">
+                    <input type="text" id="customerSearch" autocomplete="off" style="width:100%"
+                        value="{{ $sale->customer?->name ?? '' }}"
+                        placeholder="নাম লিখুন বা খুঁজুন...">
                     <div id="customerSelected" style="display:none;margin-top:6px;font-size:.85rem"></div>
                 </div>
+
                 <div class="form-group-field">
                     <label>তারিখ <span class="req">*</span></label>
-                    <input type="date" name="sale_date" value="{{ date('Y-m-d') }}" required>
+                    <input type="date" name="sale_date" value="{{ $sale->sale_date->format('Y-m-d') }}" required>
                 </div>
+
                 <div class="form-group-field">
                     <label>স্ট্যাটাস</label>
                     <select name="status" class="form-select">
-                        <option value="completed">সম্পন্ন</option>
-                        <option value="pending">মুলতুবি</option>
+                        <option value="completed" @selected($sale->status === 'completed')>সম্পন্ন</option>
+                        <option value="pending"   @selected($sale->status === 'pending')>মুলতুবি</option>
                     </select>
                 </div>
+
                 <hr style="border:none;border-top:1px solid var(--border)">
 
-                {{-- Previous due row — shown when customer has due --}}
+                {{-- Previous due row --}}
                 <div id="prevDueRow" style="display:none;flex-direction:column;gap:10px;padding:12px 14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px">
-                    {{-- Total due label --}}
                     <div style="display:flex;justify-content:space-between;align-items:center">
                         <span style="font-size:.83rem;font-weight:600;color:#92400e">
                             <i class="fas fa-clock-rotate-left"></i> পূর্বের বাকী
                         </span>
                         <span style="font-size:1rem;font-weight:800;color:#b45309" id="prevDueDisplay">৳ 0</span>
                     </div>
-                    {{-- Partial payment input --}}
                     <div style="display:flex;align-items:center;gap:8px">
                         <span style="font-size:.8rem;font-weight:600;color:#92400e;white-space:nowrap">এখন দেবেন (৳):</span>
                         <input type="text" inputmode="decimal" id="prevDuePayInput" value="0" placeholder="0"
@@ -103,19 +111,20 @@
                 </div>
 
                 <div class="summary-row"><span>মোট বিক্রয়:</span><span id="totalDisplay">৳ 0.00</span></div>
+
                 <div class="form-group-field">
-                    <label>ছাড় (৳)
-                        <button type="button" class="info-btn" data-info="সম্পূর্ণ বিলের উপর ছাড় দিন। যেমন ৳৫০ লিখলে মোট থেকে ৫০ টাকা বাদ যাবে। শতাংশ নয়, সরাসরি টাকার পরিমাণ লিখতে হবে।">i</button>
-                    </label>
-                    <input type="text" inputmode="decimal" name="discount" id="discountInput" value="0">
+                    <label>ছাড় (৳)</label>
+                    <input type="text" inputmode="decimal" name="discount" id="discountInput"
+                        value="{{ $sale->discount }}">
                 </div>
+
                 <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0.00</span></div>
+
                 <div class="form-group-field">
-                    <label>পরিশোধ (৳)
-                        <button type="button" class="info-btn" data-info="কাস্টমার এখন কত টাকা পরিশোধ করেছেন। বাকি টাকা স্বয়ংক্রিয়ভাবে কাস্টমারের বাকী হিসাবে রেকর্ড হবে। সম্পূর্ণ পরিশোধ হলে মোট পরিমাণ লিখুন।">i</button>
-                    </label>
+                    <label>পরিশোধ (৳) <span class="req">*</span></label>
                     <div style="display:flex;gap:8px">
-                        <input type="text" inputmode="decimal" name="paid_amount" id="paidInput" value="0" style="flex:1">
+                        <input type="text" inputmode="decimal" name="paid_amount" id="paidInput"
+                            value="{{ $sale->paid_amount }}" style="flex:1">
                         <button type="button" onclick="setFullPay()" title="সম্পূর্ণ পরিশোধ"
                             style="padding:0 12px;border-radius:var(--radius-sm);border:1.5px solid var(--accent);
                                    background:var(--accent-light);color:var(--accent);font-size:.78rem;
@@ -123,7 +132,6 @@
                             সম্পূর্ণ
                         </button>
                     </div>
-                    {{-- Walk-in warning --}}
                     <div id="walkinWarning" style="display:none;margin-top:6px;padding:8px 12px;
                         background:#fee2e2;border:1px solid #fecaca;border-radius:8px;
                         font-size:.82rem;color:#991b1b;font-weight:600">
@@ -131,44 +139,33 @@
                         কাস্টমার ছাড়া বিক্রয়ে সম্পূর্ণ পরিশোধ আবশ্যক!
                     </div>
                 </div>
+
                 <div class="summary-row" style="color:#ef4444"><span>বকেয়া:</span><span id="dueDisplay">৳ 0.00</span></div>
 
-                {{-- Payment Method (DB-driven) --}}
                 <div class="form-group-field">
                     <label><i class="fas fa-credit-card" style="color:var(--accent)"></i> পরিশোধ মোড</label>
                     <select name="payment_method" id="paymentMethod" class="form-select">
                         @foreach($paymentMethods as $group => $names)
                         <optgroup label="— {{ $group }} —">
-                            @foreach($names as $i => $name)
-                            <option value="{{ $name }}" @if($group === array_key_first($paymentMethods) && $i === 0) selected @endif>
+                            @foreach($names as $name)
+                            <option value="{{ $name }}" @selected($sale->payment_method === $name)>
                                 {{ $name }}
                             </option>
                             @endforeach
                         </optgroup>
                         @endforeach
                     </select>
-                    <div style="margin-top:5px;font-size:.77rem;color:#94a3b8">
-                        <a href="{{ route('store-config.index') }}" target="_blank"
-                            style="color:var(--accent);text-decoration:none;font-weight:500">
-                            <i class="fas fa-plus-circle"></i> নতুন পদ্ধতি যোগ করুন (স্টোর কনফিগ)
-                        </a>
-                    </div>
                 </div>
 
                 <hr style="border:none;border-top:1px solid var(--border)">
 
-                {{-- Profit panel (hidden until toggle) --}}
+                {{-- Profit panel --}}
                 <div class="profit-panel" id="profitPanel" style="display:none">
-                    <div class="profit-panel-header">
-                        <i class="fas fa-chart-line"></i> লাভের বিবরণ
-                    </div>
+                    <div class="profit-panel-header"><i class="fas fa-chart-line"></i> লাভের বিবরণ</div>
                     <div class="profit-panel-body">
                         <div class="profit-row"><span>মোট খরচ (ক্রয়):</span><span id="costDisplay">৳ 0.00</span></div>
                         <div class="profit-row"><span>মোট আয় (বিক্রয়):</span><span id="revenueDisplay">৳ 0.00</span></div>
-                        <div class="profit-row profit-net">
-                            <span>আনুমানিক লাভ:</span>
-                            <span id="profitDisplay">৳ 0.00</span>
-                        </div>
+                        <div class="profit-row profit-net"><span>আনুমানিক লাভ:</span><span id="profitDisplay">৳ 0.00</span></div>
                         <div style="margin-top:8px;text-align:center">
                             <span class="margin-badge" id="marginBadge">—</span>
                             <span id="marginPct" style="font-size:.8rem;color:#64748b;margin-left:6px"></span>
@@ -178,11 +175,27 @@
 
                 <div class="form-group-field">
                     <label>মন্তব্য</label>
-                    <textarea name="notes" rows="2"></textarea>
+                    <textarea name="notes" rows="2">{{ $sale->notes }}</textarea>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:14px">
-                    <i class="fas fa-check-circle"></i> বিক্রয় সম্পন্ন করুন
-                </button>
+
+                {{-- Edit note (required) --}}
+                <div class="form-group-field">
+                    <label style="color:#92400e">
+                        <i class="fas fa-pen-to-square"></i> সংশোধনের কারণ
+                        <button type="button" class="info-btn" data-info="কেন এই বিক্রয় সংশোধন করছেন তা লিখুন। এটি চালানে দেখাবে।">i</button>
+                    </label>
+                    <textarea name="edit_note" rows="2" placeholder="যেমন: ভুল আইটেম দেওয়া হয়েছিল, পরিমাণ ভুল ছিল..."
+                        style="border-color:#fde68a;background:#fefce8">{{ $sale->edit_note }}</textarea>
+                </div>
+
+                <div style="display:flex;gap:10px">
+                    <a href="{{ route('sales.show', $sale) }}" class="btn btn-ghost" style="flex:1;justify-content:center">
+                        <i class="fas fa-xmark"></i> বাতিল
+                    </a>
+                    <button type="submit" class="btn btn-primary" style="flex:2;justify-content:center;padding:14px">
+                        <i class="fas fa-floppy-disk"></i> সংশোধন সংরক্ষণ করুন
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -191,108 +204,56 @@
 
 @push('styles')
 <style>
-/* Profit column coloring */
 .profit-good  { color: #16a34a; font-weight: 600; }
 .profit-med   { color: #d97706; font-weight: 600; }
 .profit-poor  { color: #dc2626; font-weight: 600; }
-
-/* Margin badge */
-.margin-badge {
-    display:inline-block;
-    padding:3px 12px;
-    border-radius:20px;
-    font-size:.8rem;
-    font-weight:600;
-    letter-spacing:.03em;
-}
-.margin-badge.good   { background:#dcfce7; color:#15803d; }
-.margin-badge.med    { background:#fef9c3; color:#92400e; }
-.margin-badge.poor   { background:#fee2e2; color:#b91c1c; }
-
-/* Profit summary panel */
-.profit-panel {
-    border:1px solid var(--border);
-    border-radius:10px;
-    overflow:hidden;
-}
-.profit-panel-header {
-    background:var(--bg);
-    padding:10px 14px;
-    font-size:.85rem;
-    font-weight:600;
-    color:var(--text-secondary);
-    display:flex;
-    align-items:center;
-    gap:6px;
-}
-.profit-panel-body {
-    padding:12px 14px;
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-}
-.profit-row {
-    display:flex;
-    justify-content:space-between;
-    font-size:.88rem;
-    color:var(--text-secondary);
-}
-.profit-row.profit-net {
-    font-size:.95rem;
-    font-weight:700;
-    color:var(--text);
-    border-top:1px dashed var(--border);
-    padding-top:8px;
-    margin-top:2px;
-}
-
-/* Cost hint under search suggestion */
-.suggestion-item .cost-hint {
-    font-size:.75rem;
-    color:#94a3b8;
-    margin-top:1px;
-}
+.margin-badge { display:inline-block;padding:3px 12px;border-radius:20px;font-size:.8rem;font-weight:600;letter-spacing:.03em; }
+.margin-badge.good { background:#dcfce7;color:#15803d; }
+.margin-badge.med  { background:#fef9c3;color:#92400e; }
+.margin-badge.poor { background:#fee2e2;color:#b91c1c; }
+.profit-panel { border:1px solid var(--border);border-radius:10px;overflow:hidden; }
+.profit-panel-header { background:var(--bg);padding:10px 14px;font-size:.85rem;font-weight:600;color:var(--text-secondary);display:flex;align-items:center;gap:6px; }
+.profit-panel-body { padding:12px 14px;display:flex;flex-direction:column;gap:8px; }
+.profit-row { display:flex;justify-content:space-between;font-size:.88rem;color:var(--text-secondary); }
+.profit-row.profit-net { font-size:.95rem;font-weight:700;color:var(--text);border-top:1px dashed var(--border);padding-top:8px;margin-top:2px; }
+.suggestion-item .cost-hint { font-size:.75rem;color:#94a3b8;margin-top:1px; }
 </style>
 @endpush
 
 @push('scripts')
 <script>
+// ── Pre-loaded sale data ─────────────────────────────────────
+@php
+$existingItems = $sale->items->map(fn($si) => [
+    'id'           => $si->item_id,
+    'name'         => $si->item->name ?? '?',
+    'cost'         => floatval($si->item->purchase_price ?? 0),
+    'price'        => floatval($si->price),
+    'defaultPrice' => floatval($si->price),
+    'qty'          => floatval($si->quantity),
+    'stock'        => floatval($si->item->stock->quantity ?? 0) + floatval($si->quantity),
+    // add back the sold qty so stock shows correctly
+]);
+@endphp
+const existingCartData = @json($existingItems);
+
 // ── Floating dropdown helper ─────────────────────────────────
-// Attaches a fixed-position suggestion popup to any input element,
-// so it always floats above parent overflow/card constraints.
 function makeFloatingDropdown(inputEl, dropEl) {
     document.body.appendChild(dropEl);
-    dropEl.style.cssText = `
-        position:fixed;display:none;z-index:9999;
-        background:#fff;border:1px solid #e2e8f0;
-        border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);
-        overflow-y:auto;max-height:240px;
-    `;
-
+    dropEl.style.cssText = `position:fixed;display:none;z-index:9999;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);overflow-y:auto;max-height:240px;`;
     function position() {
         const r = inputEl.getBoundingClientRect();
         dropEl.style.top   = (r.bottom + 4) + 'px';
         dropEl.style.left  = r.left + 'px';
         dropEl.style.width = r.width + 'px';
     }
-
-    function show(html) {
-        dropEl.innerHTML = html;
-        position();
-        dropEl.style.display = 'block';
-    }
-
-    function hide() {
-        dropEl.style.display = 'none';
-        dropEl.innerHTML = '';
-    }
-
+    function show(html) { dropEl.innerHTML = html; position(); dropEl.style.display = 'block'; }
+    function hide() { dropEl.style.display = 'none'; dropEl.innerHTML = ''; }
     window.addEventListener('scroll', position, true);
     window.addEventListener('resize', position);
     document.addEventListener('click', function(e) {
         if (!inputEl.contains(e.target) && !dropEl.contains(e.target)) hide();
     });
-
     return { show, hide, position };
 }
 
@@ -306,7 +267,7 @@ const prevDueDisplay  = document.getElementById('prevDueDisplay');
 const customerDrop    = document.createElement('div');
 const cDrop           = makeFloatingDropdown(customerSearch, customerDrop);
 let currentPrevDue = 0;
-let prevDuePay     = 0;   // how much of prev due customer will pay this time
+let prevDuePay     = 0;
 
 customerSearch.addEventListener('input', function() {
     const q = this.value.trim().toLowerCase();
@@ -345,58 +306,39 @@ customerSearch.addEventListener('input', function() {
 function selectCustomer(id) {
     const c = allCustomers.find(x => x.id === id);
     if (!c) return;
-
     customerIdInput.value = c.id;
-    // Always show প্রতিষ্ঠান name in the search input
     customerSearch.value  = c.name;
-
-    // Confirmation box below the input
     let html = `<div style="font-weight:700;color:#0d9488;font-size:.9rem">✓ ${c.name}</div>`;
-    if (c.proprietor) {
-        html += `<div style="font-size:.8rem;color:#475569;margin-top:1px">প্রোঃ ${c.proprietor}</div>`;
-    }
-    if (c.phone) {
-        html += `<div style="font-size:.78rem;color:#94a3b8;margin-top:1px">📞 ${c.phone}</div>`;
-    }
-
+    if (c.proprietor) html += `<div style="font-size:.8rem;color:#475569;margin-top:1px">প্রোঃ ${c.proprietor}</div>`;
+    if (c.phone)      html += `<div style="font-size:.78rem;color:#94a3b8;margin-top:1px">📞 ${c.phone}</div>`;
     const due = parseFloat(c.due_amount) || 0;
     if (due > 0) {
-        html += `<div style="margin-top:6px;padding:8px 12px;background:#fee2e2;border:1px solid #fecaca;
-                             border-radius:8px;display:flex;justify-content:space-between;align-items:center">
-                    <span style="color:#991b1b;font-size:.83rem;font-weight:600">
-                        <i class="fas fa-triangle-exclamation"></i> আগের বাকী আছে
-                    </span>
+        html += `<div style="margin-top:6px;padding:8px 12px;background:#fee2e2;border:1px solid #fecaca;border-radius:8px;display:flex;justify-content:space-between;align-items:center">
+                    <span style="color:#991b1b;font-size:.83rem;font-weight:600"><i class="fas fa-triangle-exclamation"></i> আগের বাকী আছে</span>
                     <span style="color:#dc2626;font-size:1rem;font-weight:700">৳ ${due.toLocaleString('en', {minimumFractionDigits:2})}</span>
                  </div>`;
-        // Show due in summary panel
         prevDueDisplay.textContent = '৳ ' + due.toLocaleString('en', {minimumFractionDigits:2});
         prevDueRow.style.display = 'flex';
     } else {
-        html += `<div style="margin-top:6px;padding:6px 12px;background:#dcfce7;border:1px solid #bbf7d0;
-                             border-radius:8px;font-size:.8rem;color:#15803d;font-weight:600">
-                    ✓ কোনো বাকী নেই
-                 </div>`;
+        html += `<div style="margin-top:6px;padding:6px 12px;background:#dcfce7;border:1px solid #bbf7d0;border-radius:8px;font-size:.8rem;color:#15803d;font-weight:600">✓ কোনো বাকী নেই</div>`;
         prevDueRow.style.display = 'none';
         resetPrevDuePay();
     }
-
-    // Reset partial pay input whenever customer changes
     resetPrevDuePay();
     currentPrevDue = due;
-
     customerSelected.innerHTML = html;
     customerSelected.style.display = 'block';
     cDrop.hide();
 }
 
 // ── Items ────────────────────────────────────────────────────
-const allItems = @json($items);
-let cart = [];
+const allItems   = @json($items);
+let cart         = [];
 
-const itemSearch    = document.getElementById('itemSearch');
-const suggestions   = document.getElementById('itemSuggestions');
-const itemsBody     = document.getElementById('itemsBody');
-const profitPanel   = document.getElementById('profitPanel');
+const itemSearch  = document.getElementById('itemSearch');
+const suggestions = document.getElementById('itemSuggestions');
+const itemsBody   = document.getElementById('itemsBody');
+const profitPanel = document.getElementById('profitPanel');
 
 itemSearch.addEventListener('input', function() {
     const q = this.value.toLowerCase().trim();
@@ -407,7 +349,7 @@ itemSearch.addEventListener('input', function() {
         const minQty = i.stock ? parseFloat(i.stock.min_quantity) : 0;
         const stockColor = avail <= 0 ? '#dc2626' : avail <= minQty ? '#d97706' : '#16a34a';
         const stockLabel = avail <= 0 ? '✗ স্টক নেই' : `স্টক: ${avail}`;
-        const dimmed     = avail <= 0 ? 'opacity:.55;cursor:not-allowed' : '';
+        const dimmed = avail <= 0 ? 'opacity:.55;cursor:not-allowed' : '';
         return `<div class="suggestion-item" onclick="addItem(${i.id})" style="${dimmed}">
             <div style="display:flex;justify-content:space-between;align-items:center">
                 <strong>${i.name}</strong>
@@ -422,74 +364,44 @@ itemSearch.addEventListener('input', function() {
 });
 
 function addItem(id) {
-    const item   = allItems.find(i => i.id === id);
+    const item  = allItems.find(i => i.id === id);
     if (!item) return;
-    const avail  = item.stock ? parseFloat(item.stock.quantity) : 0;
-
+    const avail = item.stock ? parseFloat(item.stock.quantity) : 0;
     const existing = cart.find(c => c.id === id);
     if (existing) {
         existing.qty++;
-        // Warn when crossing into over-stock territory
-        if (existing.qty > avail) {
-            showStockToast(`⚠ "${item.name}" — স্টকে মাত্র ${avail} টি আছে, তবে বিক্রয় করা যাবে।`, 'warn');
-        }
+        if (existing.qty > avail) showStockToast(`⚠ "${item.name}" — স্টকে মাত্র ${avail} টি আছে।`, 'warn');
     } else {
-        if (avail <= 0) {
-            showStockToast(`⚠ "${item.name}" — স্টকে কোনো পণ্য নেই, তবে বিক্রয় করা যাবে।`, 'warn');
-        }
-        cart.push({
-            id:           item.id,
-            name:         item.name,
-            cost:         parseFloat(item.purchase_price),
-            price:        parseFloat(item.sale_price),
-            defaultPrice: parseFloat(item.sale_price),
-            qty:          1,
-            stock:        avail
-        });
+        if (avail <= 0) showStockToast(`⚠ "${item.name}" — স্টকে কোনো পণ্য নেই।`, 'warn');
+        cart.push({ id: item.id, name: item.name, cost: parseFloat(item.purchase_price),
+                    price: parseFloat(item.sale_price), defaultPrice: parseFloat(item.sale_price),
+                    qty: 1, stock: avail });
     }
-    suggestions.innerHTML = '';
-    itemSearch.value = '';
+    suggestions.innerHTML = ''; itemSearch.value = '';
     renderCart();
 }
 
-function removeItem(id) {
-    cart = cart.filter(c => c.id !== id);
-    renderCart();
-}
+function removeItem(id) { cart = cart.filter(c => c.id !== id); renderCart(); }
 
 function updateQty(id, val) {
-    const item = cart.find(c => c.id === id);
-    if (!item) return;
-    const newQty = parseFloat(toEnglishDigits(val)) || 0;
-    item.qty = newQty;
-    // Warn if over-stocking
+    const item = cart.find(c => c.id === id); if (!item) return;
+    item.qty = parseFloat(toEnglishDigits(val)) || 0;
     const badge = document.getElementById('stock-badge-' + id);
     if (badge) {
-        if (newQty > item.stock) {
-            badge.textContent  = '⚠ স্টক: ' + item.stock;
-            badge.style.background = '#fef9c3';
-            badge.style.color      = '#92400e';
-        } else {
-            badge.textContent  = 'স্টক: ' + item.stock;
-            badge.style.background = '#dcfce7';
-            badge.style.color      = '#15803d';
-        }
+        if (item.qty > item.stock) { badge.textContent = '⚠ স্টক: ' + item.stock; badge.style.background='#fef9c3'; badge.style.color='#92400e'; }
+        else                       { badge.textContent = 'স্টক: ' + item.stock;   badge.style.background='#dcfce7'; badge.style.color='#15803d'; }
     }
-    updateRowTotal(id);
-    updateSummary();
+    updateRowTotal(id); updateSummary();
 }
 
 function updatePrice(id, val) {
     const item = cart.find(c => c.id === id);
-    if (item) { item.price = parseFloat(toEnglishDigits(val)) || 0; }
-    updateRowTotal(id);
-    updateSummary();
+    if (item) item.price = parseFloat(toEnglishDigits(val)) || 0;
+    updateRowTotal(id); updateSummary();
 }
 
-// Update only the row-total cell — no full re-render, focus stays intact
 function updateRowTotal(id) {
-    const item = cart.find(c => c.id === id);
-    if (!item) return;
+    const item = cart.find(c => c.id === id); if (!item) return;
     const cell = document.getElementById('row-total-' + id);
     if (cell) cell.textContent = '৳ ' + (item.qty * item.price).toFixed(0);
 }
@@ -497,90 +409,74 @@ function updateRowTotal(id) {
 function profitClass(profit, cost) {
     if (cost <= 0) return 'profit-good';
     const pct = profit / cost * 100;
-    if (pct >= 8)  return 'profit-good';
-    if (pct >= 4)  return 'profit-med';
-    return 'profit-poor';
+    return pct >= 8 ? 'profit-good' : pct >= 4 ? 'profit-med' : 'profit-poor';
 }
 
 let profitVisible = false;
-
 function toggleProfitCols() {
     profitVisible = !profitVisible;
-    document.querySelectorAll('.col-secret').forEach(el => {
-        el.style.display = profitVisible ? '' : 'none';
-    });
+    document.querySelectorAll('.col-secret').forEach(el => { el.style.display = profitVisible ? '' : 'none'; });
     document.getElementById('profitToggleIcon').className = profitVisible ? 'fas fa-eye-slash' : 'fas fa-eye';
     document.getElementById('profitToggleText').textContent = profitVisible ? 'লাভ লুকান' : 'লাভ দেখুন';
     if (profitPanel) profitPanel.style.display = profitVisible && cart.length ? 'block' : 'none';
 }
 
-function emptyColspan() {
-    return profitVisible ? 7 : 5;
-}
+function emptyColspan() { return profitVisible ? 7 : 5; }
 
 function renderCart() {
     if (!cart.length) {
         itemsBody.innerHTML = `<tr><td colspan="${emptyColspan()}" class="empty-row">কোনো আইটেম যোগ করা হয়নি</td></tr>`;
         if (profitPanel) profitPanel.style.display = 'none';
-        updateSummary();
-        return;
+        updateSummary(); return;
     }
-
     itemsBody.innerHTML = cart.map((c, idx) => {
         const profitPerUnit = c.price - c.cost;
-        const pClass        = profitClass(profitPerUnit, c.cost);
-        const profitStr     = (profitPerUnit >= 0 ? '+' : '') + '৳' + profitPerUnit.toFixed(0);
+        const pClass = profitClass(profitPerUnit, c.cost);
+        const profitStr = (profitPerUnit >= 0 ? '+' : '') + '৳' + profitPerUnit.toFixed(0);
         const secretDisplay = profitVisible ? '' : 'display:none';
-
-        const overStock  = c.qty > c.stock;
-        const stockBg    = overStock ? '#fef9c3' : '#dcfce7';
-        const stockClr   = overStock ? '#92400e' : '#15803d';
-        const stockTxt   = (overStock ? '⚠ স্টক: ' : 'স্টক: ') + (c.stock ?? '?');
-
+        const overStock = c.qty > c.stock;
+        const stockBg  = overStock ? '#fef9c3' : '#dcfce7';
+        const stockClr = overStock ? '#92400e' : '#15803d';
+        const stockTxt = (overStock ? '⚠ স্টক: ' : 'স্টক: ') + (c.stock ?? '?');
         return `<tr>
             <td>
-                ${c.name}
-                <br><span id="stock-badge-${c.id}" style="font-size:.72rem;font-weight:700;background:${stockBg};color:${stockClr};padding:1px 7px;border-radius:20px;display:inline-block;margin-top:2px">${stockTxt}</span>
+                ${c.name}<br>
+                <span id="stock-badge-${c.id}" style="font-size:.72rem;font-weight:700;background:${stockBg};color:${stockClr};padding:1px 7px;border-radius:20px;display:inline-block;margin-top:2px">${stockTxt}</span>
                 <input type="hidden" name="items[${idx}][id]" value="${c.id}">
             </td>
-            <td>
-                <input type="text" inputmode="decimal" name="items[${idx}][qty]" value="${c.qty}"
-                    style="width:70px"
-                    oninput="updateQty(${c.id},this.value)" class="inline-input">
-            </td>
+            <td><input type="text" inputmode="decimal" name="items[${idx}][qty]" value="${c.qty}" style="width:70px" oninput="updateQty(${c.id},this.value)" class="inline-input"></td>
             <td class="col-secret" style="color:#94a3b8;font-size:.88rem;${secretDisplay}">৳ ${c.cost.toLocaleString()}</td>
-            <td>
-                <input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.price}"
-                    style="width:100px"
-                    oninput="updatePrice(${c.id},this.value)" class="inline-input">
-            </td>
+            <td><input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.price}" style="width:100px" oninput="updatePrice(${c.id},this.value)" class="inline-input"></td>
             <td class="col-secret ${pClass}" style="${secretDisplay}">${profitStr}</td>
             <td id="row-total-${c.id}">৳ ${(c.qty * c.price).toFixed(0)}</td>
             <td><button type="button" onclick="removeItem(${c.id})" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button></td>
         </tr>`;
     }).join('');
-
     if (profitPanel) profitPanel.style.display = profitVisible ? 'block' : 'none';
-    // Re-attach Bengali converter to newly rendered inputs
     if (typeof attachBengaliConverter === 'function') attachBengaliConverter(itemsBody);
     updateSummary();
 }
 
+function getNet() {
+    return Math.max(0,
+        cart.reduce((s, c) => s + c.qty * c.price, 0)
+        - (parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0)
+    );
+}
+
 function updateSummary() {
-    const total    = cart.reduce((s, c) => s + c.qty * c.price, 0);
-    const totalCost= cart.reduce((s, c) => s + c.qty * c.cost,  0);
-    const discount = parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0;
-    const net      = Math.max(0, total - discount);
-    const paid     = parseFloat(toEnglishDigits(document.getElementById('paidInput').value)) || 0;
-    const due      = Math.max(0, net - paid);
-    const profit   = net - totalCost;
-    const marginPct= totalCost > 0 ? (profit / totalCost * 100) : 0;
+    const total     = cart.reduce((s, c) => s + c.qty * c.price, 0);
+    const totalCost = cart.reduce((s, c) => s + c.qty * c.cost,  0);
+    const discount  = parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0;
+    const net       = Math.max(0, total - discount);
+    const paid      = parseFloat(toEnglishDigits(document.getElementById('paidInput').value)) || 0;
+    const due       = Math.max(0, net - paid);
+    const profit    = net - totalCost;
+    const marginPct = totalCost > 0 ? (profit / totalCost * 100) : 0;
 
     document.getElementById('totalDisplay').textContent   = '৳ ' + total.toFixed(2);
     document.getElementById('netDisplay').textContent     = '৳ ' + net.toFixed(2);
     document.getElementById('dueDisplay').textContent     = '৳ ' + due.toFixed(2);
-
-    // profit panel
     document.getElementById('costDisplay').textContent    = '৳ ' + totalCost.toFixed(2);
     document.getElementById('revenueDisplay').textContent = '৳ ' + net.toFixed(2);
     document.getElementById('profitDisplay').textContent  = (profit >= 0 ? '+' : '') + '৳ ' + profit.toFixed(2);
@@ -590,96 +486,60 @@ function updateSummary() {
     const pctEl = document.getElementById('marginPct');
     if (cart.length) {
         pctEl.textContent = `(${marginPct >= 0 ? '+' : ''}${marginPct.toFixed(1)}%)`;
-        if (marginPct >= 8)      { badge.textContent = '✓ ভালো লাভ';    badge.className = 'margin-badge good'; }
-        else if (marginPct >= 4) { badge.textContent = '~ মধ্যম লাভ';   badge.className = 'margin-badge med';  }
-        else if (marginPct >= 0) { badge.textContent = '↓ কম লাভ';      badge.className = 'margin-badge poor'; }
-        else                     { badge.textContent = '✗ লোকসান';       badge.className = 'margin-badge poor'; }
+        if (marginPct >= 8)      { badge.textContent = '✓ ভালো লাভ';  badge.className = 'margin-badge good'; }
+        else if (marginPct >= 4) { badge.textContent = '~ মধ্যম লাভ'; badge.className = 'margin-badge med'; }
+        else if (marginPct >= 0) { badge.textContent = '↓ কম লাভ';    badge.className = 'margin-badge poor'; }
+        else                     { badge.textContent = '✗ লোকসান';     badge.className = 'margin-badge poor'; }
     }
 }
 
 document.getElementById('discountInput').addEventListener('input', function() {
-    // Re-sync paid if prev-due partial is active
-    if (prevDuePay > 0) {
-        document.getElementById('paidInput').value = (getNet() + prevDuePay).toFixed(0);
-    }
+    if (prevDuePay > 0) document.getElementById('paidInput').value = (getNet() + prevDuePay).toFixed(0);
     updateSummary();
 });
 document.getElementById('paidInput').addEventListener('input', updateSummary);
-
-// Ensure paid_amount always has a numeric value before submit
 document.getElementById('paidInput').addEventListener('blur', function() {
     if (this.value.trim() === '') this.value = '0';
 });
-
-function getNet() {
-    return Math.max(0,
-        cart.reduce((s, c) => s + c.qty * c.price, 0)
-        - (parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0)
-    );
-}
 
 function setFullPay() {
     document.getElementById('paidInput').value = (getNet() + prevDuePay).toFixed(0);
     updateSummary();
 }
-
-// Called when prev-due partial input changes
 function onPrevDuePayChange() {
     const raw = parseFloat(toEnglishDigits(document.getElementById('prevDuePayInput').value)) || 0;
     prevDuePay = Math.min(Math.max(0, raw), currentPrevDue);
     document.getElementById('paidInput').value = (getNet() + prevDuePay).toFixed(0);
     updateSummary();
 }
-
-// Fill partial input with full due amount
 function setFullPrevDuePay() {
     document.getElementById('prevDuePayInput').value = currentPrevDue.toFixed(0);
     onPrevDuePayChange();
 }
-
-// Reset partial due pay (on customer clear / customer change)
 function resetPrevDuePay() {
     prevDuePay = 0;
     const inp = document.getElementById('prevDuePayInput');
     if (inp) inp.value = '0';
-    // Remove prev due contribution from paid (keep only net)
     document.getElementById('paidInput').value = getNet().toFixed(0);
     updateSummary();
 }
 
+// ── Submit validation ────────────────────────────────────────
 let _stockConfirmPending = false;
 document.getElementById('saleForm').addEventListener('submit', function(e) {
-    // Ensure paid_amount is numeric (never empty)
-    const paidEl     = document.getElementById('paidInput');
+    const paidEl      = document.getElementById('paidInput');
     if (paidEl.value.trim() === '') paidEl.value = '0';
+    const hasItems    = cart.length > 0;
+    const hasCustomer = !!customerIdInput.value;
+    const paid        = parseFloat(toEnglishDigits(paidEl.value)) || 0;
+    const net         = getNet();
 
-    const hasItems   = cart.length > 0;
-    const hasCustomer= !!document.getElementById('customerIdInput').value;
-    const paid       = parseFloat(toEnglishDigits(paidEl.value)) || 0;
-    const net        = cart.reduce((s, c) => s + c.qty * c.price, 0)
-                       - (parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0);
-
-    // No items: require customer + paid amount
     if (!hasItems) {
-        if (!hasCustomer) {
-            e.preventDefault();
-            showStockToast('আইটেম ছাড়া বিক্রয়ে কাস্টমার নির্বাচন আবশ্যক!', 'error');
-            document.getElementById('customerSearch').focus();
-            return;
-        }
-        if (paid <= 0) {
-            e.preventDefault();
-            showStockToast('পরিশোধের পরিমাণ লিখুন!', 'error');
-            paidEl.focus();
-            return;
-        }
-        // allow submit — payment-only sale
+        if (!hasCustomer) { e.preventDefault(); showStockToast('আইটেম ছাড়া বিক্রয়ে কাস্টমার নির্বাচন আবশ্যক!', 'error'); customerSearch.focus(); return; }
+        if (paid <= 0)    { e.preventDefault(); showStockToast('পরিশোধের পরিমাণ লিখুন!', 'error'); paidEl.focus(); return; }
         return;
     }
-
-    // Walk-in: full payment required
-    const noCustomer = !hasCustomer;
-    if (noCustomer && paid < net) {
+    if (!hasCustomer && paid < net) {
         e.preventDefault();
         document.getElementById('walkinWarning').style.display = 'block';
         paidEl.focus();
@@ -693,56 +553,24 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
     if (overItems.length) {
         e.preventDefault();
         const lines = overItems.map(c => `• ${c.name} (চাহিদা: ${c.qty}, স্টক: ${c.stock})`).join('\n');
-        showStockConfirm(lines, () => {
-            _stockConfirmPending = true;
-            document.getElementById('saleForm').requestSubmit();
-        });
+        showStockConfirm(lines, () => { _stockConfirmPending = true; document.getElementById('saleForm').requestSubmit(); });
     }
 });
 
-// ── Stock over-stock confirm dialog ─────────────────────────
+// ── Stock confirm dialog ─────────────────────────────────────
 function showStockConfirm(details, onConfirm) {
     let d = document.getElementById('stockConfirmDialog');
     if (!d) {
-        d = document.createElement('div');
-        d.id = 'stockConfirmDialog';
-        d.style.cssText = `
-            position:fixed;inset:0;z-index:99998;
-            background:rgba(0,0,0,.45);display:flex;
-            align-items:center;justify-content:center;
-        `;
-        d.innerHTML = `
-            <div style="background:#fff;border-radius:14px;padding:28px 26px;
-                        max-width:400px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.25)">
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-                    <div style="width:40px;height:40px;border-radius:50%;background:#fef9c3;
-                                color:#92400e;display:flex;align-items:center;justify-content:center;
-                                font-size:1.2rem;flex-shrink:0">⚠</div>
-                    <h3 style="font-size:1rem;color:#0f172a">স্টক অপর্যাপ্ত</h3>
-                </div>
-                <p style="font-size:.86rem;color:#475569;margin-bottom:10px">
-                    নিচের পণ্যগুলোর চাহিদা স্টকের বেশি:
-                </p>
-                <pre id="stockConfirmLines" style="font-size:.83rem;color:#92400e;
-                    background:#fef9c3;border:1px solid #fde68a;border-radius:8px;
-                    padding:10px 12px;white-space:pre-wrap;margin-bottom:16px;
-                    font-family:inherit"></pre>
-                <p style="font-size:.84rem;color:#64748b;margin-bottom:20px">
-                    তবুও কি বিক্রয় সম্পন্ন করবেন? স্টক মাইনাস (-) হবে।
-                </p>
-                <div style="display:flex;gap:10px;justify-content:flex-end">
-                    <button id="stockConfirmCancel"
-                        style="padding:9px 20px;border-radius:8px;border:1.5px solid #e2e8f0;
-                               background:#fff;cursor:pointer;font-size:.88rem;font-weight:600;color:#475569">
-                        বাতিল
-                    </button>
-                    <button id="stockConfirmOk"
-                        style="padding:9px 20px;border-radius:8px;border:none;
-                               background:#d97706;color:#fff;cursor:pointer;font-size:.88rem;font-weight:600">
-                        হ্যাঁ, বিক্রয় করুন
-                    </button>
-                </div>
-            </div>`;
+        d = document.createElement('div'); d.id = 'stockConfirmDialog';
+        d.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;';
+        d.innerHTML = `<div style="background:#fff;border-radius:14px;padding:28px 26px;max-width:400px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+            <h3 style="font-size:1rem;color:#0f172a;margin-bottom:12px">⚠ স্টক অপর্যাপ্ত</h3>
+            <pre id="stockConfirmLines" style="font-size:.83rem;color:#92400e;background:#fef9c3;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;white-space:pre-wrap;margin-bottom:16px;font-family:inherit"></pre>
+            <p style="font-size:.84rem;color:#64748b;margin-bottom:20px">তবুও কি সংশোধন সম্পন্ন করবেন? স্টক মাইনাস (-) হবে।</p>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button id="stockConfirmCancel" style="padding:9px 20px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;font-size:.88rem;font-weight:600;color:#475569">বাতিল</button>
+                <button id="stockConfirmOk" style="padding:9px 20px;border-radius:8px;border:none;background:#d97706;color:#fff;cursor:pointer;font-size:.88rem;font-weight:600">হ্যাঁ, সংশোধন করুন</button>
+            </div></div>`;
         document.body.appendChild(d);
     }
     document.getElementById('stockConfirmLines').textContent = details;
@@ -751,38 +579,42 @@ function showStockConfirm(details, onConfirm) {
     document.getElementById('stockConfirmOk').onclick    = () => { d.style.display = 'none'; onConfirm(); };
 }
 
-// ── Stock alert toast ────────────────────────────────────────
 function showStockToast(msg, type) {
     let t = document.getElementById('stockToast');
     if (!t) {
-        t = document.createElement('div');
-        t.id = 'stockToast';
-        t.style.cssText = `
-            position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);
-            z-index:99999;padding:12px 22px;border-radius:10px;
-            font-size:.88rem;font-weight:600;
-            box-shadow:0 8px 24px rgba(0,0,0,.18);
-            max-width:380px;text-align:center;white-space:pre-line;
-            opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;
-        `;
+        t = document.createElement('div'); t.id = 'stockToast';
+        t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);z-index:99999;padding:12px 22px;border-radius:10px;font-size:.88rem;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.18);max-width:380px;text-align:center;white-space:pre-line;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;';
         document.body.appendChild(t);
     }
     clearTimeout(t._timer);
     t.textContent = msg;
-    if (type === 'error') {
-        t.style.background = '#dc2626'; t.style.color = '#fff'; t.style.border = 'none';
-    } else if (type === 'ok') {
-        t.style.background = '#dcfce7'; t.style.color = '#15803d'; t.style.border = '1px solid #bbf7d0';
-    } else {
-        t.style.background = '#fef9c3'; t.style.color = '#92400e'; t.style.border = '1px solid #fde68a';
-    }
-    t.style.opacity   = '1';
-    t.style.transform = 'translateX(-50%) translateY(0)';
-    t._timer = setTimeout(() => {
-        t.style.opacity   = '0';
-        t.style.transform = 'translateX(-50%) translateY(20px)';
-    }, 3500);
+    if (type === 'error') { t.style.background='#dc2626'; t.style.color='#fff'; t.style.border='none'; }
+    else { t.style.background='#fef9c3'; t.style.color='#92400e'; t.style.border='1px solid #fde68a'; }
+    t.style.opacity='1'; t.style.transform='translateX(-50%) translateY(0)';
+    t._timer = setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)'; }, 3500);
 }
+
+// ── Initialise cart from existing sale items ─────────────────
+(function initCart() {
+    cart = existingCartData.map(d => ({ ...d }));
+    renderCart();
+
+    // Re-set paid to original value after renderCart resets it
+    document.getElementById('paidInput').value = '{{ $sale->paid_amount }}';
+    updateSummary();
+
+    // Pre-select customer info display
+    @if($sale->customer_id)
+    const preCust = allCustomers.find(c => c.id == {{ $sale->customer_id }});
+    if (preCust) {
+        let html = `<div style="font-weight:700;color:#0d9488;font-size:.9rem">✓ ${preCust.name}</div>`;
+        if (preCust.proprietor) html += `<div style="font-size:.8rem;color:#475569;margin-top:1px">প্রোঃ ${preCust.proprietor}</div>`;
+        if (preCust.phone)      html += `<div style="font-size:.78rem;color:#94a3b8;margin-top:1px">📞 ${preCust.phone}</div>`;
+        customerSelected.innerHTML = html;
+        customerSelected.style.display = 'block';
+    }
+    @endif
+})();
 </script>
 @endpush
 @endsection

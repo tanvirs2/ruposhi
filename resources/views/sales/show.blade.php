@@ -13,6 +13,9 @@
 <div class="form-actions no-print" style="max-width:720px;margin-bottom:16px">
     <a href="{{ route('sales.index') }}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> বিক্রয় তালিকা</a>
     <button onclick="window.print()" class="btn btn-primary"><i class="fas fa-print"></i> প্রিন্ট / PDF</button>
+    <a href="{{ route('sales.edit', $sale) }}" class="btn" style="background:#fef9c3;color:#92400e;border:1px solid #fde68a">
+        <i class="fas fa-pen-to-square"></i> সংশোধন করুন
+    </a>
     <form method="POST" action="{{ route('sales.destroy', $sale) }}" style="margin-left:auto"
         onsubmit="return confirm('এই বিক্রয় মুছলে স্টক ফেরত আসবে। নিশ্চিত?')">
         @csrf @method('DELETE')
@@ -25,7 +28,16 @@
 <div class="cash-memo" id="cashMemo">
 
     {{-- ── STORE HEADER ─────────────────────────────────────────── --}}
-    <div class="memo-title-top">ক্যাশ মেমো</div>
+    <div class="memo-title-top">
+        ক্যাশ মেমো
+        @if($sale->is_edited)
+        <span style="display:inline-block;margin-left:8px;background:#fef9c3;color:#92400e;
+                     border:1px solid #fde68a;border-radius:20px;padding:1px 10px;
+                     font-size:.72rem;font-weight:700;vertical-align:middle;letter-spacing:.04em">
+            ✎ সংশোধিত
+        </span>
+        @endif
+    </div>
 
     <div class="memo-header">
         {{-- Left: store name + badge + tagline + address --}}
@@ -148,6 +160,13 @@
 
     @if($sale->notes)
     <div style="margin-top:8px;font-size:.8rem;color:#555">মন্তব্যঃ {{ $sale->notes }}</div>
+    @endif
+    @if($sale->is_edited)
+    <div style="margin-top:8px;padding:7px 12px;background:#fef9c3;border:1px dashed #fde68a;
+                border-radius:6px;font-size:.8rem;color:#92400e">
+        <strong>✎ সংশোধনের কারণঃ</strong>
+        {{ $sale->edit_note ?: 'উল্লেখ করা হয়নি' }}
+    </div>
     @endif
 </div>
 @endsection

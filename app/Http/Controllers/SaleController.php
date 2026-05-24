@@ -122,6 +122,106 @@ class SaleController extends Controller
         return view('sales.show', compact('sale', 'store'));
     }
 
+    public function edit(Sale $sale)
+    {
+        $sale->load('items.item', 'customer');
+        $customers      = Customer::orderBy('name')->get();
+        $items          = Item::with('stock')->orderBy('name')->get();
+        $paymentMethods = StoreConfigController::getGroupedPaymentMethods();
+        return view('sales.edit', compact('sale', 'customers', 'items', 'paymentMethods'));
+    }
+
+    public function update(Request $request, Sale $sale)
+    {
+        $request->validate([
+            'sale_date'    => 'required|date',
+            'items'        => 'nullable|array',
+            'items.*.id'   => 'required_with:items|exists:items,id',
+            'items.*.qty'  => 'required_with:items|numeric|min:0.01',
+            'items.*.price'=> 'required_with:items|numeric|min:0',
+            'paid_amount'  => 'required|numeric|min:0',
+        ]);
+
+        if (empty($request->items) && !$request->customer_id) {
+            return back()->withErrors(['customer_id' => 'আইটেম ছাড়া বিক্রয়ে কাস্টমার নির্বাচন আবশ্যক।'])->withInput();
+        }
+
+        DB::transaction(function () use ($request, $sale) {
+            // ── 1. Restore old stock ────────────────────────────────
+            foreach ($sale->items as $oldItem) {
+                Stock::where('item_id', $oldItem->item_id)->increment('quantity', $oldItem->quantity);
+            }
+
+            // ── 2. Reverse old customer due effect ──────────────────
+            if ($sale->customer_id) {
+                $oldCustomer = Customer::find($sale->customer_id);
+                if ($sale->due_amount > 0) {
+                    $oldCustomer->due_amount = max(0, $oldCustomer->due_amount - $sale->due_amount);
+                } else {
+                    $excess = $sale->paid_amount - $sale->total_amount;
+                    if ($excess > 0) $oldCustomer->due_amount += $excess;
+                }
+                $oldCustomer->save();
+            }
+
+            // ── 3. Delete old sale items ────────────────────────────
+            $sale->items()->delete();
+
+            // ── 4. Calculate new totals ─────────────────────────────
+            $total    = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
+            $discount = $request->discount ?? 0;
+            $net      = $total - $discount;
+            $due      = max(0, $net - $request->paid_amount);
+
+            // ── 5. Capture previous_due AFTER reversing old effects ─
+            $previousDue = $request->customer_id
+                ? Customer::find($request->customer_id)->due_amount
+                : 0;
+
+            // ── 6. Update the sale record ───────────────────────────
+            $sale->update([
+                'customer_id'    => $request->customer_id ?: null,
+                'total_amount'   => $net,
+                'discount'       => $discount,
+                'paid_amount'    => $request->paid_amount,
+                'due_amount'     => $due,
+                'previous_due'   => $previousDue,
+                'status'         => $request->status ?? 'completed',
+                'payment_method' => $request->payment_method ?? 'নগদ',
+                'notes'          => $request->notes,
+                'sale_date'      => $request->sale_date,
+                'is_edited'      => true,
+                'edit_note'      => $request->edit_note,
+            ]);
+
+            // ── 7. Create new items & decrement stock ───────────────
+            foreach ($request->items ?? [] as $row) {
+                SaleItem::create([
+                    'sale_id'  => $sale->id,
+                    'item_id'  => $row['id'],
+                    'quantity' => $row['qty'],
+                    'price'    => $row['price'],
+                    'subtotal' => $row['qty'] * $row['price'],
+                ]);
+                Stock::where('item_id', $row['id'])->decrement('quantity', $row['qty']);
+            }
+
+            // ── 8. Apply new customer due effect ────────────────────
+            if ($request->customer_id) {
+                $customer = Customer::find($request->customer_id);
+                if ($due > 0) {
+                    $customer->increment('due_amount', $due);
+                } else {
+                    $excess = $request->paid_amount - $net;
+                    $newDue = max(0, $customer->due_amount - $excess);
+                    $customer->update(['due_amount' => $newDue]);
+                }
+            }
+        });
+
+        return redirect()->route('sales.show', $sale)->with('success', 'বিক্রয় সফলভাবে সংশোধন করা হয়েছে।');
+    }
+
     public function destroy(Sale $sale)
     {
         DB::transaction(function () use ($sale) {
