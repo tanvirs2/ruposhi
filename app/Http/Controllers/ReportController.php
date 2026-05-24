@@ -420,7 +420,7 @@ class ReportController extends Controller
             $row->profit   = $row->revenue - $row->cost - $row->expenses;
         }
 
-        // ── Item-wise profit breakdown ────────────────────────────
+        // ── Item-wise profit breakdown (aggregated) ───────────────
         $itemBreakdown = DB::table('sale_items')
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
@@ -436,13 +436,32 @@ class ReportController extends Controller
             ->orderByDesc('profit')
             ->get();
 
+        // ── Daily detail rows (one row per sale item) ─────────────
+        $dailyDetail = DB::table('sale_items')
+            ->join('items', 'sale_items.item_id', '=', 'items.id')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->whereBetween('sales.sale_date', [$from, $to])
+            ->selectRaw('
+                sales.sale_date,
+                sales.id as sale_id,
+                items.name,
+                sale_items.quantity as qty,
+                sale_items.price as unit_price,
+                sale_items.subtotal as revenue,
+                items.purchase_price,
+                (sale_items.price - items.purchase_price) * sale_items.quantity as profit
+            ')
+            ->orderBy('sales.sale_date')
+            ->orderBy('sales.id')
+            ->get();
+
         return view('reports.profit-loss', compact(
             'from', 'to',
             'grossSales', 'discounts', 'netRevenue',
             'cogs', 'grossProfit', 'grossMargin',
             'expenseCategories', 'totalExpenses',
             'netProfit', 'netMargin',
-            'monthly', 'itemBreakdown'
+            'monthly', 'itemBreakdown', 'dailyDetail'
         ));
     }
 

@@ -216,9 +216,63 @@
 </div>
 @endif
 
+{{-- ── Daily Detail Table (old-style per-row breakdown) ───────── --}}
+<div class="card" style="margin-top:24px">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+        <h3><i class="fas fa-table-list"></i> বিক্রয় বিস্তারিত (তারিখ অনুযায়ী)</h3>
+        <span style="font-size:.8rem;color:#94a3b8">মোট {{ count($dailyDetail) }} টি লাইন আইটেম</span>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table pl-item-table">
+            <thead>
+                <tr>
+                    <th style="text-align:center;width:44px">#</th>
+                    <th style="width:110px">বিক্রয় তারিখ</th>
+                    <th>আইটেম নাম</th>
+                    <th style="text-align:right;width:90px">বিক্রীর পরিমাণ</th>
+                    <th style="text-align:right;width:120px">বিক্রয় মূল্য (৳)</th>
+                    <th style="text-align:right;width:110px">লাভ (৳)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($dailyDetail as $i => $row)
+                @php
+                    $profit = floatval($row->profit);
+                    $cls    = $profit >= 0 ? 'profit-good' : 'profit-poor';
+                @endphp
+                <tr>
+                    <td style="text-align:center;color:#94a3b8">{{ $i + 1 }}</td>
+                    <td style="color:#64748b;font-size:.82rem">{{ $row->sale_date }}</td>
+                    <td>{{ $row->name }}</td>
+                    <td style="text-align:right">{{ number_format($row->qty, 0) }}</td>
+                    <td style="text-align:right">{{ number_format($row->unit_price, 0) }}</td>
+                    <td style="text-align:right" class="{{ $cls }}">
+                        {{ $profit >= 0 ? '+' : '' }}{{ number_format($profit, 0) }}
+                    </td>
+                </tr>
+                @empty
+                <tr><td colspan="6" class="empty-row">এই সময়কালে কোনো বিক্রয় নেই</td></tr>
+                @endforelse
+            </tbody>
+            @if(count($dailyDetail))
+            <tfoot>
+                <tr style="font-weight:700;background:var(--bg)">
+                    <td colspan="3">মোট</td>
+                    <td style="text-align:right">{{ number_format($dailyDetail->sum('qty'), 0) }}</td>
+                    <td style="text-align:right">—</td>
+                    <td style="text-align:right" class="{{ $grossProfit >= 0 ? 'profit-good' : 'profit-poor' }}">
+                        {{ $grossProfit >= 0 ? '+' : '' }}{{ number_format($grossProfit, 0) }}
+                    </td>
+                </tr>
+            </tfoot>
+            @endif
+        </table>
+    </div>
+</div>
+
 {{-- ── Item-wise Profit Breakdown ──────────────────────────────── --}}
 <div class="card" style="margin-top:24px">
-    <div class="card-header"><h3><i class="fas fa-boxes-stacked"></i> পণ্যভিত্তিক লাভ-লোকসান</h3></div>
+    <div class="card-header"><h3><i class="fas fa-boxes-stacked"></i> পণ্যভিত্তিক লাভ-লোকসান (সারসংক্ষেপ)</h3></div>
     <div class="table-wrap">
         <table class="data-table pl-item-table">
             <colgroup>
