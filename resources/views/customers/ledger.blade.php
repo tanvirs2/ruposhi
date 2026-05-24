@@ -151,8 +151,8 @@
                         @php
                             $dt = \Carbon\Carbon::parse($row['datetime']);
                         @endphp
-                        {{ $dt->format('Y-m-d') }}
-                        <span class="cl-time">· {{ $dt->format('h:i:s a') }}</span>
+                        <div>{{ $dt->format('Y-m-d') }}</div>
+                        <div class="cl-time">· {{ $dt->format('h:i:s a') }}</div>
                     </td>
                     <td>
                         @if($row['type'] === 'payment')
