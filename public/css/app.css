@@ -1062,9 +1062,10 @@ a { text-decoration: none; color: inherit; }
 }
 .nav-item.nav-child:hover { color: #fff; background: rgba(255,255,255,.07); }
 .nav-item.nav-child.active {
-    background: rgba(79,70,229,.55);
+    background: var(--accent);
     color: #fff;
-    box-shadow: none;
+    box-shadow: inset 3px 0 0 #fff;
+    font-weight: 600;
 }
 .nav-item.nav-child .nav-icon { font-size: 0.78rem; width: 16px; }
 
