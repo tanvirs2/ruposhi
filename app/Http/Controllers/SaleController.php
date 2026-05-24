@@ -38,15 +38,24 @@ class SaleController extends Controller
     {
         $request->validate([
             'sale_date'    => 'required|date',
-            'items'        => 'required|array|min:1',
-            'items.*.id'   => 'required|exists:items,id',
-            'items.*.qty'  => 'required|numeric|min:0.01',
-            'items.*.price'=> 'required|numeric|min:0',
+            'items'        => 'nullable|array',
+            'items.*.id'   => 'required_with:items|exists:items,id',
+            'items.*.qty'  => 'required_with:items|numeric|min:0.01',
+            'items.*.price'=> 'required_with:items|numeric|min:0',
             'paid_amount'  => 'required|numeric|min:0',
         ]);
 
-        DB::transaction(function () use ($request) {
-            $total    = collect($request->items)->sum(fn($i) => $i['qty'] * $i['price']);
+        // Payment-only sale (no items): customer required
+        if (empty($request->items) && !$request->customer_id) {
+            return back()->withErrors(['customer_id' => 'আইটেম ছাড়া বিক্রয়ে কাস্টমার নির্বাচন আবশ্যক।'])->withInput();
+        }
+        if (empty($request->items) && (!$request->paid_amount || $request->paid_amount <= 0)) {
+            return back()->withErrors(['paid_amount' => 'পরিশোধের পরিমাণ লিখুন।'])->withInput();
+        }
+
+        $sale = null;
+        DB::transaction(function () use ($request, &$sale) {
+            $total    = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
             $discount = $request->discount ?? 0;
             $net      = $total - $discount;
             $due      = max(0, $net - $request->paid_amount);
@@ -70,7 +79,7 @@ class SaleController extends Controller
                 'sale_date'    => $request->sale_date,
             ]);
 
-            foreach ($request->items as $row) {
+            foreach ($request->items ?? [] as $row) {
                 SaleItem::create([
                     'sale_id'  => $sale->id,
                     'item_id'  => $row['id'],
@@ -96,7 +105,7 @@ class SaleController extends Controller
             }
         });
 
-        return redirect()->route('sales.index')->with('success', 'বিক্রয় সফলভাবে সম্পন্ন হয়েছে।');
+        return redirect()->route('sales.show', $sale)->with('success', 'বিক্রয় সফলভাবে সম্পন্ন হয়েছে।');
     }
 
     public function show(Sale $sale)

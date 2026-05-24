@@ -40,22 +40,41 @@ class CustomerPaymentController extends Controller
             'payment_method' => 'required|string',
         ]);
 
-        DB::transaction(function () use ($request) {
-            CustomerPayment::create([
+        $payment = null;
+        DB::transaction(function () use ($request, &$payment) {
+            // Capture due before payment
+            $cust        = Customer::find($request->customer_id);
+            $previousDue = $cust->due_amount;
+
+            $payment = CustomerPayment::create([
                 'customer_id'    => $request->customer_id,
                 'user_id'        => auth()->id(),
                 'amount'         => $request->amount,
                 'payment_date'   => $request->payment_date,
                 'payment_method' => $request->payment_method,
                 'notes'          => $request->notes,
+                'previous_due'   => $previousDue,
             ]);
 
             // Reduce customer's due — never below 0
-            $cust = Customer::find($request->customer_id);
-            $cust->update(['due_amount' => max(0, $cust->due_amount - $request->amount)]);
+            $cust->update(['due_amount' => max(0, $previousDue - $request->amount)]);
         });
 
-        return redirect()->route('customer-payments.index')->with('success', 'পরিশোধ সফলভাবে রেকর্ড হয়েছে।');
+        return redirect()->route('customer-payments.show', $payment)->with('success', 'পরিশোধ সফলভাবে রেকর্ড হয়েছে।');
+    }
+
+    public function show(CustomerPayment $customerPayment)
+    {
+        $customerPayment->load('customer', 'user');
+        $store = [
+            'name'    => \App\Models\StoreConfig::get('store_name',    'আমার চালের দোকান'),
+            'owner'   => \App\Models\StoreConfig::get('store_owner',   ''),
+            'tagline' => \App\Models\StoreConfig::get('store_tagline', ''),
+            'phone'   => \App\Models\StoreConfig::get('store_phone',   ''),
+            'phone2'  => \App\Models\StoreConfig::get('store_phone2',  ''),
+            'address' => \App\Models\StoreConfig::get('store_address', ''),
+        ];
+        return view('customer-payments.show', compact('customerPayment', 'store'));
     }
 
     public function destroy(CustomerPayment $customerPayment)

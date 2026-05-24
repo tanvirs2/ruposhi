@@ -11,7 +11,7 @@
 
 {{-- Action buttons (no-print) --}}
 <div class="form-actions no-print" style="max-width:720px;margin-bottom:16px">
-    <a href="{{ route('sales.index') }}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> ফিরে যান</a>
+    <a href="{{ route('sales.index') }}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> বিক্রয় তালিকা</a>
     <button onclick="window.print()" class="btn btn-primary"><i class="fas fa-print"></i> প্রিন্ট / PDF</button>
     <form method="POST" action="{{ route('sales.destroy', $sale) }}" style="margin-left:auto"
         onsubmit="return confirm('এই বিক্রয় মুছলে স্টক ফেরত আসবে। নিশ্চিত?')">
@@ -84,7 +84,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($sale->items as $si)
+            @forelse($sale->items as $si)
             @php
                 preg_match('/(৫০|২৫|50|25)\s*(কেজি|kg)/ui', $si->item->name, $m);
                 $kg = isset($m[1]) ? str_replace(['৫০','২৫'],['50','25'], $m[1]) : '';
@@ -96,14 +96,22 @@
                 <td class="tr">{{ number_format($si->price, 0) }}</td>
                 <td class="tr">{{ number_format($si->subtotal, 0) }}</td>
             </tr>
-            @endforeach
+            @empty
+            <tr>
+                <td colspan="5" style="text-align:center;padding:14px 8px;color:#64748b;font-style:italic;font-size:.85rem">
+                    — শুধু বাকী পরিশোধ (কোনো পণ্য নেই) —
+                </td>
+            </tr>
+            @endforelse
         </tbody>
 
         {{-- ── TOTALS (same table, continues border) ───────────── --}}
         <tfoot>
+            @if($sale->items->count() > 0)
             <tr class="tfoot-qty">
                 <td colspan="5">মোট &nbsp;<strong>{{ (int)$totalQty }}</strong></td>
             </tr>
+            @endif
             @if($sale->discount > 0)
             <tr class="tfoot-row">
                 <td colspan="4" class="tfoot-label">ছাড়</td>

@@ -71,7 +71,10 @@ html[data-theme="dark"] input[type="date"] {
 /* table head */
 html[data-theme="dark"] .data-table thead th {
     background: var(--surface-2);
-    border-bottom-color: var(--border);
+    border-color: var(--border);
+}
+html[data-theme="dark"] .data-table td {
+    border-color: var(--border);
 }
 html[data-theme="dark"] .data-table tbody tr:hover { background: rgba(255,255,255,.03); }
 /* suggestion dropdown */
@@ -812,6 +815,9 @@ a { text-decoration: none; color: inherit; }
     width: 100%;
     border-collapse: collapse;
     font-size: 0.83rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
 }
 .data-table th {
     background: var(--surface-2);
@@ -822,15 +828,15 @@ a { text-decoration: none; color: inherit; }
     letter-spacing: .05em;
     padding: 10px 20px;
     text-align: left;
-    border-bottom: 1px solid var(--border);
+    border: 1px solid var(--border);
 }
 .data-table td {
     padding: 11px 20px;
-    border-bottom: 1px solid var(--border);
+    border: 1px solid var(--border);
     color: var(--text-primary);
     vertical-align: middle;
 }
-.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table tbody tr:last-child td { border-bottom: 1px solid var(--border); }
 .data-table tbody tr:hover td { background: var(--surface-2); }
 
 .mono {

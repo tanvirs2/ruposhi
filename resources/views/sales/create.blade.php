@@ -78,6 +78,22 @@
                 </div>
                 <hr style="border:none;border-top:1px solid var(--border)">
 
+                {{-- Previous due row — shown when customer has due --}}
+                <div id="prevDueRow" style="display:none;padding:10px 14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;justify-content:space-between;align-items:center;gap:8px">
+                    <label for="prevDueCheck" style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;min-width:0">
+                        <input type="checkbox" id="prevDueCheck" onchange="togglePrevDue(this)"
+                            style="width:17px;height:17px;accent-color:#b45309;cursor:pointer;flex-shrink:0">
+                        <span style="font-size:.83rem;font-weight:600;color:#92400e;white-space:nowrap">
+                            <i class="fas fa-clock-rotate-left"></i> পূর্বের বাকী
+                        </span>
+                    </label>
+                    <span style="font-size:1rem;font-weight:800;color:#b45309;white-space:nowrap" id="prevDueDisplay">৳ 0</span>
+                </div>
+                <div id="prevDueHint" style="display:none;font-size:.78rem;color:#92400e;background:#fef3c7;border:1px dashed #fbbf24;border-radius:6px;padding:6px 12px">
+                    <i class="fas fa-circle-check" style="color:#15803d"></i>
+                    পূর্বের বাকী পরিশোধ অন্তর্ভুক্ত হয়েছে — <strong id="prevDueHintAmt"></strong> যোগ করা হয়েছে
+                </div>
+
                 <div class="summary-row"><span>মোট বিক্রয়:</span><span id="totalDisplay">৳ 0.00</span></div>
                 <div class="form-group-field">
                     <label>ছাড় (৳)
@@ -277,8 +293,11 @@ const allCustomers    = @json($customers);
 const customerSearch  = document.getElementById('customerSearch');
 const customerIdInput = document.getElementById('customerIdInput');
 const customerSelected= document.getElementById('customerSelected');
+const prevDueRow      = document.getElementById('prevDueRow');
+const prevDueDisplay  = document.getElementById('prevDueDisplay');
 const customerDrop    = document.createElement('div');
 const cDrop           = makeFloatingDropdown(customerSearch, customerDrop);
+let currentPrevDue    = 0;
 
 customerSearch.addEventListener('input', function() {
     const q = this.value.trim().toLowerCase();
@@ -286,6 +305,18 @@ customerSearch.addEventListener('input', function() {
         cDrop.hide();
         customerIdInput.value = '';
         customerSelected.style.display = 'none';
+        prevDueRow.style.display = 'none';
+        document.getElementById('prevDueHint').style.display = 'none';
+        // Undo any prev-due added to paid
+        const chk = document.getElementById('prevDueCheck');
+        if (chk.checked) {
+            chk.checked = false;
+            const paidEl = document.getElementById('paidInput');
+            const current = parseFloat(toEnglishDigits(paidEl.value)) || 0;
+            paidEl.value = Math.max(0, current - currentPrevDue).toFixed(0);
+            updateSummary();
+        }
+        currentPrevDue = 0;
         document.getElementById('walkinWarning').style.display = 'none';
         return;
     }
@@ -337,12 +368,30 @@ function selectCustomer(id) {
                     </span>
                     <span style="color:#dc2626;font-size:1rem;font-weight:700">৳ ${due.toLocaleString('en', {minimumFractionDigits:2})}</span>
                  </div>`;
+        // Show due in summary panel
+        prevDueDisplay.textContent = '৳ ' + due.toLocaleString('en', {minimumFractionDigits:2});
+        prevDueRow.style.display = 'flex';
     } else {
         html += `<div style="margin-top:6px;padding:6px 12px;background:#dcfce7;border:1px solid #bbf7d0;
                              border-radius:8px;font-size:.8rem;color:#15803d;font-weight:600">
                     ✓ কোনো বাকী নেই
                  </div>`;
+        prevDueRow.style.display = 'none';
+        document.getElementById('prevDueHint').style.display = 'none';
     }
+
+    // Reset checkbox whenever customer changes
+    const chk = document.getElementById('prevDueCheck');
+    if (chk.checked) {
+        chk.checked = false;
+        // Remove previously added due from paid field
+        const paidEl = document.getElementById('paidInput');
+        const current = parseFloat(toEnglishDigits(paidEl.value)) || 0;
+        paidEl.value = Math.max(0, current - currentPrevDue).toFixed(0);
+        document.getElementById('prevDueHint').style.display = 'none';
+        updateSummary();
+    }
+    currentPrevDue = due;
 
     customerSelected.innerHTML = html;
     customerSelected.style.display = 'block';
@@ -568,32 +617,63 @@ document.getElementById('paidInput').addEventListener('blur', function() {
 function setFullPay() {
     const net = cart.reduce((s, c) => s + c.qty * c.price, 0)
                - (parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0);
-    document.getElementById('paidInput').value = Math.max(0, net).toFixed(0);
+    const extra = document.getElementById('prevDueCheck').checked ? currentPrevDue : 0;
+    document.getElementById('paidInput').value = Math.max(0, net + extra).toFixed(0);
+    updateSummary();
+}
+
+function togglePrevDue(chk) {
+    const paidEl  = document.getElementById('paidInput');
+    const current = parseFloat(toEnglishDigits(paidEl.value)) || 0;
+    const hint    = document.getElementById('prevDueHint');
+    const hintAmt = document.getElementById('prevDueHintAmt');
+    if (chk.checked) {
+        paidEl.value = (current + currentPrevDue).toFixed(0);
+        hintAmt.textContent = '৳ ' + currentPrevDue.toLocaleString('en', {minimumFractionDigits:0});
+        hint.style.display = 'block';
+    } else {
+        paidEl.value = Math.max(0, current - currentPrevDue).toFixed(0);
+        hint.style.display = 'none';
+    }
     updateSummary();
 }
 
 let _stockConfirmPending = false;
 document.getElementById('saleForm').addEventListener('submit', function(e) {
-    if (!cart.length) {
-        e.preventDefault();
-        showStockToast('কমপক্ষে একটি আইটেম যোগ করুন।', 'error');
+    // Ensure paid_amount is numeric (never empty)
+    const paidEl     = document.getElementById('paidInput');
+    if (paidEl.value.trim() === '') paidEl.value = '0';
+
+    const hasItems   = cart.length > 0;
+    const hasCustomer= !!document.getElementById('customerIdInput').value;
+    const paid       = parseFloat(toEnglishDigits(paidEl.value)) || 0;
+    const net        = cart.reduce((s, c) => s + c.qty * c.price, 0)
+                       - (parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0);
+
+    // No items: require customer + paid amount
+    if (!hasItems) {
+        if (!hasCustomer) {
+            e.preventDefault();
+            showStockToast('আইটেম ছাড়া বিক্রয়ে কাস্টমার নির্বাচন আবশ্যক!', 'error');
+            document.getElementById('customerSearch').focus();
+            return;
+        }
+        if (paid <= 0) {
+            e.preventDefault();
+            showStockToast('পরিশোধের পরিমাণ লিখুন!', 'error');
+            paidEl.focus();
+            return;
+        }
+        // allow submit — payment-only sale
         return;
     }
 
-    // Ensure paid_amount is numeric (never empty)
-    const paidEl = document.getElementById('paidInput');
-    if (paidEl.value.trim() === '') paidEl.value = '0';
-
     // Walk-in: full payment required
-    const noCustomer = !document.getElementById('customerIdInput').value;
-    const net  = cart.reduce((s, c) => s + c.qty * c.price, 0)
-                 - (parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0);
-    const paid = parseFloat(toEnglishDigits(paidEl.value)) || 0;
-
+    const noCustomer = !hasCustomer;
     if (noCustomer && paid < net) {
         e.preventDefault();
         document.getElementById('walkinWarning').style.display = 'block';
-        document.getElementById('paidInput').focus();
+        paidEl.focus();
         showStockToast('ওয়াক-ইন কাস্টমারের জন্য সম্পূর্ণ পরিশোধ আবশ্যক!', 'error');
         return;
     }
