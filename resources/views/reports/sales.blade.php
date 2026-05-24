@@ -131,7 +131,13 @@
                             {{ str_pad($row->sale_id, 6, '0', STR_PAD_LEFT) }}
                         </a>
                     </td>
-                    <td>{{ $row->customer_name ?? '<span style="color:#94a3b8">ওয়াক-ইন</span>' }}</td>
+                    <td>
+                        @if($row->customer_name)
+                            {{ $row->customer_name }}
+                        @else
+                            <span style="color:#94a3b8">ওয়াক-ইন</span>
+                        @endif
+                    </td>
                     <td>{{ $row->item_name }}</td>
                     <td class="tc">{{ (int)$row->qty }}</td>
                     <td class="tc">{{ $totalKg ?? '—' }}</td>
