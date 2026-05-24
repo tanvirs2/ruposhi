@@ -1,11 +1,11 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'বিক্রয় রিপোর্ট')
-@section('page-title', 'বিক্রয় রিপোর্ট')
+@section('page-title', 'দৈনিক বিক্রয় রিপোর্ট')
 
 @section('content')
 
-{{-- Filter --}}
-<div class="card" style="margin-bottom:20px">
+{{-- Filter ────────────────────────────────────────────────── --}}
+<div class="card no-print" style="margin-bottom:20px">
     <div class="card-filter">
         <form method="GET" class="filter-form">
             <div class="form-group-field">
@@ -29,14 +29,15 @@
                 <i class="fas fa-search"></i> রিপোর্ট দেখুন
             </button>
             @if(request()->hasAny(['customer_id']))
-                <a href="{{ route('reports.sales', ['from'=>$from,'to'=>$to]) }}" class="btn btn-ghost" style="align-self:flex-end">পরিষ্কার</a>
+                <a href="{{ route('reports.sales', ['from'=>$from,'to'=>$to]) }}"
+                   class="btn btn-ghost" style="align-self:flex-end">পরিষ্কার</a>
             @endif
             <div style="align-self:flex-end;display:flex;gap:8px;margin-left:auto">
                 <a href="{{ route('reports.export.sales', array_filter(['from'=>$from,'to'=>$to,'customer_id'=>request('customer_id')])) }}"
-                   class="btn btn-export" title="CSV ডাউনলোড (Excel-এ খুলুন)">
+                   class="btn btn-export" title="CSV ডাউনলোড">
                     <i class="fas fa-file-csv"></i> CSV
                 </a>
-                <button type="button" class="btn btn-export-print" onclick="window.print()" title="প্রিন্ট / PDF">
+                <button type="button" class="btn btn-export-print" onclick="window.print()">
                     <i class="fas fa-print"></i> প্রিন্ট
                 </button>
             </div>
@@ -44,8 +45,18 @@
     </div>
 </div>
 
-{{-- Summary cards --}}
-<div class="stats-grid" style="margin-bottom:20px">
+{{-- Print header ────────────────────────────────────────────── --}}
+<div class="print-header" style="display:none;text-align:center;margin-bottom:14px">
+    <div style="font-size:1.2rem;font-weight:800">{{ \App\Models\StoreConfig::get('store_name','আমার দোকান') }}</div>
+    <div style="font-size:.85rem;color:#555">দৈনিক বিক্রয় রিপোর্ট</div>
+    <div style="font-size:.8rem;color:#777">
+        তারিখ: {{ \Carbon\Carbon::parse($from)->format('d/m/Y') }}
+        @if($from !== $to) — {{ \Carbon\Carbon::parse($to)->format('d/m/Y') }} @endif
+    </div>
+</div>
+
+{{-- Summary cards ───────────────────────────────────────────── --}}
+<div class="stats-grid no-print" style="margin-bottom:20px">
     <div class="stat-card stat-green">
         <div class="stat-icon"><i class="fas fa-receipt"></i></div>
         <div class="stat-body">
@@ -76,70 +87,125 @@
     </div>
 </div>
 
-{{-- Sales table --}}
+{{-- Per-item detail table (old-system style) ───────────────── --}}
 <div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+        <h3><i class="fas fa-table-list"></i>
+            তারিখ : {{ \Carbon\Carbon::parse($from)->format('d/m/Y') }}
+            @if($from !== $to) — {{ \Carbon\Carbon::parse($to)->format('d/m/Y') }} @endif
+        </h3>
+        <span style="font-size:.8rem;color:#94a3b8">{{ $saleItems->count() }} টি আইটেম</span>
+    </div>
     <div class="table-wrap">
-        <table class="data-table">
+        <table class="data-table sale-detail-table">
             <thead>
                 <tr>
-                    <th>#</th>
-                    <th>তারিখ</th>
-                    <th>কাস্টমার</th>
-                    <th>আইটেম</th>
-                    <th style="text-align:right">মোট</th>
-                    <th style="text-align:right">পরিশোধ</th>
-                    <th style="text-align:right">বাকী</th>
-                    <th>চালান</th>
+                    <th class="tc">চালান নং</th>
+                    <th>কাস্টমার নাম</th>
+                    <th>আইটেম নাম</th>
+                    <th class="tc">পরিমাণ</th>
+                    <th class="tc">পরিমাণ কেজি</th>
+                    <th class="tr">বিক্রয় মূল্য</th>
+                    <th class="tr">মোট মূল্য</th>
+                    <th class="tr">জমা</th>
+                    <th class="tr">বাকী</th>
+                    <th class="tc">ইউজার</th>
+                    <th class="tc">সময়</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($sales as $sale)
-                <tr>
-                    <td class="mono">{{ $loop->iteration }}</td>
-                    <td>{{ $sale->sale_date->format('d/m/Y') }}</td>
-                    <td>
-                        @if($sale->customer)
-                            <a href="{{ route('customers.ledger', $sale->customer) }}" class="link-primary">
-                                {{ $sale->customer->name }}
-                            </a>
-                        @else
-                            <span style="color:#94a3b8">নগদ</span>
-                        @endif
-                    </td>
-                    <td style="font-size:.82rem;color:#64748b">
-                        {{ $sale->items->map(fn($i) => $i->item->name)->implode(', ') }}
-                    </td>
-                    <td style="text-align:right;font-weight:600">৳ {{ number_format($sale->total_amount, 2) }}</td>
-                    <td style="text-align:right;color:#16a34a">৳ {{ number_format($sale->paid_amount, 2) }}</td>
-                    <td style="text-align:right">
-                        @if($sale->due_amount > 0)
-                            <span style="color:#dc2626;font-weight:600">৳ {{ number_format($sale->due_amount, 2) }}</span>
-                        @else
-                            <span style="color:#16a34a">—</span>
-                        @endif
-                    </td>
-                    <td>
-                        <a href="{{ route('sales.show', $sale) }}" class="btn-icon-sm" title="চালান দেখুন" style="color:#0d9488">
-                            <i class="fas fa-eye"></i>
+                @php $running = 0; $lastSaleId = null; @endphp
+                @forelse($saleItems as $row)
+                @php
+                    $running += $row->amount;
+                    $isNewSale = ($row->sale_id !== $lastSaleId);
+                    $lastSaleId = $row->sale_id;
+                    // Extract KG from item name (50kg, 25kg, ৫০কেজি, etc.)
+                    preg_match('/(৫০|২৫|50|25)\s*(কেজি|kg)/ui', $row->item_name, $m);
+                    $kgPer = isset($m[1]) ? (int) str_replace(['৫০','২৫'],['50','25'], $m[1]) : null;
+                    $totalKg = $kgPer ? (int)$row->qty * $kgPer : null;
+                @endphp
+                <tr class="{{ $isNewSale ? 'new-sale-row' : '' }}">
+                    <td class="tc mono">
+                        <a href="{{ route('sales.show', $row->sale_id) }}" class="link-primary">
+                            {{ str_pad($row->sale_id, 6, '0', STR_PAD_LEFT) }}
                         </a>
+                    </td>
+                    <td>{{ $row->customer_name ?? '<span style="color:#94a3b8">ওয়াক-ইন</span>' }}</td>
+                    <td>{{ $row->item_name }}</td>
+                    <td class="tc">{{ (int)$row->qty }}</td>
+                    <td class="tc">{{ $totalKg ?? '—' }}</td>
+                    <td class="tr">{{ number_format($row->rate, 0) }}</td>
+                    <td class="tr" style="font-weight:600">{{ number_format($running, 0) }}</td>
+                    <td class="tr" style="color:#16a34a">
+                        @if($isNewSale) {{ number_format($row->paid_amount, 0) }} @else — @endif
+                    </td>
+                    <td class="tr">
+                        @if($isNewSale)
+                            @if($row->due_amount > 0)
+                                <span style="color:#dc2626;font-weight:600">{{ number_format($row->due_amount, 0) }}</span>
+                            @else
+                                <span style="color:#16a34a">—</span>
+                            @endif
+                        @else —
+                        @endif
+                    </td>
+                    <td class="tc" style="font-size:.78rem;color:#64748b">{{ $row->user_name ?? '—' }}</td>
+                    <td class="tc" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                        {{ \Carbon\Carbon::parse($row->sale_time)->format('h:i:s a') }}
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="8" class="empty-row">এই সময়কালে কোনো বিক্রয় নেই</td></tr>
+                <tr>
+                    <td colspan="11" class="empty-row">এই সময়কালে কোনো বিক্রয় নেই</td>
+                </tr>
                 @endforelse
             </tbody>
-            @if($sales->isNotEmpty())
+            @if($saleItems->isNotEmpty())
             <tfoot>
-                <tr style="background:var(--accent-light);font-weight:700">
-                    <td colspan="4" style="text-align:right;padding-right:16px">সর্বমোট</td>
-                    <td style="text-align:right">৳ {{ number_format($grandTotal, 2) }}</td>
-                    <td style="text-align:right;color:#16a34a">৳ {{ number_format($grandPaid, 2) }}</td>
-                    <td style="text-align:right;color:#dc2626">৳ {{ number_format($grandDue, 2) }}</td>
-                    <td></td>
+                <tr class="tfoot-summary">
+                    <td colspan="6" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                    <td class="tr" style="font-weight:800">{{ number_format($saleItems->sum('amount'), 0) }}</td>
+                    <td class="tr" style="color:#16a34a;font-weight:700">{{ number_format($grandPaid, 0) }}</td>
+                    <td class="tr" style="color:#dc2626;font-weight:700">{{ number_format($grandDue, 0) }}</td>
+                    <td colspan="2"></td>
                 </tr>
             </tfoot>
             @endif
         </table>
     </div>
 </div>
+
 @endsection
+
+@push('styles')
+<style>
+.tc { text-align: center; }
+.tr { text-align: right; }
+.mono { font-family: 'Inter', monospace; font-size: .8rem; }
+
+.sale-detail-table th,
+.sale-detail-table td { padding: 6px 10px; font-size: .82rem; }
+
+/* Highlight first item of each new invoice */
+.new-sale-row td { border-top: 2px solid #e2e8f0 !important; }
+.new-sale-row:first-child td { border-top: 1px solid var(--border) !important; }
+
+.tfoot-summary td {
+    background: var(--surface-2);
+    padding: 8px 10px;
+    font-size: .85rem;
+    border-top: 2px solid var(--border);
+}
+
+@media print {
+    .sidebar, .topbar, .no-print { display: none !important; }
+    .main-wrapper { margin-left: 0 !important; }
+    .content { padding: 6px !important; }
+    .print-header { display: block !important; }
+    .card { box-shadow: none !important; border: 1px solid #ccc !important; }
+    .sale-detail-table th,
+    .sale-detail-table td { font-size: .75rem; padding: 4px 6px; }
+}
+</style>
+@endpush

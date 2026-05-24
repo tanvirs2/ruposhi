@@ -122,7 +122,8 @@ class ReportController extends Controller
         $to        = $request->to   ?? now()->toDateString();
         $customers = Customer::orderBy('name')->get();
 
-        $sales = Sale::with(['customer', 'items.item', 'user'])
+        // Summary-level (per sale) for cards
+        $sales = Sale::with(['customer'])
             ->whereBetween('sale_date', [$from, $to])
             ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
             ->orderBy('sale_date')->orderBy('id')
@@ -132,7 +133,37 @@ class ReportController extends Controller
         $grandPaid    = $sales->sum('paid_amount');
         $grandDue     = $sales->sum('due_amount');
 
-        return view('reports.sales', compact('sales', 'customers', 'grandTotal', 'grandPaid', 'grandDue', 'from', 'to'));
+        // Per-item rows for the detail table (old-system style)
+        $saleItems = DB::table('sale_items')
+            ->join('items',     'sale_items.item_id',    '=', 'items.id')
+            ->join('sales',     'sale_items.sale_id',    '=', 'sales.id')
+            ->leftJoin('customers', 'sales.customer_id', '=', 'customers.id')
+            ->leftJoin('users',     'sales.user_id',     '=', 'users.id')
+            ->whereBetween('sales.sale_date', [$from, $to])
+            ->when($request->customer_id, fn($q) => $q->where('sales.customer_id', $request->customer_id))
+            ->select(
+                DB::raw('DATE(sales.sale_date) as date'),
+                'sales.id         as sale_id',
+                'sales.created_at as sale_time',
+                'sales.paid_amount',
+                'sales.due_amount',
+                'customers.name   as customer_name',
+                'items.name       as item_name',
+                'sale_items.quantity as qty',
+                'sale_items.price    as rate',
+                'sale_items.subtotal as amount',
+                'users.name       as user_name'
+            )
+            ->orderBy('sales.sale_date')
+            ->orderBy('sales.id')
+            ->orderBy('sale_items.id')
+            ->get();
+
+        return view('reports.sales', compact(
+            'sales', 'saleItems', 'customers',
+            'grandTotal', 'grandPaid', 'grandDue',
+            'from', 'to'
+        ));
     }
 
     // ── দৈনিক রিসিভ রিপোর্ট — purchases grouped by date ──────
