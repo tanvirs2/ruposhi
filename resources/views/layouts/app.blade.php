@@ -26,16 +26,24 @@
 
     <nav class="sidebar-nav">
         @php
-            $inCustomer  = request()->routeIs('customers.*','customer-payments.*','customer-areas.*');
-            $inItems     = request()->routeIs('items.*','categories.*','item-types.*','item-brands.*','unit-types.*');
-            $inStock     = request()->routeIs('stock.*');
-            $inSupplier  = request()->routeIs('suppliers.*','supplier-payments.*');
-            $inReports   = request()->routeIs('reports.*');
+            // Reliable active check: routeIs OR URL path match
+            $act = fn($route, $url = null) =>
+                (request()->routeIs(...(array)$route) || ($url && request()->is(...(array)$url)))
+                ? 'active' : '';
+
+            $inCustomer = request()->routeIs('customers.*','customer-payments.*','customer-areas.*')
+                       || request()->is('customers*','customer-payments*','customer-areas*');
+            $inItems    = request()->routeIs('items.*','categories.*','item-types.*','item-brands.*','unit-types.*')
+                       || request()->is('items*','categories*','item-types*','item-brands*','unit-types*');
+            $inStock    = request()->routeIs('stock.*') || request()->is('stock*');
+            $inSupplier = request()->routeIs('suppliers.*','supplier-payments.*')
+                       || request()->is('suppliers*','supplier-payments*');
+            $inReports  = request()->routeIs('reports.*') || request()->is('reports*');
         @endphp
 
         <div class="nav-section">
             <span class="nav-section-label">প্রধান মেনু</span>
-            <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+            <a href="{{ route('dashboard') }}" class="nav-item {{ $act('dashboard','dashboard') }}">
                 <span class="nav-icon"><i class="fas fa-gauge-high"></i></span>
                 <span class="nav-label">ড্যাশবোর্ড</span>
                 <button type="button" class="info-btn" data-info="ব্যবসার সামগ্রিক চিত্র — আজকের বিক্রয়, মোট স্টক, কাস্টমার বাকী ও সরবরাহকারী বকেয়া এক নজরে দেখুন।">i</button>
@@ -50,32 +58,32 @@
                     <span class="nav-arrow"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="nav-group-children">
-                    <a href="{{ route('customers.index') }}" class="nav-item nav-child {{ request()->routeIs('customers.index','customers.create','customers.edit','customers.show') ? 'active' : '' }}">
+                    <a href="{{ route('customers.index') }}" class="nav-item nav-child {{ $act(['customers.index','customers.create','customers.edit','customers.show'],['customers','customers/create','customers/*/edit']) }}">
                         <span class="nav-icon"><i class="fas fa-list"></i></span>
                         <span class="nav-label">কাস্টমার তালিকা</span>
                         <button type="button" class="info-btn" data-info="সকল কাস্টমারের তথ্য দেখুন — নাম, ফোন, মোট বাকী। নতুন কাস্টমার যোগ করুন বা তথ্য সম্পাদনা করুন।">i</button>
                     </a>
-                    <a href="{{ route('customer-payments.create') }}" class="nav-item nav-child {{ request()->routeIs('customer-payments.create') ? 'active' : '' }}">
+                    <a href="{{ route('customer-payments.create') }}" class="nav-item nav-child {{ $act('customer-payments.create','customer-payments/create') }}">
                         <span class="nav-icon"><i class="fas fa-plus-circle"></i></span>
                         <span class="nav-label">কাস্টমার পরিশোধ</span>
                         <button type="button" class="info-btn" data-info="কাস্টমার বাকী পরিশোধ রেকর্ড করুন। পরিশোধের পরিমাণ কাস্টমারের বাকী থেকে স্বয়ংক্রিয়ভাবে বাদ যাবে।">i</button>
                     </a>
-                    <a href="{{ route('customer-payments.index') }}" class="nav-item nav-child {{ request()->routeIs('customer-payments.index') ? 'active' : '' }}">
+                    <a href="{{ route('customer-payments.index') }}" class="nav-item nav-child {{ $act('customer-payments.index','customer-payments') }}">
                         <span class="nav-icon"><i class="fas fa-money-bill-wave"></i></span>
                         <span class="nav-label">পরিশোধ তালিকা</span>
                         <button type="button" class="info-btn" data-info="সকল কাস্টমার পরিশোধের ইতিহাস — কে কত টাকা কখন দিয়েছে।">i</button>
                     </a>
-                    <a href="{{ route('reports.daily-payments') }}" class="nav-item nav-child {{ request()->routeIs('reports.daily-payments') ? 'active' : '' }}">
+                    <a href="{{ route('reports.daily-payments') }}" class="nav-item nav-child {{ $act('reports.daily-payments','reports/daily-payments') }}">
                         <span class="nav-icon"><i class="fas fa-calendar-check"></i></span>
                         <span class="nav-label">দৈনিক পরিশোধ</span>
                         <button type="button" class="info-btn" data-info="নির্দিষ্ট তারিখে কাস্টমার কত টাকা পরিশোধ করেছে তার দৈনিক সারসংক্ষেপ।">i</button>
                     </a>
-                    <a href="{{ route('customers.ledger-select') }}" class="nav-item nav-child {{ request()->routeIs('customers.ledger*') ? 'active' : '' }}">
+                    <a href="{{ route('customers.ledger-select') }}" class="nav-item nav-child {{ $act(['customers.ledger','customers.ledger-select'],['customers-ledger','customers/*/ledger']) }}">
                         <span class="nav-icon"><i class="fas fa-book-open"></i></span>
                         <span class="nav-label">লেজার রিপোর্ট</span>
                         <button type="button" class="info-btn" data-info="কাস্টমারের সকল ক্রয় ও পরিশোধের বিস্তারিত হিসাব।">i</button>
                     </a>
-                    <a href="{{ route('customer-areas.index') }}" class="nav-item nav-child {{ request()->routeIs('customer-areas.*') ? 'active' : '' }}">
+                    <a href="{{ route('customer-areas.index') }}" class="nav-item nav-child {{ $act('customer-areas.*','customer-areas*') }}">
                         <span class="nav-icon"><i class="fas fa-map-location-dot"></i></span>
                         <span class="nav-label">কাস্টমার এরিয়া</span>
                         <button type="button" class="info-btn" data-info="কাস্টমারদের এলাকাভিত্তিক গ্রুপ তৈরি করুন। যেমন: ঢাকা, চট্টগ্রাম ইত্যাদি।">i</button>
@@ -92,27 +100,27 @@
                     <span class="nav-arrow"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="nav-group-children">
-                    <a href="{{ route('items.index') }}" class="nav-item nav-child {{ request()->routeIs('items.*') ? 'active' : '' }}">
+                    <a href="{{ route('items.index') }}" class="nav-item nav-child {{ $act('items.*','items*') }}">
                         <span class="nav-icon"><i class="fas fa-list"></i></span>
                         <span class="nav-label">আইটেম তালিকা</span>
                         <button type="button" class="info-btn" data-info="সকল পণ্যের তালিকা — ক্রয়মূল্য, বিক্রয়মূল্য ও বর্তমান স্টক দেখুন। নতুন পণ্য যোগ করুন।">i</button>
                     </a>
-                    <a href="{{ route('categories.index') }}" class="nav-item nav-child {{ request()->routeIs('categories.*') ? 'active' : '' }}">
+                    <a href="{{ route('categories.index') }}" class="nav-item nav-child {{ $act('categories.*','categories*') }}">
                         <span class="nav-icon"><i class="fas fa-tags"></i></span>
                         <span class="nav-label">আইটেম ক্যাটাগরি</span>
                         <button type="button" class="info-btn" data-info="পণ্যের ক্যাটাগরি তৈরি করুন। যেমন: চাল, ডাল, তেল। ক্যাটাগরি দিয়ে পণ্য ফিল্টার করা যাবে।">i</button>
                     </a>
-                    <a href="{{ route('item-types.index') }}" class="nav-item nav-child {{ request()->routeIs('item-types.*') ? 'active' : '' }}">
+                    <a href="{{ route('item-types.index') }}" class="nav-item nav-child {{ $act('item-types.*','item-types*') }}">
                         <span class="nav-icon"><i class="fas fa-layer-group"></i></span>
                         <span class="nav-label">আইটেম টাইপ</span>
                         <button type="button" class="info-btn" data-info="পণ্যের ধরন তৈরি করুন। যেমন: মিনিকেট, নাজিরশাইল। ক্যাটাগরির চেয়ে আরও নির্দিষ্ট শ্রেণীবিভাগ।">i</button>
                     </a>
-                    <a href="{{ route('item-brands.index') }}" class="nav-item nav-child {{ request()->routeIs('item-brands.*') ? 'active' : '' }}">
+                    <a href="{{ route('item-brands.index') }}" class="nav-item nav-child {{ $act('item-brands.*','item-brands*') }}">
                         <span class="nav-icon"><i class="fas fa-copyright"></i></span>
                         <span class="nav-label">আইটেম ব্র্যান্ড</span>
                         <button type="button" class="info-btn" data-info="পণ্যের ব্র্যান্ড তৈরি করুন। যেমন: প্রাণ, স্কয়ার, ফ্রেশ। একই পণ্যের বিভিন্ন ব্র্যান্ড আলাদা করুন।">i</button>
                     </a>
-                    <a href="{{ route('unit-types.index') }}" class="nav-item nav-child {{ request()->routeIs('unit-types.*') ? 'active' : '' }}">
+                    <a href="{{ route('unit-types.index') }}" class="nav-item nav-child {{ $act('unit-types.*','unit-types*') }}">
                         <span class="nav-icon"><i class="fas fa-ruler"></i></span>
                         <span class="nav-label">ইউনিট টাইপ</span>
                         <button type="button" class="info-btn" data-info="পরিমাপের একক তৈরি করুন। যেমন: বস্তা, কেজি, লিটার, পিস। প্রতিটি পণ্যে এককটি নির্ধারণ করা যাবে।">i</button>
@@ -128,17 +136,17 @@
                     <span class="nav-arrow"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="nav-group-children">
-                    <a href="{{ route('stock.report') }}" class="nav-item nav-child {{ request()->routeIs('stock.report') ? 'active' : '' }}">
+                    <a href="{{ route('stock.report') }}" class="nav-item nav-child {{ $act('stock.report','stock/report') }}">
                         <span class="nav-icon"><i class="fas fa-magnifying-glass-chart"></i></span>
                         <span class="nav-label">স্টক রিপোর্ট</span>
                         <button type="button" class="info-btn" data-info="সকল পণ্যের বর্তমান স্টক পরিমাণ ও মোট মূল্য। কোন পণ্য কতটুকু আছে তার সারসংক্ষেপ।">i</button>
                     </a>
-                    <a href="{{ route('stock.index') }}" class="nav-item nav-child {{ request()->routeIs('stock.index') ? 'active' : '' }}">
+                    <a href="{{ route('stock.index') }}" class="nav-item nav-child {{ $act('stock.index','stock') }}">
                         <span class="nav-icon"><i class="fas fa-boxes-stacked"></i></span>
                         <span class="nav-label">স্টক তথ্য</span>
                         <button type="button" class="info-btn" data-info="স্টক সমন্বয় করুন — প্রয়োজনে ম্যানুয়ালি স্টক পরিমাণ আপডেট করুন। ক্ষতি বা হিসাব মেলাতে ব্যবহার করুন।">i</button>
                     </a>
-                    <a href="{{ route('stock.low') }}" class="nav-item nav-child {{ request()->routeIs('stock.low') ? 'active' : '' }}">
+                    <a href="{{ route('stock.low') }}" class="nav-item nav-child {{ $act('stock.low','stock/low') }}">
                         <span class="nav-icon"><i class="fas fa-triangle-exclamation"></i></span>
                         <span class="nav-label">স্টক শেষ</span>
                         <button type="button" class="info-btn" data-info="সতর্কবার্তা — যেসব পণ্যের স্টক নির্ধারিত সীমার নিচে নেমে গেছে। দ্রুত অর্ডার দিন।">i</button>
@@ -154,32 +162,32 @@
                     <span class="nav-arrow"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="nav-group-children">
-                    <a href="{{ route('suppliers.index') }}" class="nav-item nav-child {{ request()->routeIs('suppliers.index','suppliers.create','suppliers.edit') ? 'active' : '' }}">
+                    <a href="{{ route('suppliers.index') }}" class="nav-item nav-child {{ $act(['suppliers.index','suppliers.create','suppliers.edit'],['suppliers','suppliers/create','suppliers/*/edit']) }}">
                         <span class="nav-icon"><i class="fas fa-list"></i></span>
                         <span class="nav-label">সরবরাহকারী তালিকা</span>
                         <button type="button" class="info-btn" data-info="সকল সরবরাহকারীর তথ্য — নাম, ফোন, ঠিকানা ও মোট বকেয়া। নতুন সরবরাহকারী যোগ করুন।">i</button>
                     </a>
-                    <a href="{{ route('supplier-payments.create') }}" class="nav-item nav-child {{ request()->routeIs('supplier-payments.create') ? 'active' : '' }}">
+                    <a href="{{ route('supplier-payments.create') }}" class="nav-item nav-child {{ $act('supplier-payments.create','supplier-payments/create') }}">
                         <span class="nav-icon"><i class="fas fa-plus-circle"></i></span>
                         <span class="nav-label">সরবরাহকারী পরিশোধ</span>
                         <button type="button" class="info-btn" data-info="সরবরাহকারীর বকেয়া পরিশোধ রেকর্ড করুন। পরিশোধের পরিমাণ বকেয়া থেকে স্বয়ংক্রিয়ভাবে বাদ যাবে।">i</button>
                     </a>
-                    <a href="{{ route('supplier-payments.index') }}" class="nav-item nav-child {{ request()->routeIs('supplier-payments.index') ? 'active' : '' }}">
+                    <a href="{{ route('supplier-payments.index') }}" class="nav-item nav-child {{ $act('supplier-payments.index','supplier-payments') }}">
                         <span class="nav-icon"><i class="fas fa-money-bill-wave"></i></span>
                         <span class="nav-label">পরিশোধ তালিকা</span>
                         <button type="button" class="info-btn" data-info="সকল সরবরাহকারী পরিশোধের ইতিহাস — কাকে কত টাকা কখন দেওয়া হয়েছে।">i</button>
                     </a>
-                    <a href="{{ route('reports.daily-supplier-payments') }}" class="nav-item nav-child {{ request()->routeIs('reports.daily-supplier-payments') ? 'active' : '' }}">
+                    <a href="{{ route('reports.daily-supplier-payments') }}" class="nav-item nav-child {{ $act('reports.daily-supplier-payments','reports/daily-supplier-payments') }}">
                         <span class="nav-icon"><i class="fas fa-calendar-check"></i></span>
                         <span class="nav-label">দৈনিক পরিশোধ</span>
                         <button type="button" class="info-btn" data-info="নির্দিষ্ট তারিখে সরবরাহকারীকে কত টাকা পরিশোধ করা হয়েছে তার দৈনিক সারসংক্ষেপ।">i</button>
                     </a>
-                    <a href="{{ route('suppliers.ledger-select') }}" class="nav-item nav-child {{ request()->routeIs('suppliers.ledger*') ? 'active' : '' }}">
+                    <a href="{{ route('suppliers.ledger-select') }}" class="nav-item nav-child {{ $act(['suppliers.ledger','suppliers.ledger-select'],['suppliers-ledger','suppliers/*/ledger']) }}">
                         <span class="nav-icon"><i class="fas fa-book-open"></i></span>
                         <span class="nav-label">লেজার রিপোর্ট</span>
                         <button type="button" class="info-btn" data-info="সরবরাহকারীর সকল মাল গ্রহণ ও পরিশোধের বিস্তারিত হিসাব।">i</button>
                     </a>
-                    <a href="{{ route('suppliers.due-report') }}" class="nav-item nav-child {{ request()->routeIs('suppliers.due-report') ? 'active' : '' }}">
+                    <a href="{{ route('suppliers.due-report') }}" class="nav-item nav-child {{ $act('suppliers.due-report','suppliers-due-report') }}">
                         <span class="nav-icon"><i class="fas fa-file-invoice-dollar"></i></span>
                         <span class="nav-label">বাকী রিপোর্ট</span>
                         <button type="button" class="info-btn" data-info="বকেয়া আছে এমন সকল সরবরাহকারীর তালিকা — মোট বকেয়া পরিমাণ সহ।">i</button>
@@ -190,12 +198,12 @@
 
         <div class="nav-section">
             <span class="nav-section-label">লেনদেন</span>
-            <a href="{{ route('purchases.index') }}" class="nav-item {{ request()->routeIs('purchases.*') ? 'active' : '' }}">
+            <a href="{{ route('purchases.index') }}" class="nav-item {{ $act('purchases.*','purchases*') }}">
                 <span class="nav-icon"><i class="fas fa-truck-ramp-box"></i></span>
                 <span class="nav-label">মাল রিসিভ</span>
                 <button type="button" class="info-btn" data-info="সরবরাহকারীর কাছ থেকে মালামাল গ্রহণ করুন। পরিমাণ ও মূল্য লিখলে স্টক স্বয়ংক্রিয়ভাবে আপডেট হবে এবং বকেয়া হিসাব হবে।">i</button>
             </a>
-            <a href="{{ route('sales.index') }}" class="nav-item {{ request()->routeIs('sales.*') ? 'active' : '' }}">
+            <a href="{{ route('sales.index') }}" class="nav-item {{ $act('sales.*','sales*') }}">
                 <span class="nav-icon"><i class="fas fa-receipt"></i></span>
                 <span class="nav-label">বিক্রয়</span>
                 <button type="button" class="info-btn" data-info="নতুন বিক্রয় এন্ট্রি করুন। পণ্য নির্বাচন করুন, কাস্টমার সেট করুন, পরিশোধ ও বাকী রেকর্ড করুন। বিক্রয়ে স্টক স্বয়ংক্রিয়ভাবে কমবে।">i</button>
@@ -204,12 +212,12 @@
 
         <div class="nav-section">
             <span class="nav-section-label">ব্যবস্থাপনা</span>
-            <a href="{{ route('employees.index') }}" class="nav-item {{ request()->routeIs('employees.*') ? 'active' : '' }}">
+            <a href="{{ route('employees.index') }}" class="nav-item {{ $act('employees.*','employees*') }}">
                 <span class="nav-icon"><i class="fas fa-id-badge"></i></span>
                 <span class="nav-label">কর্মচারী</span>
                 <button type="button" class="info-btn" data-info="কর্মচারীদের তথ্য ব্যবস্থাপনা — নাম, পদবি, বেতন ও যোগাযোগ তথ্য সংরক্ষণ করুন।">i</button>
             </a>
-            <a href="{{ route('expenses.index') }}" class="nav-item {{ request()->routeIs('expenses.*') ? 'active' : '' }}">
+            <a href="{{ route('expenses.index') }}" class="nav-item {{ $act('expenses.*','expenses*') }}">
                 <span class="nav-icon"><i class="fas fa-money-bill-transfer"></i></span>
                 <span class="nav-label">খরচ ও জমা</span>
                 <button type="button" class="info-btn" data-info="ব্যবসার দৈনন্দিন খরচ ও নগদ জমা রেকর্ড করুন। যেমন: বিদ্যুৎ বিল, ভাড়া, মালিকের জমা ইত্যাদি।">i</button>
@@ -224,47 +232,47 @@
                     <span class="nav-arrow"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="nav-group-children">
-                    <a href="{{ route('reports.index') }}" class="nav-item nav-child {{ request()->routeIs('reports.index') ? 'active' : '' }}">
+                    <a href="{{ route('reports.index') }}" class="nav-item nav-child {{ $act('reports.index','reports') }}">
                         <span class="nav-icon"><i class="fas fa-house-chimney"></i></span>
                         <span class="nav-label">হোম / সারসংক্ষেপ</span>
                         <button type="button" class="info-btn" data-info="সামগ্রিক ব্যবসার হিসাব — মোট আয়, ব্যয়, লাভ ও বাকীর সারসংক্ষেপ এক পেজে।">i</button>
                     </a>
-                    <a href="{{ route('reports.sales') }}" class="nav-item nav-child {{ (request()->routeIs('reports.sales') || request()->is('reports/sales')) ? 'active' : '' }}">
+                    <a href="{{ route('reports.sales') }}" class="nav-item nav-child {{ $act('reports.sales','reports/sales') }}">
                         <span class="nav-icon"><i class="fas fa-receipt"></i></span>
                         <span class="nav-label">বিক্রয় রিপোর্ট</span>
                         <button type="button" class="info-btn" data-info="তারিখ ভিত্তিক বিক্রয়ের বিস্তারিত ইতিহাস — কোন পণ্য কত বিক্রি হয়েছে, লাভ কত।">i</button>
                     </a>
-                    <a href="{{ route('reports.daily-payments') }}" class="nav-item nav-child {{ request()->routeIs('reports.daily-payments') ? 'active' : '' }}">
+                    <a href="{{ route('reports.daily-payments') }}" class="nav-item nav-child {{ $act('reports.daily-payments','reports/daily-payments') }}">
                         <span class="nav-icon"><i class="fas fa-users"></i></span>
                         <span class="nav-label">দৈনিক কাস্টমার পরিশোধ</span>
                         <button type="button" class="info-btn" data-info="প্রতিদিন কাস্টমার কত টাকা পরিশোধ করেছে তার তালিকা।">i</button>
                     </a>
-                    <a href="{{ route('reports.daily-supplier-payments') }}" class="nav-item nav-child {{ request()->routeIs('reports.daily-supplier-payments') ? 'active' : '' }}">
+                    <a href="{{ route('reports.daily-supplier-payments') }}" class="nav-item nav-child {{ $act('reports.daily-supplier-payments','reports/daily-supplier-payments') }}">
                         <span class="nav-icon"><i class="fas fa-truck"></i></span>
                         <span class="nav-label">দৈনিক সরবরাহকারী পরিশোধ</span>
                         <button type="button" class="info-btn" data-info="প্রতিদিন সরবরাহকারীকে কত টাকা পরিশোধ করা হয়েছে তার তালিকা।">i</button>
                     </a>
-                    <a href="{{ route('reports.daily-receive') }}" class="nav-item nav-child {{ request()->routeIs('reports.daily-receive') ? 'active' : '' }}">
+                    <a href="{{ route('reports.daily-receive') }}" class="nav-item nav-child {{ $act('reports.daily-receive','reports/daily-receive') }}">
                         <span class="nav-icon"><i class="fas fa-truck-ramp-box"></i></span>
                         <span class="nav-label">দৈনিক রিসিভ রিপোর্ট</span>
                         <button type="button" class="info-btn" data-info="প্রতিদিন কত মাল রিসিভ হয়েছে, কোন সরবরাহকারী থেকে, মোট মূল্য কত।">i</button>
                     </a>
-                    <a href="{{ route('reports.daily-sales-stock') }}" class="nav-item nav-child {{ request()->routeIs('reports.daily-sales-stock') ? 'active' : '' }}">
+                    <a href="{{ route('reports.daily-sales-stock') }}" class="nav-item nav-child {{ $act('reports.daily-sales-stock','reports/daily-sales-stock') }}">
                         <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
                         <span class="nav-label">বিক্রয় + স্টক রিপোর্ট</span>
                         <button type="button" class="info-btn" data-info="বিক্রয় ও স্টকের সমন্বিত তুলনামূলক প্রতিবেদন — কী বিক্রি হয়েছে ও বর্তমান স্টক কত।">i</button>
                     </a>
-                    <a href="{{ route('reports.daily-sales-ledger') }}" class="nav-item nav-child {{ request()->routeIs('reports.daily-sales-ledger') ? 'active' : '' }}">
+                    <a href="{{ route('reports.daily-sales-ledger') }}" class="nav-item nav-child {{ $act('reports.daily-sales-ledger','reports/daily-sales-ledger') }}">
                         <span class="nav-icon"><i class="fas fa-book-open"></i></span>
                         <span class="nav-label">দৈনিক বিক্রয় লেজার</span>
                         <button type="button" class="info-btn" data-info="প্রতিটি বিক্রয় আইটেমের বিস্তারিত — পরিমাণ, দর, মোট ও ক্রমচলমান যোগফল।">i</button>
                     </a>
-                    <a href="{{ route('reports.customer-due') }}" class="nav-item nav-child {{ request()->routeIs('reports.customer-due') ? 'active' : '' }}">
+                    <a href="{{ route('reports.customer-due') }}" class="nav-item nav-child {{ $act('reports.customer-due','reports/customer-due') }}">
                         <span class="nav-icon"><i class="fas fa-file-invoice-dollar"></i></span>
                         <span class="nav-label">কাস্টমার বাকী রিপোর্ট</span>
                         <button type="button" class="info-btn" data-info="বাকী আছে এমন সকল কাস্টমারের তালিকা — কে কত টাকা বাকী, মোট বাকীর পরিমাণ।">i</button>
                     </a>
-                    <a href="{{ route('reports.profit-loss') }}" class="nav-item nav-child {{ request()->routeIs('reports.profit-loss') ? 'active' : '' }}">
+                    <a href="{{ route('reports.profit-loss') }}" class="nav-item nav-child {{ $act('reports.profit-loss','reports/profit-loss') }}">
                         <span class="nav-icon"><i class="fas fa-scale-balanced"></i></span>
                         <span class="nav-label">লাভ-লোকসান</span>
                         <button type="button" class="info-btn" data-info="নির্দিষ্ট সময়কালের বিক্রয় আয়, পণ্য খরচ, পরিচালনা ব্যয় ও নিট লাভ-লোকসানের পূর্ণ বিবরণ।">i</button>
@@ -275,7 +283,7 @@
 
         <div class="nav-section">
             <span class="nav-section-label">সেটিংস</span>
-            <a href="{{ route('store-config.index') }}" class="nav-item {{ request()->routeIs('store-config.*') ? 'active' : '' }}">
+            <a href="{{ route('store-config.index') }}" class="nav-item {{ $act('store-config.*','store-config*') }}">
                 <span class="nav-icon"><i class="fas fa-store"></i></span>
                 <span class="nav-label">স্টোর কনফিগ</span>
                 <button type="button" class="info-btn" data-info="ব্যবসার নাম, ঠিকানা, ফোন ও অন্যান্য তথ্য সেটআপ করুন। এই তথ্য চালান ও রিপোর্টে দেখা যাবে।">i</button>
