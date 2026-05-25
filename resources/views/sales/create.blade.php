@@ -102,12 +102,26 @@
                     </div>
                 </div>
 
-                <div class="summary-row"><span>মোট বিক্রয়:</span><span id="totalDisplay">৳ 0.00</span></div>
-                <div class="form-group-field">
-                    <label>ছাড় (৳)
-                        <button type="button" class="info-btn" data-info="সম্পূর্ণ বিলের উপর ছাড় দিন। যেমন ৳৫০ লিখলে মোট থেকে ৫০ টাকা বাদ যাবে। শতাংশ নয়, সরাসরি টাকার পরিমাণ লিখতে হবে।">i</button>
-                    </label>
-                    <input type="text" inputmode="decimal" name="discount" id="discountInput" value="0">
+                <div class="summary-row">
+                    <span>মোট বিক্রয়:</span>
+                    <span style="display:flex;align-items:center;gap:8px">
+                        <span id="totalDisplay">৳ 0.00</span>
+                        <button type="button" id="discountToggleBtn" onclick="toggleDiscount()"
+                            style="font-size:.72rem;padding:2px 8px;border-radius:20px;border:1.5px dashed #94a3b8;
+                                   background:transparent;color:#94a3b8;cursor:pointer;white-space:nowrap;
+                                   font-weight:600;line-height:1.5;transition:all .2s"
+                            title="ছাড় যোগ করুন">
+                            + ছাড়
+                        </button>
+                    </span>
+                </div>
+                <div id="discountRow" style="display:none">
+                    <div class="form-group-field" style="margin-bottom:0">
+                        <label>ছাড় (৳)
+                            <button type="button" class="info-btn" data-info="সম্পূর্ণ বিলের উপর ছাড় দিন। যেমন ৳৫০ লিখলে মোট থেকে ৫০ টাকা বাদ যাবে। শতাংশ নয়, সরাসরি টাকার পরিমাণ লিখতে হবে।">i</button>
+                        </label>
+                        <input type="text" inputmode="decimal" name="discount" id="discountInput" value="0">
+                    </div>
                 </div>
                 <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0.00</span></div>
                 <div class="form-group-field">
@@ -441,7 +455,8 @@ function addItem(id) {
             id:           item.id,
             name:         item.name,
             cost:         parseFloat(item.purchase_price),
-            price:        parseFloat(item.sale_price),
+            price:        0,
+            priceEntered: false,
             defaultPrice: parseFloat(item.sale_price),
             qty:          1,
             stock:        avail
@@ -481,7 +496,10 @@ function updateQty(id, val) {
 
 function updatePrice(id, val) {
     const item = cart.find(c => c.id === id);
-    if (item) { item.price = parseFloat(toEnglishDigits(val)) || 0; }
+    if (item) {
+        item.price = parseFloat(toEnglishDigits(val)) || 0;
+        item.priceEntered = val.trim() !== '';
+    }
     updateRowTotal(id);
     updateSummary();
 }
@@ -550,7 +568,7 @@ function renderCart() {
             </td>
             <td class="col-secret" style="color:#94a3b8;font-size:.88rem;${secretDisplay}">৳ ${c.cost.toLocaleString()}</td>
             <td>
-                <input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.price}"
+                <input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.priceEntered ? c.price : ''}"
                     style="width:100px"
                     oninput="updatePrice(${c.id},this.value)" class="inline-input">
             </td>
@@ -595,6 +613,19 @@ function updateSummary() {
         else if (marginPct >= 0) { badge.textContent = '↓ কম লাভ';      badge.className = 'margin-badge poor'; }
         else                     { badge.textContent = '✗ লোকসান';       badge.className = 'margin-badge poor'; }
     }
+}
+
+function toggleDiscount() {
+    const row = document.getElementById('discountRow');
+    const btn = document.getElementById('discountToggleBtn');
+    const inp = document.getElementById('discountInput');
+    const open = row.style.display === 'none';
+    row.style.display = open ? 'block' : 'none';
+    btn.textContent   = open ? '✕ ছাড়' : '+ ছাড়';
+    btn.style.color   = open ? '#ef4444' : '#94a3b8';
+    btn.style.borderColor = open ? '#fca5a5' : '#94a3b8';
+    if (!open) { inp.value = '0'; updateSummary(); }
+    else { inp.focus(); }
 }
 
 document.getElementById('discountInput').addEventListener('input', function() {

@@ -1221,6 +1221,77 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
 .link-primary:hover { text-decoration: underline; }
 .pagination-wrap { padding: 14px 20px; }
 
+/* ─── Custom Pagination ─────────────────────────────────────── */
+.custom-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.page-info {
+    font-size: .82rem;
+    color: var(--text-secondary);
+}
+.page-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: .84rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background .15s, color .15s, border-color .15s;
+    cursor: pointer;
+}
+.page-btn:hover {
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.page-btn-active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    cursor: default;
+}
+.page-btn-active:hover {
+    background: var(--accent);
+    color: #fff;
+}
+.page-btn-disabled {
+    color: var(--text-secondary);
+    border-color: var(--border);
+    background: var(--bg);
+    opacity: .5;
+    cursor: not-allowed;
+}
+.page-btn-disabled:hover {
+    background: var(--bg);
+    border-color: var(--border);
+    color: var(--text-secondary);
+}
+.page-btn-dots {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: default;
+    padding: 0 4px;
+    min-width: auto;
+}
+
 /* ─── Inline form (stock adjust) ───────────────────────────── */
 .inline-form { display: flex; align-items: center; gap: 8px; }
 .inline-input {
