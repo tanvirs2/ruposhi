@@ -395,7 +395,10 @@ class ReportController extends Controller
         // ── Revenue ───────────────────────────────────────────────
         $grossSales = Sale::whereBetween('sale_date', [$from, $to])->sum('total_amount');
         $discounts  = Sale::whereBetween('sale_date', [$from, $to])->sum('discount');
-        $netRevenue = $grossSales; // total_amount is already after discount
+        $extraCost  = Sale::whereBetween('sale_date', [$from, $to])->sum('extra_cost');
+        $laborCost  = Sale::whereBetween('sale_date', [$from, $to])->sum('labor_cost');
+        // Extras & labor are pass-through (collected from customer, paid out) — exclude from net revenue
+        $netRevenue = $grossSales - $extraCost - $laborCost;
 
         // ── COGS (cost of goods sold) ─────────────────────────────
         $cogs = DB::table('sale_items')
@@ -488,7 +491,7 @@ class ReportController extends Controller
 
         return view('reports.profit-loss', compact(
             'from', 'to',
-            'grossSales', 'discounts', 'netRevenue',
+            'grossSales', 'discounts', 'extraCost', 'laborCost', 'netRevenue',
             'cogs', 'grossProfit', 'grossMargin',
             'expenseCategories', 'totalExpenses',
             'netProfit', 'netMargin',
