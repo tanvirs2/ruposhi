@@ -220,13 +220,13 @@
     max-width: 540px;
 }
 .memo-under-arch {
-    margin-top: -28px;
+    margin-top: -18px;
     position: relative;
     z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
+    gap: 4px;
 }
 .memo-owner-badge {
     display: inline-block;

@@ -1,30 +1,34 @@
 {{--
     Curved (umbrella/arc) store name — uses SVG <textPath>.
-    Curve is intentionally GENTLE because Bengali script has matras (ি ী ু ্)
-    and ligatures (যুক্তাক্ষর). A sharp arc per-glyph rotates each Unicode
-    code point and breaks combined-character rendering.
+    Goal: large, bold, arched header — but the curve is intentionally
+    moderate so Bengali matras (ী, ু, ্) and ligatures (যুক্তাক্ষর) stay intact.
 
-    Usage: @include('partials.store-name-arc', ['name' => $store['name'], 'size' => 32])
+    Usage: @include('partials.store-name-arc', ['name' => $store['name'], 'size' => 44])
     Params:
-        name  (string)   — text to render
-        size  (int|null) — font-size in px (default 30)
-        color (string)   — text color (default currentColor)
+        name  (string) — text to render
+        size  (int)    — font-size in px (default 44, big & bold like a signboard)
+        color (string) — text color (default #1f2937 — near-black for impact)
 --}}
 @php
     $arcId = 'arc-' . uniqid();
-    $size  = $size  ?? 30;
-    $color = $color ?? 'currentColor';
+    $size  = $size  ?? 44;
+    $color = $color ?? '#1f2937';
 @endphp
-<svg viewBox="0 0 600 90" preserveAspectRatio="xMidYMid meet"
-     style="width:100%;max-width:540px;display:block;margin:0 auto">
+<svg viewBox="0 0 700 140" preserveAspectRatio="xMidYMid meet"
+     style="width:100%;max-width:640px;display:block;margin:0 auto">
     <defs>
-        {{-- Gentle arc: endpoints at y=72, control y=18 → ~28px peak above baseline.
-             Subtle enough that adjacent Bengali glyphs stay aligned. --}}
-        <path id="{{ $arcId }}" d="M 40,72 Q 300,18 560,72" fill="none" />
+        {{-- Moderate arch: endpoints at y=120, control y=-10 → ~65px peak.
+             Enough lift to look like an umbrella while keeping per-glyph
+             rotation small so Bengali shaping isn't destroyed. --}}
+        <path id="{{ $arcId }}" d="M 30,120 Q 350,-10 670,120" fill="none" />
     </defs>
-    <text font-size="{{ $size }}" font-weight="800"
+    <text font-size="{{ $size }}"
+          font-weight="900"
           font-family="'Hind Siliguri', sans-serif"
-          fill="{{ $color }}">
+          fill="{{ $color }}"
+          stroke="{{ $color }}"
+          stroke-width="0.5"
+          style="paint-order:stroke fill">
         <textPath href="#{{ $arcId }}" startOffset="50%" text-anchor="middle">
             {{ $name }}
         </textPath>
