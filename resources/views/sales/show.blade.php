@@ -220,7 +220,7 @@
     max-width: 540px;
 }
 .memo-under-arch {
-    margin-top: -38px;
+    margin-top: -58px;
     position: relative;
     z-index: 1;
     display: flex;
