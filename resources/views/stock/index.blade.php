@@ -30,11 +30,11 @@
                     <th>আইটেম</th>
                     <th>ব্র্যান্ড</th>
                     <th>ক্যাটাগরি</th>
-                    <th class="tc">বর্তমান স্টক</th>
                     <th class="tc">
                         {{ $filterDate === now()->toDateString() ? 'আজকের' : \Carbon\Carbon::parse($filterDate)->format('d/m') }} বিক্রয়
                     </th>
                     <th class="tc">মোট বিক্রয়</th>
+                    <th class="tc">বর্তমান স্টক</th>
                     <th class="tr">স্টক মূল্য</th>
                     <th class="tc">অবস্থা</th>
                     <th>সমন্বয়</th>
@@ -55,10 +55,6 @@
                     <td>{{ $s->item->itemBrand?->name ?? '—' }}</td>
                     <td>{{ $s->item->category?->name ?? '—' }}</td>
                     <td class="tc">
-                        <strong>{{ number_format($s->quantity, 0) }}</strong>
-                        <span style="color:#94a3b8;font-size:.8rem"> {{ $unit }}</span>
-                    </td>
-                    <td class="tc">
                         @if($todayQty > 0)
                             <span style="color:#16a34a;font-weight:600">{{ number_format($todayQty, 0) }}</span>
                             <span style="color:#94a3b8;font-size:.8rem"> {{ $unit }}</span>
@@ -68,6 +64,10 @@
                     </td>
                     <td class="tc">
                         <span style="font-weight:600">{{ number_format($totalQty, 0) }}</span>
+                        <span style="color:#94a3b8;font-size:.8rem"> {{ $unit }}</span>
+                    </td>
+                    <td class="tc">
+                        <strong>{{ number_format($s->quantity, 0) }}</strong>
                         <span style="color:#94a3b8;font-size:.8rem"> {{ $unit }}</span>
                     </td>
                     <td class="tr">
@@ -102,9 +102,9 @@
             <tfoot>
                 <tr class="tfoot-summary">
                     <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট স্টক</td>
-                    <td class="tc" style="font-weight:800">{{ number_format($grandStockQty, 0) }}</td>
                     <td class="tc" style="font-weight:800;color:#16a34a">{{ number_format($grandTodaySales, 0) }}</td>
                     <td class="tc" style="font-weight:800">{{ number_format($grandTotalSales, 0) }}</td>
+                    <td class="tc" style="font-weight:800">{{ number_format($grandStockQty, 0) }}</td>
                     <td class="tr" style="font-weight:800">৳ {{ number_format($grandStockValue, 0) }}</td>
                     <td colspan="2"></td>
                 </tr>
