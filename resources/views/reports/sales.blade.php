@@ -69,6 +69,11 @@
         <div class="stat-body">
             <span class="stat-label">মোট পরিশোধ</span>
             <span class="stat-value">৳ {{ number_format($grandPaid, 0) }}</span>
+            @if($grandStandalone > 0)
+            <span style="font-size:.72rem;color:#64748b;font-weight:500;margin-top:2px;display:block">
+                + ৳ {{ number_format($grandStandalone, 0) }} বিক্রয় ছাড়া পরিশোধ
+            </span>
+            @endif
         </div>
     </div>
     <div class="stat-card" style="border-left:4px solid #ef4444">
@@ -186,6 +191,57 @@
         </table>
     </div>
 </div>
+
+{{-- ── Standalone Customer Payments (not tied to any sale) ─────── --}}
+@if($standalonePayments->isNotEmpty())
+<div class="card" style="margin-top:18px">
+    <div class="card-header" style="padding:12px 16px;background:#f0fdf4;border-bottom:1px solid #bbf7d0">
+        <h3 style="font-size:.95rem;color:#15803d;margin:0">
+            <i class="fas fa-money-bill-wave"></i>
+            কাস্টমার পরিশোধ (বিক্রয় ছাড়া) — পূর্বের বাকীর বিপরীতে
+        </h3>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table sale-detail-table">
+            <thead>
+                <tr>
+                    <th class="tc">#</th>
+                    <th>কাস্টমার</th>
+                    <th class="tc">তারিখ</th>
+                    <th class="tc">পদ্ধতি</th>
+                    <th>মন্তব্য</th>
+                    <th class="tr">পরিশোধ (৳)</th>
+                    <th class="tc">সময়</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($standalonePayments as $p)
+                <tr>
+                    <td class="tc mono">{{ str_pad($p->id, 6, '0', STR_PAD_LEFT) }}</td>
+                    <td>{{ $p->customer?->name ?? '—' }}</td>
+                    <td class="tc">{{ \Carbon\Carbon::parse($p->payment_date)->format('Y-m-d') }}</td>
+                    <td class="tc">{{ $p->payment_method ?: '—' }}</td>
+                    <td style="color:#64748b;font-size:.82rem">{{ $p->notes ?: '—' }}</td>
+                    <td class="tr" style="color:#16a34a;font-weight:600">
+                        {{ number_format($p->amount, 0) }}
+                    </td>
+                    <td class="tc" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                        {{ \Carbon\Carbon::parse($p->created_at)->format('h:i:s a') }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td colspan="5" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                    <td class="tr" style="color:#16a34a;font-weight:800">{{ number_format($grandStandalone, 0) }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+@endif
 
 @endsection
 

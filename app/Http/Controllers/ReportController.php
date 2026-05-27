@@ -129,9 +129,18 @@ class ReportController extends Controller
             ->orderBy('sale_date')->orderBy('id')
             ->get();
 
-        $grandTotal   = $sales->sum('total_amount');
-        $grandPaid    = $sales->sum('paid_amount');
-        $grandDue     = $sales->sum('due_amount');
+        // Standalone customer payments (not tied to a sale) in the same date range
+        $standalonePayments = \App\Models\CustomerPayment::with('customer')
+            ->whereBetween('payment_date', [$from, $to])
+            ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
+            ->orderBy('payment_date')->orderBy('id')
+            ->get();
+
+        $grandTotal       = $sales->sum('total_amount');
+        $grandSalePaid    = $sales->sum('paid_amount');
+        $grandStandalone  = $standalonePayments->sum('amount');
+        $grandPaid        = $grandSalePaid + $grandStandalone;
+        $grandDue         = max(0, $sales->sum('due_amount') - $grandStandalone);
 
         // Per-item rows for the detail table (old-system style)
         $saleItems = DB::table('sale_items')
@@ -161,7 +170,8 @@ class ReportController extends Controller
 
         return view('reports.sales', compact(
             'sales', 'saleItems', 'customers',
-            'grandTotal', 'grandPaid', 'grandDue',
+            'standalonePayments',
+            'grandTotal', 'grandPaid', 'grandDue', 'grandStandalone',
             'from', 'to'
         ));
     }
