@@ -46,6 +46,17 @@
                     <tbody id="itemsBody">
                         <tr><td colspan="5" class="empty-row">কোনো আইটেম যোগ করা হয়নি</td></tr>
                     </tbody>
+                    <tfoot id="itemsFoot" style="display:none">
+                        <tr class="tfoot-summary">
+                            <td style="text-align:right;font-weight:700">সর্বমোট</td>
+                            <td class="tc" style="font-weight:800" id="footQty">0</td>
+                            <td class="col-secret" style="display:none"></td>
+                            <td></td>
+                            <td class="col-secret" style="display:none"></td>
+                            <td class="tr" style="font-weight:800" id="footTotal">৳ 0</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -541,12 +552,15 @@ function emptyColspan() {
 }
 
 function renderCart() {
+    const itemsFoot = document.getElementById('itemsFoot');
     if (!cart.length) {
         itemsBody.innerHTML = `<tr><td colspan="${emptyColspan()}" class="empty-row">কোনো আইটেম যোগ করা হয়নি</td></tr>`;
         if (profitPanel) profitPanel.style.display = 'none';
+        if (itemsFoot)  itemsFoot.style.display  = 'none';
         updateSummary();
         return;
     }
+    if (itemsFoot) itemsFoot.style.display = '';
 
     itemsBody.innerHTML = cart.map((c, idx) => {
         const profitPerUnit = c.price - c.cost;
@@ -589,6 +603,7 @@ function renderCart() {
 }
 
 function updateSummary() {
+    const totalQty = cart.reduce((s, c) => s + (parseFloat(c.qty) || 0), 0);
     const total    = cart.reduce((s, c) => s + c.qty * c.price, 0);
     const totalCost= cart.reduce((s, c) => s + c.qty * c.cost,  0);
     const discount = parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0;
@@ -597,6 +612,12 @@ function updateSummary() {
     const due      = Math.max(0, net - paid);
     const profit   = net - totalCost;
     const marginPct= totalCost > 0 ? (profit / totalCost * 100) : 0;
+
+    // Update cart tfoot totals
+    const footQty   = document.getElementById('footQty');
+    const footTotal = document.getElementById('footTotal');
+    if (footQty)   footQty.textContent   = totalQty.toString();
+    if (footTotal) footTotal.textContent = '৳ ' + total.toFixed(0);
 
     document.getElementById('totalDisplay').textContent   = '৳ ' + total.toFixed(2);
     document.getElementById('netDisplay').textContent     = '৳ ' + net.toFixed(2);
