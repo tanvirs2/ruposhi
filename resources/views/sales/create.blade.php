@@ -205,6 +205,10 @@
 
 @push('styles')
 <style>
+/* Cart table — compact rows */
+#itemsTable th { height: 32px; padding: 0 10px; font-size: .68rem; }
+#itemsTable td { height: 36px; padding: 0 10px; font-size: .85rem; }
+
 /* Profit column coloring */
 .profit-good  { color: #16a34a; font-weight: 600; }
 .profit-med   { color: #d97706; font-weight: 600; }
@@ -556,9 +560,9 @@ function renderCart() {
         const stockTxt   = (overStock ? '⚠ স্টক: ' : 'স্টক: ') + (c.stock ?? '?');
 
         return `<tr>
-            <td>
+            <td style="white-space:nowrap">
                 ${c.name}
-                <br><span id="stock-badge-${c.id}" style="font-size:.72rem;font-weight:700;background:${stockBg};color:${stockClr};padding:1px 7px;border-radius:20px;display:inline-block;margin-top:2px">${stockTxt}</span>
+                <span id="stock-badge-${c.id}" style="font-size:.68rem;font-weight:700;background:${stockBg};color:${stockClr};padding:1px 6px;border-radius:20px;display:inline-block;margin-left:5px;vertical-align:middle">${stockTxt}</span>
                 <input type="hidden" name="items[${idx}][id]" value="${c.id}">
             </td>
             <td>

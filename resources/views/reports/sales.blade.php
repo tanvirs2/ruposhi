@@ -114,7 +114,7 @@
                 </tr>
             </thead>
             <tbody>
-                @php $running = 0; $lastSaleId = null; @endphp
+                @php $running = 0; $lastSaleId = null; $totalQty = 0; $totalKgSum = 0; @endphp
                 @forelse($saleItems as $row)
                 @php
                     $running += $row->amount;
@@ -124,6 +124,8 @@
                     preg_match('/(৫০|২৫|50|25)\s*(কেজি|kg)/ui', $row->item_name, $m);
                     $kgPer = isset($m[1]) ? (int) str_replace(['৫০','২৫'],['50','25'], $m[1]) : null;
                     $totalKg = $kgPer ? (int)$row->qty * $kgPer : null;
+                    $totalQty += (int)$row->qty;
+                    if ($totalKg) $totalKgSum += $totalKg;
                 @endphp
                 <tr class="{{ $isNewSale ? 'new-sale-row' : '' }}">
                     <td class="tc mono">
@@ -170,7 +172,10 @@
             @if($saleItems->isNotEmpty())
             <tfoot>
                 <tr class="tfoot-summary">
-                    <td colspan="6" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                    <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                    <td class="tc" style="font-weight:800">{{ $totalQty }}</td>
+                    <td class="tc" style="font-weight:800">{{ $totalKgSum ?: '—' }}</td>
+                    <td></td>
                     <td class="tr" style="font-weight:800">{{ number_format($saleItems->sum('amount'), 0) }}</td>
                     <td class="tr" style="color:#16a34a;font-weight:700">{{ number_format($grandPaid, 0) }}</td>
                     <td class="tr" style="color:#dc2626;font-weight:700">{{ number_format($grandDue, 0) }}</td>

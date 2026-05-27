@@ -826,12 +826,15 @@ a { text-decoration: none; color: inherit; }
     font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: .05em;
-    padding: 10px 20px;
+    padding: 0 20px;
+    height: 40px;
     text-align: left;
     border: 1px solid var(--border);
+    white-space: nowrap;
 }
 .data-table td {
-    padding: 11px 20px;
+    padding: 0 20px;
+    height: 46px;
     border: 1px solid var(--border);
     color: var(--text-primary);
     vertical-align: middle;
@@ -974,7 +977,8 @@ a { text-decoration: none; color: inherit; }
     .module-grid { grid-template-columns: 1fr 1fr; }
     .content { padding: 14px; }
     .stat-value { font-size: 1.15rem; }
-    .data-table th, .data-table td { padding: 9px 12px; }
+    .data-table th { padding: 0 12px; height: 36px; }
+    .data-table td { padding: 0 12px; height: 42px; }
 }
 
 @media (max-width: 480px) {
@@ -1296,7 +1300,7 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
 .inline-form { display: flex; align-items: center; gap: 8px; }
 .inline-input {
     border: 1.5px solid var(--border); border-radius: 6px;
-    padding: 6px 10px; font-family: inherit; font-size: 0.85rem;
+    padding: 4px 8px; font-family: inherit; font-size: 0.85rem;
     outline: none;
 }
 .inline-input:focus { border-color: var(--accent); }
