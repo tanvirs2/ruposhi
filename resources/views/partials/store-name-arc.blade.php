@@ -14,10 +14,12 @@
     // Quadratic Bezier: endpoints near bottom (y=140), control point above top (y=-60)
     // Effective peak height = 140 - ((140 + (-60)) / 2) ≈ 100px of upward arch
 @endphp
-<svg viewBox="0 0 600 160" preserveAspectRatio="xMidYMid meet"
+<svg viewBox="0 0 600 130" preserveAspectRatio="xMidYMid meet"
      style="width:100%;max-width:520px;display:block;margin:0 auto">
     <defs>
-        <path id="{{ $arcId }}" d="M 50,140 Q 300,-60 550,140" fill="none" />
+        {{-- endpoints at y=115 sit just above SVG bottom edge so content below
+             can tuck right under the curve without extra whitespace --}}
+        <path id="{{ $arcId }}" d="M 50,115 Q 300,-75 550,115" fill="none" />
     </defs>
     <text font-size="{{ $size }}" font-weight="800"
           font-family="'Hind Siliguri', sans-serif"

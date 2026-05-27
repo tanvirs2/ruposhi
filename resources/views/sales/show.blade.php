@@ -226,8 +226,11 @@
     font-size: 2rem;
     font-weight: 800;
     line-height: 1.15;
-    margin-bottom: 4px;
+    margin-bottom: -30px;     /* pull subsequent content up into the umbrella curve */
 }
+.memo-store-name + div,
+.memo-store-name + div + div,
+.memo-store-name + div + div + div { position: relative; z-index: 1; }
 .memo-owner-badge {
     display: inline-block;
     background: #e5e7eb;
