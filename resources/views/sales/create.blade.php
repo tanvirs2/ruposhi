@@ -115,23 +115,38 @@
 
                 <div class="summary-row">
                     <span>মোট বিক্রয়:</span>
-                    <span style="display:flex;align-items:center;gap:8px">
+                    <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
                         <span id="totalDisplay">৳ 0.00</span>
-                        <button type="button" id="discountToggleBtn" onclick="toggleDiscount()"
-                            style="font-size:.72rem;padding:2px 8px;border-radius:20px;border:1.5px dashed #94a3b8;
-                                   background:transparent;color:#94a3b8;cursor:pointer;white-space:nowrap;
-                                   font-weight:600;line-height:1.5;transition:all .2s"
-                            title="ছাড় যোগ করুন">
-                            + ছাড়
-                        </button>
+                        <button type="button" id="discountToggleBtn" onclick="toggleField('discount')"
+                            class="cost-toggle-btn" title="ছাড় যোগ করুন">+ ছাড়</button>
+                        <button type="button" id="extraCostToggleBtn" onclick="toggleField('extra')"
+                            class="cost-toggle-btn" title="অতিরিক্ত খরচ যোগ করুন">+ খরচ</button>
+                        <button type="button" id="laborCostToggleBtn" onclick="toggleField('labor')"
+                            class="cost-toggle-btn" title="শ্রমিক খরচ যোগ করুন">+ শ্রমিক</button>
                     </span>
                 </div>
                 <div id="discountRow" style="display:none">
                     <div class="form-group-field" style="margin-bottom:0">
                         <label>ছাড় (৳)
-                            <button type="button" class="info-btn" data-info="সম্পূর্ণ বিলের উপর ছাড় দিন। যেমন ৳৫০ লিখলে মোট থেকে ৫০ টাকা বাদ যাবে। শতাংশ নয়, সরাসরি টাকার পরিমাণ লিখতে হবে।">i</button>
+                            <button type="button" class="info-btn" data-info="সম্পূর্ণ বিলের উপর ছাড় দিন। যেমন ৳৫০ লিখলে মোট থেকে ৫০ টাকা বাদ যাবে।">i</button>
                         </label>
                         <input type="text" inputmode="decimal" name="discount" id="discountInput" value="0">
+                    </div>
+                </div>
+                <div id="extraRow" style="display:none">
+                    <div class="form-group-field" style="margin-bottom:0">
+                        <label>অতিরিক্ত খরচ (৳)
+                            <button type="button" class="info-btn" data-info="পরিবহন, ডেলিভারি বা অন্য কোনো খরচ যা কাস্টমারের বিলে যোগ হবে।">i</button>
+                        </label>
+                        <input type="text" inputmode="decimal" name="extra_cost" id="extraInput" value="0">
+                    </div>
+                </div>
+                <div id="laborRow" style="display:none">
+                    <div class="form-group-field" style="margin-bottom:0">
+                        <label>শ্রমিক খরচ (৳)
+                            <button type="button" class="info-btn" data-info="মাল লোডিং/আনলোডিং বা শ্রমিকের মজুরি কাস্টমারের বিলে যোগ হবে।">i</button>
+                        </label>
+                        <input type="text" inputmode="decimal" name="labor_cost" id="laborInput" value="0">
                     </div>
                 </div>
                 <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0.00</span></div>
@@ -274,6 +289,23 @@
     padding-top:8px;
     margin-top:2px;
 }
+
+/* Cost/discount toggle buttons */
+.cost-toggle-btn {
+    font-size:.72rem;
+    padding:2px 8px;
+    border-radius:20px;
+    border:1.5px dashed #94a3b8;
+    background:transparent;
+    color:#94a3b8;
+    cursor:pointer;
+    white-space:nowrap;
+    font-weight:600;
+    line-height:1.5;
+    transition:all .2s;
+}
+.cost-toggle-btn:hover { color:var(--accent); border-color:var(--accent); }
+.cost-toggle-btn.active { color:#ef4444; border-color:#fca5a5; border-style:solid; }
 
 /* Cost hint under search suggestion */
 .suggestion-item .cost-hint {
@@ -607,10 +639,12 @@ function updateSummary() {
     const total    = cart.reduce((s, c) => s + c.qty * c.price, 0);
     const totalCost= cart.reduce((s, c) => s + c.qty * c.cost,  0);
     const discount = parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0;
-    const net      = Math.max(0, total - discount);
+    const extra    = parseFloat(toEnglishDigits(document.getElementById('extraInput').value))    || 0;
+    const labor    = parseFloat(toEnglishDigits(document.getElementById('laborInput').value))    || 0;
+    const net      = Math.max(0, total - discount + extra + labor);
     const paid     = parseFloat(toEnglishDigits(document.getElementById('paidInput').value)) || 0;
     const due      = Math.max(0, net - paid);
-    const profit   = net - totalCost;
+    const profit   = net - totalCost - extra - labor;  // extras don't count as profit
     const marginPct= totalCost > 0 ? (profit / totalCost * 100) : 0;
 
     // Update cart tfoot totals
@@ -640,25 +674,35 @@ function updateSummary() {
     }
 }
 
-function toggleDiscount() {
-    const row = document.getElementById('discountRow');
-    const btn = document.getElementById('discountToggleBtn');
-    const inp = document.getElementById('discountInput');
+const fieldMap = {
+    discount: { row: 'discountRow', btn: 'discountToggleBtn', inp: 'discountInput', labelOn: '✕ ছাড়',    labelOff: '+ ছাড়' },
+    extra:    { row: 'extraRow',    btn: 'extraCostToggleBtn', inp: 'extraInput',   labelOn: '✕ খরচ',    labelOff: '+ খরচ' },
+    labor:    { row: 'laborRow',    btn: 'laborCostToggleBtn', inp: 'laborInput',   labelOn: '✕ শ্রমিক', labelOff: '+ শ্রমিক' },
+};
+
+function toggleField(key) {
+    const f   = fieldMap[key];
+    const row = document.getElementById(f.row);
+    const btn = document.getElementById(f.btn);
+    const inp = document.getElementById(f.inp);
     const open = row.style.display === 'none';
     row.style.display = open ? 'block' : 'none';
-    btn.textContent   = open ? '✕ ছাড়' : '+ ছাড়';
-    btn.style.color   = open ? '#ef4444' : '#94a3b8';
-    btn.style.borderColor = open ? '#fca5a5' : '#94a3b8';
+    btn.textContent   = open ? f.labelOn : f.labelOff;
+    btn.classList.toggle('active', open);
     if (!open) { inp.value = '0'; updateSummary(); }
     else { inp.focus(); }
 }
 
-document.getElementById('discountInput').addEventListener('input', function() {
-    // Re-sync paid if prev-due partial is active
-    if (prevDuePay > 0) {
-        document.getElementById('paidInput').value = (getNet() + prevDuePay).toFixed(0);
-    }
-    updateSummary();
+// Backward-compat name (in case anything still calls toggleDiscount)
+function toggleDiscount() { toggleField('discount'); }
+
+['discountInput', 'extraInput', 'laborInput'].forEach(id => {
+    document.getElementById(id).addEventListener('input', function() {
+        if (prevDuePay > 0) {
+            document.getElementById('paidInput').value = (getNet() + prevDuePay).toFixed(0);
+        }
+        updateSummary();
+    });
 });
 document.getElementById('paidInput').addEventListener('input', updateSummary);
 
@@ -671,6 +715,8 @@ function getNet() {
     return Math.max(0,
         cart.reduce((s, c) => s + c.qty * c.price, 0)
         - (parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0)
+        + (parseFloat(toEnglishDigits(document.getElementById('extraInput').value))    || 0)
+        + (parseFloat(toEnglishDigits(document.getElementById('laborInput').value))    || 0)
     );
 }
 

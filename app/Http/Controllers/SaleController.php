@@ -55,10 +55,12 @@ class SaleController extends Controller
 
         $sale = null;
         DB::transaction(function () use ($request, &$sale) {
-            $total    = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
-            $discount = $request->discount ?? 0;
-            $net      = $total - $discount;
-            $due      = max(0, $net - $request->paid_amount);
+            $total      = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
+            $discount   = $request->discount   ?? 0;
+            $extraCost  = $request->extra_cost ?? 0;
+            $laborCost  = $request->labor_cost ?? 0;
+            $net        = $total - $discount + $extraCost + $laborCost;
+            $due        = max(0, $net - $request->paid_amount);
 
             // Capture the customer's outstanding balance before this sale
             $previousDue = $request->customer_id
@@ -70,6 +72,8 @@ class SaleController extends Controller
                 'user_id'      => auth()->id(),
                 'total_amount' => $net,
                 'discount'     => $discount,
+                'extra_cost'   => $extraCost,
+                'labor_cost'   => $laborCost,
                 'paid_amount'  => $request->paid_amount,
                 'due_amount'   => $due,
                 'previous_due' => $previousDue,
@@ -168,10 +172,12 @@ class SaleController extends Controller
             $sale->items()->delete();
 
             // ── 4. Calculate new totals ─────────────────────────────
-            $total    = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
-            $discount = $request->discount ?? 0;
-            $net      = $total - $discount;
-            $due      = max(0, $net - $request->paid_amount);
+            $total     = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
+            $discount  = $request->discount   ?? 0;
+            $extraCost = $request->extra_cost ?? 0;
+            $laborCost = $request->labor_cost ?? 0;
+            $net       = $total - $discount + $extraCost + $laborCost;
+            $due       = max(0, $net - $request->paid_amount);
 
             // ── 5. Capture previous_due AFTER reversing old effects ─
             $previousDue = $request->customer_id
@@ -183,6 +189,8 @@ class SaleController extends Controller
                 'customer_id'    => $request->customer_id ?: null,
                 'total_amount'   => $net,
                 'discount'       => $discount,
+                'extra_cost'     => $extraCost,
+                'labor_cost'     => $laborCost,
                 'paid_amount'    => $request->paid_amount,
                 'due_amount'     => $due,
                 'previous_due'   => $previousDue,
