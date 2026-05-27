@@ -59,6 +59,18 @@
     </div>
 
     <div class="invoice-totals">
+        @php
+            $itemsTotal = $purchase->total_amount - ($purchase->extra_cost ?? 0) - ($purchase->labor_cost ?? 0);
+        @endphp
+        @if(($purchase->extra_cost ?? 0) > 0 || ($purchase->labor_cost ?? 0) > 0)
+        <div class="inv-row"><span>আইটেম মূল্য:</span><span>৳ {{ number_format($itemsTotal,0) }}</span></div>
+        @endif
+        @if(($purchase->extra_cost ?? 0) > 0)
+        <div class="inv-row"><span>অতিরিক্ত খরচ:</span><span>+ ৳ {{ number_format($purchase->extra_cost,0) }}</span></div>
+        @endif
+        @if(($purchase->labor_cost ?? 0) > 0)
+        <div class="inv-row"><span>শ্রমিক খরচ:</span><span>+ ৳ {{ number_format($purchase->labor_cost,0) }}</span></div>
+        @endif
         <div class="inv-row inv-total"><span>মোট মূল্য:</span><span>৳ {{ number_format($purchase->total_amount,0) }}</span></div>
         <div class="inv-row">
             <span>পরিশোধ:

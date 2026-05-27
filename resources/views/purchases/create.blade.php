@@ -81,7 +81,33 @@
                 </div>
 
                 <div class="summary-row summary-total"><span>মোট পরিমাণ:</span><span id="totalQtyDisplay">০ বস্তা</span></div>
-                <div class="summary-row"><span>মোট মূল্য:</span><span id="totalDisplay">৳ 0</span></div>
+                <div class="summary-row">
+                    <span>মোট মূল্য:</span>
+                    <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+                        <span id="totalDisplay">৳ 0</span>
+                        <button type="button" id="extraCostToggleBtn" onclick="toggleField('extra')"
+                            class="cost-toggle-btn" title="অতিরিক্ত খরচ যোগ করুন">+ খরচ</button>
+                        <button type="button" id="laborCostToggleBtn" onclick="toggleField('labor')"
+                            class="cost-toggle-btn" title="শ্রমিক খরচ যোগ করুন">+ শ্রমিক</button>
+                    </span>
+                </div>
+                <div id="extraRow" style="display:none">
+                    <div class="form-group-field" style="margin-bottom:0">
+                        <label>অতিরিক্ত খরচ (৳)
+                            <button type="button" class="info-btn" data-info="পরিবহন বা অন্য কোনো খরচ যা মোট রিসিভ খরচে যোগ হবে।">i</button>
+                        </label>
+                        <input type="text" inputmode="decimal" name="extra_cost" id="extraInput" value="0">
+                    </div>
+                </div>
+                <div id="laborRow" style="display:none">
+                    <div class="form-group-field" style="margin-bottom:0">
+                        <label>শ্রমিক খরচ (৳)
+                            <button type="button" class="info-btn" data-info="মাল আনলোডিংয়ের শ্রমিক খরচ মোট রিসিভ খরচে যোগ হবে।">i</button>
+                        </label>
+                        <input type="text" inputmode="decimal" name="labor_cost" id="laborInput" value="0">
+                    </div>
+                </div>
+                <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0</span></div>
 
                 <div class="form-group-field">
                     <label>পরিশোধ (৳) <span class="req">*</span>
@@ -175,6 +201,16 @@
 .stock-arrow .new  { color: #16a34a; font-weight: 700; }
 .current-stock-cell { color: #94a3b8; font-size: .85rem; }
 .new-stock-cell { color: #16a34a; font-weight: 700; }
+
+/* Cost toggle buttons (match sale form) */
+.cost-toggle-btn {
+    font-size:.72rem; padding:2px 8px; border-radius:20px;
+    border:1.5px dashed #94a3b8; background:transparent;
+    color:#94a3b8; cursor:pointer; white-space:nowrap;
+    font-weight:600; line-height:1.5; transition:all .2s;
+}
+.cost-toggle-btn:hover { color:var(--accent); border-color:var(--accent); }
+.cost-toggle-btn.active { color:#ef4444; border-color:#fca5a5; border-style:solid; }
 </style>
 @endpush
 
@@ -401,13 +437,36 @@ function renderCart() {
 function updateSummary() {
     const total    = cart.reduce((s, c) => s + c.qty * c.price, 0);
     const totalQty = cart.reduce((s, c) => s + (c.qty || 0), 0);
+    const extra    = parseFloat(toEnglishDigits(document.getElementById('extraInput').value)) || 0;
+    const labor    = parseFloat(toEnglishDigits(document.getElementById('laborInput').value)) || 0;
+    const net      = total + extra + labor;
     const paid     = parseFloat(toEnglishDigits(document.getElementById('paidInput').value)) || 0;
     document.getElementById('totalDisplay').textContent    = '৳ ' + total.toLocaleString();
     document.getElementById('totalQtyDisplay').textContent = totalQty + ' বস্তা';
-    document.getElementById('dueDisplay').textContent      = '৳ ' + Math.max(0, total - paid).toLocaleString();
+    document.getElementById('netDisplay').textContent      = '৳ ' + net.toLocaleString();
+    document.getElementById('dueDisplay').textContent      = '৳ ' + Math.max(0, net - paid).toLocaleString();
 }
 
-document.getElementById('paidInput').addEventListener('input', updateSummary);
+const fieldMap = {
+    extra: { row: 'extraRow', btn: 'extraCostToggleBtn', inp: 'extraInput', labelOn: '✕ খরচ',    labelOff: '+ খরচ' },
+    labor: { row: 'laborRow', btn: 'laborCostToggleBtn', inp: 'laborInput', labelOn: '✕ শ্রমিক', labelOff: '+ শ্রমিক' },
+};
+function toggleField(key) {
+    const f   = fieldMap[key];
+    const row = document.getElementById(f.row);
+    const btn = document.getElementById(f.btn);
+    const inp = document.getElementById(f.inp);
+    const open = row.style.display === 'none';
+    row.style.display = open ? 'block' : 'none';
+    btn.textContent   = open ? f.labelOn : f.labelOff;
+    btn.classList.toggle('active', open);
+    if (!open) { inp.value = '0'; updateSummary(); }
+    else { inp.focus(); }
+}
+
+['paidInput', 'extraInput', 'laborInput'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateSummary);
+});
 
 document.getElementById('receiveForm').addEventListener('submit', function(e) {
     if (!cart.length) { e.preventDefault(); alert('কমপক্ষে একটি আইটেম যোগ করুন।'); }

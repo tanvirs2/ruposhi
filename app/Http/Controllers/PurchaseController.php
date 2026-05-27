@@ -46,13 +46,18 @@ class PurchaseController extends Controller
         ]);
 
         DB::transaction(function () use ($request) {
-            $total = collect($request->items)->sum(fn($i) => $i['qty'] * $i['price']);
-            $due   = max(0, $total - $request->paid_amount);
+            $itemsTotal = collect($request->items)->sum(fn($i) => $i['qty'] * $i['price']);
+            $extraCost  = $request->extra_cost ?? 0;
+            $laborCost  = $request->labor_cost ?? 0;
+            $total      = $itemsTotal + $extraCost + $laborCost;
+            $due        = max(0, $total - $request->paid_amount);
 
             $purchase = Purchase::create([
                 'supplier_id'    => $request->supplier_id ?: null,
                 'user_id'        => auth()->id(),
                 'total_amount'   => $total,
+                'extra_cost'     => $extraCost,
+                'labor_cost'     => $laborCost,
                 'paid_amount'    => $request->paid_amount,
                 'due_amount'     => $due,
                 'payment_method' => $request->payment_method ?? 'নগদ',
