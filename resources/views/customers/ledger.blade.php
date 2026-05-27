@@ -108,8 +108,8 @@
     <div class="table-wrap">
         <table class="data-table cl-table">
             <colgroup>
-                <col style="width:120px">   {{-- তারিখ --}}
                 <col style="width:90px">    {{-- চালান নং --}}
+                <col style="width:120px">   {{-- তারিখ --}}
                 <col style="width:220px">   {{-- বিবরণ --}}
                 <col style="width:70px">    {{-- পরিমাণ --}}
                 <col style="width:70px">    {{-- দর --}}
@@ -119,8 +119,8 @@
             </colgroup>
             <thead>
                 <tr>
-                    <th>তারিখ</th>
                     <th class="tc">চালান নং</th>
+                    <th>তারিখ</th>
                     <th>বিবরণ</th>
                     <th style="text-align:right">পরিমাণ</th>
                     <th style="text-align:right">দর</th>
@@ -149,12 +149,6 @@
                     if ($row['sale_id']) $prevSaleId = $row['sale_id'];
                 @endphp
                 <tr class="{{ $row['type'] === 'payment' ? 'cl-payment-row' : ($row['type'] === 'discount' ? 'cl-discount-row' : '') }} {{ $isNewSale && !$loop->first ? 'cl-new-sale' : '' }}">
-                    <td class="cl-date" style="white-space:nowrap">
-                        @php
-                            $dt = \Carbon\Carbon::parse($row['datetime']);
-                        @endphp
-                        {{ $dt->format('Y-m-d') }} <span class="cl-time">{{ $dt->format('h:i:s a') }}</span>
-                    </td>
                     <td class="tc mono" style="font-size:.82rem">
                         @if($row['sale_id'])
                             <a href="{{ route('sales.show', $row['sale_id']) }}" class="link-primary">
@@ -163,6 +157,12 @@
                         @else
                             <span class="cl-dash">—</span>
                         @endif
+                    </td>
+                    <td class="cl-date" style="white-space:nowrap">
+                        @php
+                            $dt = \Carbon\Carbon::parse($row['datetime']);
+                        @endphp
+                        {{ $dt->format('Y-m-d') }} <span class="cl-time">{{ $dt->format('h:i:s a') }}</span>
                     </td>
                     <td>
                         @if($row['type'] === 'payment')
