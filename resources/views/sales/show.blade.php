@@ -40,27 +40,27 @@
     </div>
 
     <div class="memo-header">
-        {{-- Left: store name + badge + tagline + address --}}
-        <div class="memo-header-left">
-            <div class="memo-store-name">
-                @include('partials.store-name-arc', ['name' => $store['name'], 'size' => 36])
-            </div>
+        <div class="memo-store-name">
+            @include('partials.store-name-arc', ['name' => $store['name'], 'size' => 36])
+        </div>
+        <div class="memo-under-arch">
             @if($store['owner'])
             <div><span class="memo-owner-badge">প্রোঃ {{ $store['owner'] }}</span></div>
             @endif
             @if($store['tagline'])
             <div class="memo-tagline">{{ $store['tagline'] }}</div>
             @endif
+            @if($store['address'])
             <div class="memo-address">{{ $store['address'] }}</div>
+            @endif
+            @if($store['phone'] || $store['phone2'])
+            <div class="memo-phones">
+                @if($store['phone']){{ $store['phone'] }}@endif
+                @if($store['phone'] && $store['phone2']) &nbsp;|&nbsp; @endif
+                @if($store['phone2']){{ $store['phone2'] }}@endif
+            </div>
+            @endif
         </div>
-
-        {{-- Right: phone numbers stacked --}}
-        @if($store['phone'] || $store['phone2'])
-        <div class="memo-header-right">
-            @if($store['phone'])<div>{{ $store['phone'] }}</div>@endif
-            @if($store['phone2'])<div>{{ $store['phone2'] }}</div>@endif
-        </div>
-        @endif
     </div>
 
     {{-- ── INVOICE META ─────────────────────────────────────────── --}}
@@ -208,55 +208,41 @@
     margin-bottom: 2px;
 }
 
-/* ══ Header row (store name LEFT, phones RIGHT) ══════════════════ */
+/* ══ Header (centered, store name arches over the info block) ══════ */
 .memo-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+    text-align: center;
     border-bottom: 2px solid #222;
     padding-bottom: 10px;
     margin-bottom: 8px;
-    gap: 12px;
-}
-.memo-header-left {
-    flex: 1;
-    text-align: center;
 }
 .memo-store-name {
-    font-size: 2rem;
-    font-weight: 800;
-    line-height: 1.15;
-    margin-bottom: -30px;     /* pull subsequent content up into the umbrella curve */
+    margin: 0 auto;
+    max-width: 540px;
 }
-.memo-store-name + div,
-.memo-store-name + div + div,
-.memo-store-name + div + div + div { position: relative; z-index: 1; }
+.memo-under-arch {
+    margin-top: -34px;          /* tuck owner/tagline/address inside the umbrella */
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
 .memo-owner-badge {
     display: inline-block;
     background: #e5e7eb;
     border-radius: 999px;
-    padding: 1px 16px;
+    padding: 2px 16px;
     font-size: .88rem;
     font-weight: 600;
-    margin-bottom: 3px;
 }
-.memo-tagline {
-    font-size: .82rem;
-    color: #333;
-    margin-top: 2px;
-}
-.memo-address {
-    font-size: .8rem;
-    color: #555;
-    margin-top: 1px;
-}
-.memo-header-right {
-    text-align: right;
-    font-weight: 700;
+.memo-tagline { font-size: .82rem; color: #333; }
+.memo-address { font-size: .8rem;  color: #555; }
+.memo-phones {
     font-size: .92rem;
-    line-height: 1.9;
-    white-space: nowrap;
-    padding-top: 6px;
+    font-weight: 700;
+    margin-top: 3px;
+    letter-spacing: .02em;
 }
 
 /* ══ Invoice meta section ════════════════════════════════════════ */
