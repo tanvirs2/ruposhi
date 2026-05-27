@@ -145,14 +145,17 @@ class ReportController extends Controller
             ->orderBy('sale_date')->orderBy('id')
             ->get();
 
-        $grandTotal       = $sales->sum('total_amount');
-        // paid_amount on no-item sales is already in $sales->sum('paid_amount')
-        $grandSalePaid    = $sales->sum('paid_amount');
-        $grandStandalone  = $standalonePayments->sum('amount');
-        $grandPaid        = $grandSalePaid + $grandStandalone;
-        // For due: exclude no-item sales' due_amount (it's carried-over previous due, not today's new due)
-        $itemSales        = $sales->filter(fn($s) => !$noItemSales->contains('id', $s->id));
-        $grandDue         = max(0, $itemSales->sum('due_amount') - $grandStandalone);
+        $grandTotal         = $sales->sum('total_amount');
+        // paid_amount on no-item sales is already inside $sales->sum('paid_amount')
+        $grandSalePaid      = $sales->sum('paid_amount');
+        $grandStandalone    = $standalonePayments->sum('amount');
+        $grandNoItemPaid    = $noItemSales->sum('paid_amount');
+        // মোট পরিশোধ = item-sale payments + standalone CustomerPayments
+        // (no-item sale payments are already part of grandSalePaid, so not added again)
+        $grandPaid          = $grandSalePaid + $grandStandalone;
+        // For due: use only item-bearing sales' due_amount, then deduct both types of extra payments
+        $itemSales          = $sales->filter(fn($s) => !$noItemSales->contains('id', $s->id));
+        $grandDue           = max(0, $itemSales->sum('due_amount') - $grandStandalone - $grandNoItemPaid);
 
         // Per-item rows for the detail table (old-system style)
         $saleItems = DB::table('sale_items')
