@@ -1,5 +1,9 @@
 {{--
     Curved (umbrella/arc) store name — uses SVG <textPath>.
+    Curve is intentionally GENTLE because Bengali script has matras (ি ী ু ্)
+    and ligatures (যুক্তাক্ষর). A sharp arc per-glyph rotates each Unicode
+    code point and breaks combined-character rendering.
+
     Usage: @include('partials.store-name-arc', ['name' => $store['name'], 'size' => 32])
     Params:
         name  (string)   — text to render
@@ -7,24 +11,20 @@
         color (string)   — text color (default currentColor)
 --}}
 @php
-    $arcId  = 'arc-' . uniqid();
-    $size   = $size  ?? 30;
-    $color  = $color ?? 'currentColor';
-    // viewBox is 600 wide × 160 tall — taller box so the umbrella curve has room to rise
-    // Quadratic Bezier: endpoints near bottom (y=140), control point above top (y=-60)
-    // Effective peak height = 140 - ((140 + (-60)) / 2) ≈ 100px of upward arch
+    $arcId = 'arc-' . uniqid();
+    $size  = $size  ?? 30;
+    $color = $color ?? 'currentColor';
 @endphp
-<svg viewBox="0 0 600 130" preserveAspectRatio="xMidYMid meet"
-     style="width:100%;max-width:520px;display:block;margin:0 auto">
+<svg viewBox="0 0 600 90" preserveAspectRatio="xMidYMid meet"
+     style="width:100%;max-width:540px;display:block;margin:0 auto">
     <defs>
-        {{-- endpoints at y=115 sit just above SVG bottom edge so content below
-             can tuck right under the curve without extra whitespace --}}
-        <path id="{{ $arcId }}" d="M 50,115 Q 300,-75 550,115" fill="none" />
+        {{-- Gentle arc: endpoints at y=72, control y=18 → ~28px peak above baseline.
+             Subtle enough that adjacent Bengali glyphs stay aligned. --}}
+        <path id="{{ $arcId }}" d="M 40,72 Q 300,18 560,72" fill="none" />
     </defs>
     <text font-size="{{ $size }}" font-weight="800"
           font-family="'Hind Siliguri', sans-serif"
-          fill="{{ $color }}"
-          style="letter-spacing:.02em">
+          fill="{{ $color }}">
         <textPath href="#{{ $arcId }}" startOffset="50%" text-anchor="middle">
             {{ $name }}
         </textPath>
