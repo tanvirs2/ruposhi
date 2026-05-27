@@ -58,7 +58,7 @@
             {{-- Preview --}}
             <div style="margin:20px 0;padding:16px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;text-align:center;font-family:'Hind Siliguri',sans-serif">
                 <div style="font-size:.75rem;color:#94a3b8;margin-bottom:2px">ক্যাশ মেমো</div>
-                <div style="font-size:1.4rem;font-weight:800">{{ $config['store_name'] ?? 'আমার দোকান' }}</div>
+                @include('partials.store-name-arc', ['name' => $config['store_name'] ?? 'আমার দোকান', 'size' => 30])
                 @if(!empty($config['store_owner']))<div style="font-size:.85rem">প্রোঃ {{ $config['store_owner'] }}</div>@endif
                 @if(!empty($config['store_tagline']))<div style="font-size:.8rem;color:#555">{{ $config['store_tagline'] }}</div>@endif
                 <div style="font-size:.8rem;color:#777">{{ $config['store_address'] ?? '' }}</div>

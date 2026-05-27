@@ -42,7 +42,9 @@
     <div class="memo-header">
         {{-- Left: store name + badge + tagline + address --}}
         <div class="memo-header-left">
-            <div class="memo-store-name">{{ $store['name'] }}</div>
+            <div class="memo-store-name">
+                @include('partials.store-name-arc', ['name' => $store['name'], 'size' => 36])
+            </div>
             @if($store['owner'])
             <div><span class="memo-owner-badge">প্রোঃ {{ $store['owner'] }}</span></div>
             @endif
