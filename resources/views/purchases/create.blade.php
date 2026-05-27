@@ -339,11 +339,13 @@ function addItem(id) {
         cart.find(c => c.id === id).qty++;
     } else {
         cart.push({
-            id:           item.id,
-            name:         item.name,
-            price:        parseFloat(item.purchase_price),
-            qty:          1,
-            currentStock: item.stock ? parseFloat(item.stock.quantity) : 0,
+            id:            item.id,
+            name:          item.name,
+            price:         0,
+            priceEntered:  false,
+            lastPrice:     parseFloat(item.purchase_price) || 0,
+            qty:           1,
+            currentStock:  item.stock ? parseFloat(item.stock.quantity) : 0,
         });
     }
     suggestions.innerHTML = '';
@@ -362,7 +364,21 @@ function updateQty(id, val) {
 
 function updatePrice(id, val) {
     const item = cart.find(c => c.id === id);
-    if (item) item.price = parseFloat(toEnglishDigits(val)) || 0;
+    if (item) {
+        item.price        = parseFloat(toEnglishDigits(val)) || 0;
+        item.priceEntered = val.trim() !== '';
+    }
+    updateRowTotal(id);
+    updateSummary();
+}
+
+function useLastPrice(id) {
+    const item = cart.find(c => c.id === id);
+    if (!item) return;
+    item.price        = item.lastPrice;
+    item.priceEntered = true;
+    const inp = document.querySelector(`input[name="items[${cart.indexOf(item)}][price]"]`);
+    if (inp) inp.value = item.lastPrice;
     updateRowTotal(id);
     updateSummary();
 }
@@ -392,6 +408,14 @@ function renderCart() {
 
     itemsBody.innerHTML = cart.map((c, idx) => {
         const newStock = c.currentStock + (c.qty || 0);
+        const hint = c.lastPrice > 0
+            ? `<div style="font-size:.7rem;color:#94a3b8;margin-top:2px">
+                   আগের: ৳${c.lastPrice.toLocaleString()}
+                   <button type="button" onclick="useLastPrice(${c.id})"
+                       style="font-size:.68rem;color:var(--accent);background:none;border:none;cursor:pointer;
+                              padding:0 4px;font-weight:600;text-decoration:underline">ব্যবহার</button>
+               </div>`
+            : '';
         return `<tr>
             <td>
                 ${c.name}
@@ -404,9 +428,10 @@ function renderCart() {
                     oninput="updateQty(${c.id},this.value)" class="inline-input">
             </td>
             <td>
-                <input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.price}"
+                <input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.priceEntered ? c.price : ''}"
                     style="width:100px"
                     oninput="updatePrice(${c.id},this.value)" class="inline-input">
+                ${hint}
             </td>
             <td id="row-newstock-${c.id}" class="new-stock-cell">${newStock} বস্তা</td>
             <td id="row-total-${c.id}">৳ ${(c.qty * c.price).toLocaleString()}</td>
