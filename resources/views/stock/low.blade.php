@@ -48,6 +48,7 @@
                     </th>
                     <th class="tc">মোট বিক্রয়</th>
                     <th class="tc">বর্তমান স্টক</th>
+                    <th class="tr">ক্রয় মূল্য</th>
                     <th class="tr">স্টক মূল্য</th>
                     <th class="tc">ঘাটতি</th>
                     <th class="tc">অবস্থা</th>
@@ -88,6 +89,13 @@
                         <span style="color:#94a3b8;font-size:.8rem"> {{ $unit }}</span>
                     </td>
                     <td class="tr">
+                        @if(($s->item->purchase_price ?? 0) > 0)
+                            <span style="color:#475569">৳ {{ number_format($s->item->purchase_price, 0) }}</span>
+                        @else
+                            <span style="color:#cbd5e1">—</span>
+                        @endif
+                    </td>
+                    <td class="tr">
                         @if($stockVal > 0)
                             <span style="font-weight:600">৳ {{ number_format($stockVal, 0) }}</span>
                         @else
@@ -121,7 +129,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="11" class="empty-row">
+                    <td colspan="12" class="empty-row">
                         <i class="fas fa-circle-check" style="color:#22c55e;font-size:1.5rem;display:block;margin-bottom:6px"></i>
                         সকল আইটেমের স্টক পর্যাপ্ত আছে
                     </td>
@@ -135,6 +143,7 @@
                     <td class="tc" style="font-weight:800;color:#16a34a">{{ number_format($grandTodaySales, 0) }}</td>
                     <td class="tc" style="font-weight:800">{{ number_format($grandTotalSales, 0) }}</td>
                     <td class="tc" style="font-weight:800">{{ number_format($grandStockQty, 0) }}</td>
+                    <td></td>
                     <td class="tr" style="font-weight:800">৳ {{ number_format($grandStockValue, 0) }}</td>
                     <td class="tc" style="font-weight:800;color:#dc2626">− {{ number_format($grandDeficit, 0) }}</td>
                     <td colspan="2"></td>
