@@ -197,14 +197,15 @@ class CustomerController extends Controller
                 fputcsv($f, ['প্রতিষ্ঠান', $customer->name, 'প্রোপ্রাইটর', $customer->proprietor ?? '']);
                 fputcsv($f, ['ফোন', $customer->phone ?? '', 'সময়কাল', $from . ' থেকে ' . $to]);
                 fputcsv($f, []);
-                fputcsv($f, ['তারিখ', 'বিবরণ', 'পরিমাণ', 'দর', 'জমা', 'বাকি', 'অবশিষ্ট']);
+                fputcsv($f, ['তারিখ', 'চালান নং', 'বিবরণ', 'পরিমাণ', 'দর', 'জমা', 'বাকি', 'অবশিষ্ট']);
                 $bal = $openingBalance;
                 if ($openingBalance > 0)
-                    fputcsv($f, ['', 'পূর্বের অবশিষ্ট', '', '', '', '', $openingBalance]);
+                    fputcsv($f, ['', '', 'পূর্বের অবশিষ্ট', '', '', '', '', $openingBalance]);
                 foreach ($ledger as $row) {
                     $bal += $row['debit'] - $row['credit'];
                     fputcsv($f, [
                         \Carbon\Carbon::parse($row['datetime'])->format('Y-m-d H:i:s'),
+                        $row['sale_id'] ? str_pad($row['sale_id'], 6, '0', STR_PAD_LEFT) : '',
                         $row['label'],
                         $row['qty'] ?: '',
                         $row['rate'] ?: '',
@@ -214,7 +215,7 @@ class CustomerController extends Controller
                     ]);
                 }
                 fputcsv($f, []);
-                fputcsv($f, ['মোট', '', '', '', $totalCredits, $totalSales, $bal]);
+                fputcsv($f, ['মোট', '', '', '', '', $totalCredits, $totalSales, $bal]);
                 fclose($f);
             };
             return response()->stream($callback, 200, $headers);

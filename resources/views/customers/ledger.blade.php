@@ -109,6 +109,7 @@
         <table class="data-table cl-table">
             <colgroup>
                 <col style="width:120px">   {{-- তারিখ --}}
+                <col style="width:90px">    {{-- চালান নং --}}
                 <col style="width:220px">   {{-- বিবরণ --}}
                 <col style="width:70px">    {{-- পরিমাণ --}}
                 <col style="width:70px">    {{-- দর --}}
@@ -119,6 +120,7 @@
             <thead>
                 <tr>
                     <th>তারিখ</th>
+                    <th class="tc">চালান নং</th>
                     <th>বিবরণ</th>
                     <th style="text-align:right">পরিমাণ</th>
                     <th style="text-align:right">দর</th>
@@ -133,7 +135,7 @@
                 {{-- Opening balance row --}}
                 @if($openingBalance != 0)
                 <tr class="cl-opening-row">
-                    <td colspan="6" style="font-weight:700;color:#475569">পূর্বের অবশিষ্ট</td>
+                    <td colspan="7" style="font-weight:700;color:#475569">পূর্বের অবশিষ্ট</td>
                     <td style="text-align:right;font-weight:800;color:{{ $openingBalance > 0 ? '#b45309' : '#15803d' }}">
                         {{ number_format(abs($openingBalance), 0) }}
                     </td>
@@ -152,6 +154,15 @@
                             $dt = \Carbon\Carbon::parse($row['datetime']);
                         @endphp
                         {{ $dt->format('Y-m-d') }} <span class="cl-time">{{ $dt->format('h:i:s a') }}</span>
+                    </td>
+                    <td class="tc mono" style="font-size:.82rem">
+                        @if($row['sale_id'])
+                            <a href="{{ route('sales.show', $row['sale_id']) }}" class="link-primary">
+                                {{ str_pad($row['sale_id'], 6, '0', STR_PAD_LEFT) }}
+                            </a>
+                        @else
+                            <span class="cl-dash">—</span>
+                        @endif
                     </td>
                     <td>
                         @if($row['type'] === 'payment')
@@ -205,13 +216,13 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="7" class="empty-row">এই সময়কালে কোনো লেনদেন নেই</td></tr>
+                <tr><td colspan="8" class="empty-row">এই সময়কালে কোনো লেনদেন নেই</td></tr>
                 @endforelse
             </tbody>
             @if($ledger->count())
             <tfoot>
                 <tr class="cl-tfoot">
-                    <td colspan="2" style="font-weight:700">সর্বমোট</td>
+                    <td colspan="3" style="font-weight:700">সর্বমোট</td>
                     <td style="text-align:right">{{ number_format($ledger->sum('qty'), 0) }}</td>
                     <td></td>
                     <td style="text-align:right;font-weight:700;color:#15803d">
