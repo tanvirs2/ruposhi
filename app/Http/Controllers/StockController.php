@@ -72,7 +72,41 @@ class StockController extends Controller
             ->orderBy('quantity')
             ->paginate(20);
 
-        return view('stock.low', compact('stock'));
+        // Date filter — defaults to today
+        $filterDate = $request->date ?: now()->toDateString();
+
+        // Sales qty per item on the selected date
+        $todaySales = SaleItem::select('item_id', DB::raw('SUM(quantity) as total_qty'))
+            ->whereHas('sale', fn($q) => $q->whereDate('sale_date', $filterDate))
+            ->groupBy('item_id')
+            ->pluck('total_qty', 'item_id');
+
+        // All-time total sales qty per item
+        $totalSales = SaleItem::select('item_id', DB::raw('SUM(quantity) as total_qty'))
+            ->groupBy('item_id')
+            ->pluck('total_qty', 'item_id');
+
+        // ── Grand totals across LOW-stock items only ──
+        $lowStockIds = Stock::whereRaw('quantity <= min_quantity')->pluck('id', 'item_id')->keys();
+
+        $grandStockQty   = Stock::whereRaw('quantity <= min_quantity')->sum('quantity');
+        $grandStockValue = Stock::join('items', 'items.id', '=', 'stock.item_id')
+            ->whereRaw('stock.quantity <= stock.min_quantity')
+            ->selectRaw('SUM(stock.quantity * COALESCE(items.purchase_price, 0)) as v')
+            ->value('v') ?? 0;
+        $grandDeficit    = Stock::whereRaw('quantity <= min_quantity')
+            ->selectRaw('SUM(GREATEST(min_quantity - quantity, 0)) as d')
+            ->value('d') ?? 0;
+        $grandTodaySales = SaleItem::whereIn('item_id', $lowStockIds)
+            ->whereHas('sale', fn($q) => $q->whereDate('sale_date', $filterDate))
+            ->sum('quantity');
+        $grandTotalSales = SaleItem::whereIn('item_id', $lowStockIds)->sum('quantity');
+
+        return view('stock.low', compact(
+            'stock', 'todaySales', 'totalSales', 'filterDate',
+            'grandStockQty', 'grandStockValue', 'grandDeficit',
+            'grandTodaySales', 'grandTotalSales'
+        ));
     }
 
     public function adjust(Request $request, Stock $stock)
