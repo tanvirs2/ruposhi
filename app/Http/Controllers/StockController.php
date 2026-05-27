@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Stock;
 use App\Models\Item;
+use App\Models\SaleItem;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class StockController extends Controller
@@ -18,7 +20,33 @@ class StockController extends Controller
             ->orderBy('quantity')
             ->paginate(20);
 
-        return view('stock.index', compact('stock'));
+        // Date filter — defaults to today
+        $filterDate = $request->date ?: now()->toDateString();
+
+        // Sales qty per item on the selected date
+        $todaySales = SaleItem::select('item_id', DB::raw('SUM(quantity) as total_qty'))
+            ->whereHas('sale', fn($q) => $q->whereDate('sale_date', $filterDate))
+            ->groupBy('item_id')
+            ->pluck('total_qty', 'item_id');
+
+        // All-time total sales qty per item
+        $totalSales = SaleItem::select('item_id', DB::raw('SUM(quantity) as total_qty'))
+            ->groupBy('item_id')
+            ->pluck('total_qty', 'item_id');
+
+        // ── Grand totals (across ALL stock items, not just the current page) ──
+        $grandStockQty   = Stock::sum('quantity');
+        $grandStockValue = Stock::join('items', 'items.id', '=', 'stock.item_id')
+            ->selectRaw('SUM(stock.quantity * COALESCE(items.purchase_price, 0)) as v')
+            ->value('v') ?? 0;
+        $grandTodaySales = SaleItem::whereHas('sale', fn($q) => $q->whereDate('sale_date', $filterDate))
+            ->sum('quantity');
+        $grandTotalSales = SaleItem::sum('quantity');
+
+        return view('stock.index', compact(
+            'stock', 'todaySales', 'totalSales', 'filterDate',
+            'grandStockQty', 'grandStockValue', 'grandTodaySales', 'grandTotalSales'
+        ));
     }
 
     /* স্টক রিপোর্ট — search a specific item and see full details */

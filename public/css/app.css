@@ -855,6 +855,15 @@ a { text-decoration: none; color: inherit; }
 .data-table tbody tr:last-child td { border-bottom: 1px solid var(--border); }
 .data-table tbody tr:hover td { background: var(--surface-2); }
 
+/* Table footer summary row */
+.data-table tfoot .tfoot-summary td {
+    background: var(--surface-2);
+    border-top: 2px solid var(--border);
+    font-size: .88rem;
+    height: 44px;
+    padding: 0 20px;
+}
+
 .mono {
     font-family: 'Inter', monospace;
     font-size: 0.8rem;
