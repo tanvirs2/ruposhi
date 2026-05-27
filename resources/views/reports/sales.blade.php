@@ -67,11 +67,24 @@
     <div class="stat-card stat-blue">
         <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
         <div class="stat-body">
-            <span class="stat-label">মোট পরিশোধ</span>
-            <span class="stat-value">৳ {{ number_format($grandPaid, 0) }}</span>
-            @if($grandStandalone > 0)
-            <span style="font-size:.72rem;color:#64748b;font-weight:500;margin-top:2px;display:block">
-                + ৳ {{ number_format($grandStandalone, 0) }} বিক্রয় ছাড়া পরিশোধ
+            <span class="stat-label">বিক্রয়ে পরিশোধ</span>
+            <span class="stat-value">৳ {{ number_format($grandItemPaid, 0) }}</span>
+            @php $extraPaid = $noItemSales->sum('paid_amount') + $grandStandalone; @endphp
+            @if($extraPaid > 0)
+            <span style="font-size:.72rem;color:#2563eb;font-weight:600;margin-top:2px;display:block">
+                + ৳ {{ number_format($extraPaid, 0) }} বাকী পরিশোধ
+            </span>
+            @endif
+        </div>
+    </div>
+    <div class="stat-card" style="border-left:4px solid #16a34a;background:linear-gradient(135deg,#f0fdf4,#dcfce7)">
+        <div class="stat-icon" style="background:#bbf7d0;color:#15803d"><i class="fas fa-hand-holding-dollar"></i></div>
+        <div class="stat-body">
+            <span class="stat-label" style="color:#15803d;font-weight:700">মোট প্রাপ্তি</span>
+            <span class="stat-value" style="color:#15803d">৳ {{ number_format($grandPaid, 0) }}</span>
+            @if($extraPaid > 0)
+            <span style="font-size:.70rem;color:#64748b;font-weight:500;margin-top:2px;display:block">
+                {{ number_format($grandItemPaid,0) }} + {{ number_format($extraPaid,0) }}
             </span>
             @endif
         </div>
@@ -182,7 +195,7 @@
                     <td class="tc" style="font-weight:800">{{ $totalKgSum ?: '—' }}</td>
                     <td></td>
                     <td class="tr" style="font-weight:800">{{ number_format($saleItems->sum('amount'), 0) }}</td>
-                    <td class="tr" style="color:#16a34a;font-weight:700">{{ number_format($grandPaid, 0) }}</td>
+                    <td class="tr" style="color:#16a34a;font-weight:700">{{ number_format($grandItemPaid, 0) }}</td>
                     <td class="tr" style="color:#dc2626;font-weight:700">{{ number_format($grandDue, 0) }}</td>
                     <td colspan="2"></td>
                 </tr>
@@ -295,6 +308,35 @@
             </tfoot>
         </table>
     </div>
+</div>
+@endif
+
+{{-- ── Grand Combined Total ─────────────────────────────────────── --}}
+@if($noItemSales->isNotEmpty() || $standalonePayments->isNotEmpty())
+<div style="margin-top:14px;padding:12px 20px;background:#1e293b;border-radius:8px;display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+    <span style="color:#94a3b8;font-size:.82rem">সর্বমোট পরিশোধ =</span>
+    <span style="color:#fff;font-size:.9rem">
+        ৳ {{ number_format($grandItemPaid, 0) }}
+        <span style="color:#94a3b8;font-size:.78rem">(বিক্রয়)</span>
+    </span>
+    @if($noItemSales->isNotEmpty())
+    <span style="color:#94a3b8">+</span>
+    <span style="color:#fff;font-size:.9rem">
+        ৳ {{ number_format($noItemSales->sum('paid_amount'), 0) }}
+        <span style="color:#94a3b8;font-size:.78rem">(পণ্য ছাড়া)</span>
+    </span>
+    @endif
+    @if($standalonePayments->isNotEmpty())
+    <span style="color:#94a3b8">+</span>
+    <span style="color:#fff;font-size:.9rem">
+        ৳ {{ number_format($grandStandalone, 0) }}
+        <span style="color:#94a3b8;font-size:.78rem">(কাস্টমার পরিশোধ)</span>
+    </span>
+    @endif
+    <span style="color:#94a3b8">=</span>
+    <span style="color:#4ade80;font-size:1.05rem;font-weight:800">৳ {{ number_format($grandPaid, 0) }}</span>
+    <span style="margin-left:auto;color:#94a3b8;font-size:.82rem">মোট বাকী:</span>
+    <span style="color:#f87171;font-size:1rem;font-weight:800">৳ {{ number_format($grandDue, 0) }}</span>
 </div>
 @endif
 

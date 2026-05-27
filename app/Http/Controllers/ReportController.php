@@ -146,16 +146,15 @@ class ReportController extends Controller
             ->get();
 
         $grandTotal         = $sales->sum('total_amount');
-        // paid_amount on no-item sales is already inside $sales->sum('paid_amount')
-        $grandSalePaid      = $sales->sum('paid_amount');
+        // Separate item-bearing sales from no-item (pure payment) sales
+        $itemSales          = $sales->filter(fn($s) => !$noItemSales->contains('id', $s->id));
         $grandStandalone    = $standalonePayments->sum('amount');
         $grandNoItemPaid    = $noItemSales->sum('paid_amount');
-        // মোট পরিশোধ = item-sale payments + standalone CustomerPayments
-        // (no-item sale payments are already part of grandSalePaid, so not added again)
-        $grandPaid          = $grandSalePaid + $grandStandalone;
-        // For due: use only item-bearing sales' due_amount, then deduct both types of extra payments
-        $itemSales          = $sales->filter(fn($s) => !$noItemSales->contains('id', $s->id));
-        $grandDue           = max(0, $itemSales->sum('due_amount') - $grandStandalone - $grandNoItemPaid);
+        $grandItemPaid      = $itemSales->sum('paid_amount');   // payments from item sales only
+        // Total cash received = item-sale payments + no-item sale payments + standalone payments
+        $grandPaid          = $grandItemPaid + $grandNoItemPaid + $grandStandalone;
+        // Net due = item-sale due minus all extra payments already made
+        $grandDue           = max(0, $itemSales->sum('due_amount') - $grandNoItemPaid - $grandStandalone);
 
         // Per-item rows for the detail table (old-system style)
         $saleItems = DB::table('sale_items')
@@ -186,7 +185,7 @@ class ReportController extends Controller
         return view('reports.sales', compact(
             'sales', 'saleItems', 'customers',
             'standalonePayments', 'noItemSales',
-            'grandTotal', 'grandPaid', 'grandDue', 'grandStandalone',
+            'grandTotal', 'grandPaid', 'grandItemPaid', 'grandDue', 'grandStandalone',
             'from', 'to'
         ));
     }
