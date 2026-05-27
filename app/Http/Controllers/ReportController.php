@@ -129,18 +129,30 @@ class ReportController extends Controller
             ->orderBy('sale_date')->orderBy('id')
             ->get();
 
-        // Standalone customer payments (not tied to a sale) in the same date range
+        // Standalone customer payments (not tied to any sale) in the same date range
         $standalonePayments = \App\Models\CustomerPayment::with('customer')
             ->whereBetween('payment_date', [$from, $to])
             ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
             ->orderBy('payment_date')->orderBy('id')
             ->get();
 
+        // Sales with NO items (customer paying off previous due via sale form, no products sold)
+        $noItemSales = Sale::with('customer')
+            ->whereDoesntHave('items')
+            ->where('paid_amount', '>', 0)
+            ->whereBetween('sale_date', [$from, $to])
+            ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
+            ->orderBy('sale_date')->orderBy('id')
+            ->get();
+
         $grandTotal       = $sales->sum('total_amount');
+        // paid_amount on no-item sales is already in $sales->sum('paid_amount')
         $grandSalePaid    = $sales->sum('paid_amount');
         $grandStandalone  = $standalonePayments->sum('amount');
         $grandPaid        = $grandSalePaid + $grandStandalone;
-        $grandDue         = max(0, $sales->sum('due_amount') - $grandStandalone);
+        // For due: exclude no-item sales' due_amount (it's carried-over previous due, not today's new due)
+        $itemSales        = $sales->filter(fn($s) => !$noItemSales->contains('id', $s->id));
+        $grandDue         = max(0, $itemSales->sum('due_amount') - $grandStandalone);
 
         // Per-item rows for the detail table (old-system style)
         $saleItems = DB::table('sale_items')
@@ -170,7 +182,7 @@ class ReportController extends Controller
 
         return view('reports.sales', compact(
             'sales', 'saleItems', 'customers',
-            'standalonePayments',
+            'standalonePayments', 'noItemSales',
             'grandTotal', 'grandPaid', 'grandDue', 'grandStandalone',
             'from', 'to'
         ));
