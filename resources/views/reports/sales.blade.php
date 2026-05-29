@@ -56,7 +56,7 @@
 </div>
 
 {{-- Summary cards ───────────────────────────────────────────── --}}
-<div class="stats-grid no-print" style="margin-bottom:20px">
+<div class="sales-stats-grid no-print">
     <div class="stat-card stat-green">
         <div class="stat-icon"><i class="fas fa-receipt"></i></div>
         <div class="stat-body">
@@ -122,13 +122,13 @@
                     <th>কাস্টমার নাম</th>
                     <th>আইটেম নাম</th>
                     <th class="tc">পরিমাণ</th>
-                    <th class="tc">পরিমাণ কেজি</th>
-                    <th class="tr">বিক্রয় মূল্য</th>
+                    <th class="tc col-hide-tablet">পরিমাণ কেজি</th>
+                    <th class="tr col-hide-tablet">বিক্রয় মূল্য</th>
                     <th class="tr">মোট মূল্য</th>
                     <th class="tr">জমা</th>
                     <th class="tr">বাকী</th>
-                    <th class="tc">ইউজার</th>
-                    <th class="tc">সময়</th>
+                    <th class="tc col-hide-tablet">ইউজার</th>
+                    <th class="tc col-hide-tablet">সময়</th>
                 </tr>
             </thead>
             <tbody>
@@ -160,8 +160,8 @@
                     </td>
                     <td>{{ $row->item_name }}</td>
                     <td class="tc">{{ (int)$row->qty }}</td>
-                    <td class="tc">{{ $totalKg ?? '—' }}</td>
-                    <td class="tr">{{ number_format($row->rate, 0) }}</td>
+                    <td class="tc col-hide-tablet">{{ $totalKg ?? '—' }}</td>
+                    <td class="tr col-hide-tablet">{{ number_format($row->rate, 0) }}</td>
                     <td class="tr" style="font-weight:600">{{ number_format($running, 0) }}</td>
                     <td class="tr" style="color:#16a34a">
                         @if($isNewSale) {{ number_format($row->paid_amount, 0) }} @else — @endif
@@ -176,8 +176,8 @@
                         @else —
                         @endif
                     </td>
-                    <td class="tc" style="font-size:.78rem;color:#64748b">{{ $row->user_name ?? '—' }}</td>
-                    <td class="tc" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b">{{ $row->user_name ?? '—' }}</td>
+                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
                         {{ \Carbon\Carbon::parse($row->sale_time)->format('h:i:s a') }}
                     </td>
                 </tr>
@@ -360,6 +360,41 @@
     padding: 8px 10px;
     font-size: .85rem;
     border-top: 2px solid var(--border);
+}
+
+/* ── 5-card grid for sales report ─────────────────────────── */
+.sales-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+@media (max-width: 1200px) {
+    .sales-stats-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px) {
+    .sales-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+@media (max-width: 480px) {
+    .sales-stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+}
+
+/* ── Filter form tablet wrap ───────────────────────────────── */
+@media (max-width: 900px) {
+    .filter-form { flex-wrap: wrap; gap: 10px; }
+    .filter-form .form-group-field { min-width: 140px; flex: 1 1 140px; }
+    .filter-form .btn { align-self: flex-end; }
+}
+
+/* ── Table: hide less-important columns on tablet ─────────── */
+@media (max-width: 900px) {
+    .sale-detail-table th,
+    .sale-detail-table td { padding: 5px 7px; font-size: .78rem; }
+    .col-hide-tablet { display: none; }
+}
+@media (max-width: 640px) {
+    .sale-detail-table th,
+    .sale-detail-table td { padding: 4px 5px; font-size: .74rem; }
 }
 
 @media print {
