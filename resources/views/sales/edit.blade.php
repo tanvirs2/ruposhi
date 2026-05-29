@@ -448,11 +448,27 @@ function renderCart() {
         const stockBg  = overStock ? '#fef9c3' : '#dcfce7';
         const stockClr = overStock ? '#92400e' : '#15803d';
         const stockTxt = (overStock ? '⚠ স্টক: ' : 'স্টক: ') + (c.stock ?? '?');
-        return `<tr>
+        return `<tr id="cart-row-${idx}">
             <td>
-                ${c.name}<br>
-                <span id="stock-badge-${c.id}" style="font-size:.72rem;font-weight:700;background:${stockBg};color:${stockClr};padding:1px 7px;border-radius:20px;display:inline-block;margin-top:2px">${stockTxt}</span>
-                <input type="hidden" name="items[${idx}][id]" value="${c.id}">
+                <div style="display:flex;align-items:flex-start;gap:6px">
+                    <div style="flex:1">
+                        <span id="item-name-${idx}">${c.name}</span><br>
+                        <span id="stock-badge-${c.id}" style="font-size:.72rem;font-weight:700;background:${stockBg};color:${stockClr};padding:1px 7px;border-radius:20px;display:inline-block;margin-top:2px">${stockTxt}</span>
+                        <input type="hidden" name="items[${idx}][id]" id="item-id-input-${idx}" value="${c.id}">
+                    </div>
+                    <button type="button" onclick="startChangeItem(${idx})" title="আইটেম পরিবর্তন"
+                        style="flex-shrink:0;padding:3px 7px;border-radius:5px;border:1px solid #cbd5e1;background:#f8fafc;color:#475569;font-size:.72rem;cursor:pointer;margin-top:2px">
+                        <i class="fas fa-retweet"></i>
+                    </button>
+                </div>
+                <div id="item-search-box-${idx}" style="display:none;margin-top:6px">
+                    <input type="text" placeholder="নতুন আইটেম খুঁজুন..." autocomplete="off"
+                        id="item-change-input-${idx}"
+                        oninput="searchForChange(${idx}, this.value)"
+                        style="width:100%;padding:5px 8px;border:1.5px solid #3b82f6;border-radius:6px;font-size:.82rem">
+                    <div id="item-change-results-${idx}" style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);max-height:180px;overflow-y:auto;margin-top:2px"></div>
+                    <button type="button" onclick="cancelChangeItem(${idx})" style="margin-top:4px;font-size:.75rem;color:#64748b;background:none;border:none;cursor:pointer">✕ বাতিল</button>
+                </div>
             </td>
             <td><input type="text" inputmode="decimal" name="items[${idx}][qty]" value="${c.qty}" style="width:70px" oninput="updateQty(${c.id},this.value)" class="inline-input"></td>
             <td class="col-secret" style="color:#94a3b8;font-size:.88rem;${secretDisplay}">৳ ${c.cost.toLocaleString()}</td>
@@ -538,6 +554,46 @@ function resetPrevDuePay() {
     if (inp) inp.value = '0';
     document.getElementById('paidInput').value = getNet().toFixed(0);
     updateSummary();
+}
+
+// ── Change item inline ───────────────────────────────────────
+function startChangeItem(idx) {
+    document.getElementById('item-search-box-' + idx).style.display = 'block';
+    document.getElementById('item-change-input-' + idx).focus();
+}
+function cancelChangeItem(idx) {
+    document.getElementById('item-search-box-' + idx).style.display = 'none';
+    document.getElementById('item-change-input-' + idx).value = '';
+    document.getElementById('item-change-results-' + idx).innerHTML = '';
+}
+function searchForChange(idx, q) {
+    const resultsEl = document.getElementById('item-change-results-' + idx);
+    if (!q.trim()) { resultsEl.innerHTML = ''; return; }
+    const matches = allItems.filter(i => i.name.toLowerCase().includes(q.toLowerCase())).slice(0, 6);
+    resultsEl.innerHTML = matches.map(i => {
+        const avail = i.stock ? parseFloat(i.stock.quantity) : 0;
+        const stockColor = avail <= 0 ? '#dc2626' : '#16a34a';
+        return `<div onclick="replaceItem(${idx}, ${i.id})" style="padding:7px 10px;cursor:pointer;font-size:.83rem;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center"
+            onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background=''">
+            <span>${i.name}</span>
+            <span style="font-size:.75rem;font-weight:700;color:${stockColor};margin-left:8px">স্টক: ${avail}</span>
+        </div>`;
+    }).join('') || '<div style="padding:8px 10px;color:#94a3b8;font-size:.82rem">পাওয়া যায়নি</div>';
+}
+function replaceItem(idx, newId) {
+    const newItem = allItems.find(i => i.id === newId);
+    if (!newItem) return;
+    const old = cart[idx];
+    const avail = newItem.stock ? parseFloat(newItem.stock.quantity) : 0;
+    cart[idx] = {
+        id: newItem.id, name: newItem.name,
+        cost: parseFloat(newItem.purchase_price),
+        price: parseFloat(newItem.sale_price),
+        defaultPrice: parseFloat(newItem.sale_price),
+        qty: old.qty,   // keep same qty
+        stock: avail
+    };
+    renderCart();
 }
 
 // ── Submit validation ────────────────────────────────────────
