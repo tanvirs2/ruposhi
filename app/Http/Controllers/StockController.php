@@ -14,6 +14,7 @@ class StockController extends Controller
     public function index(Request $request)
     {
         $stock = Stock::with(['item.category', 'item.itemBrand', 'item.unitType'])
+            ->where('quantity', '!=', 0)   // hide exactly-zero stock; show negative & positive
             ->when($request->search, fn($q) =>
                 $q->whereHas('item', fn($i) => $i->where('name', 'like', "%{$request->search}%"))
             )
