@@ -23,7 +23,15 @@ class CustomerController extends Controller
 
         $areas = CustomerArea::orderBy('name')->get();
 
-        return view('customers.index', compact('customers', 'areas'));
+        // Total due across ALL matching customers (not just current page)
+        $totalDue = Customer::when($request->search, fn($q) =>
+                $q->where('name', 'like', "%{$request->search}%")
+                  ->orWhere('phone', 'like', "%{$request->search}%")
+            )
+            ->when($request->area_id, fn($q) => $q->where('area_id', $request->area_id))
+            ->sum('due_amount');
+
+        return view('customers.index', compact('customers', 'areas', 'totalDue'));
     }
 
     public function create()

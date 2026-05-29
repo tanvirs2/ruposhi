@@ -93,6 +93,17 @@
                 <tr><td colspan="6" class="empty-row">কোনো কাস্টমার পাওয়া যায়নি</td></tr>
                 @endforelse
             </tbody>
+            @if($customers->isNotEmpty())
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট বকেয়া</td>
+                    <td style="font-weight:800;color:#dc2626">
+                        ৳ {{ number_format($totalDue, 0) }}
+                    </td>
+                    <td></td>
+                </tr>
+            </tfoot>
+            @endif
         </table>
     </div>
     <div class="pagination-wrap">{{ $customers->withQueryString()->links() }}</div>
