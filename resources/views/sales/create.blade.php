@@ -697,12 +697,7 @@ function toggleField(key) {
 function toggleDiscount() { toggleField('discount'); }
 
 ['discountInput', 'extraInput', 'laborInput'].forEach(id => {
-    document.getElementById(id).addEventListener('input', function() {
-        if (prevDuePay > 0) {
-            document.getElementById('paidInput').value = (getNet() + prevDuePay).toFixed(0);
-        }
-        updateSummary();
-    });
+    document.getElementById(id).addEventListener('input', updateSummary);
 });
 document.getElementById('paidInput').addEventListener('input', updateSummary);
 
@@ -740,16 +735,11 @@ function setFullPrevDuePay() {
 }
 
 // Reset partial due pay (on customer clear / customer change)
+// Never touch paidInput — user must click সম্পূর্ণ explicitly
 function resetPrevDuePay() {
     prevDuePay = 0;
     const inp = document.getElementById('prevDuePayInput');
     if (inp) inp.value = '0';
-    // Only auto-set paid if user hasn't manually typed a value
-    const paidEl = document.getElementById('paidInput');
-    const currentPaid = parseFloat(toEnglishDigits(paidEl.value)) || 0;
-    if (currentPaid === 0) {
-        paidEl.value = getNet().toFixed(0);
-    }
     updateSummary();
 }
 
