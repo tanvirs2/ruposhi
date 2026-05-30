@@ -44,6 +44,17 @@
                     <tbody id="itemsBody">
                         <tr><td colspan="5" class="empty-row">কোনো আইটেম যোগ করা হয়নি</td></tr>
                     </tbody>
+                    <tfoot id="itemsFoot" style="display:none">
+                        <tr class="tfoot-summary">
+                            <td style="text-align:right;font-weight:700;padding-right:12px">সর্বমোট</td>
+                            <td class="tc" id="footQty" style="font-weight:800"></td>
+                            <td class="col-secret" style="display:none"></td>
+                            <td></td>
+                            <td class="col-secret" style="display:none"></td>
+                            <td class="tr" id="footTotal" style="font-weight:800"></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -434,9 +445,11 @@ function toggleProfitCols() {
 function emptyColspan() { return profitVisible ? 7 : 5; }
 
 function renderCart() {
+    const itemsFoot = document.getElementById('itemsFoot');
     if (!cart.length) {
         itemsBody.innerHTML = `<tr><td colspan="${emptyColspan()}" class="empty-row">কোনো আইটেম যোগ করা হয়নি</td></tr>`;
         if (profitPanel) profitPanel.style.display = 'none';
+        itemsFoot.style.display = 'none';
         updateSummary(); return;
     }
     itemsBody.innerHTML = cart.map((c, idx) => {
@@ -479,6 +492,7 @@ function renderCart() {
         </tr>`;
     }).join('');
     if (profitPanel) profitPanel.style.display = profitVisible ? 'block' : 'none';
+    itemsFoot.style.display = '';
     if (typeof attachBengaliConverter === 'function') attachBengaliConverter(itemsBody);
     updateSummary();
 }
@@ -521,6 +535,12 @@ function updateSummary() {
         else if (marginPct >= 0) { badge.textContent = '↓ কম লাভ';    badge.className = 'margin-badge poor'; }
         else                     { badge.textContent = '✗ লোকসান';     badge.className = 'margin-badge poor'; }
     }
+    // Keep tfoot in sync
+    const footQty   = document.getElementById('footQty');
+    const footTotal = document.getElementById('footTotal');
+    const totalQty  = cart.reduce((s, c) => s + (c.qty || 0), 0);
+    if (footQty)   footQty.textContent   = totalQty;
+    if (footTotal) footTotal.textContent = '৳ ' + total.toFixed(0);
 }
 
 ['discountInput', 'extraInput', 'laborInput'].forEach(id => {
