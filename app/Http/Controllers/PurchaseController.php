@@ -50,7 +50,8 @@ class PurchaseController extends Controller
             'paid_amount'         => 'required|numeric|min:0',
         ]);
 
-        DB::transaction(function () use ($request) {
+        $purchase = null;
+        DB::transaction(function () use ($request, &$purchase) {
             $itemsTotal = collect($request->items)->sum(fn($i) => $i['qty'] * $i['price']);
             $extraCost  = $request->extra_cost ?? 0;
             $laborCost  = $request->labor_cost ?? 0;
@@ -97,7 +98,7 @@ class PurchaseController extends Controller
             }
         });
 
-        return redirect()->route('purchases.index')->with('success', 'মাল রিসিভ সম্পন্ন হয়েছে। স্টক আপডেট হয়েছে।');
+        return redirect()->route('purchases.show', $purchase)->with('success', 'মাল রিসিভ সম্পন্ন হয়েছে। স্টক আপডেট হয়েছে।');
     }
 
     public function edit(Purchase $purchase)
