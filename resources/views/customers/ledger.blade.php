@@ -24,8 +24,8 @@
         </p>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <a href="{{ route('customer-payments.create', ['customer_id' => $customer->id]) }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> পরিশোধ যোগ করুন
+        <a href="{{ route('sales.create', ['customer_id' => $customer->id]) }}" class="btn btn-primary">
+            <i class="fas fa-plus-circle"></i> নতুন বিক্রয়
         </a>
         <button type="button" class="btn btn-export-print" onclick="window.print()">
             <i class="fas fa-print"></i> প্রিন্ট

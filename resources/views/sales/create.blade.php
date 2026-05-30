@@ -921,6 +921,15 @@ function showStockToast(msg, type) {
         t.style.transform = 'translateX(-50%) translateY(20px)';
     }, 3500);
 }
+
+// ── Auto-select customer from URL param ──────────────────────
+@if(request('customer_id'))
+(function () {
+    const preId = {{ (int) request('customer_id') }};
+    const pre   = allCustomers.find(c => c.id === preId);
+    if (pre) selectCustomer(pre.id);
+})();
+@endif
 </script>
 @endpush
 @endsection
