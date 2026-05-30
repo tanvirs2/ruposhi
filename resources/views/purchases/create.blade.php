@@ -43,6 +43,16 @@
                     <tbody id="itemsBody">
                         <tr><td colspan="7" class="empty-row">কোনো আইটেম যোগ করা হয়নি</td></tr>
                     </tbody>
+                    <tfoot id="itemsFoot" style="display:none">
+                        <tr class="tfoot-summary">
+                            <td colspan="2" style="text-align:right;font-weight:700;padding-right:12px">সর্বমোট</td>
+                            <td class="tc" id="footQty" style="font-weight:800"></td>
+                            <td></td>
+                            <td></td>
+                            <td class="tr" id="footTotal" style="font-weight:800"></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -408,8 +418,10 @@ function updateRowTotal(id) {
 }
 
 function renderCart() {
+    const itemsFoot = document.getElementById('itemsFoot');
     if (!cart.length) {
         itemsBody.innerHTML = '<tr><td colspan="7" class="empty-row">কোনো আইটেম যোগ করা হয়নি</td></tr>';
+        itemsFoot.style.display = 'none';
         stockPanel.style.display = 'none';
         updateSummary();
         return;
@@ -462,6 +474,13 @@ function renderCart() {
         </div>`;
     }).join('');
     stockPanel.style.display = 'block';
+
+    // Update tfoot totals
+    const totalQty  = cart.reduce((s, c) => s + (c.qty || 0), 0);
+    const totalAmt  = cart.reduce((s, c) => s + c.qty * c.price, 0);
+    document.getElementById('footQty').textContent   = totalQty + ' বস্তা';
+    document.getElementById('footTotal').textContent = '৳ ' + totalAmt.toLocaleString();
+    itemsFoot.style.display = '';
 
     // Re-attach Bengali converter to new inputs
     if (typeof attachBengaliConverter === 'function') attachBengaliConverter(itemsBody);
