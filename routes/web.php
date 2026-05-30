@@ -58,7 +58,7 @@ Route::middleware('auth')->group(function () {
     /* Supplier Payments */
     Route::resource('supplier-payments', SupplierPaymentController::class)->only('index', 'create', 'store', 'destroy');
     Route::resource('sales',     SaleController::class);
-    Route::resource('purchases', PurchaseController::class)->except('edit', 'update');
+    Route::resource('purchases', PurchaseController::class);
     Route::resource('employees', EmployeeController::class);
     Route::resource('expenses',  ExtraExpenseController::class);
 

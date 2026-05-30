@@ -1,0 +1,330 @@
+@extends('layouts.app')
+@section('title', 'রিসিভ সংশোধন — #RCV-' . str_pad($purchase->id, 4, '0', STR_PAD_LEFT))
+@section('page-title', 'রিসিভ সংশোধন')
+@section('breadcrumb', 'মাল রিসিভ সংশোধন করুন')
+
+@section('content')
+<form method="POST" action="{{ route('purchases.update', $purchase) }}" id="receiveForm">
+@csrf @method('PUT')
+<div class="pos-grid">
+
+    {{-- Left: Item selection --}}
+    <div class="pos-left">
+        <div class="card" style="margin-bottom:16px">
+            <div class="card-header"><h3><i class="fas fa-box-open"></i> আইটেম যোগ করুন</h3></div>
+            <div style="padding:16px">
+                <div class="search-box" style="margin-bottom:12px">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="itemSearch" placeholder="আইটেমের নাম লিখুন...">
+                </div>
+                <div id="itemSuggestions" class="suggestions-list"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-list-check"></i> রিসিভ তালিকা</h3></div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>আইটেম</th>
+                            <th>বর্তমান স্টক</th>
+                            <th>রিসিভ পরিমাণ</th>
+                            <th>ক্রয় মূল্য/বস্তা</th>
+                            <th>নতুন স্টক</th>
+                            <th>মোট</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsBody">
+                        <tr><td colspan="7" class="empty-row">কোনো আইটেম যোগ করা হয়নি</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {{-- Right: Summary --}}
+    <div class="pos-right">
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-pen-to-square"></i> রিসিভ সংশোধন</h3></div>
+            <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+
+                {{-- Notice --}}
+                <div style="padding:10px 14px;background:#fef9c3;border:1px solid #fde68a;border-radius:8px;font-size:.82rem;color:#92400e;font-weight:600">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    রিসিভ <strong>#RCV-{{ str_pad($purchase->id, 4, '0', STR_PAD_LEFT) }}</strong> সংশোধন।
+                    স্টক ও সরবরাহকারীর বকেয়া স্বয়ংক্রিয়ভাবে আপডেট হবে।
+                </div>
+
+                <div class="form-group-field">
+                    <label>সরবরাহকারী</label>
+                    <input type="hidden" name="supplier_id" id="supplierIdInput" value="{{ $purchase->supplier_id }}">
+                    <input type="text" id="supplierSearch" placeholder="নাম বা ফোন দিয়ে খুঁজুন..."
+                        autocomplete="off" style="width:100%"
+                        value="{{ $purchase->supplier?->name ?? '' }}">
+                    <div id="supplierSelected" style="display:none;margin-top:4px;font-size:.8rem;color:#0d9488;font-weight:600"></div>
+                </div>
+
+                <div class="form-group-field">
+                    <label>রিসিভ তারিখ <span class="req">*</span></label>
+                    <input type="date" name="purchase_date" value="{{ $purchase->purchase_date->format('Y-m-d') }}" required>
+                </div>
+
+                <hr style="border:none;border-top:1px solid var(--border)">
+
+                <div class="receive-stock-panel" id="stockPanel" style="display:none">
+                    <div class="stock-panel-title"><i class="fas fa-warehouse"></i> স্টক পরিবর্তন</div>
+                    <div id="stockChangeSummary"></div>
+                </div>
+
+                <div class="summary-row summary-total"><span>মোট পরিমাণ:</span><span id="totalQtyDisplay">০ বস্তা</span></div>
+                <div class="summary-row">
+                    <span>মোট মূল্য:</span>
+                    <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+                        <span id="totalDisplay">৳ 0</span>
+                        <button type="button" id="extraCostToggleBtn" onclick="toggleField('extra')"
+                            class="cost-toggle-btn {{ ($purchase->extra_cost??0) > 0 ? 'active' : '' }}">
+                            {{ ($purchase->extra_cost??0) > 0 ? '✕ খরচ' : '+ খরচ' }}</button>
+                        <button type="button" id="laborCostToggleBtn" onclick="toggleField('labor')"
+                            class="cost-toggle-btn {{ ($purchase->labor_cost??0) > 0 ? 'active' : '' }}">
+                            {{ ($purchase->labor_cost??0) > 0 ? '✕ শ্রমিক' : '+ শ্রমিক' }}</button>
+                    </span>
+                </div>
+                <div id="extraRow" style="{{ ($purchase->extra_cost??0) > 0 ? '' : 'display:none' }}">
+                    <div class="form-group-field" style="margin-bottom:0">
+                        <label>অতিরিক্ত খরচ (৳)</label>
+                        <input type="text" inputmode="decimal" name="extra_cost" id="extraInput" value="{{ $purchase->extra_cost ?? 0 }}">
+                    </div>
+                </div>
+                <div id="laborRow" style="{{ ($purchase->labor_cost??0) > 0 ? '' : 'display:none' }}">
+                    <div class="form-group-field" style="margin-bottom:0">
+                        <label>শ্রমিক খরচ (৳)</label>
+                        <input type="text" inputmode="decimal" name="labor_cost" id="laborInput" value="{{ $purchase->labor_cost ?? 0 }}">
+                    </div>
+                </div>
+                <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0</span></div>
+
+                <div class="form-group-field">
+                    <label>পরিশোধ (৳) <span class="req">*</span></label>
+                    <input type="text" inputmode="decimal" name="paid_amount" id="paidInput"
+                        value="{{ $purchase->paid_amount }}" required>
+                </div>
+                <div class="summary-row" style="color:#ef4444"><span>বকেয়া:</span><span id="dueDisplay">৳ 0</span></div>
+
+                <div class="form-group-field">
+                    <label><i class="fas fa-credit-card" style="color:var(--accent)"></i> পরিশোধ মোড</label>
+                    <select name="payment_method" class="form-select">
+                        @foreach($paymentMethods as $group => $names)
+                        <optgroup label="— {{ $group }} —">
+                            @foreach($names as $name)
+                            <option value="{{ $name }}" @selected($purchase->payment_method === $name)>{{ $name }}</option>
+                            @endforeach
+                        </optgroup>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="form-group-field">
+                    <label>মন্তব্য</label>
+                    <textarea name="notes" rows="2">{{ $purchase->notes }}</textarea>
+                </div>
+
+                <div style="display:flex;gap:10px">
+                    <a href="{{ route('purchases.show', $purchase) }}" class="btn btn-ghost" style="flex:1;justify-content:center">
+                        <i class="fas fa-xmark"></i> বাতিল
+                    </a>
+                    <button type="submit" class="btn btn-primary" style="flex:2;justify-content:center;padding:14px">
+                        <i class="fas fa-floppy-disk"></i> সংশোধন সংরক্ষণ করুন
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</form>
+
+@push('styles')
+<style>
+.receive-stock-panel { border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:4px; }
+.stock-panel-title { background:var(--bg);padding:8px 14px;font-size:.82rem;font-weight:600;color:var(--text-secondary);display:flex;align-items:center;gap:6px; }
+.stock-change-row { display:flex;justify-content:space-between;align-items:center;padding:7px 14px;font-size:.82rem;border-top:1px solid var(--border);gap:8px; }
+.stock-change-row .item-name { flex:1;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.stock-arrow { display:flex;align-items:center;gap:5px;color:#64748b;font-size:.8rem;white-space:nowrap; }
+.stock-arrow .old { color:#94a3b8; }
+.stock-arrow .arrow { color:#16a34a;font-size:.7rem; }
+.stock-arrow .new { color:#16a34a;font-weight:700; }
+.current-stock-cell { color:#94a3b8;font-size:.85rem; }
+.new-stock-cell { color:#16a34a;font-weight:700; }
+.cost-toggle-btn { font-size:.72rem;padding:2px 8px;border-radius:20px;border:1.5px dashed #94a3b8;background:transparent;color:#94a3b8;cursor:pointer;white-space:nowrap;font-weight:600;line-height:1.5;transition:all .2s; }
+.cost-toggle-btn:hover { color:var(--accent);border-color:var(--accent); }
+.cost-toggle-btn.active { color:#ef4444;border-color:#fca5a5;border-style:solid; }
+</style>
+@endpush
+
+@push('scripts')
+<script>
+// ── Pre-loaded existing items ────────────────────────────────
+@php
+$existingItems = $purchase->items->map(fn($pi) => [
+    'id'           => $pi->item_id,
+    'name'         => $pi->item->name ?? '?',
+    'price'        => floatval($pi->price),
+    'qty'          => floatval($pi->quantity),
+    'currentStock' => floatval(($pi->item->stock->quantity ?? 0)) + floatval($pi->quantity), // add back sold qty
+    'lastPrice'    => floatval($pi->price),
+    'priceEntered' => true,
+]);
+@endphp
+const existingCartData = @json($existingItems);
+
+// ── Floating dropdown helper ─────────────────────────────────
+function makeFloatingDropdown(inputEl, dropEl) {
+    document.body.appendChild(dropEl);
+    dropEl.style.cssText = `position:fixed;display:none;z-index:9999;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);overflow-y:auto;max-height:240px;`;
+    function position() {
+        const r = inputEl.getBoundingClientRect();
+        dropEl.style.top = (r.bottom+4)+'px'; dropEl.style.left = r.left+'px'; dropEl.style.width = r.width+'px';
+    }
+    function show(html) { dropEl.innerHTML = html; position(); dropEl.style.display = 'block'; }
+    function hide() { dropEl.style.display = 'none'; dropEl.innerHTML = ''; }
+    window.addEventListener('scroll', position, true);
+    window.addEventListener('resize', position);
+    document.addEventListener('click', e => { if (!inputEl.contains(e.target) && !dropEl.contains(e.target)) hide(); });
+    return { show, hide };
+}
+
+// ── Supplier search ──────────────────────────────────────────
+const allSuppliers    = @json($suppliers);
+const supplierSearch  = document.getElementById('supplierSearch');
+const supplierIdInput = document.getElementById('supplierIdInput');
+const supplierSelected= document.getElementById('supplierSelected');
+const supplierDrop    = document.createElement('div');
+const sDrop           = makeFloatingDropdown(supplierSearch, supplierDrop);
+
+supplierSearch.addEventListener('input', function() {
+    const q = this.value.trim().toLowerCase();
+    if (!q) { sDrop.hide(); supplierIdInput.value=''; supplierSelected.style.display='none'; return; }
+    const matches = allSuppliers.filter(s => s.name.toLowerCase().includes(q)||(s.phone&&s.phone.includes(q))).slice(0,6);
+    sDrop.show(matches.map(s => `<div class="suggestion-item" onclick="selectSupplier(${s.id})"><strong>${s.name}</strong>${s.phone?`<div style="font-size:.76rem;color:#94a3b8">📞 ${s.phone}</div>`:''}</div>`).join('')||'<div class="suggestion-item" style="color:#94a3b8">পাওয়া যায়নি</div>');
+});
+
+function selectSupplier(id) {
+    const s = allSuppliers.find(x=>x.id===id); if(!s) return;
+    supplierIdInput.value=s.id; supplierSearch.value=s.name;
+    supplierSelected.innerHTML=`<div style="font-weight:700;color:#0d9488">✓ ${s.name}</div>`;
+    supplierSelected.style.display='block'; sDrop.hide();
+}
+
+// ── Items ────────────────────────────────────────────────────
+const allItems = @json($items);
+let cart = [];
+const itemSearch  = document.getElementById('itemSearch');
+const suggestions = document.getElementById('itemSuggestions');
+const itemsBody   = document.getElementById('itemsBody');
+const stockPanel  = document.getElementById('stockPanel');
+
+itemSearch.addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    if (!q) { suggestions.innerHTML=''; return; }
+    const matches = allItems.filter(i=>i.name.toLowerCase().includes(q)).slice(0,8);
+    suggestions.innerHTML = matches.map(i => {
+        const stock = i.stock ? i.stock.quantity : 0;
+        return `<div class="suggestion-item" onclick="addItem(${i.id})"><strong>${i.name}</strong><div style="font-size:.78rem;color:#64748b;margin-top:2px">ক্রয়মূল্য: ৳${parseFloat(i.purchase_price).toLocaleString()} &nbsp;|&nbsp; স্টক: ${stock}</div></div>`;
+    }).join('')||'<div class="suggestion-item" style="color:#94a3b8">পাওয়া যায়নি</div>';
+});
+
+function addItem(id) {
+    const item = allItems.find(i=>i.id===id); if(!item) return;
+    if (cart.find(c=>c.id===id)) { cart.find(c=>c.id===id).qty++; }
+    else { cart.push({id:item.id,name:item.name,price:0,priceEntered:false,lastPrice:parseFloat(item.purchase_price)||0,qty:1,currentStock:item.stock?parseFloat(item.stock.quantity):0}); }
+    suggestions.innerHTML=''; itemSearch.value=''; renderCart();
+}
+
+function removeItem(id) { cart=cart.filter(c=>c.id!==id); renderCart(); }
+function updateQty(id,val) { const item=cart.find(c=>c.id===id); if(item){item.qty=parseFloat(toEnglishDigits(val))||0;} updateRowTotal(id); updateSummary(); }
+function updatePrice(id,val) { const item=cart.find(c=>c.id===id); if(item){item.price=parseFloat(toEnglishDigits(val))||0;item.priceEntered=val.trim()!=='';} updateRowTotal(id); updateSummary(); }
+function useLastPrice(id) {
+    const item=cart.find(c=>c.id===id); if(!item) return;
+    item.price=item.lastPrice; item.priceEntered=true;
+    const idx=cart.indexOf(item);
+    const inp=document.querySelector(`input[name="items[${idx}][price]"]`);
+    if(inp) inp.value=item.lastPrice;
+    updateRowTotal(id); updateSummary();
+}
+
+function updateRowTotal(id) {
+    const item=cart.find(c=>c.id===id); if(!item) return;
+    const ns=item.currentStock+(item.qty||0);
+    const t=document.getElementById('row-total-'+id); const ns2=document.getElementById('row-newstock-'+id);
+    if(t) t.textContent='৳ '+(item.qty*item.price).toLocaleString();
+    if(ns2) ns2.textContent=ns+' বস্তা';
+}
+
+function renderCart() {
+    if (!cart.length) { itemsBody.innerHTML='<tr><td colspan="7" class="empty-row">কোনো আইটেম যোগ করা হয়নি</td></tr>'; stockPanel.style.display='none'; updateSummary(); return; }
+    itemsBody.innerHTML = cart.map((c,idx) => {
+        const ns = c.currentStock+(c.qty||0);
+        const hint = c.lastPrice>0 ? `<div style="font-size:.7rem;color:#94a3b8;margin-top:2px">আগের: ৳${c.lastPrice.toLocaleString()} <button type="button" onclick="useLastPrice(${c.id})" style="font-size:.68rem;color:var(--accent);background:none;border:none;cursor:pointer;padding:0 4px;font-weight:600;text-decoration:underline">ব্যবহার</button></div>` : '';
+        return `<tr>
+            <td>${c.name}<input type="hidden" name="items[${idx}][id]" value="${c.id}"></td>
+            <td class="current-stock-cell">${c.currentStock} বস্তা</td>
+            <td><input type="text" inputmode="decimal" name="items[${idx}][qty]" value="${c.qty}" style="width:75px" oninput="updateQty(${c.id},this.value)" class="inline-input"></td>
+            <td><input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.priceEntered?c.price:''}" style="width:100px" oninput="updatePrice(${c.id},this.value)" class="inline-input">${hint}</td>
+            <td id="row-newstock-${c.id}" class="new-stock-cell">${ns} বস্তা</td>
+            <td id="row-total-${c.id}">৳ ${(c.qty*c.price).toLocaleString()}</td>
+            <td><button type="button" onclick="removeItem(${c.id})" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button></td>
+        </tr>`;
+    }).join('');
+    document.getElementById('stockChangeSummary').innerHTML = cart.map(c => {
+        const ns=c.currentStock+(c.qty||0);
+        return `<div class="stock-change-row"><span class="item-name">${c.name}</span><span class="stock-arrow"><span class="old">${c.currentStock}</span><span class="arrow">→</span><span class="new">${ns} বস্তা</span><span style="color:#16a34a;font-size:.75rem">(+${c.qty})</span></span></div>`;
+    }).join('');
+    stockPanel.style.display='block';
+    if(typeof attachBengaliConverter==='function') attachBengaliConverter(itemsBody);
+    updateSummary();
+}
+
+function updateSummary() {
+    const total=cart.reduce((s,c)=>s+c.qty*c.price,0);
+    const totalQty=cart.reduce((s,c)=>s+(c.qty||0),0);
+    const extra=parseFloat(toEnglishDigits(document.getElementById('extraInput').value))||0;
+    const labor=parseFloat(toEnglishDigits(document.getElementById('laborInput').value))||0;
+    const net=total+extra+labor;
+    const paid=parseFloat(toEnglishDigits(document.getElementById('paidInput').value))||0;
+    document.getElementById('totalDisplay').textContent='৳ '+total.toLocaleString();
+    document.getElementById('totalQtyDisplay').textContent=totalQty+' বস্তা';
+    document.getElementById('netDisplay').textContent='৳ '+net.toLocaleString();
+    document.getElementById('dueDisplay').textContent='৳ '+Math.max(0,net-paid).toLocaleString();
+}
+
+const fieldMap = {
+    extra:{row:'extraRow',btn:'extraCostToggleBtn',inp:'extraInput',labelOn:'✕ খরচ',labelOff:'+ খরচ'},
+    labor:{row:'laborRow',btn:'laborCostToggleBtn',inp:'laborInput',labelOn:'✕ শ্রমিক',labelOff:'+ শ্রমিক'},
+};
+function toggleField(key) {
+    const f=fieldMap[key],row=document.getElementById(f.row),btn=document.getElementById(f.btn),inp=document.getElementById(f.inp);
+    const open=row.style.display==='none';
+    row.style.display=open?'block':'none'; btn.textContent=open?f.labelOn:f.labelOff; btn.classList.toggle('active',open);
+    if(!open){inp.value='0';updateSummary();} else inp.focus();
+}
+['paidInput','extraInput','laborInput'].forEach(id=>document.getElementById(id).addEventListener('input',updateSummary));
+
+document.getElementById('receiveForm').addEventListener('submit',function(e){
+    if(!cart.length){e.preventDefault();alert('কমপক্ষে একটি আইটেম যোগ করুন।');}
+});
+
+// ── Init from existing purchase ──────────────────────────────
+(function init() {
+    cart = existingCartData.map(d=>({...d}));
+    renderCart();
+    document.getElementById('paidInput').value = '{{ $purchase->paid_amount }}';
+    updateSummary();
+    @if($purchase->supplier_id)
+    const pre = allSuppliers.find(s=>s.id=={{ $purchase->supplier_id }});
+    if(pre){ supplierSelected.innerHTML=`<div style="font-weight:700;color:#0d9488">✓ ${pre.name}</div>`; supplierSelected.style.display='block'; }
+    @endif
+})();
+</script>
+@endpush
+@endsection

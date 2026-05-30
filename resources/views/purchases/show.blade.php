@@ -96,6 +96,9 @@
     <div class="form-actions no-print" style="margin-top:20px">
         <a href="{{ route('purchases.index') }}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> ফিরে যান</a>
         <button onclick="window.print()" class="btn btn-secondary"><i class="fas fa-print"></i> প্রিন্ট</button>
+        <a href="{{ route('purchases.edit', $purchase) }}" class="btn" style="background:#fef9c3;color:#92400e;border:1px solid #fde68a">
+            <i class="fas fa-pen-to-square"></i> সংশোধন
+        </a>
         <form method="POST" action="{{ route('purchases.destroy',$purchase) }}" style="margin-left:auto"
             onsubmit="return confirm('মুছলে স্টক কমে যাবে। নিশ্চিত?')">
             @csrf @method('DELETE')
