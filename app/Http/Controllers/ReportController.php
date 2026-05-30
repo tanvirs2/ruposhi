@@ -17,7 +17,7 @@ class ReportController extends Controller
 {
     public function index(Request $request)
     {
-        $from = $request->from ?? now()->startOfMonth()->toDateString();
+        $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
 
         $sales = Sale::whereBetween('sale_date', [$from, $to])
@@ -81,7 +81,7 @@ class ReportController extends Controller
     // ── Daily Customer Payment Report ────────────────────────────
     public function dailyPayments(Request $request)
     {
-        $from = $request->from ?? now()->startOfMonth()->toDateString();
+        $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
 
         $daily = CustomerPayment::with('customer')
@@ -102,7 +102,7 @@ class ReportController extends Controller
     // ── Daily Supplier Payment Report ───────────────────────────
     public function dailySupplierPayments(Request $request)
     {
-        $from = $request->from ?? now()->startOfMonth()->toDateString();
+        $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
 
         $daily = SupplierPayment::with(['supplier', 'user'])
@@ -198,7 +198,7 @@ class ReportController extends Controller
     // ── দৈনিক রিসিভ রিপোর্ট — purchases grouped by date ──────
     public function dailyReceive(Request $request)
     {
-        $from = $request->from ?? now()->startOfMonth()->toDateString();
+        $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
 
         $daily = Purchase::with(['supplier', 'user', 'items.item'])
@@ -278,7 +278,7 @@ class ReportController extends Controller
     // ── বিক্রয় সংশোধন ও মুছে ফেলার লগ ──────────────────────────
     public function saleLogs(Request $request)
     {
-        $from   = $request->from ?? now()->startOfMonth()->toDateString();
+        $from   = $request->from ?? now()->toDateString();
         $to     = $request->to   ?? now()->toDateString();
         $action = $request->action ?? '';
 
@@ -325,7 +325,7 @@ class ReportController extends Controller
     // ── Export: দৈনিক কাস্টমার পরিশোধ ──────────────────────────
     public function exportDailyPayments(Request $request): StreamedResponse
     {
-        $from     = $request->from ?? now()->startOfMonth()->toDateString();
+        $from     = $request->from ?? now()->toDateString();
         $to       = $request->to   ?? now()->toDateString();
         $payments = CustomerPayment::with('customer')
             ->whereBetween('payment_date', [$from, $to])
@@ -352,7 +352,7 @@ class ReportController extends Controller
     // ── Export: দৈনিক সরবরাহকারী পরিশোধ ───────────────────────
     public function exportDailySupplierPayments(Request $request): StreamedResponse
     {
-        $from     = $request->from ?? now()->startOfMonth()->toDateString();
+        $from     = $request->from ?? now()->toDateString();
         $to       = $request->to   ?? now()->toDateString();
         $payments = SupplierPayment::with('supplier')
             ->whereBetween('payment_date', [$from, $to])
@@ -404,7 +404,7 @@ class ReportController extends Controller
     // ── Export: দৈনিক রিসিভ রিপোর্ট ────────────────────────────
     public function exportDailyReceive(Request $request): StreamedResponse
     {
-        $from  = $request->from ?? now()->startOfMonth()->toDateString();
+        $from  = $request->from ?? now()->toDateString();
         $to    = $request->to   ?? now()->toDateString();
         $items = Purchase::with(['supplier', 'items.item'])
             ->whereBetween('purchase_date', [$from, $to])
@@ -434,7 +434,7 @@ class ReportController extends Controller
     // ── লাভ-লোকসান রিপোর্ট ──────────────────────────────────────
     public function profitLoss(Request $request)
     {
-        $from = $request->from ?? now()->startOfMonth()->toDateString();
+        $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
 
         // ── Revenue ───────────────────────────────────────────────
@@ -547,7 +547,7 @@ class ReportController extends Controller
     // ── Export: লাভ-লোকসান CSV ───────────────────────────────────
     public function exportProfitLoss(Request $request): StreamedResponse
     {
-        $from = $request->from ?? now()->startOfMonth()->toDateString();
+        $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
 
         $grossSales    = Sale::whereBetween('sale_date', [$from, $to])->sum('total_amount');
