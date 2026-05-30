@@ -38,7 +38,6 @@
                     <th class="tr">ক্রয় মূল্য</th>
                     <th class="tr">স্টক মূল্য</th>
                     <th class="tc">অবস্থা</th>
-                    <th>সমন্বয়</th>
                 </tr>
             </thead>
             <tbody>
@@ -94,16 +93,9 @@
                             <span class="badge badge-green">পর্যাপ্ত</span>
                         @endif
                     </td>
-                    <td>
-                        <form method="POST" action="{{ route('stock.adjust', $s) }}" class="inline-form">
-                            @csrf @method('PATCH')
-                            <input type="text" inputmode="decimal" name="quantity" value="{{ $s->quantity }}" class="inline-input" style="width:90px">
-                            <button type="submit" class="btn btn-secondary btn-sm">আপডেট</button>
-                        </form>
-                    </td>
                 </tr>
                 @empty
-                <tr><td colspan="11" class="empty-row">কোনো স্টক পাওয়া যায়নি</td></tr>
+                <tr><td colspan="10" class="empty-row">কোনো স্টক পাওয়া যায়নি</td></tr>
                 @endforelse
             </tbody>
             @if($stock->total() > 0)
