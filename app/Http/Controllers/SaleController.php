@@ -15,7 +15,7 @@ class SaleController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Sale::with('customer')
+        $query = Sale::with(['customer', 'items.item'])
             ->when($request->search, fn($q) =>
                 $q->whereHas('customer', fn($c) => $c->where('name', 'like', "%{$request->search}%"))
                   ->orWhere('id', $request->search)

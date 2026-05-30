@@ -22,27 +22,48 @@
     </div>
     <div class="table-wrap">
         <table class="data-table">
-            <colgroup>
-                <col style="width:110px">   {{-- ইনভয়েস --}}
-                <col style="width:180px">   {{-- কাস্টমার --}}
-                <col style="width:120px">   {{-- তারিখ --}}
-                <col style="width:110px">   {{-- মোট --}}
-                <col style="width:110px">   {{-- পরিশোধ --}}
-                <col style="width:110px">   {{-- বকেয়া --}}
-                <col style="width:100px">   {{-- স্ট্যাটাস --}}
-                <col style="width:80px">    {{-- অ্যাকশন --}}
-            </colgroup>
             <thead>
-                <tr><th>ইনভয়েস</th><th>কাস্টমার</th><th>তারিখ</th><th>মোট</th><th>পরিশোধ</th><th>বকেয়া</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr>
+                <tr>
+                    <th>ইনভয়েস</th>
+                    <th>কাস্টমার</th>
+                    <th>মালের বিবরণ</th>
+                    <th>তারিখ</th>
+                    <th>মোট</th>
+                    <th>পরিশোধ</th>
+                    <th>বকেয়া</th>
+                    <th>স্ট্যাটাস</th>
+                    <th>অ্যাকশন</th>
+                </tr>
             </thead>
             <tbody>
                 @forelse($sales as $sale)
+                @php
+                    $itemLines = $sale->items->map(fn($si) => ($si->item->name ?? '?') . ' ×' . (int)$si->quantity)->toArray();
+                    $preview   = implode(', ', array_slice($itemLines, 0, 2));
+                    $hasMore   = count($itemLines) > 2;
+                    $full      = implode(', ', $itemLines);
+                @endphp
                 <tr>
                     <td><a href="{{ route('sales.show', $sale) }}" class="link-primary mono">#INV-{{ str_pad($sale->id,4,'0',STR_PAD_LEFT) }}</a></td>
                     <td>{{ $sale->customer?->name ?? 'ওয়াক-ইন' }}</td>
+                    <td style="max-width:220px">
+                        @if($sale->items->isEmpty())
+                            <span style="color:#94a3b8;font-size:.8rem">— পণ্য নেই</span>
+                        @else
+                            <span class="item-preview" style="font-size:.8rem;color:#475569">{{ $preview }}</span>
+                            @if($hasMore)
+                                <span class="item-full" style="display:none;font-size:.8rem;color:#475569">{{ $full }}</span>
+                                <button type="button" onclick="toggleItems(this)"
+                                    style="display:inline-block;margin-left:4px;font-size:.72rem;color:var(--accent);
+                                           background:none;border:none;cursor:pointer;font-weight:600;padding:0">
+                                    +{{ count($itemLines)-2 }} আরো ▾
+                                </button>
+                            @endif
+                        @endif
+                    </td>
                     <td>{{ $sale->sale_date->format('d M Y') }}</td>
                     <td>৳ {{ number_format($sale->total_amount,2) }}</td>
-                    <td>৳ {{ number_format($sale->paid_amount,2) }}</td>
+                    <td style="color:#16a34a">৳ {{ number_format($sale->paid_amount,2) }}</td>
                     <td>{{ $sale->due_amount > 0 ? '৳ '.number_format($sale->due_amount,2) : '—' }}</td>
                     <td>
                         @if($sale->status==='completed') <span class="badge badge-green">সম্পন্ন</span>
@@ -60,13 +81,13 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="8" class="empty-row">কোনো বিক্রয় পাওয়া যায়নি</td></tr>
+                <tr><td colspan="9" class="empty-row">কোনো বিক্রয় পাওয়া যায়নি</td></tr>
                 @endforelse
             </tbody>
             @if($sales->isNotEmpty())
             <tfoot>
                 <tr class="tfoot-summary">
-                    <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                    <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
                     <td style="font-weight:800">৳ {{ number_format($grandTotal, 0) }}</td>
                     <td style="font-weight:800;color:#16a34a">৳ {{ number_format($grandPaid, 0) }}</td>
                     <td style="font-weight:800;color:#dc2626">{{ $grandDue > 0 ? '৳ '.number_format($grandDue, 0) : '—' }}</td>
@@ -78,4 +99,23 @@
     </div>
     <div class="pagination-wrap">{{ $sales->withQueryString()->links() }}</div>
 </div>
+
+@push('scripts')
+<script>
+function toggleItems(btn) {
+    const td      = btn.closest('td');
+    const preview = td.querySelector('.item-preview');
+    const full    = td.querySelector('.item-full');
+    const expanded = full.style.display !== 'none';
+    preview.style.display = expanded ? 'inline' : 'none';
+    full.style.display    = expanded ? 'none'   : 'inline';
+    btn.textContent = expanded
+        ? btn.textContent.replace('▴ কম', '') + '▾ আরো'
+        : '▴ কম';
+    // fix label properly
+    const count = btn.textContent.match(/\d+/)?.[0] ?? '';
+    btn.textContent = expanded ? `+${count} আরো ▾` : '▴ কম দেখুন';
+}
+</script>
+@endpush
 @endsection
