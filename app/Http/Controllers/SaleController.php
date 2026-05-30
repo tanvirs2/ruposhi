@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\SaleLog;
 use App\Models\Customer;
 use App\Models\Item;
 use App\Models\Stock;
@@ -156,6 +157,9 @@ class SaleController extends Controller
             return back()->withErrors(['customer_id' => 'আইটেম ছাড়া বিক্রয়ে কাস্টমার নির্বাচন আবশ্যক।'])->withInput();
         }
 
+        // Log current state BEFORE changes
+        $this->logSale($sale, 'edited', $request->edit_note);
+
         DB::transaction(function () use ($request, $sale) {
             // ── 1. Restore old stock ────────────────────────────────
             foreach ($sale->items as $oldItem) {
@@ -239,6 +243,9 @@ class SaleController extends Controller
     public function destroy(Sale $sale)
     {
         DB::transaction(function () use ($sale) {
+            // Log before delete
+            $this->logSale($sale, 'deleted', 'মুছে ফেলা হয়েছে');
+
             // Restore stock
             foreach ($sale->items as $item) {
                 Stock::where('item_id', $item->item_id)->increment('quantity', $item->quantity);
@@ -247,20 +254,48 @@ class SaleController extends Controller
             if ($sale->customer_id) {
                 $customer = Customer::find($sale->customer_id);
                 if ($sale->due_amount > 0) {
-                    // Sale had unpaid portion — remove it from due
                     $newDue = max(0, $customer->due_amount - $sale->due_amount);
                     $customer->update(['due_amount' => $newDue]);
                 } else {
-                    // Sale was fully/over paid — restore excess that cleared old dues
                     $excess = $sale->paid_amount - $sale->total_amount;
-                    if ($excess > 0) {
-                        $customer->increment('due_amount', $excess);
-                    }
+                    if ($excess > 0) $customer->increment('due_amount', $excess);
                 }
             }
             $sale->delete();
         });
 
         return redirect()->route('sales.index')->with('success', 'বিক্রয় মুছে ফেলা হয়েছে।');
+    }
+
+    // ── Helper: snapshot sale and log the action ─────────────
+    private function logSale(Sale $sale, string $action, ?string $note = null): void
+    {
+        $sale->loadMissing(['items.item', 'customer']);
+        SaleLog::create([
+            'sale_id' => $sale->id,
+            'action'  => $action,
+            'user_id' => auth()->id(),
+            'note'    => $note,
+            'snapshot' => [
+                'id'             => $sale->id,
+                'sale_date'      => $sale->sale_date?->toDateString(),
+                'customer_name'  => $sale->customer?->name,
+                'total_amount'   => $sale->total_amount,
+                'paid_amount'    => $sale->paid_amount,
+                'due_amount'     => $sale->due_amount,
+                'discount'       => $sale->discount,
+                'extra_cost'     => $sale->extra_cost,
+                'labor_cost'     => $sale->labor_cost,
+                'payment_method' => $sale->payment_method,
+                'status'         => $sale->status,
+                'notes'          => $sale->notes,
+                'items'          => $sale->items->map(fn($si) => [
+                    'item_name' => $si->item?->name,
+                    'quantity'  => $si->quantity,
+                    'price'     => $si->price,
+                    'subtotal'  => $si->subtotal,
+                ])->toArray(),
+            ],
+        ]);
     }
 }

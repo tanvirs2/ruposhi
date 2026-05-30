@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Sale;
+use App\Models\SaleLog;
 use App\Models\Purchase;
 use App\Models\ExtraExpense;
 use App\Models\Customer;
@@ -268,6 +269,22 @@ class ReportController extends Controller
             'Content-Type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="' . $filename . '.csv"',
         ]);
+    }
+
+    // ── বিক্রয় সংশোধন ও মুছে ফেলার লগ ──────────────────────────
+    public function saleLogs(Request $request)
+    {
+        $from   = $request->from ?? now()->startOfMonth()->toDateString();
+        $to     = $request->to   ?? now()->toDateString();
+        $action = $request->action ?? '';
+
+        $logs = SaleLog::with('user')
+            ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->when($action, fn($q) => $q->where('action', $action))
+            ->orderByDesc('created_at')
+            ->paginate(20);
+
+        return view('reports.sale-logs', compact('logs', 'from', 'to', 'action'));
     }
 
     // ── Export: বিক্রয় রিপোর্ট ──────────────────────────────────

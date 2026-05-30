@@ -258,6 +258,10 @@
                         <span class="nav-label">লাভ-লোকসান</span>
                         <button type="button" class="info-btn" data-info="নির্দিষ্ট সময়কালের বিক্রয় আয়, পণ্য খরচ, পরিচালনা ব্যয় ও নিট লাভ-লোকসানের পূর্ণ বিবরণ।">i</button>
                     </a>
+                    <a href="{{ route('reports.sale-logs') }}" class="nav-item nav-child {{ $_path==='reports/sale-logs' ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fas fa-clock-rotate-left"></i></span>
+                        <span class="nav-label">সংশোধন / মুছে ফেলার লগ</span>
+                    </a>
                 </div>
             </div>
         </div>

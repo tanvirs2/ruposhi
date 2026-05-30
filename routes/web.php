@@ -87,6 +87,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports/export/daily-sales-stock',       [ReportController::class, 'exportDailySalesStock'])->name('reports.export.daily-sales-stock');
     Route::get('/reports/export/daily-sales-ledger',      [ReportController::class, 'exportDailySalesLedger'])->name('reports.export.daily-sales-ledger');
 
+    Route::get('/reports/sale-logs', [ReportController::class, 'saleLogs'])->name('reports.sale-logs');
+
     Route::get('/store-config', [StoreConfigController::class, 'index'])->name('store-config.index');
     Route::put('/store-config', [StoreConfigController::class, 'update'])->name('store-config.update');
     Route::post('/store-config/payment-method',        [StoreConfigController::class, 'addPaymentMethod'])->name('store-config.payment-method.add');
