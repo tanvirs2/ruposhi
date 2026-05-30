@@ -170,6 +170,13 @@
                         <i class="fas fa-circle-exclamation"></i>
                         কাস্টমার ছাড়া বিক্রয়ে সম্পূর্ণ পরিশোধ আবশ্যক!
                     </div>
+                    {{-- Extra payment warning (no items + customer has 0 due) --}}
+                    <div id="extraPayWarning" style="display:none;margin-top:6px;padding:8px 12px;
+                        background:#fef9c3;border:1px solid #fde68a;border-radius:8px;
+                        font-size:.82rem;color:#92400e;font-weight:600">
+                        <i class="fas fa-triangle-exclamation"></i>
+                        এই কাস্টমারের কোনো বাকী নেই — অতিরিক্ত পরিশোধ রিপোর্টে বাকীর হিসাবে প্রভাব ফেলবে না।
+                    </div>
                 </div>
                 <div class="summary-row" style="color:#ef4444"><span>বকেয়া:</span><span id="dueDisplay">৳ 0.00</span></div>
 
@@ -713,7 +720,7 @@ function toggleDiscount() { toggleField('discount'); }
 ['discountInput', 'extraInput', 'laborInput'].forEach(id => {
     document.getElementById(id).addEventListener('input', updateSummary);
 });
-document.getElementById('paidInput').addEventListener('input', updateSummary);
+document.getElementById('paidInput').addEventListener('input', function() { updateSummary(); checkExtraPayWarning(); });
 
 // Ensure paid_amount always has a numeric value before submit
 document.getElementById('paidInput').addEventListener('blur', function() {
@@ -755,6 +762,16 @@ function resetPrevDuePay() {
     const inp = document.getElementById('prevDuePayInput');
     if (inp) inp.value = '0';
     updateSummary();
+}
+
+function checkExtraPayWarning() {
+    const warn     = document.getElementById('extraPayWarning');
+    if (!warn) return;
+    const hasItems = cart.length > 0;
+    const paid     = parseFloat(toEnglishDigits(document.getElementById('paidInput').value)) || 0;
+    const hasCustomer = !!document.getElementById('customerIdInput').value;
+    // Show warning when: no items + customer selected + customer has 0 due + paid > 0
+    warn.style.display = (!hasItems && hasCustomer && currentPrevDue === 0 && paid > 0) ? 'block' : 'none';
 }
 
 let _stockConfirmPending = false;

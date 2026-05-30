@@ -151,11 +151,15 @@ class ReportController extends Controller
         $itemSales          = $sales->filter(fn($s) => !$noItemSales->contains('id', $s->id));
         $grandStandalone    = $standalonePayments->sum('amount');
         $grandNoItemPaid    = $noItemSales->sum('paid_amount');
-        $grandItemPaid      = $itemSales->sum('paid_amount');   // payments from item sales only
+        $grandItemPaid      = $itemSales->sum('paid_amount');
         // Total cash received = item-sale payments + no-item sale payments + standalone payments
         $grandPaid          = $grandItemPaid + $grandNoItemPaid + $grandStandalone;
-        // Net due = item-sale due minus all extra payments already made
-        $grandDue           = max(0, $itemSales->sum('due_amount') - $grandNoItemPaid - $grandStandalone);
+        // Effective due reduction from no-item sales:
+        // Only min(paid, previous_due) actually reduces a customer's due.
+        // If customer had 0 due and paid 5000 → reduces 0 due, not other customers' dues.
+        $grandNoItemDueReduction = $noItemSales->sum(fn($s) => min($s->paid_amount, $s->previous_due ?? 0));
+        // Net due = item-sale dues minus EFFECTIVE payments toward previous dues
+        $grandDue           = max(0, $itemSales->sum('due_amount') - $grandNoItemDueReduction - $grandStandalone);
 
         // Per-item rows for the detail table (old-system style)
         $saleItems = DB::table('sale_items')
