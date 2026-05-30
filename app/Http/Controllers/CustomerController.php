@@ -92,7 +92,7 @@ class CustomerController extends Controller
     // ── Customer Ledger ─────────────────────────────────────────
     public function ledger(Request $request, Customer $customer)
     {
-        $from = $request->from ?? now()->startOfMonth()->toDateString();
+        $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
 
         // ── Opening balance (before $from) — use total_amount (after discount) ──

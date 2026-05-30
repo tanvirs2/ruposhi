@@ -27,7 +27,7 @@ class SupplierController extends Controller
 
     public function ledger(Request $request, Supplier $supplier)
     {
-        $from = $request->from ?? now()->startOfMonth()->toDateString();
+        $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
 
         // Opening balance: purchases before $from minus paid and payments
