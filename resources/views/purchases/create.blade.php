@@ -55,12 +55,13 @@
             <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
 
                 <div class="form-group-field">
-                    <label>সরবরাহকারী
-                        <button type="button" class="info-btn" data-info="সরবরাহকারী নির্বাচন না করলেও মাল রিসিভ করা যাবে। তবে নির্বাচন করলে বকেয়া পরিমাণ সেই সরবরাহকারীর অ্যাকাউন্টে যোগ হবে।">i</button>
-                    </label>
+                    <label>সরবরাহকারী <span class="req">*</span></label>
                     <input type="hidden" name="supplier_id" id="supplierIdInput">
                     <input type="text" id="supplierSearch" placeholder="নাম বা ফোন দিয়ে খুঁজুন..."
-                        autocomplete="off" style="width:100%">
+                        autocomplete="off" style="width:100%" required>
+                    <div id="supplierError" style="display:none;margin-top:4px;font-size:.8rem;color:#dc2626;font-weight:600">
+                        <i class="fas fa-circle-exclamation"></i> সরবরাহকারী নির্বাচন করুন
+                    </div>
                     <div id="supplierSelected" style="display:none;margin-top:4px;font-size:.8rem;color:#0d9488;font-weight:600"></div>
                 </div>
 
@@ -494,6 +495,14 @@ function toggleField(key) {
 });
 
 document.getElementById('receiveForm').addEventListener('submit', function(e) {
+    const suppErr = document.getElementById('supplierError');
+    if (!document.getElementById('supplierIdInput').value) {
+        e.preventDefault();
+        suppErr.style.display = 'block';
+        document.getElementById('supplierSearch').focus();
+        return;
+    }
+    suppErr.style.display = 'none';
     if (!cart.length) { e.preventDefault(); alert('কমপক্ষে একটি আইটেম যোগ করুন।'); }
 });
 </script>
