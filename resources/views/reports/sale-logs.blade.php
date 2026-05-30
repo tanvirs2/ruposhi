@@ -114,9 +114,22 @@
     </div>
 </div>
 
+@php
+$logJson = [];
+foreach ($logs as $l) {
+    $logJson[$l->id] = [
+        'action'     => $l->action,
+        'note'       => $l->note,
+        'user'       => $l->user?->name,
+        'created_at' => $l->created_at->format('d/m/Y h:i:s a'),
+        'snapshot'   => $l->snapshot,
+    ];
+}
+@endphp
+
 {{-- Store all log data as JSON for modal --}}
 <script>
-const logData = @json($logs->keyBy('id')->map(fn($l) => ['action'=>$l->action,'note'=>$l->note,'user'=>$l->user?->name,'created_at'=>$l->created_at->format('d/m/Y h:i:s a'),'snapshot'=>$l->snapshot]));
+const logData = {!! json_encode($logJson) !!};
 
 function showDetail(id) {
     const d = logData[id]; if (!d) return;
