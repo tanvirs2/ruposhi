@@ -73,9 +73,6 @@
                             <a href="{{ route('customers.ledger', $customer) }}" class="btn-icon-sm" title="লেজার" style="color:#0d9488">
                                 <i class="fas fa-book-open"></i>
                             </a>
-                            <a href="{{ route('customer-payments.create', ['customer_id' => $customer->id]) }}" class="btn-icon-sm" title="পরিশোধ যোগ" style="color:#16a34a">
-                                <i class="fas fa-money-bill-wave"></i>
-                            </a>
                             <a href="{{ route('customers.edit', $customer) }}" class="btn-icon-sm" title="সম্পাদনা">
                                 <i class="fas fa-pen"></i>
                             </a>

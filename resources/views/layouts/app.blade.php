@@ -59,21 +59,6 @@
                         <span class="nav-label">কাস্টমার তালিকা</span>
                         <button type="button" class="info-btn" data-info="সকল কাস্টমারের তথ্য দেখুন — নাম, ফোন, মোট বাকী। নতুন কাস্টমার যোগ করুন বা তথ্য সম্পাদনা করুন।">i</button>
                     </a>
-                    <a href="{{ route('customer-payments.create') }}" class="nav-item nav-child {{ $_path==='customer-payments/create' ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fas fa-plus-circle"></i></span>
-                        <span class="nav-label">কাস্টমার পরিশোধ</span>
-                        <button type="button" class="info-btn" data-info="কাস্টমার বাকী পরিশোধ রেকর্ড করুন। পরিশোধের পরিমাণ কাস্টমারের বাকী থেকে স্বয়ংক্রিয়ভাবে বাদ যাবে।">i</button>
-                    </a>
-                    <a href="{{ route('customer-payments.index') }}" class="nav-item nav-child {{ $_seg==='customer-payments' && $_path!=='customer-payments/create' ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fas fa-money-bill-wave"></i></span>
-                        <span class="nav-label">পরিশোধ তালিকা</span>
-                        <button type="button" class="info-btn" data-info="সকল কাস্টমার পরিশোধের ইতিহাস — কে কত টাকা কখন দিয়েছে।">i</button>
-                    </a>
-                    <a href="{{ route('reports.daily-payments') }}" class="nav-item nav-child {{ $_path==='reports/daily-payments' ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fas fa-calendar-check"></i></span>
-                        <span class="nav-label">দৈনিক পরিশোধ</span>
-                        <button type="button" class="info-btn" data-info="নির্দিষ্ট তারিখে কাস্টমার কত টাকা পরিশোধ করেছে তার দৈনিক সারসংক্ষেপ।">i</button>
-                    </a>
                     <a href="{{ route('customers.ledger-select') }}" class="nav-item nav-child {{ $_path==='customers-ledger'||$_seg==='customers'&&str_ends_with($_path,'ledger') ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-book-open"></i></span>
                         <span class="nav-label">লেজার রিপোর্ট</span>
