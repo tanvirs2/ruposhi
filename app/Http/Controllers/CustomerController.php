@@ -23,15 +23,18 @@ class CustomerController extends Controller
 
         $areas = CustomerArea::orderBy('name')->get();
 
-        // Total due across ALL matching customers (not just current page)
-        $totalDue = Customer::when($request->search, fn($q) =>
+        $baseQuery = Customer::when($request->search, fn($q) =>
                 $q->where('name', 'like', "%{$request->search}%")
                   ->orWhere('phone', 'like', "%{$request->search}%")
             )
-            ->when($request->area_id, fn($q) => $q->where('area_id', $request->area_id))
-            ->sum('due_amount');
+            ->when($request->area_id, fn($q) => $q->where('area_id', $request->area_id));
 
-        return view('customers.index', compact('customers', 'areas', 'totalDue'));
+        // Gross due (positive only), credit (negative only, shown as positive), net = gross - credit
+        $grossDue  = (clone $baseQuery)->where('due_amount', '>', 0)->sum('due_amount');
+        $totalCredit = abs((clone $baseQuery)->where('due_amount', '<', 0)->sum('due_amount'));
+        $totalDue  = $grossDue - $totalCredit; // net balance
+
+        return view('customers.index', compact('customers', 'areas', 'totalDue', 'grossDue', 'totalCredit'));
     }
 
     public function create()
