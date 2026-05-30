@@ -220,7 +220,17 @@ supplierSearch.addEventListener('input', function() {
 function selectSupplier(id) {
     const s = allSuppliers.find(x=>x.id===id); if(!s) return;
     supplierIdInput.value=s.id; supplierSearch.value=s.name;
-    supplierSelected.innerHTML=`<div style="font-weight:700;color:#0d9488">✓ ${s.name}</div>`;
+    const due = parseFloat(s.due_amount) || 0;
+    let html = `<div style="font-weight:700;color:#0d9488;font-size:.9rem">✓ ${s.name}</div>`;
+    if (s.phone) html += `<div style="font-size:.78rem;color:#94a3b8;margin-top:1px">📞 ${s.phone}</div>`;
+    if (due > 0) {
+        html += `<div style="margin-top:6px;padding:8px 12px;background:#fee2e2;border:1px solid #fecaca;border-radius:8px;display:flex;justify-content:space-between;align-items:center"><span style="color:#991b1b;font-size:.83rem;font-weight:600"><i class="fas fa-triangle-exclamation"></i> আগের বকেয়া আছে</span><span style="color:#dc2626;font-size:1rem;font-weight:700">৳ ${due.toLocaleString('en',{minimumFractionDigits:2})}</span></div>`;
+    } else if (due < 0) {
+        html += `<div style="margin-top:6px;padding:8px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;display:flex;justify-content:space-between;align-items:center"><span style="color:#1d4ed8;font-size:.83rem;font-weight:600"><i class="fas fa-piggy-bank"></i> অগ্রিম পরিশোধ আছে</span><span style="color:#1d4ed8;font-size:1rem;font-weight:700">৳ ${Math.abs(due).toLocaleString('en',{minimumFractionDigits:2})}</span></div>`;
+    } else {
+        html += `<div style="margin-top:6px;padding:6px 12px;background:#dcfce7;border:1px solid #bbf7d0;border-radius:8px;font-size:.8rem;color:#15803d;font-weight:600">✓ কোনো বকেয়া নেই</div>`;
+    }
+    supplierSelected.innerHTML=html;
     supplierSelected.style.display='block'; sDrop.hide();
 }
 

@@ -92,15 +92,8 @@ class PurchaseController extends Controller
 
             if ($request->supplier_id) {
                 $supplier = Supplier::find($request->supplier_id);
-                if ($due > 0) {
-                    // Under-paid — add remaining due to supplier
-                    $supplier->increment('due_amount', $due);
-                } else {
-                    // Over-paid — excess clears existing supplier due
-                    $excess  = $request->paid_amount - $total;
-                    $newDue  = max(0, $supplier->due_amount - $excess);
-                    $supplier->update(['due_amount' => $newDue]);
-                }
+                // net effect: supplier.due += (total - paid) — allows negative credit
+                $supplier->update(['due_amount' => $supplier->due_amount + $total - $request->paid_amount]);
             }
         });
 
@@ -135,13 +128,8 @@ class PurchaseController extends Controller
             }
             if ($purchase->supplier_id) {
                 $supplier = Supplier::find($purchase->supplier_id);
-                if ($purchase->due_amount > 0) {
-                    $newDue = max(0, $supplier->due_amount - $purchase->due_amount);
-                    $supplier->update(['due_amount' => $newDue]);
-                } else {
-                    $excess = $purchase->paid_amount - $purchase->total_amount;
-                    if ($excess > 0) $supplier->increment('due_amount', $excess);
-                }
+                // Reverse: undo (total - paid) that was applied on store
+                $supplier->update(['due_amount' => $supplier->due_amount - ($purchase->total_amount - $purchase->paid_amount)]);
             }
 
             // 2. Delete old items
@@ -180,16 +168,10 @@ class PurchaseController extends Controller
                 Item::where('id', $row['id'])->update(['purchase_price' => $row['price']]);
             }
 
-            // 5. Re-apply supplier due
+            // 5. Re-apply supplier due (allows negative credit)
             if ($request->supplier_id) {
                 $supplier = Supplier::find($request->supplier_id);
-                if ($due > 0) {
-                    $supplier->increment('due_amount', $due);
-                } else {
-                    $excess = $request->paid_amount - $total;
-                    $newDue = max(0, $supplier->due_amount - $excess);
-                    $supplier->update(['due_amount' => $newDue]);
-                }
+                $supplier->update(['due_amount' => $supplier->due_amount + $total - $request->paid_amount]);
             }
         });
 
@@ -212,17 +194,8 @@ class PurchaseController extends Controller
             // Reverse supplier due_amount effect
             if ($purchase->supplier_id) {
                 $supplier = Supplier::find($purchase->supplier_id);
-                if ($purchase->due_amount > 0) {
-                    // Purchase had unpaid portion — remove it from supplier due
-                    $newDue = max(0, $supplier->due_amount - $purchase->due_amount);
-                    $supplier->update(['due_amount' => $newDue]);
-                } else {
-                    // Purchase was fully/over-paid — restore excess that cleared old dues
-                    $excess = $purchase->paid_amount - $purchase->total_amount;
-                    if ($excess > 0) {
-                        $supplier->increment('due_amount', $excess);
-                    }
-                }
+                // Reverse: undo (total - paid) applied on store
+                $supplier->update(['due_amount' => $supplier->due_amount - ($purchase->total_amount - $purchase->paid_amount)]);
             }
             $purchase->delete();
         });
