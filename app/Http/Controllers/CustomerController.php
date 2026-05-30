@@ -108,10 +108,11 @@ class CustomerController extends Controller
         $allTimeSales    = Sale::where('customer_id', $customer->id)->sum('total_amount');
         $allTimePaid     = Sale::where('customer_id', $customer->id)->sum('paid_amount');
         $allTimePayments = CustomerPayment::where('customer_id', $customer->id)->sum('amount');
-        $realTotalDue    = max(0, $allTimeSales - $allTimePaid - $allTimePayments);
+        // Allow negative (credit balance from overpayment) — no max(0,...) cap
+        $realTotalDue    = $allTimeSales - $allTimePaid - $allTimePayments;
 
         // ── Auto-fix stale due_amount on customer record ───────────
-        if ($customer->due_amount != $realTotalDue) {
+        if (abs($customer->due_amount - $realTotalDue) > 0.01) {
             $customer->update(['due_amount' => $realTotalDue]);
         }
 
