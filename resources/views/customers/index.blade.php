@@ -64,6 +64,8 @@
                     <td>
                         @if($customer->due_amount > 0)
                             <span class="badge badge-red">৳ {{ number_format($customer->due_amount, 0) }}</span>
+                        @elseif($customer->due_amount < 0)
+                            <span class="badge" style="background:#eff6ff;color:#1d4ed8">অগ্রিম ৳ {{ number_format(abs($customer->due_amount), 0) }}</span>
                         @else
                             <span class="badge badge-green">পরিষ্কার</span>
                         @endif

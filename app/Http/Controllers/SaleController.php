@@ -104,15 +104,9 @@ class SaleController extends Controller
 
             if ($request->customer_id) {
                 $customer = Customer::find($request->customer_id);
-                if ($due > 0) {
-                    // Customer didn't pay in full — add remaining due
-                    $customer->increment('due_amount', $due);
-                } else {
-                    // Customer paid in full or overpaid — excess clears old dues
-                    $excess  = $request->paid_amount - $net;
-                    $newDue  = max(0, $customer->due_amount - $excess);
-                    $customer->update(['due_amount' => $newDue]);
-                }
+                // Net effect: customer.due += (net - paid)
+                // Allows negative (credit balance when overpaid)
+                $customer->update(['due_amount' => $customer->due_amount + $net - $request->paid_amount]);
             }
         });
 
@@ -167,14 +161,10 @@ class SaleController extends Controller
             }
 
             // ── 2. Reverse old customer due effect ──────────────────
+            // Reverse: customer.due -= (old_net - old_paid) i.e. += (old_paid - old_net)
             if ($sale->customer_id) {
                 $oldCustomer = Customer::find($sale->customer_id);
-                if ($sale->due_amount > 0) {
-                    $oldCustomer->due_amount = max(0, $oldCustomer->due_amount - $sale->due_amount);
-                } else {
-                    $excess = $sale->paid_amount - $sale->total_amount;
-                    if ($excess > 0) $oldCustomer->due_amount += $excess;
-                }
+                $oldCustomer->due_amount += $sale->paid_amount - $sale->total_amount;
                 $oldCustomer->save();
             }
 
@@ -227,13 +217,7 @@ class SaleController extends Controller
             // ── 8. Apply new customer due effect ────────────────────
             if ($request->customer_id) {
                 $customer = Customer::find($request->customer_id);
-                if ($due > 0) {
-                    $customer->increment('due_amount', $due);
-                } else {
-                    $excess = $request->paid_amount - $net;
-                    $newDue = max(0, $customer->due_amount - $excess);
-                    $customer->update(['due_amount' => $newDue]);
-                }
+                $customer->update(['due_amount' => $customer->due_amount + $net - $request->paid_amount]);
             }
         });
 
@@ -250,16 +234,10 @@ class SaleController extends Controller
             foreach ($sale->items as $item) {
                 Stock::where('item_id', $item->item_id)->increment('quantity', $item->quantity);
             }
-            // Reverse customer due_amount effect
+            // Reverse customer due effect: undo (net - paid) that was applied on create
             if ($sale->customer_id) {
                 $customer = Customer::find($sale->customer_id);
-                if ($sale->due_amount > 0) {
-                    $newDue = max(0, $customer->due_amount - $sale->due_amount);
-                    $customer->update(['due_amount' => $newDue]);
-                } else {
-                    $excess = $sale->paid_amount - $sale->total_amount;
-                    if ($excess > 0) $customer->increment('due_amount', $excess);
-                }
+                $customer->update(['due_amount' => $customer->due_amount - ($sale->total_amount - $sale->paid_amount)]);
             }
             $sale->delete();
         });

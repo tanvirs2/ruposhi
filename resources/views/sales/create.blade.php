@@ -450,9 +450,18 @@ function selectCustomer(id) {
                     </span>
                     <span style="color:#dc2626;font-size:1rem;font-weight:700">৳ ${due.toLocaleString('en', {minimumFractionDigits:2})}</span>
                  </div>`;
-        // Show due in summary panel
         prevDueDisplay.textContent = '৳ ' + due.toLocaleString('en', {minimumFractionDigits:2});
         prevDueRow.style.display = 'flex';
+    } else if (due < 0) {
+        html += `<div style="margin-top:6px;padding:8px 12px;background:#eff6ff;border:1px solid #bfdbfe;
+                             border-radius:8px;display:flex;justify-content:space-between;align-items:center">
+                    <span style="color:#1d4ed8;font-size:.83rem;font-weight:600">
+                        <i class="fas fa-piggy-bank"></i> অগ্রিম পরিশোধ আছে
+                    </span>
+                    <span style="color:#1d4ed8;font-size:1rem;font-weight:700">৳ ${Math.abs(due).toLocaleString('en', {minimumFractionDigits:2})}</span>
+                 </div>`;
+        prevDueRow.style.display = 'none';
+        resetPrevDuePay();
     } else {
         html += `<div style="margin-top:6px;padding:6px 12px;background:#dcfce7;border:1px solid #bbf7d0;
                              border-radius:8px;font-size:.8rem;color:#15803d;font-weight:600">
