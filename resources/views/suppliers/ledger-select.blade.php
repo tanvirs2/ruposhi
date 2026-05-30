@@ -38,7 +38,7 @@
             <div class="ls-date-row">
                 <div class="ls-field">
                     <label class="ls-label">শুরুর তারিখ</label>
-                    <input type="date" name="from" id="fromDate" class="ls-input" value="{{ now()->startOfMonth()->toDateString() }}">
+                    <input type="date" name="from" id="fromDate" class="ls-input" value="{{ now()->toDateString() }}">
                 </div>
                 <div class="ls-field">
                     <label class="ls-label">শেষ তারিখ</label>
