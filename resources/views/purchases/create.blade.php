@@ -114,7 +114,15 @@
                     <label>পরিশোধ (৳) <span class="req">*</span>
                         <button type="button" class="info-btn" data-info="এখন সরবরাহকারীকে কত টাকা দিচ্ছেন। বাকি টাকা স্বয়ংক্রিয়ভাবে সরবরাহকারীর বকেয়ায় যোগ হবে।">i</button>
                     </label>
-                    <input type="text" inputmode="decimal" name="paid_amount" id="paidInput" value="0" required>
+                    <div style="display:flex;gap:8px">
+                        <input type="text" inputmode="decimal" name="paid_amount" id="paidInput" value="0" required style="flex:1">
+                        <button type="button" onclick="setFullPay()"
+                            style="padding:0 14px;border-radius:var(--radius-sm);border:1.5px solid var(--accent);
+                                   background:var(--accent-light);color:var(--accent);font-size:.78rem;
+                                   font-weight:700;cursor:pointer;white-space:nowrap">
+                            সম্পূর্ণ
+                        </button>
+                    </div>
                 </div>
                 <div class="summary-row" style="color:#ef4444"><span>বকেয়া:</span><span id="dueDisplay">৳ 0</span></div>
 
@@ -488,6 +496,14 @@ function toggleField(key) {
     btn.classList.toggle('active', open);
     if (!open) { inp.value = '0'; updateSummary(); }
     else { inp.focus(); }
+}
+
+function setFullPay() {
+    const extra = parseFloat(toEnglishDigits(document.getElementById('extraInput').value)) || 0;
+    const labor = parseFloat(toEnglishDigits(document.getElementById('laborInput').value)) || 0;
+    const net   = cart.reduce((s, c) => s + c.qty * c.price, 0) + extra + labor;
+    document.getElementById('paidInput').value = net.toFixed(0);
+    updateSummary();
 }
 
 ['paidInput', 'extraInput', 'laborInput'].forEach(id => {

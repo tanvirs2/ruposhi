@@ -107,8 +107,16 @@
 
                 <div class="form-group-field">
                     <label>পরিশোধ (৳) <span class="req">*</span></label>
-                    <input type="text" inputmode="decimal" name="paid_amount" id="paidInput"
-                        value="{{ $purchase->paid_amount }}" required>
+                    <div style="display:flex;gap:8px">
+                        <input type="text" inputmode="decimal" name="paid_amount" id="paidInput"
+                            value="{{ $purchase->paid_amount }}" required style="flex:1">
+                        <button type="button" onclick="setFullPay()"
+                            style="padding:0 14px;border-radius:var(--radius-sm);border:1.5px solid var(--accent);
+                                   background:var(--accent-light);color:var(--accent);font-size:.78rem;
+                                   font-weight:700;cursor:pointer;white-space:nowrap">
+                            সম্পূর্ণ
+                        </button>
+                    </div>
                 </div>
                 <div class="summary-row" style="color:#ef4444"><span>বকেয়া:</span><span id="dueDisplay">৳ 0</span></div>
 
@@ -307,6 +315,13 @@ function toggleField(key) {
     const open=row.style.display==='none';
     row.style.display=open?'block':'none'; btn.textContent=open?f.labelOn:f.labelOff; btn.classList.toggle('active',open);
     if(!open){inp.value='0';updateSummary();} else inp.focus();
+}
+function setFullPay() {
+    const extra=parseFloat(toEnglishDigits(document.getElementById('extraInput').value))||0;
+    const labor=parseFloat(toEnglishDigits(document.getElementById('laborInput').value))||0;
+    const net=cart.reduce((s,c)=>s+c.qty*c.price,0)+extra+labor;
+    document.getElementById('paidInput').value=net.toFixed(0);
+    updateSummary();
 }
 ['paidInput','extraInput','laborInput'].forEach(id=>document.getElementById(id).addEventListener('input',updateSummary));
 
