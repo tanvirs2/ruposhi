@@ -82,6 +82,19 @@
 
                 <hr style="border:none;border-top:1px solid var(--border)">
 
+                {{-- Previous advance (credit) from supplier --}}
+                <div id="prevAdvanceRow" style="display:none;flex-direction:column;gap:10px;padding:12px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-size:.83rem;font-weight:600;color:#1d4ed8">
+                            <i class="fas fa-piggy-bank"></i> পূর্বের অগ্রিম পরিশোধ
+                        </span>
+                        <span style="font-size:1rem;font-weight:800;color:#1d4ed8" id="prevAdvanceDisplay">৳ 0</span>
+                    </div>
+                    <div style="font-size:.78rem;color:#64748b">
+                        এই অগ্রিম নতুন রিসিভের বকেয়া থেকে স্বয়ংক্রিয়ভাবে বাদ যাবে।
+                    </div>
+                </div>
+
                 {{-- Stock summary --}}
                 <div class="receive-stock-panel" id="stockPanel" style="display:none">
                     <div class="stock-panel-title">
@@ -261,12 +274,15 @@ function makeFloatingDropdown(inputEl, dropEl) {
 }
 
 // ── Supplier search ──────────────────────────────────────────
-const allSuppliers   = @json($suppliers);
-const supplierSearch = document.getElementById('supplierSearch');
-const supplierIdInput= document.getElementById('supplierIdInput');
-const supplierSelected=document.getElementById('supplierSelected');
-const supplierDrop   = document.createElement('div');
-const sDrop          = makeFloatingDropdown(supplierSearch, supplierDrop);
+const allSuppliers    = @json($suppliers);
+const supplierSearch  = document.getElementById('supplierSearch');
+const supplierIdInput = document.getElementById('supplierIdInput');
+const supplierSelected= document.getElementById('supplierSelected');
+const supplierDrop    = document.createElement('div');
+const sDrop           = makeFloatingDropdown(supplierSearch, supplierDrop);
+const prevAdvanceRow  = document.getElementById('prevAdvanceRow');
+const prevAdvanceDisp = document.getElementById('prevAdvanceDisplay');
+let supplierAdvance   = 0; // credit balance (positive = supplier has advance)
 
 supplierSearch.addEventListener('input', function() {
     const q = this.value.trim().toLowerCase();
@@ -334,6 +350,17 @@ function selectSupplier(id) {
     supplierSelected.innerHTML = html;
     supplierSelected.style.display = 'block';
     sDrop.hide();
+
+    // Show advance panel if supplier has credit balance (negative due)
+    if (due < 0) {
+        supplierAdvance = Math.abs(due);
+        prevAdvanceDisp.textContent = '৳ ' + supplierAdvance.toLocaleString('en', {minimumFractionDigits:2});
+        prevAdvanceRow.style.display = 'flex';
+    } else {
+        supplierAdvance = 0;
+        prevAdvanceRow.style.display = 'none';
+    }
+    updateSummary();
 }
 
 // ── Items ────────────────────────────────────────────────────
@@ -504,10 +531,18 @@ function updateSummary() {
     const labor    = parseFloat(toEnglishDigits(document.getElementById('laborInput').value)) || 0;
     const net      = total + extra + labor;
     const paid     = parseFloat(toEnglishDigits(document.getElementById('paidInput').value)) || 0;
+    const rawDue = net - paid - supplierAdvance; // advance reduces due
     document.getElementById('totalDisplay').textContent    = '৳ ' + total.toLocaleString();
     document.getElementById('totalQtyDisplay').textContent = totalQty + ' বস্তা';
     document.getElementById('netDisplay').textContent      = '৳ ' + net.toLocaleString();
-    document.getElementById('dueDisplay').textContent      = '৳ ' + Math.max(0, net - paid).toLocaleString();
+    const dueEl = document.getElementById('dueDisplay');
+    if (rawDue <= 0) {
+        dueEl.textContent = rawDue < 0 ? '— (অগ্রিম ৳' + Math.abs(rawDue).toLocaleString() + ' বাকি)' : '৳ 0';
+        dueEl.style.color = '#16a34a';
+    } else {
+        dueEl.textContent = '৳ ' + rawDue.toLocaleString();
+        dueEl.style.color = '#ef4444';
+    }
     // Keep tfoot in sync on every change
     const footQty   = document.getElementById('footQty');
     const footTotal = document.getElementById('footTotal');
