@@ -498,6 +498,11 @@ function updateSummary() {
     document.getElementById('totalQtyDisplay').textContent = totalQty + ' বস্তা';
     document.getElementById('netDisplay').textContent      = '৳ ' + net.toLocaleString();
     document.getElementById('dueDisplay').textContent      = '৳ ' + Math.max(0, net - paid).toLocaleString();
+    // Keep tfoot in sync on every change
+    const footQty   = document.getElementById('footQty');
+    const footTotal = document.getElementById('footTotal');
+    if (footQty)   footQty.textContent   = totalQty + ' বস্তা';
+    if (footTotal) footTotal.textContent = '৳ ' + total.toLocaleString();
 }
 
 const fieldMap = {
