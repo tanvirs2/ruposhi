@@ -78,8 +78,10 @@
                         @endif
                     </td>
                     <td class="tr">
-                        @if($stockVal > 0)
-                            <span style="font-weight:600">৳ {{ number_format($stockVal, 0) }}</span>
+                        @if($stockVal != 0)
+                            <span style="font-weight:600;color:{{ $stockVal < 0 ? '#dc2626' : 'inherit' }}">
+                                {{ $stockVal < 0 ? '−' : '' }}৳ {{ number_format(abs($stockVal), 0) }}
+                            </span>
                         @else
                             <span style="color:#cbd5e1">—</span>
                         @endif
@@ -106,7 +108,9 @@
                     <td class="tc" style="font-weight:800">{{ number_format($grandTotalSales, 0) }}</td>
                     <td class="tc" style="font-weight:800">{{ number_format($grandStockQty, 0) }}</td>
                     <td></td>
-                    <td class="tr" style="font-weight:800">৳ {{ number_format($grandStockValue, 0) }}</td>
+                    <td class="tr" style="font-weight:800;color:{{ $grandStockValue < 0 ? '#dc2626' : 'inherit' }}">
+                        {{ $grandStockValue < 0 ? '−' : '' }}৳ {{ number_format(abs($grandStockValue), 0) }}
+                    </td>
                     <td colspan="2"></td>
                 </tr>
             </tfoot>
