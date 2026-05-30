@@ -744,8 +744,12 @@ function resetPrevDuePay() {
     prevDuePay = 0;
     const inp = document.getElementById('prevDuePayInput');
     if (inp) inp.value = '0';
-    // Remove prev due contribution from paid (keep only net)
-    document.getElementById('paidInput').value = getNet().toFixed(0);
+    // Only auto-set paid if user hasn't manually typed a value
+    const paidEl = document.getElementById('paidInput');
+    const currentPaid = parseFloat(toEnglishDigits(paidEl.value)) || 0;
+    if (currentPaid === 0) {
+        paidEl.value = getNet().toFixed(0);
+    }
     updateSummary();
 }
 
