@@ -99,6 +99,8 @@
                 @endif
                 @if($c->due_amount > 0)
                 <span class="ls-due-badge">বাকী ৳{{ number_format($c->due_amount, 0) }}</span>
+                @elseif($c->due_amount < 0)
+                <span class="ls-due-badge" style="background:#eff6ff;color:#1d4ed8">অগ্রিম ৳{{ number_format(abs($c->due_amount), 0) }}</span>
                 @endif
             </button>
             @endforeach
@@ -391,7 +393,7 @@ function filterCustomers() {
                 ${c.area ? '<span style="color:#7c3aed"><i class="fas fa-map-marker-alt" style="font-size:.65rem"></i> ' + c.area.name + '</span> &nbsp;·&nbsp; ' : ''}
                 ${c.proprietor ? 'প্রোঃ ' + c.proprietor + ' &nbsp;·&nbsp; ' : ''}
                 ${c.phone ?? ''}
-                ${c.due_amount > 0 ? ' &nbsp;·&nbsp; <span style="color:#dc2626">বাকী ৳' + Number(c.due_amount).toLocaleString('bn-BD') + '</span>' : ''}
+                ${c.due_amount > 0 ? ' &nbsp;·&nbsp; <span style="color:#dc2626">বাকী ৳' + Number(c.due_amount).toLocaleString('bn-BD') + '</span>' : c.due_amount < 0 ? ' &nbsp;·&nbsp; <span style="color:#1d4ed8">অগ্রিম ৳' + Number(Math.abs(c.due_amount)).toLocaleString('bn-BD') + '</span>' : ''}
             </div>
         </div>`).join('');
     dd.style.display = 'block';

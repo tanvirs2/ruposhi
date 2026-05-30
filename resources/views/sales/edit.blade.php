@@ -316,6 +316,8 @@ customerSearch.addEventListener('input', function() {
                 </span>
                 ${parseFloat(c.due_amount) > 0
                     ? `<span style="font-size:.78rem;font-weight:700;color:#dc2626;background:#fee2e2;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">বাকী: ৳${parseFloat(c.due_amount).toLocaleString()}</span>`
+                    : parseFloat(c.due_amount) < 0
+                    ? `<span style="font-size:.78rem;font-weight:700;color:#1d4ed8;background:#eff6ff;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">অগ্রিম: ৳${Math.abs(parseFloat(c.due_amount)).toLocaleString()}</span>`
                     : `<span style="font-size:.78rem;font-weight:700;color:#16a34a;background:#dcfce7;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">বাকীমুক্ত ✓</span>`}
             </div>
             <span style="font-size:.76rem;color:#94a3b8;display:block;margin-top:2px">
@@ -343,6 +345,13 @@ function selectCustomer(id) {
                  </div>`;
         prevDueDisplay.textContent = '৳ ' + due.toLocaleString('en', {minimumFractionDigits:2});
         prevDueRow.style.display = 'flex';
+    } else if (due < 0) {
+        html += `<div style="margin-top:6px;padding:8px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;display:flex;justify-content:space-between;align-items:center">
+                    <span style="color:#1d4ed8;font-size:.83rem;font-weight:600"><i class="fas fa-piggy-bank"></i> অগ্রিম পরিশোধ আছে</span>
+                    <span style="color:#1d4ed8;font-size:1rem;font-weight:700">৳ ${Math.abs(due).toLocaleString('en', {minimumFractionDigits:2})}</span>
+                 </div>`;
+        prevDueRow.style.display = 'none';
+        resetPrevDuePay();
     } else {
         html += `<div style="margin-top:6px;padding:6px 12px;background:#dcfce7;border:1px solid #bbf7d0;border-radius:8px;font-size:.8rem;color:#15803d;font-weight:600">✓ কোনো বাকী নেই</div>`;
         prevDueRow.style.display = 'none';
