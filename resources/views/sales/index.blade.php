@@ -63,6 +63,17 @@
                 <tr><td colspan="8" class="empty-row">কোনো বিক্রয় পাওয়া যায়নি</td></tr>
                 @endforelse
             </tbody>
+            @if($sales->isNotEmpty())
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                    <td style="font-weight:800">৳ {{ number_format($grandTotal, 0) }}</td>
+                    <td style="font-weight:800;color:#16a34a">৳ {{ number_format($grandPaid, 0) }}</td>
+                    <td style="font-weight:800;color:#dc2626">{{ $grandDue > 0 ? '৳ '.number_format($grandDue, 0) : '—' }}</td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
+            @endif
         </table>
     </div>
     <div class="pagination-wrap">{{ $sales->withQueryString()->links() }}</div>

@@ -15,15 +15,21 @@ class SaleController extends Controller
 {
     public function index(Request $request)
     {
-        $sales = Sale::with('customer')
+        $query = Sale::with('customer')
             ->when($request->search, fn($q) =>
                 $q->whereHas('customer', fn($c) => $c->where('name', 'like', "%{$request->search}%"))
                   ->orWhere('id', $request->search)
             )
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->latest()->paginate(15);
+            ->when($request->status, fn($q) => $q->where('status', $request->status));
 
-        return view('sales.index', compact('sales'));
+        // Totals across ALL filtered results (not just current page)
+        $grandTotal = (clone $query)->sum('total_amount');
+        $grandPaid  = (clone $query)->sum('paid_amount');
+        $grandDue   = (clone $query)->sum('due_amount');
+
+        $sales = $query->latest()->paginate(15);
+
+        return view('sales.index', compact('sales', 'grandTotal', 'grandPaid', 'grandDue'));
     }
 
     public function create()
