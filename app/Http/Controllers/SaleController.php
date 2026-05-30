@@ -34,7 +34,7 @@ class SaleController extends Controller
 
     public function create()
     {
-        $customers          = Customer::orderBy('name')->get();
+        $customers          = Customer::with('area')->orderBy('name')->get();
         $items              = Item::with('stock')->orderBy('name')->get();
         $paymentMethods     = StoreConfigController::getGroupedPaymentMethods();
         return view('sales.create', compact('customers', 'items', 'paymentMethods'));
@@ -135,7 +135,7 @@ class SaleController extends Controller
     public function edit(Sale $sale)
     {
         $sale->load('items.item', 'customer');
-        $customers      = Customer::orderBy('name')->get();
+        $customers      = Customer::with('area')->orderBy('name')->get();
         $items          = Item::with('stock')->orderBy('name')->get();
         $paymentMethods = StoreConfigController::getGroupedPaymentMethods();
         return view('sales.edit', compact('sale', 'customers', 'items', 'paymentMethods'));

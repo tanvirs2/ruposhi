@@ -406,7 +406,9 @@ customerSearch.addEventListener('input', function() {
                     ? `<span style="font-size:.78rem;font-weight:700;color:#dc2626;background:#fee2e2;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">বাকী: ৳${parseFloat(c.due_amount).toLocaleString()}</span>`
                     : `<span style="font-size:.78rem;font-weight:700;color:#16a34a;background:#dcfce7;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">বাকীমুক্ত ✓</span>`}
             </div>
-            ${c.phone ? `<span style="font-size:.76rem;color:#94a3b8;display:block;margin-top:2px">📞 ${c.phone}</span>` : ''}
+            <span style="font-size:.76rem;color:#94a3b8;display:block;margin-top:2px">
+                ${c.phone ? `📞 ${c.phone}` : ''}${c.phone && c.area?.name ? ' &nbsp;·&nbsp; ' : ''}${c.area?.name ? `📍 ${c.area.name}` : ''}
+            </span>
         </div>
     `).join('') || `<div class="suggestion-item" style="color:#94a3b8">কোনো কাস্টমার পাওয়া যায়নি</div>`;
     cDrop.show(html);
@@ -427,6 +429,9 @@ function selectCustomer(id) {
     }
     if (c.phone) {
         html += `<div style="font-size:.78rem;color:#94a3b8;margin-top:1px">📞 ${c.phone}</div>`;
+    }
+    if (c.area?.name) {
+        html += `<div style="font-size:.78rem;color:#94a3b8;margin-top:1px">📍 ${c.area.name}</div>`;
     }
 
     const due = parseFloat(c.due_amount) || 0;
