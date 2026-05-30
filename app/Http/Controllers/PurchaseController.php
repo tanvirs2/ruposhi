@@ -15,14 +15,19 @@ class PurchaseController extends Controller
 {
     public function index(Request $request)
     {
-        $purchases = Purchase::with('supplier')
+        $query = Purchase::with('supplier')
             ->when($request->search, fn($q) =>
                 $q->whereHas('supplier', fn($s) => $s->where('name', 'like', "%{$request->search}%"))
                   ->orWhere('id', $request->search)
-            )
-            ->latest()->paginate(15);
+            );
 
-        return view('purchases.index', compact('purchases'));
+        $grandTotal = (clone $query)->sum('total_amount');
+        $grandPaid  = (clone $query)->sum('paid_amount');
+        $grandDue   = (clone $query)->sum('due_amount');
+
+        $purchases = $query->latest()->paginate(15);
+
+        return view('purchases.index', compact('purchases', 'grandTotal', 'grandPaid', 'grandDue'));
     }
 
     public function create()
