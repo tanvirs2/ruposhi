@@ -755,7 +755,7 @@ function setFullPay() {
 // Called when prev-due partial input changes
 function onPrevDuePayChange() {
     const raw = parseFloat(toEnglishDigits(document.getElementById('prevDuePayInput').value)) || 0;
-    prevDuePay = Math.min(Math.max(0, raw), currentPrevDue);
+    prevDuePay = Math.max(0, raw);  // allow overpayment — no upper cap
     document.getElementById('paidInput').value = (getNet() + prevDuePay).toFixed(0);
     updateSummary();
 }
