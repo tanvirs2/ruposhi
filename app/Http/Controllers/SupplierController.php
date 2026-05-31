@@ -116,11 +116,11 @@ class SupplierController extends Controller
         $totalCredit  = $ledger->sum('credit');
         $receiptCount = $purchases->count();
 
-        // Real total due (all time) — auto-fix stale due_amount
+        // Real total due (all time) — auto-fix stale due_amount (allows negative for credit/advance)
         $allTimePurchases = Purchase::where('supplier_id', $supplier->id)->sum('total_amount');
         $allTimePaid      = Purchase::where('supplier_id', $supplier->id)->sum('paid_amount');
         $allTimePayments  = SupplierPayment::where('supplier_id', $supplier->id)->sum('amount');
-        $realTotalDue     = max(0, $allTimePurchases - $allTimePaid - $allTimePayments);
+        $realTotalDue     = $allTimePurchases - $allTimePaid - $allTimePayments; // NO max(0) — allows credit
         if ($supplier->due_amount != $realTotalDue) {
             $supplier->update(['due_amount' => $realTotalDue]);
         }
