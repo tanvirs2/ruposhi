@@ -47,9 +47,26 @@ cd ~/domains/pos.numaanhussain.com/pos_app && git pull origin main && php artisa
 - Invoice shows "অগ্রিম পরিশোধ" (yellow notice) instead of item table
 - Purchase list shows blue "অগ্রিম ৳X" badge for negative due rows
 
-### Customer Due Auto-fix (in ledger)
-- `CustomerController::ledger()` recalculates `due_amount` from all sales
-- Does NOT use `max(0,...)` — allows negatives to persist
+### Due Auto-fix (in ledgers)
+- `CustomerController::ledger()` recalculates `due_amount` from all sales — NO `max(0,...)`
+- `SupplierController::ledger()` same — NO `max(0,...)` cap (was a bug, now fixed)
+- Formula: `realTotalDue = allTimePurchases/Sales - allTimePaid - allTimePayments`
+- Auto-fix runs every time ledger is opened and corrects any stale due_amount
+
+### Purchase Invoice Due Display Logic
+- `due > 0` → 🔴 বকেয়া ৳X
+- `due = 0` → ✅ সম্পূর্ণ পরিশোধিত
+- `due < 0` + has items → ✅ পরিশোধিত + 🔵 অতিরিক্ত পরিশোধ ৳X
+- `due < 0` + no items → 🔵 অগ্রিম পরিশোধ ৳X
+- Always show supplier net advance below if `supplier.due_amount < 0`
+
+### Sale Invoice Row Order (tfoot)
+Order: ছাড় → পূর্বের বাকী → অতিরিক্ত খরচ → শ্রমিক খরচ → বিক্রয় মোট (only if prev_due ≠ 0) → সর্বমোট → পরিশোধ → বাকী
+
+### ⚠️ NEVER Cache Business Data
+- `due_amount`, prices, stock, config values update frequently
+- Caching any business data causes wrong values — NEVER use `Cache::remember()` for these
+- `StoreConfig::get()` hits DB directly every time — intentional
 
 ---
 
@@ -92,6 +109,10 @@ cd ~/domains/pos.numaanhussain.com/pos_app && git pull origin main && php artisa
 - `saleLogs()` — audit log of edits and deletions
 - All date defaults: `now()->toDateString()` (today, NOT startOfMonth)
 
+### SupplierController
+- `ledger()` — auto-fix supplier due (NO max(0) cap — allows negative credit)
+- `ledgerSelect()` — shows blue "অগ্রিম" badge for credit suppliers
+
 ---
 
 ## Views Structure
@@ -113,11 +134,13 @@ cd ~/domains/pos.numaanhussain.com/pos_app && git pull origin main && php artisa
 |------|-------|
 | `sales/create.blade.php` | Cart, customer search, extra/labor toggles, floating submit button |
 | `sales/edit.blade.php` | Same as create but pre-populated, inline item-change button |
-| `purchases/create.blade.php` | Supplier required, items optional, yellow warning for no-item+paid, price empty by default with hint |
+| `sales/show.blade.php` | Invoice: tfoot order = ছাড় → পূর্বের বাকী → extra/labor → বিক্রয় মোট → সর্বমোট → পরিশোধ → বাকী |
+| `purchases/create.blade.php` | Supplier required, items optional, yellow warning for no-item+paid |
 | `purchases/edit.blade.php` | Same style as create |
 | `purchases/index.blade.php` | Blue "অগ্রিম" badge for negative due rows; tfoot shows net credit in blue |
-| `purchases/show.blade.php` | No items → "অগ্রিম পরিশোধ" yellow notice; negative due → blue "অগ্রিম পরিশোধ" amount |
+| `purchases/show.blade.php` | Full due display logic (see Due Display Logic above) |
 | `customers/ledger.blade.php` | Running balance, "নতুন বিক্রয়" button pre-selects customer |
+| `suppliers/ledger-select.blade.php` | Blue "অগ্রিম" badge for credit suppliers |
 | `reports/sales.blade.php` | 5-card stats, no-item payments section, standalone payments |
 | `reports/sale-logs.blade.php` | Audit log with eye modal |
 | `stock/index.blade.php` | Zero-stock rows hidden, negative stock in red |
@@ -154,6 +177,24 @@ Purchase form: price field starts empty; user sees "আগের: ৳X ব্য
 ### No-cache middleware
 `App\Http\Middleware\NoCacheHeaders` — added to web middleware group, prevents browser from serving stale pages.
 
+### Performance — Dropdown Query Optimization
+`SaleController` and `PurchaseController` use column selection for large dropdown loads:
+```php
+Customer::with('area:id,name')->select('id','name','phone','due_amount','area_id')->get()
+Item::with('stock:id,item_id,quantity')->select('id','name','sale_price','purchase_price')->get()
+Supplier::select('id','name','phone','address','due_amount')->get()
+```
+Only fetch columns needed by JS — critical for large datasets.
+
+### Performance — Database Indexes
+Added via migration `2026_05_31_..._add_performance_indexes_to_all_tables`:
+- `sales`: `sale_date`, `(customer_id, sale_date)`, `due_amount`
+- `purchases`: `purchase_date`, `(supplier_id, purchase_date)`
+- `customers/suppliers`: `name`, `due_amount`
+- `items`: `name`
+- `sale_logs`: `created_at`, `action`
+- `customer/supplier_payments`: `payment_date`, composite with id
+
 ### Sale log snapshots
 Stored in `sale_logs.snapshot` (JSON) with: id, sale_date, customer_name, total_amount, paid_amount, due_amount, items[], payment_method, status, notes.
 
@@ -185,8 +226,15 @@ Accessed via `\App\Models\StoreConfig::get('key', 'default')`:
 13. No-item purchase (advance supplier payment) — same pattern as no-item sale
 14. Purchase `due_amount` allows negative (removed `max(0,...)` cap)
 15. Purchase create: yellow warning when paying without items
-16. Purchase invoice: "অগ্রিম পরিশোধ" notice for no-item, blue amount for negative due
+16. Purchase invoice: full due display logic (see above), supplier running total advance
 17. Purchase list: blue "অগ্রিম ৳X" badge per row + net credit in tfoot
+18. Fixed: `SupplierController::ledger()` had `max(0,...)` bug — was resetting credit to 0
+19. Fixed: Old purchases with wrong `due_amount=0` corrected in DB
+20. Fixed: Sale invoice tfoot row order (পূর্বের বাকী before extra/labor costs)
+21. Supplier ledger-select: blue "অগ্রিম" badge for credit suppliers
+22. Performance: DB indexes on all key query columns
+23. Performance: Dropdown queries use column selection (not full rows)
+24. **Rule: NEVER cache business data** — due_amount, prices, stock change frequently
 
 ---
 
