@@ -148,12 +148,15 @@
                 <td class="tr tfoot-amount">+ {{ number_format($sale->labor_cost, 0) }} টাকা</td>
             </tr>
             @endif
+            @if($sale->previous_due != 0)
+            {{-- Show items subtotal separately only when previous_due changes the grand total --}}
             <tr class="tfoot-row">
-                <td colspan="4" class="tfoot-label">সর্বমোট</td>
+                <td colspan="4" class="tfoot-label">বিক্রয় মোট</td>
                 <td class="tr tfoot-amount">{{ number_format($sale->total_amount, 0) }} টাকা</td>
             </tr>
+            @endif
             <tr class="tfoot-row">
-                <td colspan="4" class="tfoot-label"></td>
+                <td colspan="4" class="tfoot-label">সর্বমোট</td>
                 <td class="tr tfoot-amount tfoot-grand">{{ number_format($grandTotal, 0) }} টাকা</td>
             </tr>
             <tr class="tfoot-row">
