@@ -132,6 +132,10 @@
                 <td class="tr tfoot-amount">{{ number_format($sale->discount, 0) }} টাকা</td>
             </tr>
             @endif
+            <tr class="tfoot-row">
+                <td colspan="4" class="tfoot-label">পূর্বের বাকী</td>
+                <td class="tr tfoot-amount">{{ number_format($sale->previous_due, 0) }} টাকা</td>
+            </tr>
             @if($sale->extra_cost > 0)
             <tr class="tfoot-row">
                 <td colspan="4" class="tfoot-label">অতিরিক্ত খরচ</td>
@@ -144,10 +148,6 @@
                 <td class="tr tfoot-amount">+ {{ number_format($sale->labor_cost, 0) }} টাকা</td>
             </tr>
             @endif
-            <tr class="tfoot-row">
-                <td colspan="4" class="tfoot-label">পূর্বের বাকী</td>
-                <td class="tr tfoot-amount">{{ number_format($sale->previous_due, 0) }} টাকা</td>
-            </tr>
             <tr class="tfoot-row">
                 <td colspan="4" class="tfoot-label">সর্বমোট</td>
                 <td class="tr tfoot-amount">{{ number_format($sale->total_amount, 0) }} টাকা</td>
