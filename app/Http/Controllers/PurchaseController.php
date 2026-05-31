@@ -56,7 +56,7 @@ class PurchaseController extends Controller
             $extraCost  = $request->extra_cost ?? 0;
             $laborCost  = $request->labor_cost ?? 0;
             $total      = $itemsTotal + $extraCost + $laborCost;
-            $due        = max(0, $total - $request->paid_amount);
+            $due        = $total - $request->paid_amount; // allows negative (credit/advance)
 
             $purchase = Purchase::create([
                 'supplier_id'    => $request->supplier_id ?: null,
@@ -141,7 +141,7 @@ class PurchaseController extends Controller
             $extraCost  = $request->extra_cost ?? 0;
             $laborCost  = $request->labor_cost ?? 0;
             $total      = $itemsTotal + $extraCost + $laborCost;
-            $due        = max(0, $total - $request->paid_amount);
+            $due        = $total - $request->paid_amount; // allows negative (credit/advance)
 
             $purchase->update([
                 'supplier_id'    => $request->supplier_id ?: null,

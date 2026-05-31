@@ -92,6 +92,11 @@
         </div>
         @if($purchase->due_amount > 0)
         <div class="inv-row" style="color:#ef4444;font-weight:600"><span>বকেয়া:</span><span>৳ {{ number_format($purchase->due_amount,0) }}</span></div>
+        @elseif($purchase->due_amount < 0)
+        <div class="inv-row" style="color:#1d4ed8;font-weight:600">
+            <span>অগ্রিম পরিশোধ:</span>
+            <span>৳ {{ number_format(abs($purchase->due_amount),0) }}</span>
+        </div>
         @else
         <div class="inv-row" style="color:#16a34a"><span>বকেয়া:</span><span>সম্পূর্ণ পরিশোধিত ✓</span></div>
         @endif

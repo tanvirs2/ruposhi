@@ -42,6 +42,10 @@
                     <td>
                         @if($purchase->due_amount > 0)
                             <span style="color:#ef4444;font-weight:600">৳ {{ number_format($purchase->due_amount,0) }}</span>
+                        @elseif($purchase->due_amount < 0)
+                            <span style="background:#eff6ff;color:#1d4ed8;font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:20px">
+                                অগ্রিম ৳ {{ number_format(abs($purchase->due_amount),0) }}
+                            </span>
                         @else
                             <span style="color:#16a34a">পরিশোধিত</span>
                         @endif
@@ -67,7 +71,15 @@
                     <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
                     <td style="font-weight:800">৳ {{ number_format($grandTotal, 0) }}</td>
                     <td style="font-weight:800;color:#16a34a">৳ {{ number_format($grandPaid, 0) }}</td>
-                    <td style="font-weight:800;color:#dc2626">{{ $grandDue > 0 ? '৳ '.number_format($grandDue, 0) : '—' }}</td>
+                    <td style="font-weight:800">
+                        @if($grandDue > 0)
+                            <span style="color:#dc2626">৳ {{ number_format($grandDue, 0) }}</span>
+                        @elseif($grandDue < 0)
+                            <span style="color:#1d4ed8">অগ্রিম ৳ {{ number_format(abs($grandDue), 0) }}</span>
+                        @else
+                            <span style="color:#16a34a">—</span>
+                        @endif
+                    </td>
                     <td></td>
                 </tr>
             </tfoot>
