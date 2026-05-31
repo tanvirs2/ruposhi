@@ -38,7 +38,7 @@
                             <th>বিক্রয়মূল্য <small style="font-weight:400;color:#94a3b8">(পরিবর্তনযোগ্য)</small>
                                 <button type="button" class="info-btn" data-info="প্রতিটি আইটেমের বিক্রয় মূল্য এখানে পরিবর্তন করা যাবে। ডিফল্ট মূল্য আইটেম সেটআপ থেকে নেওয়া হয়। বিশেষ ছাড় বা দরাদরির ক্ষেত্রে এই ঘরে নতুন মূল্য লিখুন।">i</button>
                             </th>
-                            <th class="col-secret" style="display:none">লাভ (৳)</th>
+                            <th class="col-secret" style="display:none">লাভ/বস্তা · মোট</th>
                             <th>মোট</th>
                             <th></th>
                         </tr>
@@ -598,10 +598,10 @@ function updateRowTotal(id) {
         const profitPerUnit  = item.price - item.cost;
         const profitTotal    = profitPerUnit * (item.qty || 0);
         const pClass         = profitClass(profitPerUnit, item.cost);
-        const profitStr      = (profitTotal >= 0 ? '+৳' : '-৳') + Math.abs(profitTotal).toFixed(0);
+        const sign           = v => v >= 0 ? '+৳' : '-৳';
         profitCell.className     = `col-secret ${pClass}`;
         profitCell.style.display = profitVisible ? '' : 'none';
-        profitCell.textContent   = profitStr;
+        profitCell.innerHTML     = `${sign(profitPerUnit)}${Math.abs(profitPerUnit).toFixed(0)}<small style="display:block;font-size:.72rem;font-weight:500;opacity:.75">${sign(profitTotal)}${Math.abs(profitTotal).toFixed(0)} মোট</small>`;
     }
 }
 
@@ -642,9 +642,10 @@ function renderCart() {
 
     itemsBody.innerHTML = cart.map((c, idx) => {
         const profitPerUnit  = c.price - c.cost;
-        const profitTotal    = profitPerUnit * (c.qty || 0);  // total profit for this row
+        const profitTotal    = profitPerUnit * (c.qty || 0);
         const pClass         = profitClass(profitPerUnit, c.cost);
-        const profitStr      = (profitTotal >= 0 ? '+৳' : '-৳') + Math.abs(profitTotal).toFixed(0);
+        const sign           = v => v >= 0 ? '+৳' : '-৳';
+        const profitStr      = `${sign(profitPerUnit)}${Math.abs(profitPerUnit).toFixed(0)}<small style="display:block;font-size:.72rem;font-weight:500;opacity:.75">${sign(profitTotal)}${Math.abs(profitTotal).toFixed(0)} মোট</small>`;
         const secretDisplay = profitVisible ? '' : 'display:none';
 
         const overStock  = c.qty > c.stock;
