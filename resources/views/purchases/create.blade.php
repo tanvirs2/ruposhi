@@ -82,6 +82,28 @@
 
                 <hr style="border:none;border-top:1px solid var(--border)">
 
+                {{-- Previous due from supplier (positive) --}}
+                <div id="prevDueRow" style="display:none;flex-direction:column;gap:10px;padding:12px 14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-size:.83rem;font-weight:600;color:#92400e">
+                            <i class="fas fa-clock-rotate-left"></i> পূর্বের বকেয়া
+                        </span>
+                        <span style="font-size:1rem;font-weight:800;color:#b45309" id="prevDueDisplay">৳ 0</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <span style="font-size:.8rem;font-weight:600;color:#92400e;white-space:nowrap">এখন দেবেন (৳):</span>
+                        <input type="text" inputmode="decimal" id="prevDuePayInput" value="0" placeholder="0"
+                            oninput="onPrevDuePayChange()"
+                            style="flex:1;padding:7px 10px;border:1.5px solid #fbbf24;border-radius:6px;
+                                   font-size:.92rem;font-weight:700;color:#92400e;background:#fff;min-width:0">
+                        <button type="button" onclick="setFullPrevDuePay()"
+                            style="padding:7px 13px;border-radius:6px;border:none;background:#b45309;
+                                   color:#fff;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
+                            সম্পূর্ণ
+                        </button>
+                    </div>
+                </div>
+
                 {{-- Previous advance (credit) from supplier --}}
                 <div id="prevAdvanceRow" style="display:none;flex-direction:column;gap:10px;padding:12px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px">
                     <div style="display:flex;justify-content:space-between;align-items:center">
