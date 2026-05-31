@@ -7,7 +7,7 @@
 {{-- Filter ──────────────────────────────────────────────────── --}}
 <div class="card no-print" style="margin-bottom:20px">
     <div class="card-filter">
-        <form method="GET" class="filter-form">
+        <form method="GET" class="filter-form" id="ledgerFilterForm">
             <div class="form-group-field">
                 <label>শুরুর তারিখ</label>
                 <input type="date" name="from" value="{{ $from }}">
@@ -476,10 +476,15 @@ function setRange(type) {
         from = new Date(today.getFullYear(), 0, 1);
         to   = today;
     }
-    const fmt = d => d.toISOString().slice(0, 10);
+    const fmt = d => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
     document.querySelector('input[name=from]').value = fmt(from);
     document.querySelector('input[name=to]').value   = fmt(to);
-    document.querySelector('form').submit();
+    document.getElementById('ledgerFilterForm').submit();
 }
 </script>
 @endpush

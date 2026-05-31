@@ -41,7 +41,7 @@
 {{-- ── Filter ─────────────────────────────────────────────────── --}}
 <div class="card no-print" style="margin-bottom:18px">
     <div class="card-filter">
-        <form method="GET" class="filter-form">
+        <form method="GET" class="filter-form" id="ledgerFilterForm">
             <div class="form-group-field">
                 <label>শুরুর তারিখ</label>
                 <input type="date" name="from" value="{{ $from }}">
@@ -333,10 +333,15 @@ function ledgerRange(type) {
     else if (type === 'last_month') { from = new Date(today.getFullYear(), today.getMonth()-1, 1); to = new Date(today.getFullYear(), today.getMonth(), 0); }
     else if (type === 'this_year')  { from = new Date(today.getFullYear(), 0, 1); to = today; }
     else                            { from = new Date('2000-01-01'); to = today; }
-    const fmt = d => d.toISOString().slice(0,10);
+    const fmt = d => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
     document.querySelector('input[name=from]').value = fmt(from);
     document.querySelector('input[name=to]').value   = fmt(to);
-    document.querySelector('form').submit();
+    document.getElementById('ledgerFilterForm').submit();
 }
 </script>
 @endpush
