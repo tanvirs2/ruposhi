@@ -32,8 +32,11 @@ class PurchaseController extends Controller
 
     public function create()
     {
-        $suppliers      = Supplier::orderBy('name')->get();
-        $items          = Item::with('stock')->orderBy('name')->get();
+        $suppliers      = Supplier::select('id','name','phone','address','due_amount')
+                            ->orderBy('name')->get();
+        $items          = Item::with('stock:id,item_id,quantity')
+                            ->select('id','name','purchase_price')
+                            ->orderBy('name')->get();
         $paymentMethods = StoreConfigController::getGroupedPaymentMethods();
         return view('purchases.create', compact('suppliers', 'items', 'paymentMethods'));
     }
@@ -104,8 +107,11 @@ class PurchaseController extends Controller
     public function edit(Purchase $purchase)
     {
         $purchase->load('items.item', 'supplier', 'user');
-        $suppliers      = Supplier::orderBy('name')->get();
-        $items          = Item::with('stock')->orderBy('name')->get();
+        $suppliers      = Supplier::select('id','name','phone','address','due_amount')
+                            ->orderBy('name')->get();
+        $items          = Item::with('stock:id,item_id,quantity')
+                            ->select('id','name','purchase_price')
+                            ->orderBy('name')->get();
         $paymentMethods = StoreConfigController::getGroupedPaymentMethods();
         return view('purchases.edit', compact('purchase', 'suppliers', 'items', 'paymentMethods'));
     }
