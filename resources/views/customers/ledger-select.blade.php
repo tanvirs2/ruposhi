@@ -13,7 +13,7 @@
         <h2 class="ledger-select-title">কাস্টমার লেজার রিপোর্ট</h2>
         <p class="ledger-select-sub">কাস্টমার নির্বাচন করুন এবং সময়কাল দিন</p>
 
-        <form id="ledgerForm" onsubmit="goToLedger(event)" class="ledger-select-form">
+        <form id="ledgerForm" onsubmit="goToLedger(event)" action="javascript:void(0)" class="ledger-select-form">
 
             {{-- Area filter --}}
             <div class="ls-field">
@@ -429,13 +429,28 @@ function goToLedger(e) {
 }
 
 function lsRange(type) {
+    // Use local date formatting to avoid UTC timezone shift (toISOString shifts for UTC+6)
+    const fmt = d => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
     const today = new Date();
     let from, to;
-    if (type === 'this_month') { from = new Date(today.getFullYear(), today.getMonth(), 1); to = today; }
-    else if (type === 'last_month') { from = new Date(today.getFullYear(), today.getMonth()-1, 1); to = new Date(today.getFullYear(), today.getMonth(), 0); }
-    else if (type === 'this_year') { from = new Date(today.getFullYear(), 0, 1); to = today; }
-    else { from = new Date('2000-01-01'); to = today; }
-    const fmt = d => d.toISOString().slice(0,10);
+    if (type === 'this_month') {
+        from = new Date(today.getFullYear(), today.getMonth(), 1);
+        to   = today;
+    } else if (type === 'last_month') {
+        from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        to   = new Date(today.getFullYear(), today.getMonth(), 0);
+    } else if (type === 'this_year') {
+        from = new Date(today.getFullYear(), 0, 1);
+        to   = today;
+    } else {
+        from = new Date(2000, 0, 1);
+        to   = today;
+    }
     document.getElementById('fromDate').value = fmt(from);
     document.getElementById('toDate').value   = fmt(to);
 }
