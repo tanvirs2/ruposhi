@@ -111,8 +111,8 @@
                 <col style="width:220px">   {{-- বিবরণ --}}
                 <col style="width:70px">    {{-- পরিমাণ --}}
                 <col style="width:70px">    {{-- দর --}}
-                <col style="width:90px">    {{-- জমা --}}
                 <col style="width:90px">    {{-- বাকি --}}
+                <col style="width:90px">    {{-- জমা --}}
                 <col style="width:110px">   {{-- অবশিষ্ট --}}
             </colgroup>
             <thead>
@@ -122,8 +122,8 @@
                     <th>বিবরণ</th>
                     <th style="text-align:right">পরিমাণ</th>
                     <th style="text-align:right">দর</th>
-                    <th style="text-align:right">জমা (৳)</th>
                     <th style="text-align:right">বাকি (৳)</th>
+                    <th style="text-align:right">জমা (৳)</th>
                     <th style="text-align:right">অবশিষ্ট (৳)</th>
                 </tr>
             </thead>
@@ -192,15 +192,15 @@
                         @endif
                     </td>
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
-                        @if($row['credit'] > 0)
-                            <span class="cl-credit">{{ number_format($row['credit'], 0) }}</span>
+                        @if($row['debit'] > 0)
+                            <span class="cl-debit">{{ number_format($row['debit'], 0) }}</span>
                         @else
                             <span class="cl-dash">-</span>
                         @endif
                     </td>
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
-                        @if($row['debit'] > 0)
-                            <span class="cl-debit">{{ number_format($row['debit'], 0) }}</span>
+                        @if($row['credit'] > 0)
+                            <span class="cl-credit">{{ number_format($row['credit'], 0) }}</span>
                         @else
                             <span class="cl-dash">-</span>
                         @endif
@@ -223,11 +223,11 @@
                     <td colspan="3" style="font-weight:700">সর্বমোট</td>
                     <td style="text-align:right">{{ number_format($ledger->sum('qty'), 0) }}</td>
                     <td></td>
-                    <td style="text-align:right;font-weight:700;color:#15803d">
-                        {{ number_format($totalCredits + $totalDiscount, 0) }}
-                    </td>
                     <td style="text-align:right;font-weight:700;color:#dc2626">
                         {{ number_format($totalSales + $totalDiscount, 0) }}
+                    </td>
+                    <td style="text-align:right;font-weight:700;color:#15803d">
+                        {{ number_format($totalCredits + $totalDiscount, 0) }}
                     </td>
                     <td style="text-align:right;font-weight:800;color:{{ $running > 0 ? '#b45309' : ($running < 0 ? '#15803d' : '#64748b') }}">
                         {{ number_format(abs($running), 0) }}
