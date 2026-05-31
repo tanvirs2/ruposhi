@@ -38,7 +38,7 @@
                             <th>বিক্রয়মূল্য <small style="font-weight:400;color:#94a3b8">(পরিবর্তনযোগ্য)</small>
                                 <button type="button" class="info-btn" data-info="প্রতিটি আইটেমের বিক্রয় মূল্য এখানে পরিবর্তন করা যাবে। ডিফল্ট মূল্য আইটেম সেটআপ থেকে নেওয়া হয়। বিশেষ ছাড় বা দরাদরির ক্ষেত্রে এই ঘরে নতুন মূল্য লিখুন।">i</button>
                             </th>
-                            <th class="col-secret" style="display:none">লাভ/বস্তা</th>
+                            <th class="col-secret" style="display:none">লাভ (৳)</th>
                             <th>মোট</th>
                             <th></th>
                         </tr>
@@ -52,7 +52,7 @@
                             <td class="tc" style="font-weight:800" id="footQty">0</td>
                             <td class="col-secret" style="display:none"></td>
                             <td></td>
-                            <td class="col-secret" style="display:none" id="footProfit"></td>
+                            <td class="col-secret" style="display:none"></td>
                             <td class="tr" style="font-weight:800" id="footTotal">৳ 0</td>
                             <td></td>
                         </tr>
@@ -595,12 +595,13 @@ function updateRowTotal(id) {
     // Update profit cell (price changes after render so must update separately)
     const profitCell = document.getElementById('row-profit-' + id);
     if (profitCell) {
-        const profitPerUnit = item.price - item.cost;
-        const pClass        = profitClass(profitPerUnit, item.cost);
-        const profitStr     = (profitPerUnit >= 0 ? '+' : '') + '৳' + profitPerUnit.toFixed(0);
-        profitCell.className    = `col-secret ${pClass}`;
+        const profitPerUnit  = item.price - item.cost;
+        const profitTotal    = profitPerUnit * (item.qty || 0);
+        const pClass         = profitClass(profitPerUnit, item.cost);
+        const profitStr      = (profitTotal >= 0 ? '+৳' : '-৳') + Math.abs(profitTotal).toFixed(0);
+        profitCell.className     = `col-secret ${pClass}`;
         profitCell.style.display = profitVisible ? '' : 'none';
-        profitCell.textContent  = profitStr;
+        profitCell.textContent   = profitStr;
     }
 }
 
@@ -640,9 +641,10 @@ function renderCart() {
     if (itemsFoot) itemsFoot.style.display = '';
 
     itemsBody.innerHTML = cart.map((c, idx) => {
-        const profitPerUnit = c.price - c.cost;
-        const pClass        = profitClass(profitPerUnit, c.cost);
-        const profitStr     = (profitPerUnit >= 0 ? '+' : '') + '৳' + profitPerUnit.toFixed(0);
+        const profitPerUnit  = c.price - c.cost;
+        const profitTotal    = profitPerUnit * (c.qty || 0);  // total profit for this row
+        const pClass         = profitClass(profitPerUnit, c.cost);
+        const profitStr      = (profitTotal >= 0 ? '+৳' : '-৳') + Math.abs(profitTotal).toFixed(0);
         const secretDisplay = profitVisible ? '' : 'display:none';
 
         const overStock  = c.qty > c.stock;
@@ -693,18 +695,10 @@ function updateSummary() {
     const marginPct= totalCost > 0 ? (profit / totalCost * 100) : 0;
 
     // Update cart tfoot totals
-    const footQty    = document.getElementById('footQty');
-    const footTotal  = document.getElementById('footTotal');
-    const footProfit = document.getElementById('footProfit');
+    const footQty   = document.getElementById('footQty');
+    const footTotal = document.getElementById('footTotal');
     if (footQty)   footQty.textContent   = totalQty.toString();
     if (footTotal) footTotal.textContent = '৳ ' + total.toFixed(0);
-    if (footProfit) {
-        const totalProfit = cart.reduce((s, c) => s + c.qty * (c.price - c.cost), 0);
-        footProfit.textContent  = (totalProfit >= 0 ? '+৳' : '-৳') + Math.abs(totalProfit).toFixed(0);
-        footProfit.style.color  = totalProfit >= 0 ? '#16a34a' : '#dc2626';
-        footProfit.style.fontWeight = '800';
-        footProfit.style.textAlign  = 'right';
-    }
 
     document.getElementById('totalDisplay').textContent   = '৳ ' + total.toFixed(2);
     document.getElementById('netDisplay').textContent     = '৳ ' + net.toFixed(2);
