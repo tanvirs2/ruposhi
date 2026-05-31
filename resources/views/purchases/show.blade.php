@@ -21,6 +21,7 @@
         <div><strong>রেকর্ডকারী:</strong> {{ $purchase->user->name }}</div>
     </div>
 
+    @if($purchase->items->count() > 0)
     <div class="table-wrap">
         <table class="data-table">
             <thead>
@@ -57,6 +58,15 @@
             </tfoot>
         </table>
     </div>
+    @else
+    <div style="padding:20px 24px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;margin:16px 0;display:flex;align-items:center;gap:12px">
+        <i class="fas fa-piggy-bank" style="color:#ca8a04;font-size:1.4rem"></i>
+        <div>
+            <div style="font-weight:700;color:#92400e;font-size:.95rem">অগ্রিম পরিশোধ</div>
+            <div style="font-size:.83rem;color:#78350f;margin-top:2px">কোনো মাল রিসিভ হয়নি — শুধুমাত্র সরবরাহকারীকে অগ্রিম পরিশোধ করা হয়েছে।</div>
+        </div>
+    </div>
+    @endif
 
     <div class="invoice-totals">
         @php

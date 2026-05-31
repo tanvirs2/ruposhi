@@ -43,16 +43,16 @@ class PurchaseController extends Controller
         $request->validate([
             'purchase_date'       => 'required|date',
             'supplier_id'         => 'required|exists:suppliers,id',
-            'items'               => 'required|array|min:1',
-            'items.*.id'          => 'required|exists:items,id',
-            'items.*.qty'         => 'required|numeric|min:0.01',
-            'items.*.price'       => 'required|numeric|min:0',
+            'items'               => 'nullable|array',
+            'items.*.id'          => 'required_with:items|exists:items,id',
+            'items.*.qty'         => 'required_with:items|numeric|min:0.01',
+            'items.*.price'       => 'required_with:items|numeric|min:0',
             'paid_amount'         => 'required|numeric|min:0',
         ]);
 
         $purchase = null;
         DB::transaction(function () use ($request, &$purchase) {
-            $itemsTotal = collect($request->items)->sum(fn($i) => $i['qty'] * $i['price']);
+            $itemsTotal = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
             $extraCost  = $request->extra_cost ?? 0;
             $laborCost  = $request->labor_cost ?? 0;
             $total      = $itemsTotal + $extraCost + $laborCost;
@@ -71,7 +71,7 @@ class PurchaseController extends Controller
                 'purchase_date'  => $request->purchase_date,
             ]);
 
-            foreach ($request->items as $row) {
+            foreach ($request->items ?? [] as $row) {
                 PurchaseItem::create([
                     'purchase_id' => $purchase->id,
                     'item_id'     => $row['id'],

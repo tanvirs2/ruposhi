@@ -171,6 +171,15 @@
                 </div>
                 <div class="summary-row" style="color:#ef4444"><span>বকেয়া:</span><span id="dueDisplay">৳ 0</span></div>
 
+                {{-- Advance payment warning (no items, paid > 0) --}}
+                <div id="advancePayWarning" style="display:none;padding:10px 14px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;gap:8px;align-items:flex-start">
+                    <i class="fas fa-circle-info" style="color:#ca8a04;margin-top:2px;flex-shrink:0"></i>
+                    <div style="font-size:.83rem;color:#92400e;line-height:1.5">
+                        কোনো মাল নেই — <strong><span id="advancePayAmt"></span></strong> সরবরাহকারীর অগ্রিম পরিশোধ হিসেবে যোগ হবে।
+                        পরবর্তী রিসিভে এই অগ্রিম স্বয়ংক্রিয়ভাবে বাদ যাবে।
+                    </div>
+                </div>
+
                 {{-- Payment Method (DB-driven) --}}
                 <div class="form-group-field">
                     <label><i class="fas fa-credit-card" style="color:var(--accent)"></i> পরিশোধ মোড</label>
@@ -483,6 +492,7 @@ function renderCart() {
         itemsFoot.style.display = 'none';
         stockPanel.style.display = 'none';
         updateSummary();
+        checkAdvanceWarning();
         return;
     }
 
@@ -544,6 +554,7 @@ function renderCart() {
     // Re-attach Bengali converter to new inputs
     if (typeof attachBengaliConverter === 'function') attachBengaliConverter(itemsBody);
     updateSummary();
+    checkAdvanceWarning();
 }
 
 function updateSummary() {
@@ -597,7 +608,7 @@ function setFullPay() {
     updateSummary();
 }
 
-['paidInput', 'extraInput', 'laborInput'].forEach(id => {
+['extraInput', 'laborInput'].forEach(id => {
     document.getElementById(id).addEventListener('input', updateSummary);
 });
 
@@ -610,7 +621,24 @@ document.getElementById('receiveForm').addEventListener('submit', function(e) {
         return;
     }
     suppErr.style.display = 'none';
-    if (!cart.length) { e.preventDefault(); alert('কমপক্ষে একটি আইটেম যোগ করুন।'); }
+    // Allow no-item submit (pure advance payment to supplier)
+});
+
+// Show/hide advance payment warning when cart is empty but paid > 0
+function checkAdvanceWarning() {
+    const paid = parseFloat(toEnglishDigits(document.getElementById('paidInput').value)) || 0;
+    const warn = document.getElementById('advancePayWarning');
+    if (!cart.length && paid > 0) {
+        warn.style.display = 'flex';
+        warn.querySelector('#advancePayAmt').textContent = '৳ ' + paid.toLocaleString();
+    } else {
+        warn.style.display = 'none';
+    }
+}
+
+document.getElementById('paidInput').addEventListener('input', function() {
+    updateSummary();
+    checkAdvanceWarning();
 });
 </script>
 @endpush
