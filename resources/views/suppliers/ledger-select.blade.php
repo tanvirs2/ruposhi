@@ -74,6 +74,8 @@
                 @endif
                 @if($s->due_amount > 0)
                 <span class="ls-due-badge">বাকী ৳{{ number_format($s->due_amount, 0) }}</span>
+                @elseif($s->due_amount < 0)
+                <span class="ls-due-badge" style="background:#eff6ff;color:#1d4ed8">অগ্রিম ৳{{ number_format(abs($s->due_amount), 0) }}</span>
                 @endif
             </button>
             @endforeach
@@ -207,7 +209,11 @@ function filterSuppliers() {
             <div class="ls-dropdown-name">${s.name}</div>
             <div class="ls-dropdown-sub">
                 ${s.phone ?? ''}
-                ${s.due_amount > 0 ? ' &nbsp;·&nbsp; <span style="color:#dc2626">বাকী ৳' + Number(s.due_amount).toLocaleString() + '</span>' : ''}
+                ${parseFloat(s.due_amount) > 0
+                    ? ' &nbsp;·&nbsp; <span style="color:#dc2626">বাকী ৳' + Number(s.due_amount).toLocaleString() + '</span>'
+                    : parseFloat(s.due_amount) < 0
+                    ? ' &nbsp;·&nbsp; <span style="color:#1d4ed8">অগ্রিম ৳' + Math.abs(Number(s.due_amount)).toLocaleString() + '</span>'
+                    : ''}
             </div>
         </div>`).join('');
     dd.style.display = 'block';
