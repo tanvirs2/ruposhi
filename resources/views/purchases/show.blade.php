@@ -94,9 +94,15 @@
         <div class="inv-row" style="color:#ef4444;font-weight:600"><span>বকেয়া:</span><span>৳ {{ number_format($purchase->due_amount,0) }}</span></div>
         @elseif($purchase->due_amount < 0)
         <div class="inv-row" style="color:#1d4ed8;font-weight:600">
-            <span>অগ্রিম পরিশোধ:</span>
+            <span>অগ্রিম পরিশোধ (এই রিসিভ):</span>
             <span>৳ {{ number_format(abs($purchase->due_amount),0) }}</span>
         </div>
+        @if($purchase->supplier && $purchase->supplier->due_amount < 0)
+        <div class="inv-row" style="color:#1d4ed8;font-size:.9rem;font-weight:700;background:#eff6ff;padding:8px 12px;border-radius:6px;margin-top:4px">
+            <span><i class="fas fa-piggy-bank"></i> সরবরাহকারীর মোট অগ্রিম:</span>
+            <span>৳ {{ number_format(abs($purchase->supplier->due_amount),0) }}</span>
+        </div>
+        @endif
         @else
         <div class="inv-row" style="color:#16a34a"><span>বকেয়া:</span><span>সম্পূর্ণ পরিশোধিত ✓</span></div>
         @endif
