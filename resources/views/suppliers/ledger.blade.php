@@ -124,8 +124,8 @@
                 <col>                      {{-- বিবরণ --}}
                 <col style="width:80px">   {{-- পরিমাণ --}}
                 <col style="width:100px">  {{-- দর --}}
-                <col style="width:130px">  {{-- জমা (Cr) --}}
-                <col style="width:130px">  {{-- মোট মূল্য (Dr) --}}
+                <col style="width:130px">  {{-- বাকি/Dr --}}
+                <col style="width:130px">  {{-- জমা/Cr --}}
                 <col style="width:150px">  {{-- অবশিষ্ট --}}
             </colgroup>
             <thead>
@@ -134,8 +134,8 @@
                     <th>বিবরণ</th>
                     <th style="text-align:right">পরিমাণ</th>
                     <th style="text-align:right">দর</th>
+                    <th style="text-align:right">বাকি (৳)</th>
                     <th style="text-align:right">জমা (৳)</th>
-                    <th style="text-align:right">মোট মূল্য (৳)</th>
                     <th style="text-align:right">অবশিষ্ট (৳)</th>
                 </tr>
             </thead>
@@ -216,19 +216,19 @@
                         @endif
                     </td>
 
-                    {{-- জমা (credit) --}}
+                    {{-- বাকি (debit — goods received) --}}
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
-                        @if($row->credit > 0)
-                            <span class="sl-credit">৳ {{ number_format($row->credit, 0) }}</span>
+                        @if($row->debit > 0)
+                            <span class="sl-debit">৳ {{ number_format($row->debit, 0) }}</span>
                         @else
                             <span style="color:#cbd5e1">—</span>
                         @endif
                     </td>
 
-                    {{-- মোট মূল্য (debit) --}}
+                    {{-- জমা (credit — payment made) --}}
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
-                        @if($row->debit > 0)
-                            <span class="sl-debit">৳ {{ number_format($row->debit, 0) }}</span>
+                        @if($row->credit > 0)
+                            <span class="sl-credit">৳ {{ number_format($row->credit, 0) }}</span>
                         @else
                             <span style="color:#cbd5e1">—</span>
                         @endif
@@ -260,10 +260,10 @@
                 <tr class="sl-tfoot">
                     <td colspan="4">সর্বমোট</td>
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
-                        <span class="sl-credit">৳ {{ number_format($totalCredit, 0) }}</span>
+                        <span class="sl-debit">৳ {{ number_format($totalDebit, 0) }}</span>
                     </td>
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
-                        <span class="sl-debit">৳ {{ number_format($totalDebit, 0) }}</span>
+                        <span class="sl-credit">৳ {{ number_format($totalCredit, 0) }}</span>
                     </td>
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
                         @php $finalBal = $ledger->last()->balance ?? $openingBalance; @endphp
