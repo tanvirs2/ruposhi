@@ -52,7 +52,7 @@
                             <td class="tc" style="font-weight:800" id="footQty">0</td>
                             <td class="col-secret" style="display:none"></td>
                             <td></td>
-                            <td class="col-secret" style="display:none"></td>
+                            <td class="col-secret" style="display:none" id="footProfit"></td>
                             <td class="tr" style="font-weight:800" id="footTotal">৳ 0</td>
                             <td></td>
                         </tr>
@@ -693,10 +693,18 @@ function updateSummary() {
     const marginPct= totalCost > 0 ? (profit / totalCost * 100) : 0;
 
     // Update cart tfoot totals
-    const footQty   = document.getElementById('footQty');
-    const footTotal = document.getElementById('footTotal');
+    const footQty    = document.getElementById('footQty');
+    const footTotal  = document.getElementById('footTotal');
+    const footProfit = document.getElementById('footProfit');
     if (footQty)   footQty.textContent   = totalQty.toString();
     if (footTotal) footTotal.textContent = '৳ ' + total.toFixed(0);
+    if (footProfit) {
+        const totalProfit = cart.reduce((s, c) => s + c.qty * (c.price - c.cost), 0);
+        footProfit.textContent  = (totalProfit >= 0 ? '+৳' : '-৳') + Math.abs(totalProfit).toFixed(0);
+        footProfit.style.color  = totalProfit >= 0 ? '#16a34a' : '#dc2626';
+        footProfit.style.fontWeight = '800';
+        footProfit.style.textAlign  = 'right';
+    }
 
     document.getElementById('totalDisplay').textContent   = '৳ ' + total.toFixed(2);
     document.getElementById('netDisplay').textContent     = '৳ ' + net.toFixed(2);
