@@ -583,12 +583,25 @@ function updatePrice(id, val) {
     updateSummary();
 }
 
-// Update only the row-total cell — no full re-render, focus stays intact
+// Update only the row-total and profit cells — no full re-render, focus stays intact
 function updateRowTotal(id) {
     const item = cart.find(c => c.id === id);
     if (!item) return;
+
+    // Update total cell
     const cell = document.getElementById('row-total-' + id);
     if (cell) cell.textContent = '৳ ' + (item.qty * item.price).toFixed(0);
+
+    // Update profit cell (price changes after render so must update separately)
+    const profitCell = document.getElementById('row-profit-' + id);
+    if (profitCell) {
+        const profitPerUnit = item.price - item.cost;
+        const pClass        = profitClass(profitPerUnit, item.cost);
+        const profitStr     = (profitPerUnit >= 0 ? '+' : '') + '৳' + profitPerUnit.toFixed(0);
+        profitCell.className    = `col-secret ${pClass}`;
+        profitCell.style.display = profitVisible ? '' : 'none';
+        profitCell.textContent  = profitStr;
+    }
 }
 
 function profitClass(profit, cost) {
@@ -654,7 +667,7 @@ function renderCart() {
                     style="width:100px"
                     oninput="updatePrice(${c.id},this.value)" class="inline-input">
             </td>
-            <td class="col-secret ${pClass}" style="${secretDisplay}">${profitStr}</td>
+            <td id="row-profit-${c.id}" class="col-secret ${pClass}" style="${secretDisplay}">${profitStr}</td>
             <td id="row-total-${c.id}">৳ ${(c.qty * c.price).toFixed(0)}</td>
             <td><button type="button" onclick="removeItem(${c.id})" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button></td>
         </tr>`;
