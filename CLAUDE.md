@@ -38,6 +38,15 @@ cd ~/domains/pos.numaanhussain.com/pos_app && git pull origin main && php artisa
 - `$grandNoItemDueReduction = min(paid, previous_due)` — only effective due reduction counts
 - `sale.previous_due` is captured BEFORE the sale is made
 
+### No-item Purchases (Advance Supplier Payment)
+- Users can submit a purchase with NO items — treated as advance payment to supplier
+- `items` validation is `nullable` (not required) in PurchaseController
+- `due_amount = total - paid` (allows negative — no `max(0,...)` cap)
+- Negative due on purchase = advance/credit for that supplier
+- Yellow warning shown in create form when paid > 0 with no items
+- Invoice shows "অগ্রিম পরিশোধ" (yellow notice) instead of item table
+- Purchase list shows blue "অগ্রিম ৳X" badge for negative due rows
+
 ### Customer Due Auto-fix (in ledger)
 - `CustomerController::ledger()` recalculates `due_amount` from all sales
 - Does NOT use `max(0,...)` — allows negatives to persist
@@ -74,6 +83,9 @@ cd ~/domains/pos.numaanhussain.com/pos_app && git pull origin main && php artisa
 - `destroy()` — decrements stock, reverses supplier due
 - After store: redirects to `purchases.show` (invoice)
 - **Supplier is required** — cannot submit without selecting
+- **Items are optional** — no items = advance payment to supplier
+- `due_amount = total - paid` — NO `max(0,...)` cap, allows negative credit
+- `$request->items ?? []` — handles empty cart gracefully
 
 ### ReportController
 - `salesReport()` — daily sales with standalone payments, no-item sales sections
@@ -101,8 +113,10 @@ cd ~/domains/pos.numaanhussain.com/pos_app && git pull origin main && php artisa
 |------|-------|
 | `sales/create.blade.php` | Cart, customer search, extra/labor toggles, floating submit button |
 | `sales/edit.blade.php` | Same as create but pre-populated, inline item-change button |
-| `purchases/create.blade.php` | Supplier required, price empty by default with hint |
+| `purchases/create.blade.php` | Supplier required, items optional, yellow warning for no-item+paid, price empty by default with hint |
 | `purchases/edit.blade.php` | Same style as create |
+| `purchases/index.blade.php` | Blue "অগ্রিম" badge for negative due rows; tfoot shows net credit in blue |
+| `purchases/show.blade.php` | No items → "অগ্রিম পরিশোধ" yellow notice; negative due → blue "অগ্রিম পরিশোধ" amount |
 | `customers/ledger.blade.php` | Running balance, "নতুন বিক্রয়" button pre-selects customer |
 | `reports/sales.blade.php` | 5-card stats, no-item payments section, standalone payments |
 | `reports/sale-logs.blade.php` | Audit log with eye modal |
@@ -151,7 +165,9 @@ Accessed via `\App\Models\StoreConfig::get('key', 'default')`:
 
 ---
 
-## Recently Completed Features (this session)
+## Recently Completed Features
+
+### Session 1
 1. Daily sales report — no-item sale payments, standalone CustomerPayments
 2. Sale delete/edit audit log (`sale_logs` table)
 3. Negative customer/supplier due (credit balance)
@@ -164,6 +180,13 @@ Accessed via `\App\Models\StoreConfig::get('key', 'default')`:
 10. All date filters default to today (not start of month)
 11. Sales list expandable মালের বিবরণ column
 12. Customer list with gross/net due tfoot breakdown
+
+### Session 2
+13. No-item purchase (advance supplier payment) — same pattern as no-item sale
+14. Purchase `due_amount` allows negative (removed `max(0,...)` cap)
+15. Purchase create: yellow warning when paying without items
+16. Purchase invoice: "অগ্রিম পরিশোধ" notice for no-item, blue amount for negative due
+17. Purchase list: blue "অগ্রিম ৳X" badge per row + net credit in tfoot
 
 ---
 
