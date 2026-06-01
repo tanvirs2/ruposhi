@@ -70,7 +70,9 @@
 
     <div class="invoice-totals">
         @php
-            $itemsTotal = $purchase->total_amount - ($purchase->extra_cost ?? 0) - ($purchase->labor_cost ?? 0);
+            $itemsTotal  = $purchase->total_amount - ($purchase->extra_cost ?? 0) - ($purchase->labor_cost ?? 0);
+            $previousDue = $purchase->supplier ? ($purchase->supplier->due_amount - $purchase->due_amount) : 0;
+            $supplierNet = $purchase->supplier ? $purchase->supplier->due_amount : 0;
         @endphp
         @if(($purchase->extra_cost ?? 0) > 0 || ($purchase->labor_cost ?? 0) > 0)
         <div class="inv-row"><span>আইটেম মূল্য:</span><span>৳ {{ number_format($itemsTotal,0) }}</span></div>
@@ -113,11 +115,31 @@
                 </div>
             @endif
         @endif
-        {{-- Always show supplier's running advance total if they have credit --}}
-        @if($purchase->supplier && $purchase->supplier->due_amount < 0)
-        <div class="inv-row" style="color:#1d4ed8;font-size:.9rem;font-weight:700;background:#eff6ff;padding:8px 12px;border-radius:6px;margin-top:4px">
-            <span><i class="fas fa-piggy-bank"></i> সরবরাহকারীর মোট অগ্রিম:</span>
-            <span>৳ {{ number_format(abs($purchase->supplier->due_amount),0) }}</span>
+        {{-- Previous balance + supplier net total --}}
+        @if($purchase->supplier && $previousDue != 0)
+        <div class="inv-row" style="color:#64748b;border-top:1px dashed #e2e8f0;padding-top:8px;margin-top:4px">
+            <span>পূর্বের বাকী:</span>
+            <span style="color:{{ $previousDue > 0 ? '#ef4444' : '#1d4ed8' }};font-weight:600">
+                @if($previousDue > 0)
+                    ৳ {{ number_format($previousDue, 0) }}
+                @else
+                    অগ্রিম ৳ {{ number_format(abs($previousDue), 0) }}
+                @endif
+            </span>
+        </div>
+        @endif
+        @if($purchase->supplier)
+        <div class="inv-row" style="font-weight:700;font-size:1rem;background:{{ $supplierNet > 0 ? '#fef2f2' : ($supplierNet < 0 ? '#eff6ff' : '#f0fdf4') }};padding:10px 12px;border-radius:6px;margin-top:6px">
+            <span>সরবরাহকারীর মোট {{ $supplierNet > 0 ? 'বকেয়া' : ($supplierNet < 0 ? 'অগ্রিম' : 'হিসাব') }}:</span>
+            <span style="color:{{ $supplierNet > 0 ? '#dc2626' : ($supplierNet < 0 ? '#1d4ed8' : '#16a34a') }}">
+                @if($supplierNet == 0)
+                    পরিষ্কার ✓
+                @elseif($supplierNet < 0)
+                    ৳ {{ number_format(abs($supplierNet), 0) }}
+                @else
+                    ৳ {{ number_format($supplierNet, 0) }}
+                @endif
+            </span>
         </div>
         @endif
     </div>
