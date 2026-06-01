@@ -16,8 +16,22 @@
                 <input type="date" name="date" value="{{ $filterDate }}"
                     style="height:38px;padding:0 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.85rem">
             </div>
+            {{-- Stock updated_date filter --}}
+            <div style="display:flex;align-items:center;gap:6px">
+                <i class="fas fa-rotate" style="color:#0d9488"></i>
+                <input type="date" name="updated_date" value="{{ $updatedDate }}"
+                    title="এই তারিখে স্টক আপডেট হয়েছে এমন পণ্য"
+                    style="height:38px;padding:0 10px;border:1.5px solid {{ $updatedDate ? '#0d9488' : 'var(--border)' }};border-radius:6px;font-family:inherit;font-size:.85rem;{{ $updatedDate ? 'color:#0d9488;font-weight:600' : '' }}">
+            </div>
             <button type="submit" class="btn btn-secondary">খুঁজুন</button>
-            @if(request('search') || request('date'))
+            {{-- Quick: today's stock updates --}}
+            @if($updatedDate !== now()->toDateString())
+                <a href="{{ route('stock.index', array_merge(request()->all(), ['updated_date' => now()->toDateString()])) }}"
+                   class="btn btn-ghost" style="color:#0d9488;border-color:#0d9488;white-space:nowrap">
+                    <i class="fas fa-rotate"></i> আজ আপডেট
+                </a>
+            @endif
+            @if(request('search') || request('date') || $updatedDate)
                 <a href="{{ route('stock.index') }}" class="btn btn-ghost">পরিষ্কার</a>
             @endif
         </form>
@@ -30,6 +44,7 @@
                     <th>আইটেম</th>
                     <th>ব্র্যান্ড</th>
                     <th>ক্যাটাগরি</th>
+                    <th class="tc">সর্বশেষ আপডেট</th>
                     <th class="tc">
                         {{ $filterDate === now()->toDateString() ? 'আজকের' : \Carbon\Carbon::parse($filterDate)->format('d/m') }} বিক্রয়
                     </th>
@@ -43,17 +58,38 @@
             <tbody>
                 @forelse($stock as $s)
                 @php
-                    $itemId   = $s->item_id;
-                    $unit     = $s->item->unitType?->short ?? $s->item->unit ?? '';
-                    $todayQty = $todaySales[$itemId] ?? 0;
-                    $totalQty = $totalSales[$itemId] ?? 0;
-                    $stockVal = $s->quantity * ($s->item->purchase_price ?? 0);
+                    $itemId      = $s->item_id;
+                    $unit        = $s->item->unitType?->short ?? $s->item->unit ?? '';
+                    $todayQty    = $todaySales[$itemId] ?? 0;
+                    $totalQty    = $totalSales[$itemId] ?? 0;
+                    $stockVal    = $s->quantity * ($s->item->purchase_price ?? 0);
+                    $updatedAt   = $s->updated_at;
+                    $isToday     = $updatedAt && $updatedAt->isToday();
+                    $isYesterday = $updatedAt && $updatedAt->isYesterday();
                 @endphp
-                <tr>
+                <tr class="{{ $isToday ? 'stock-updated-today' : '' }}">
                     <td class="mono">{{ $loop->iteration }}</td>
-                    <td><strong>{{ $s->item->name }}</strong></td>
+                    <td>
+                        <strong>{{ $s->item->name }}</strong>
+                        @if($isToday)
+                            <span class="badge-new-stock">নতুন</span>
+                        @endif
+                    </td>
                     <td>{{ $s->item->itemBrand?->name ?? '—' }}</td>
                     <td>{{ $s->item->category?->name ?? '—' }}</td>
+                    <td class="tc" style="font-size:.78rem;white-space:nowrap">
+                        @if($updatedAt)
+                            @if($isToday)
+                                <span style="color:#0d9488;font-weight:600">আজ {{ $updatedAt->format('h:ia') }}</span>
+                            @elseif($isYesterday)
+                                <span style="color:#64748b">গতকাল {{ $updatedAt->format('h:ia') }}</span>
+                            @else
+                                <span style="color:#94a3b8">{{ $updatedAt->format('d M, h:ia') }}</span>
+                            @endif
+                        @else
+                            <span style="color:#cbd5e1">—</span>
+                        @endif
+                    </td>
                     <td class="tc">
                         @if($todayQty > 0)
                             <span style="color:#16a34a;font-weight:600">{{ number_format($todayQty, 0) }}</span>
@@ -103,7 +139,7 @@
             @if($stock->total() > 0)
             <tfoot>
                 <tr class="tfoot-summary">
-                    <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট স্টক</td>
+                    <td colspan="5" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট স্টক</td>
                     <td class="tc" style="font-weight:800;color:#16a34a">{{ number_format($grandTodaySales, 0) }}</td>
                     <td class="tc" style="font-weight:800">{{ number_format($grandTotalSales, 0) }}</td>
                     <td class="tc" style="font-weight:800">{{ number_format($grandStockQty, 0) }}</td>
@@ -120,3 +156,21 @@
     <div class="pagination-wrap">{{ $stock->withQueryString()->links() }}</div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.stock-updated-today { background: #f0fdfa !important; }
+.badge-new-stock {
+    display: inline-block;
+    margin-left: 6px;
+    background: #0d9488;
+    color: #fff;
+    font-size: .65rem;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 999px;
+    letter-spacing: .04em;
+    vertical-align: middle;
+}
+</style>
+@endpush

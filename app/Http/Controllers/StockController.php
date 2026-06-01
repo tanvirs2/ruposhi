@@ -13,12 +13,18 @@ class StockController extends Controller
     /* স্টক তথ্য — full stock list with inline adjust */
     public function index(Request $request)
     {
+        // updated_date filter: show only stock updated on this date, sorted by most recent
+        $updatedDate = $request->updated_date ?: null;
+
         $stock = Stock::with(['item.category', 'item.itemBrand', 'item.unitType'])
             ->where('quantity', '!=', 0)   // hide exactly-zero stock; show negative & positive
             ->when($request->search, fn($q) =>
                 $q->whereHas('item', fn($i) => $i->where('name', 'like', "%{$request->search}%"))
             )
-            ->orderBy('quantity')
+            ->when($updatedDate, fn($q) =>
+                $q->whereDate('stock.updated_at', $updatedDate)
+            )
+            ->orderBy($updatedDate ? 'stock.updated_at' : 'quantity', $updatedDate ? 'desc' : 'asc')
             ->paginate(20);
 
         // Date filter — defaults to today
@@ -45,7 +51,7 @@ class StockController extends Controller
         $grandTotalSales = SaleItem::sum('quantity');
 
         return view('stock.index', compact(
-            'stock', 'todaySales', 'totalSales', 'filterDate',
+            'stock', 'todaySales', 'totalSales', 'filterDate', 'updatedDate',
             'grandStockQty', 'grandStockValue', 'grandTodaySales', 'grandTotalSales'
         ));
     }
