@@ -136,24 +136,25 @@
                 <td colspan="4" class="tfoot-label">পূর্বের বাকী</td>
                 <td class="tr tfoot-amount">{{ number_format($sale->previous_due, 0) }} টাকা</td>
             </tr>
-            @if($sale->extra_cost > 0)
-            <tr class="tfoot-row">
-                <td colspan="4" class="tfoot-label">অতিরিক্ত খরচ</td>
-                <td class="tr tfoot-amount">+ {{ number_format($sale->extra_cost, 0) }} টাকা</td>
-            </tr>
-            @endif
-            @if($sale->labor_cost > 0)
-            <tr class="tfoot-row">
-                <td colspan="4" class="tfoot-label">শ্রমিক খরচ</td>
-                <td class="tr tfoot-amount">+ {{ number_format($sale->labor_cost, 0) }} টাকা</td>
-            </tr>
-            @endif
+
             @if($sale->previous_due != 0)
             {{-- Show items subtotal separately only when previous_due changes the grand total --}}
             <tr class="tfoot-row">
                 <td colspan="4" class="tfoot-label">বিক্রয় মোট</td>
                 <td class="tr tfoot-amount">{{ number_format($sale->total_amount, 0) }} টাকা</td>
             </tr>
+            @endif
+            @if($sale->extra_cost > 0)
+                <tr class="tfoot-row">
+                    <td colspan="4" class="tfoot-label">অতিরিক্ত খরচ</td>
+                    <td class="tr tfoot-amount">+ {{ number_format($sale->extra_cost, 0) }} টাকা</td>
+                </tr>
+            @endif
+            @if($sale->labor_cost > 0)
+                <tr class="tfoot-row">
+                    <td colspan="4" class="tfoot-label">শ্রমিক খরচ</td>
+                    <td class="tr tfoot-amount">+ {{ number_format($sale->labor_cost, 0) }} টাকা</td>
+                </tr>
             @endif
             <tr class="tfoot-row">
                 <td colspan="4" class="tfoot-label">সর্বমোট</td>
