@@ -167,13 +167,16 @@
                 @php $prevPurchaseId = null; @endphp
                 @forelse($ledger as $row)
                 @php
-                    $isItem    = $row->type === 'item';
-                    $isPay     = $row->type === 'payment' || $row->type === 'purchase_payment';
-                    $isNewGroup = $row->purchase_id && $row->purchase_id !== $prevPurchaseId;
+                    $isItem      = $row->type === 'item';
+                    $isPay       = $row->type === 'payment' || $row->type === 'purchase_payment';
+                    $isExtraCost = $row->type === 'extra_cost';
+                    $isLaborCost = $row->type === 'labor_cost';
+                    $isNewGroup  = $row->purchase_id && $row->purchase_id !== $prevPurchaseId;
                     if ($row->purchase_id) $prevPurchaseId = $row->purchase_id;
                     elseif ($row->type === 'payment') $prevPurchaseId = null;
+                    $rowClass = $isPay ? 'sl-payment-row' : ($isExtraCost ? 'sl-extracost-row' : ($isLaborCost ? 'sl-laborcost-row' : 'sl-item-row'));
                 @endphp
-                <tr class="{{ $isPay ? 'sl-payment-row' : 'sl-item-row' }} {{ $isNewGroup ? 'sl-new-group' : '' }}">
+                <tr class="{{ $rowClass }} {{ $isNewGroup ? 'sl-new-group' : '' }}">
 
                     {{-- Date --}}
                     <td style="white-space:nowrap;font-size:.83rem;color:#64748b">
@@ -186,6 +189,22 @@
                             <span style="font-weight:600;color:var(--text)">{{ $row->label }}</span>
                             @if($row->link)
                                 <a href="{{ $row->link }}" class="sl-ref-link" title="রিসিভ দেখুন">{{ $row->ref }}</a>
+                            @endif
+                        @elseif($isExtraCost)
+                            <span class="sl-extracost-label">
+                                <i class="fas fa-plus-circle" style="font-size:.72rem;margin-right:3px"></i>
+                                {{ $row->label }}
+                            </span>
+                            @if($row->link)
+                                <a href="{{ $row->link }}" class="sl-ref-link">{{ $row->ref }}</a>
+                            @endif
+                        @elseif($isLaborCost)
+                            <span class="sl-laborcost-label">
+                                <i class="fas fa-person-digging" style="font-size:.72rem;margin-right:3px"></i>
+                                {{ $row->label }}
+                            </span>
+                            @if($row->link)
+                                <a href="{{ $row->link }}" class="sl-ref-link">{{ $row->ref }}</a>
                             @endif
                         @else
                             <span class="sl-pay-label">
@@ -316,8 +335,12 @@
 .sl-new-group td { border-top: 2px dashed #e2e8f0 !important; }
 
 .sl-opening-row { background: #f8fafc; }
-.sl-payment-row { background: #f0fdf4; }
-.sl-item-row    { background: var(--card-bg); }
+.sl-payment-row  { background: #f0fdf4; }
+.sl-item-row     { background: var(--card-bg); }
+.sl-extracost-row { background: #fdf4ff; }
+.sl-laborcost-row { background: #fff1f2; }
+.sl-extracost-label { color: #7e22ce; font-weight: 600; font-size: .88rem; }
+.sl-laborcost-label { color: #be123c; font-weight: 600; font-size: .88rem; }
 
 .sl-debit  { color: #dc2626; font-weight: 700; }
 .sl-credit { color: #16a34a; font-weight: 700; }

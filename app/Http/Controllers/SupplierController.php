@@ -65,6 +65,38 @@ class SupplierController extends Controller
                 ]);
                 $iIdx++;
             }
+            // Extra cost row (debit)
+            if (($p->extra_cost ?? 0) > 0) {
+                $rows->push((object)[
+                    'date'        => $p->purchase_date,
+                    'sort_key'    => $baseKey . '_e',
+                    'type'        => 'extra_cost',
+                    'label'       => 'অতিরিক্ত খরচ',
+                    'ref'         => '#PUR-' . str_pad($p->id, 4, '0', STR_PAD_LEFT),
+                    'qty'         => 0,
+                    'rate'        => 0,
+                    'debit'       => $p->extra_cost,
+                    'credit'      => 0,
+                    'purchase_id' => $p->id,
+                    'link'        => route('purchases.show', $p),
+                ]);
+            }
+            // Labor cost row (debit)
+            if (($p->labor_cost ?? 0) > 0) {
+                $rows->push((object)[
+                    'date'        => $p->purchase_date,
+                    'sort_key'    => $baseKey . '_l',
+                    'type'        => 'labor_cost',
+                    'label'       => 'শ্রমিক খরচ',
+                    'ref'         => '#PUR-' . str_pad($p->id, 4, '0', STR_PAD_LEFT),
+                    'qty'         => 0,
+                    'rate'        => 0,
+                    'debit'       => $p->labor_cost,
+                    'credit'      => 0,
+                    'purchase_id' => $p->id,
+                    'link'        => route('purchases.show', $p),
+                ]);
+            }
             // Credit row for amount paid with this purchase
             if ($p->paid_amount > 0) {
                 $rows->push((object)[
