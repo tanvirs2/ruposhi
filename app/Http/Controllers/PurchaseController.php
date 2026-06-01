@@ -21,13 +21,15 @@ class PurchaseController extends Controller
                   ->orWhere('id', $request->search)
             );
 
-        $grandTotal = (clone $query)->sum('total_amount');
-        $grandPaid  = (clone $query)->sum('paid_amount');
-        $grandDue   = (clone $query)->sum('due_amount');
+        $grandTotal  = (clone $query)->sum('total_amount');
+        $grandPaid   = (clone $query)->sum('paid_amount');
+        $grossDue    = (clone $query)->where('due_amount', '>', 0)->sum('due_amount');
+        $totalCredit = abs((clone $query)->where('due_amount', '<', 0)->sum('due_amount'));
+        $grandDue    = $grossDue - $totalCredit;
 
         $purchases = $query->latest()->paginate(15);
 
-        return view('purchases.index', compact('purchases', 'grandTotal', 'grandPaid', 'grandDue'));
+        return view('purchases.index', compact('purchases', 'grandTotal', 'grandPaid', 'grandDue', 'grossDue', 'totalCredit'));
     }
 
     public function create()
