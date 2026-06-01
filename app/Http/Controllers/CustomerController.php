@@ -13,12 +13,15 @@ class CustomerController extends Controller
 {
     public function index(Request $request)
     {
+        $showAll = $request->boolean('show_all'); // toggle: show zero-due customers
+
         $customers = Customer::with('area')
             ->when($request->search, fn($q) =>
                 $q->where('name', 'like', "%{$request->search}%")
                   ->orWhere('phone', 'like', "%{$request->search}%")
             )
             ->when($request->area_id, fn($q) => $q->where('area_id', $request->area_id))
+            ->when(!$showAll, fn($q) => $q->where('due_amount', '!=', 0)) // hide clean by default
             ->latest()->paginate(15);
 
         $areas = CustomerArea::orderBy('name')->get();
@@ -34,7 +37,7 @@ class CustomerController extends Controller
         $totalCredit = abs((clone $baseQuery)->where('due_amount', '<', 0)->sum('due_amount'));
         $totalDue  = $grossDue - $totalCredit; // net balance
 
-        return view('customers.index', compact('customers', 'areas', 'totalDue', 'grossDue', 'totalCredit'));
+        return view('customers.index', compact('customers', 'areas', 'totalDue', 'grossDue', 'totalCredit', 'showAll'));
     }
 
     public function create()
