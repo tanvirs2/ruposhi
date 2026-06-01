@@ -146,7 +146,16 @@
                     $isNewSale   = $row['sale_id'] && $row['sale_id'] !== $prevSaleId && $row['type'] === 'item';
                     if ($row['sale_id']) $prevSaleId = $row['sale_id'];
                 @endphp
-                <tr class="{{ $row['type'] === 'payment' ? 'cl-payment-row' : ($row['type'] === 'discount' ? 'cl-discount-row' : '') }} {{ $isNewSale && !$loop->first ? 'cl-new-sale' : '' }}">
+                @php
+                    $rowClass = match($row['type']) {
+                        'payment'    => 'cl-payment-row',
+                        'discount'   => 'cl-discount-row',
+                        'extra_cost' => 'cl-extracost-row',
+                        'labor_cost' => 'cl-laborcost-row',
+                        default      => '',
+                    };
+                @endphp
+                <tr class="{{ $rowClass }} {{ $isNewSale && !$loop->first ? 'cl-new-sale' : '' }}">
                     <td class="tc mono" style="font-size:.82rem">
                         @if($row['sale_id'])
                             <a href="{{ route('sales.show', $row['sale_id']) }}" class="link-primary">
@@ -171,6 +180,16 @@
                         @elseif($row['type'] === 'discount')
                             <span class="cl-discount-label">
                                 <i class="fas fa-tag" style="font-size:.72rem;margin-right:3px"></i>
+                                {{ $row['label'] }}
+                            </span>
+                        @elseif($row['type'] === 'extra_cost')
+                            <span class="cl-extracost-label">
+                                <i class="fas fa-plus-circle" style="font-size:.72rem;margin-right:3px"></i>
+                                {{ $row['label'] }}
+                            </span>
+                        @elseif($row['type'] === 'labor_cost')
+                            <span class="cl-laborcost-label">
+                                <i class="fas fa-person-digging" style="font-size:.72rem;margin-right:3px"></i>
                                 {{ $row['label'] }}
                             </span>
                         @else
@@ -286,6 +305,11 @@
 
 .cl-discount-row td { background: #fefce8; }
 .cl-discount-label  { color: #92400e; font-weight: 600; font-size: .88rem; }
+
+.cl-extracost-row td { background: #fdf4ff; }
+.cl-extracost-label  { color: #7e22ce; font-weight: 600; font-size: .88rem; }
+.cl-laborcost-row td { background: #fff1f2; }
+.cl-laborcost-label  { color: #be123c; font-weight: 600; font-size: .88rem; }
 
 .cl-tfoot td {
     padding: 10px 12px;

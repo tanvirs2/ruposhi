@@ -144,18 +144,46 @@ class CustomerController extends Controller
                     'credit'   => 0,
                 ]);
             }
-            // Discount row (to reconcile item subtotals with invoice total_amount)
+            // Discount row (credit — reduces balance)
             if ($sale->discount > 0) {
                 $rows->push([
                     'sort_key' => $saleTime,
                     'datetime' => $saleTime,
                     'sale_id'  => $sale->id,
                     'type'     => 'discount',
-                    'label'    => 'ছাড় (INV-' . str_pad($sale->id, 4, '0', STR_PAD_LEFT) . ')',
+                    'label'    => 'ছাড়',
                     'qty'      => 0,
                     'rate'     => 0,
                     'debit'    => 0,
                     'credit'   => $sale->discount,
+                ]);
+            }
+            // Extra cost row (debit — adds to balance)
+            if ($sale->extra_cost > 0) {
+                $rows->push([
+                    'sort_key' => $saleTime,
+                    'datetime' => $saleTime,
+                    'sale_id'  => $sale->id,
+                    'type'     => 'extra_cost',
+                    'label'    => 'অতিরিক্ত খরচ',
+                    'qty'      => 0,
+                    'rate'     => 0,
+                    'debit'    => $sale->extra_cost,
+                    'credit'   => 0,
+                ]);
+            }
+            // Labor cost row (debit — adds to balance)
+            if ($sale->labor_cost > 0) {
+                $rows->push([
+                    'sort_key' => $saleTime,
+                    'datetime' => $saleTime,
+                    'sale_id'  => $sale->id,
+                    'type'     => 'labor_cost',
+                    'label'    => 'শ্রমিক খরচ',
+                    'qty'      => 0,
+                    'rate'     => 0,
+                    'debit'    => $sale->labor_cost,
+                    'credit'   => 0,
                 ]);
             }
             // Initial payment on the sale (paid_amount > 0)
