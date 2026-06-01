@@ -54,12 +54,12 @@
                     <span class="nav-arrow"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="nav-group-children">
-                    <a href="{{ route('customers.index') }}" class="nav-item nav-child {{ $_seg==='customers' ? 'active' : '' }}">
+                    <a href="{{ route('customers.index') }}" class="nav-item nav-child {{ $_seg==='customers' && !str_ends_with($_path,'ledger') ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-list"></i></span>
                         <span class="nav-label">কাস্টমার তালিকা</span>
                         <button type="button" class="info-btn" data-info="সকল কাস্টমারের তথ্য দেখুন — নাম, ফোন, মোট বাকী। নতুন কাস্টমার যোগ করুন বা তথ্য সম্পাদনা করুন।">i</button>
                     </a>
-                    <a href="{{ route('customers.ledger-select') }}" class="nav-item nav-child {{ $_path==='customers-ledger'||$_seg==='customers'&&str_ends_with($_path,'ledger') ? 'active' : '' }}">
+                    <a href="{{ route('customers.ledger-select') }}" class="nav-item nav-child {{ $_path==='customers-ledger' || ($_seg==='customers' && str_ends_with($_path,'ledger')) ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-book-open"></i></span>
                         <span class="nav-label">লেজার রিপোর্ট</span>
                         <button type="button" class="info-btn" data-info="কাস্টমারের সকল ক্রয় ও পরিশোধের বিস্তারিত হিসাব।">i</button>
@@ -143,7 +143,7 @@
                     <span class="nav-arrow"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="nav-group-children">
-                    <a href="{{ route('suppliers.index') }}" class="nav-item nav-child {{ $_seg==='suppliers' ? 'active' : '' }}">
+                    <a href="{{ route('suppliers.index') }}" class="nav-item nav-child {{ $_seg==='suppliers' && !str_ends_with($_path,'ledger') ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-list"></i></span>
                         <span class="nav-label">সরবরাহকারী তালিকা</span>
                         <button type="button" class="info-btn" data-info="সকল সরবরাহকারীর তথ্য — নাম, ফোন, ঠিকানা ও মোট বকেয়া। নতুন সরবরাহকারী যোগ করুন।">i</button>
@@ -163,7 +163,7 @@
                         <span class="nav-label">দৈনিক পরিশোধ</span>
                         <button type="button" class="info-btn" data-info="নির্দিষ্ট তারিখে সরবরাহকারীকে কত টাকা পরিশোধ করা হয়েছে তার দৈনিক সারসংক্ষেপ।">i</button>
                     </a>
-                    <a href="{{ route('suppliers.ledger-select') }}" class="nav-item nav-child {{ $_path==='suppliers-ledger'||$_seg==='suppliers'&&str_ends_with($_path,'ledger') ? 'active' : '' }}">
+                    <a href="{{ route('suppliers.ledger-select') }}" class="nav-item nav-child {{ $_path==='suppliers-ledger' || ($_seg==='suppliers' && str_ends_with($_path,'ledger')) ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-book-open"></i></span>
                         <span class="nav-label">লেজার রিপোর্ট</span>
                         <button type="button" class="info-btn" data-info="সরবরাহকারীর সকল মাল গ্রহণ ও পরিশোধের বিস্তারিত হিসাব।">i</button>
