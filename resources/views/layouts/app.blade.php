@@ -443,22 +443,36 @@
 <script>
 /* ── Sidebar active-link highlighter (JS, bypasses Blade/cache) ── */
 (function () {
-    var path = window.location.pathname;          // e.g. /item-types or /item-types/create
-    var segs = path.split('/').filter(Boolean);   // ['item-types'] or ['item-types','create']
-    var seg0 = segs[0] || '';                     // first segment
+    var path = window.location.pathname;          // e.g. /customers/3/ledger
 
     /* 1. Strip PHP-generated active classes (clean slate) */
     document.querySelectorAll('.sidebar-nav .nav-item').forEach(function (el) {
         el.classList.remove('active');
     });
 
-    /* 2. Find the best-matching anchor */
+    /* 2. Special cases: /customers/{id}/ledger → /customers-ledger
+                         /suppliers/{id}/ledger → /suppliers-ledger */
+    var specialTarget = null;
+    if (/^\/customers\/\d+\/ledger/.test(path)) {
+        specialTarget = '/customers-ledger';
+    } else if (/^\/suppliers\/\d+\/ledger/.test(path)) {
+        specialTarget = '/suppliers-ledger';
+    }
+
+    /* 3. Find the best-matching anchor */
     var bestEl  = null;
     var bestLen = -1;
 
     document.querySelectorAll('.sidebar-nav a.nav-item').forEach(function (a) {
         try {
             var aPath = new URL(a.href, window.location.origin).pathname;
+
+            if (specialTarget) {
+                // Only match the special target link exactly
+                if (aPath === specialTarget) { bestEl = a; bestLen = aPath.length; }
+                return;
+            }
+
             // Exact match wins over prefix match; longer prefix wins over shorter
             var isExact  = (path === aPath);
             var isPrefix = (!isExact && path.startsWith(aPath + '/'));
@@ -471,13 +485,11 @@
         } catch (e) {}
     });
 
-    /* 3. Apply active + open parent accordion */
+    /* 4. Apply active + open parent accordion */
     if (bestEl) {
         bestEl.classList.add('active');
         var group = bestEl.closest('.nav-group');
-        if (group) {
-            group.classList.add('open');
-        }
+        if (group) { group.classList.add('open'); }
     }
 })();
 </script>
