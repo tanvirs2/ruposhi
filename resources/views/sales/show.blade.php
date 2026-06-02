@@ -203,15 +203,18 @@
 
 /* ══ Header ══════════════════════════════════════════════════════ */
 .memo-header {
-    overflow: hidden;        /* clear float */
+    position: relative;
+    text-align: center;
     border-bottom: 2px solid #111;
     padding-bottom: 8px;
     margin-bottom: 7px;
 }
 
-/* Phone numbers — float top-right */
+/* Phone numbers — absolutely positioned top-right, out of flow */
 .memo-phones-right {
-    float: right;
+    position: absolute;
+    top: 0;
+    right: 0;
     text-align: right;
     font-size: .82rem;
     font-weight: 700;
@@ -221,9 +224,10 @@
     flex-direction: column;
 }
 
-/* Centered block */
+/* Centered block — full width, unaffected by phone position */
 .memo-center {
     text-align: center;
+    width: 100%;
 }
 .memo-title-label {
     font-size: .78rem;
