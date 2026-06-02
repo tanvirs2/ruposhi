@@ -109,12 +109,17 @@
         <div class="stat-body">
             <span class="stat-label" style="color:#6d28d9;font-weight:700">অন্যান্য খরচ / ছাড়</span>
             @if($grandExtraCost > 0)
-            <span style="font-size:.72rem;color:#7c3aed;display:block;margin-top:2px">
+            <span style="font-size:.72rem;font-weight:700;color:#7c3aed;display:block;margin-top:3px">
                 অতি. খরচ: ৳ {{ number_format($grandExtraCost, 0) }}
             </span>
+            @foreach($extraCostByCategory as $cat => $amt)
+            <span style="font-size:.68rem;color:#6d28d9;display:block;padding-left:8px">
+                · {{ $cat }}: ৳ {{ number_format($amt, 0) }}
+            </span>
+            @endforeach
             @endif
             @if($grandDiscount > 0)
-            <span style="font-size:.72rem;color:#15803d;display:block">
+            <span style="font-size:.72rem;color:#15803d;display:block;margin-top:2px">
                 ছাড়: − ৳ {{ number_format($grandDiscount, 0) }}
             </span>
             @endif
@@ -249,6 +254,86 @@
         </table>
     </div>
 </div>
+
+{{-- ── Extra Cost Breakdown Table ──────────────────────────────── --}}
+@if($saleExtraCosts->isNotEmpty())
+<div class="card" style="margin-top:18px">
+    <div class="card-header" style="padding:12px 16px;background:linear-gradient(135deg,#faf5ff,#ede9fe);border-bottom:1px solid #ddd6fe;display:flex;justify-content:space-between;align-items:center">
+        <h3 style="font-size:.95rem;color:#6d28d9;margin:0">
+            <i class="fas fa-coins"></i> অতিরিক্ত খরচের বিবরণ
+        </h3>
+        <span style="font-size:.78rem;color:#7c3aed;font-weight:600">
+            মোট: ৳ {{ number_format($saleExtraCosts->sum('amount'), 0) }}
+        </span>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table sale-detail-table">
+            <thead>
+                <tr>
+                    <th class="tc">চালান নং</th>
+                    <th>কাস্টমার</th>
+                    <th class="tc">তারিখ</th>
+                    <th>ক্যাটাগরি</th>
+                    <th class="tr">পরিমাণ (৳)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($saleExtraCosts as $ec)
+                <tr>
+                    <td class="tc mono">
+                        <a href="{{ route('sales.show', $ec->sale_id) }}" class="link-primary">
+                            {{ str_pad($ec->sale_id, 6, '0', STR_PAD_LEFT) }}
+                        </a>
+                    </td>
+                    <td>
+                        @if($ec->customer_name)
+                            {{ $ec->customer_name }}
+                        @else
+                            <span style="color:#94a3b8">ওয়াক-ইন</span>
+                        @endif
+                    </td>
+                    <td class="tc" style="font-size:.8rem;color:#64748b;white-space:nowrap">
+                        {{ \Carbon\Carbon::parse($ec->sale_date)->format('d/m/Y') }}
+                    </td>
+                    <td>
+                        <span style="display:inline-flex;align-items:center;gap:5px;background:#ede9fe;color:#6d28d9;
+                                     padding:2px 10px;border-radius:20px;font-size:.78rem;font-weight:600">
+                            <i class="fas fa-tag" style="font-size:.65rem"></i>
+                            {{ $ec->category_name }}
+                        </span>
+                    </td>
+                    <td class="tr" style="color:#7c3aed;font-weight:700">
+                        + ৳ {{ number_format($ec->amount, 0) }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                {{-- Category subtotals --}}
+                @foreach($extraCostByCategory as $cat => $amt)
+                <tr style="background:#faf5ff">
+                    <td colspan="3" style="text-align:right;font-size:.8rem;color:#6d28d9;padding:5px 10px">
+                        {{ $cat }} উপমোট
+                    </td>
+                    <td style="padding:5px 10px">
+                        <span style="background:#ede9fe;color:#6d28d9;padding:1px 10px;border-radius:20px;font-size:.78rem;font-weight:600">
+                            {{ $cat }}
+                        </span>
+                    </td>
+                    <td class="tr" style="color:#7c3aed;font-weight:700;padding:5px 10px">
+                        ৳ {{ number_format($amt, 0) }}
+                    </td>
+                </tr>
+                @endforeach
+                <tr class="tfoot-summary">
+                    <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                    <td class="tr" style="color:#7c3aed;font-weight:800">৳ {{ number_format($saleExtraCosts->sum('amount'), 0) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+@endif
 
 {{-- ── No-item Sales (paying off previous due via sale form, no products) ─── --}}
 @if($noItemSales->isNotEmpty())

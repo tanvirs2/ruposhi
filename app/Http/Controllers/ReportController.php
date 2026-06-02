@@ -192,11 +192,35 @@ class ReportController extends Controller
         $grandExtraCost = $itemSales->sum('extra_cost');
         $grandDiscount  = $itemSales->sum('discount');
 
+        // Extra cost breakdown (categorised rows) for the separate table
+        $saleExtraCosts = DB::table('sale_extra_costs')
+            ->join('sales',          'sale_extra_costs.sale_id', '=', 'sales.id')
+            ->leftJoin('customers',  'sales.customer_id',        '=', 'customers.id')
+            ->whereBetween('sales.sale_date', [$from, $to])
+            ->when($request->customer_id, fn($q) => $q->where('sales.customer_id', $request->customer_id))
+            ->select(
+                'sales.id          as sale_id',
+                'sales.sale_date',
+                'sales.created_at  as sale_time',
+                'customers.name    as customer_name',
+                'sale_extra_costs.category_name',
+                'sale_extra_costs.amount'
+            )
+            ->orderBy('sales.sale_date')
+            ->orderBy('sales.id')
+            ->orderBy('sale_extra_costs.id')
+            ->get();
+
+        // Category-level summary for the stat card
+        $extraCostByCategory = $saleExtraCosts->groupBy('category_name')
+            ->map(fn($rows) => $rows->sum('amount'));
+
         return view('reports.sales', compact(
             'sales', 'saleItems', 'customers',
             'standalonePayments', 'noItemSales',
             'grandTotal', 'grandPaid', 'grandItemPaid', 'grandDue', 'grandStandalone',
             'grandExtraCost', 'grandDiscount',
+            'saleExtraCosts', 'extraCostByCategory',
             'from', 'to'
         ));
     }
