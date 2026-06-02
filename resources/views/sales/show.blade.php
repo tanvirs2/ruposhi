@@ -192,8 +192,8 @@
 .cash-memo {
     max-width: 700px;
     background: #fff;
-    border: 2px solid #c0392b;
-    border-radius: 4px;
+    border: none;
+    border-radius: 0;
     padding: 18px 22px 16px;
     font-family: 'Hind Siliguri', sans-serif;
     color: #111;
@@ -349,7 +349,7 @@
     .content      { padding: 0 !important; margin: 0 !important; }
 
     .cash-memo {
-        border: 2px solid #c0392b !important;
+        border: none !important;
         border-radius: 0 !important;
         padding: 10px 14px 10px !important;
         max-width: 100% !important;
