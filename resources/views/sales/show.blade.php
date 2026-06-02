@@ -28,26 +28,27 @@
 <div class="cash-memo" id="cashMemo">
 
     {{-- ── STORE HEADER ─────────────────────────────────────────── --}}
-    <div class="memo-title-top">
-        ক্যাশ মেমো
-        @if($sale->is_edited)
-        <span style="display:inline-block;margin-left:8px;background:#fef9c3;color:#92400e;
-                     border:1px solid #fde68a;border-radius:20px;padding:1px 10px;
-                     font-size:.72rem;font-weight:700;vertical-align:middle;letter-spacing:.04em">
-            ✎ সংশোধিত
-        </span>
-        @endif
-    </div>
-
     <div class="memo-header">
-        {{-- Screen: SVG arc | Print: plain bold name --}}
-        <div class="memo-store-name screen-only">
-            @include('partials.store-name-arc', ['name' => $store['name'], 'size' => 36])
+
+        {{-- Phone numbers float to top-right --}}
+        @if($store['phone'] || $store['phone2'])
+        <div class="memo-phones-right">
+            @if($store['phone'])<span>{{ $store['phone'] }}</span>@endif
+            @if($store['phone2'])<span>{{ $store['phone2'] }}</span>@endif
         </div>
-        <div class="memo-store-name-print print-only">{{ $store['name'] }}</div>
-        <div class="memo-under-arch">
+        @endif
+
+        {{-- Centered store info --}}
+        <div class="memo-center">
+            <div class="memo-title-label">
+                ক্যাশ মেমো
+                @if($sale->is_edited)
+                <span class="memo-edited-badge">✎ সংশোধিত</span>
+                @endif
+            </div>
+            <div class="memo-store-name">{{ $store['name'] }}</div>
             @if($store['owner'])
-            <div><span class="memo-owner-badge">প্রোঃ {{ $store['owner'] }}</span></div>
+            <div class="memo-owner">প্রোঃ {{ $store['owner'] }}</div>
             @endif
             @if($store['tagline'])
             <div class="memo-tagline">{{ $store['tagline'] }}</div>
@@ -55,24 +56,16 @@
             @if($store['address'])
             <div class="memo-address">{{ $store['address'] }}</div>
             @endif
-            @if($store['phone'] || $store['phone2'])
-            <div class="memo-phones">
-                @if($store['phone']){{ $store['phone'] }}@endif
-                @if($store['phone'] && $store['phone2']) &nbsp;|&nbsp; @endif
-                @if($store['phone2']){{ $store['phone2'] }}@endif
-            </div>
-            @endif
         </div>
-    </div>
+
+    </div>{{-- /.memo-header --}}
 
     {{-- ── INVOICE META ─────────────────────────────────────────── --}}
     <div class="memo-meta">
-        <table class="memo-meta-table">
-            <tr>
-                <td><strong>চালান নং -</strong> {{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</td>
-                <td style="text-align:right"><strong>তারিখঃ</strong> &nbsp;{{ $sale->sale_date->format('Y-m-d') }} - {{ $sale->created_at->format('h:i:sa') }}</td>
-            </tr>
-        </table>
+        <div class="memo-meta-row-top">
+            <span><strong>চালান নং -</strong> {{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</span>
+            <span><strong>তারিখঃ</strong> {{ $sale->sale_date->format('Y-m-d') }} - {{ $sale->created_at->format('h:i:sa') }}</span>
+        </div>
         @if($sale->customer)
             <div class="memo-meta-line"><span class="memo-meta-key">প্রতিষ্ঠানঃ</span> {{ $sale->customer->name }}</div>
             @if($sale->customer->proprietor)
@@ -80,11 +73,13 @@
             @endif
             <div class="memo-meta-line">
                 <span class="memo-meta-key">ঠিকানাঃ</span>
-                {{ $sale->customer->address ?? '—' }}
+                {{ $sale->customer->address ?? '' }}
                 @if($sale->customer->phone) &nbsp; {{ $sale->customer->phone }} @endif
             </div>
         @else
             <div class="memo-meta-line"><span class="memo-meta-key">প্রতিষ্ঠানঃ</span> ওয়াক-ইন কাস্টমার</div>
+            <div class="memo-meta-line"><span class="memo-meta-key">প্রোপ্রাইটরঃ</span></div>
+            <div class="memo-meta-line"><span class="memo-meta-key">ঠিকানাঃ</span></div>
         @endif
     </div>
 
@@ -110,25 +105,26 @@
                 <td>{{ $si->item->name }}</td>
                 <td class="tc">{{ $kg }}</td>
                 <td class="tr">{{ number_format($si->price, 0) }}</td>
-                <td class="tr">{{ number_format($si->subtotal, 0) }}</td>
+                <td class="tr">{{ number_format($si->subtotal, 0) }} টাকা</td>
             </tr>
             @empty
             <tr>
-                <td colspan="5" style="text-align:center;padding:14px 8px;color:#64748b;font-style:italic;font-size:.85rem">
+                <td colspan="5" style="text-align:center;padding:14px 8px;color:#555;font-style:italic">
                     — শুধু বাকী পরিশোধ (কোনো পণ্য নেই) —
                 </td>
             </tr>
             @endforelse
         </tbody>
 
-        {{-- ── TOTALS (same table, continues border) ───────────── --}}
         <tfoot>
             @if($sale->items->count() > 0)
             <tr class="tfoot-qty">
-                <td colspan="5">মোট &nbsp;<strong>{{ (int)$totalQty }}</strong></td>
+                <td>মোট</td>
+                <td colspan="3"></td>
+                <td class="tr">{{ (int)$totalQty }}</td>
             </tr>
             @endif
-            {{-- Current invoice adjustments --}}
+
             @if($sale->discount > 0)
             <tr class="tfoot-row">
                 <td colspan="4" class="tfoot-label">ছাড়</td>
@@ -148,7 +144,6 @@
             </tr>
             @endif
 
-            {{-- Previous due + grand total --}}
             @if($sale->previous_due != 0)
             <tr class="tfoot-row">
                 <td colspan="4" class="tfoot-label">বিক্রয় মোট</td>
@@ -159,7 +154,7 @@
                 <td colspan="4" class="tfoot-label">পূর্বের বাকী</td>
                 <td class="tr tfoot-amount">{{ number_format($sale->previous_due, 0) }} টাকা</td>
             </tr>
-            <tr class="tfoot-row">
+            <tr class="tfoot-row tfoot-grand-row">
                 <td colspan="4" class="tfoot-label">সর্বমোট</td>
                 <td class="tr tfoot-amount tfoot-grand">{{ number_format($grandTotal, 0) }} টাকা</td>
             </tr>
@@ -167,12 +162,12 @@
                 <td colspan="4" class="tfoot-label">
                     পরিশোধ
                     @if($sale->payment_method)
-                        <span style="font-size:.75rem;font-weight:500;color:#64748b;margin-left:6px">({{ $sale->payment_method }})</span>
+                        <span style="font-size:.75rem;font-weight:500;color:#666;margin-left:6px">({{ $sale->payment_method }})</span>
                     @endif
                 </td>
                 <td class="tr tfoot-amount">{{ number_format($sale->paid_amount, 0) }} টাকা</td>
             </tr>
-            <tr class="tfoot-row tfoot-balance">
+            <tr class="tfoot-row tfoot-balance-row">
                 <td colspan="4" class="tfoot-label">বাকী</td>
                 <td class="tr tfoot-amount tfoot-remaining">{{ number_format($remaining, 0) }} টাকা</td>
             </tr>
@@ -180,273 +175,204 @@
     </table>
 
     @if($sale->notes)
-    <div style="margin-top:8px;font-size:.8rem;color:#555">মন্তব্যঃ {{ $sale->notes }}</div>
+    <div style="margin-top:6px;font-size:.8rem;color:#555">মন্তব্যঃ {{ $sale->notes }}</div>
     @endif
     @if($sale->is_edited)
-    <div style="margin-top:8px;padding:7px 12px;background:#fef9c3;border:1px dashed #fde68a;
-                border-radius:6px;font-size:.8rem;color:#92400e">
-        <strong>✎ সংশোধনের কারণঃ</strong>
-        {{ $sale->edit_note ?: 'উল্লেখ করা হয়নি' }}
+    <div style="margin-top:8px;padding:6px 10px;background:#fef9c3;border:1px dashed #fde68a;font-size:.8rem;color:#92400e">
+        <strong>✎ সংশোধনের কারণঃ</strong> {{ $sale->edit_note ?: 'উল্লেখ করা হয়নি' }}
     </div>
     @endif
-</div>
+
+</div>{{-- /.cash-memo --}}
 @endsection
 
 @push('styles')
 <style>
-/* ══ Cash Memo wrapper ══════════════════════════════════════════ */
+/* ══ Wrapper ════════════════════════════════════════════════════ */
 .cash-memo {
-    max-width: 720px;
+    max-width: 700px;
     background: #fff;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    padding: 24px 28px 20px;
+    border: 2px solid #c0392b;
+    border-radius: 4px;
+    padding: 18px 22px 16px;
     font-family: 'Hind Siliguri', sans-serif;
     color: #111;
-    font-size: .9rem;
+    font-size: .88rem;
+    line-height: 1.45;
 }
 
-/* ══ Title "ক্যাশ মেমো" ══════════════════════════════════════════ */
-.memo-title-top {
-    text-align: center;
-    font-size: .85rem;
-    letter-spacing: .1em;
-    color: #555;
-    margin-bottom: 2px;
-}
-
-/* ══ Header (centered, store name arches over the info block) ══════ */
+/* ══ Header ══════════════════════════════════════════════════════ */
 .memo-header {
-    text-align: center;
-    border-bottom: 2px solid #222;
-    padding-bottom: 10px;
-    margin-bottom: 8px;
+    overflow: hidden;        /* clear float */
+    border-bottom: 2px solid #111;
+    padding-bottom: 8px;
+    margin-bottom: 7px;
 }
-.memo-store-name {
-    margin: 0 auto;
-    max-width: 540px;
-}
-.memo-under-arch {
-    margin-top: -58px;
-    position: relative;
-    z-index: 1;
+
+/* Phone numbers — float top-right */
+.memo-phones-right {
+    float: right;
+    text-align: right;
+    font-size: .82rem;
+    font-weight: 700;
+    line-height: 1.8;
+    color: #111;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 4px;
-}
-.memo-owner-badge {
-    display: inline-block;
-    background: #e5e7eb;
-    border-radius: 999px;
-    padding: 2px 16px;
-    font-size: .88rem;
-    font-weight: 600;
-}
-.memo-tagline { font-size: .82rem; color: #333; }
-.memo-address { font-size: .8rem;  color: #555; }
-.memo-phones {
-    font-size: .92rem;
-    font-weight: 700;
-    margin-top: 3px;
-    letter-spacing: .02em;
 }
 
-/* ══ Invoice meta section ════════════════════════════════════════ */
+/* Centered block */
+.memo-center {
+    text-align: center;
+}
+.memo-title-label {
+    font-size: .78rem;
+    letter-spacing: .12em;
+    color: #555;
+    margin-bottom: 1px;
+}
+.memo-edited-badge {
+    display: inline-block;
+    margin-left: 8px;
+    background: #fef9c3;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    border-radius: 20px;
+    padding: 0px 8px;
+    font-size: .68rem;
+    font-weight: 700;
+    vertical-align: middle;
+}
+.memo-store-name {
+    font-size: 1.65rem;
+    font-weight: 900;
+    color: #111;
+    line-height: 1.15;
+    letter-spacing: .01em;
+}
+.memo-owner   { font-size: .84rem; font-weight: 600; color: #222; margin-top: 2px; }
+.memo-tagline { font-size: .80rem; color: #333; }
+.memo-address { font-size: .78rem; color: #444; }
+
+/* ══ Meta section ════════════════════════════════════════════════ */
 .memo-meta {
-    margin-bottom: 8px;
-    font-size: .85rem;
+    font-size: .83rem;
     line-height: 1.7;
+    border-bottom: 1px solid #bbb;
+    padding-bottom: 5px;
+    margin-bottom: 6px;
 }
-.memo-meta-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 2px;
+.memo-meta-row-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: .83rem;
+    margin-bottom: 1px;
 }
-.memo-meta-table td { padding: 0; }
 .memo-meta-line { display: block; }
 .memo-meta-key {
     font-weight: 700;
     display: inline-block;
-    min-width: 90px;
+    min-width: 94px;
 }
 
-/* ══ Items + Totals table ════════════════════════════════════════ */
+/* ══ Items table ═════════════════════════════════════════════════ */
 .memo-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: .87rem;
+    font-size: .86rem;
 }
-
-/* Header row */
 .memo-table thead tr {
     background: #c0392b;
     color: #fff;
 }
 .memo-table th {
-    padding: 6px 6px;
+    padding: 5px 6px;
     font-weight: 700;
     border: 1px solid #922b21;
+    text-align: center;
 }
-.col-bosta { width: 52px;  text-align: center; }
-.col-desc  {              text-align: center; }
-.col-kg    { width: 50px;  text-align: center; }
-.col-rate  { width: 70px;  text-align: center; }
-.col-taka  { width: 90px;  text-align: center; }
+.col-bosta { width: 50px; }
+.col-desc  { }
+.col-kg    { width: 48px; }
+.col-rate  { width: 68px; }
+.col-taka  { width: 100px; }
 
-/* Body rows */
-.memo-table tbody tr { }
-.memo-table tbody tr:nth-child(even) { background: #fafafa; }
-.memo-table td {
-    padding: 4px 6px;
-    border: 1px solid #d1d5db;
+.memo-table tbody td {
+    padding: 3px 6px;
+    border: 1px solid #ccc;
     vertical-align: middle;
 }
+.memo-table tbody tr:nth-child(even) { background: #fafafa; }
 .tc { text-align: center; }
-.tr { text-align: right; }
+.tr { text-align: right;  }
 
-/* ══ Tfoot (totals) ══════════════════════════════════════════════ */
+/* ══ Tfoot ═══════════════════════════════════════════════════════ */
 .tfoot-qty td {
-    padding: 5px 6px;
-    font-size: .85rem;
-    border: 1px solid #d1d5db;
+    padding: 4px 6px;
+    border: 1px solid #ccc;
     border-top: 2px solid #922b21;
+    font-size: .84rem;
+    font-weight: 700;
     background: #fff;
 }
 .tfoot-row td {
-    padding: 4px 6px;
-    border: 1px solid #d1d5db;
-    font-size: .87rem;
+    padding: 3px 6px;
+    border: 1px solid #ccc;
+    font-size: .85rem;
 }
-.tfoot-label { }
-.tfoot-amount {
-    font-weight: 600;
-    white-space: nowrap;
-}
-.tfoot-grand {
-    font-weight: 800;
-    font-size: .95rem;
-    border-top: 1px solid #aaa;
-    border-bottom: 1px solid #aaa;
-}
-.tfoot-balance td {
-    background: #fff7ed;
-}
-.tfoot-remaining {
-    font-weight: 800;
-    font-size: 1rem;
-    color: #b91c1c;
-}
-
-/* ══ Screen / Print toggle helpers ═══════════════════════════════ */
-.print-only { display: none; }
-.screen-only { display: block; }
-
-/* ══ Print-only plain store name ════════════════════════════════ */
-.memo-store-name-print {
-    font-size: 1.55rem;
-    font-weight: 900;
-    text-align: center;
-    letter-spacing: .01em;
-    color: #1f2937;
-    line-height: 1.25;
-}
+.tfoot-label  { font-weight: 600; }
+.tfoot-amount { font-weight: 600; white-space: nowrap; }
+.tfoot-grand-row td { border-top: 2px solid #555; border-bottom: 2px solid #555; }
+.tfoot-grand  { font-weight: 800; font-size: .94rem; }
+.tfoot-balance-row td { background: #fff7ed; }
+.tfoot-remaining { font-weight: 800; font-size: .98rem; color: #b91c1c; }
 
 /* ══ Print ════════════════════════════════════════════════════════ */
 @media print {
     @page {
         size: A4 portrait;
-        margin: 12mm 14mm 14mm 14mm;
+        margin: 10mm 12mm 12mm 12mm;
     }
 
     html, body {
         margin: 0 !important;
         padding: 0 !important;
         background: #fff !important;
-        font-size: 12px !important;
     }
 
-    /* Hide UI chrome */
     .sidebar, .topbar, .no-print { display: none !important; }
-
     .main-wrapper { margin-left: 0 !important; padding: 0 !important; }
     .content      { padding: 0 !important; margin: 0 !important; }
 
-    /* Screen arc → hidden; print name → shown */
-    .screen-only   { display: none !important; }
-    .print-only    { display: block !important; }
-
-    /* Reset arc negative margin on print */
-    .memo-under-arch {
-        margin-top: 4px !important;
-    }
-
     .cash-memo {
-        border: none !important;
+        border: 2px solid #c0392b !important;
         border-radius: 0 !important;
-        padding: 0 !important;
+        padding: 10px 14px 10px !important;
         max-width: 100% !important;
         width: 100% !important;
         box-shadow: none !important;
         font-size: .82rem !important;
-        page-break-inside: auto;
     }
 
-    /* Header border under store info */
-    .memo-header {
-        padding-bottom: 6px !important;
-        margin-bottom: 5px !important;
-    }
+    .memo-store-name  { font-size: 1.35rem !important; }
+    .memo-owner       { font-size: .76rem !important; }
+    .memo-tagline     { font-size: .72rem !important; }
+    .memo-address     { font-size: .70rem !important; }
+    .memo-phones-right{ font-size: .75rem !important; }
+    .memo-title-label { font-size: .70rem !important; }
 
-    /* Tighter meta */
-    .memo-meta {
-        font-size: .78rem !important;
-        line-height: 1.5 !important;
-        margin-bottom: 5px !important;
-    }
+    .memo-meta        { font-size: .78rem !important; line-height: 1.55 !important; }
+    .memo-meta-row-top{ font-size: .78rem !important; }
 
-    /* Print title */
-    .memo-title-top {
-        font-size: .75rem !important;
-        margin-bottom: 1px !important;
-    }
-
-    /* Print store name */
-    .memo-store-name-print {
-        font-size: 1.3rem !important;
-        line-height: 1.2 !important;
-    }
-
-    .memo-owner-badge {
-        font-size: .78rem !important;
-        padding: 1px 10px !important;
-    }
-    .memo-tagline { font-size: .72rem !important; }
-    .memo-address { font-size: .70rem !important; }
-    .memo-phones  { font-size: .82rem !important; }
-
-    /* Table */
-    .memo-table {
-        font-size: .80rem !important;
-        width: 100% !important;
-    }
+    .memo-table       { font-size: .78rem !important; }
     .memo-table th,
-    .memo-table td {
-        padding: 3px 5px !important;
-    }
-    .tfoot-qty td,
-    .tfoot-row td {
-        padding: 3px 5px !important;
-        font-size: .80rem !important;
-    }
-    .tfoot-grand {
-        font-size: .85rem !important;
-    }
-    .tfoot-remaining {
-        font-size: .90rem !important;
-    }
+    .memo-table tbody td { padding: 2px 4px !important; }
 
-    /* Avoid page break inside totals */
+    .tfoot-qty td,
+    .tfoot-row td     { padding: 2px 4px !important; font-size: .78rem !important; }
+    .tfoot-grand      { font-size: .84rem !important; }
+    .tfoot-remaining  { font-size: .88rem !important; }
+
     tfoot { page-break-inside: avoid; }
 }
 </style>
