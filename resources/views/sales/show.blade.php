@@ -40,9 +40,11 @@
     </div>
 
     <div class="memo-header">
-        <div class="memo-store-name">
+        {{-- Screen: SVG arc | Print: plain bold name --}}
+        <div class="memo-store-name screen-only">
             @include('partials.store-name-arc', ['name' => $store['name'], 'size' => 36])
         </div>
+        <div class="memo-store-name-print print-only">{{ $store['name'] }}</div>
         <div class="memo-under-arch">
             @if($store['owner'])
             <div><span class="memo-owner-badge">প্রোঃ {{ $store['owner'] }}</span></div>
@@ -336,18 +338,119 @@
     color: #b91c1c;
 }
 
+/* ══ Screen / Print toggle helpers ═══════════════════════════════ */
+.print-only { display: none; }
+.screen-only { display: block; }
+
+/* ══ Print-only plain store name ════════════════════════════════ */
+.memo-store-name-print {
+    font-size: 1.55rem;
+    font-weight: 900;
+    text-align: center;
+    letter-spacing: .01em;
+    color: #1f2937;
+    line-height: 1.25;
+}
+
 /* ══ Print ════════════════════════════════════════════════════════ */
 @media print {
-    .sidebar, .topbar, .no-print { display: none !important; }
-    .main-wrapper { margin-left: 0 !important; }
-    .content { padding: 8px !important; }
-    .cash-memo {
-        border: none;
-        border-radius: 0;
-        padding: 8px 12px;
-        max-width: 100%;
-        box-shadow: none;
+    @page {
+        size: A4 portrait;
+        margin: 12mm 14mm 14mm 14mm;
     }
+
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        font-size: 12px !important;
+    }
+
+    /* Hide UI chrome */
+    .sidebar, .topbar, .no-print,
+    .main-wrapper > *:not(#app),
+    nav, header, footer { display: none !important; }
+
+    .main-wrapper  { margin-left: 0 !important; padding: 0 !important; }
+    .main-content  { padding: 0 !important; margin: 0 !important; }
+    .content       { padding: 0 !important; margin: 0 !important; }
+
+    /* Screen arc → hidden; print name → shown */
+    .screen-only   { display: none !important; }
+    .print-only    { display: block !important; }
+
+    /* Reset arc negative margin on print */
+    .memo-under-arch {
+        margin-top: 4px !important;
+    }
+
+    .cash-memo {
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        box-shadow: none !important;
+        font-size: .82rem !important;
+        page-break-inside: auto;
+    }
+
+    /* Header border under store info */
+    .memo-header {
+        padding-bottom: 6px !important;
+        margin-bottom: 5px !important;
+    }
+
+    /* Tighter meta */
+    .memo-meta {
+        font-size: .78rem !important;
+        line-height: 1.5 !important;
+        margin-bottom: 5px !important;
+    }
+
+    /* Print title */
+    .memo-title-top {
+        font-size: .75rem !important;
+        margin-bottom: 1px !important;
+    }
+
+    /* Print store name */
+    .memo-store-name-print {
+        font-size: 1.3rem !important;
+        line-height: 1.2 !important;
+    }
+
+    .memo-owner-badge {
+        font-size: .78rem !important;
+        padding: 1px 10px !important;
+    }
+    .memo-tagline { font-size: .72rem !important; }
+    .memo-address { font-size: .70rem !important; }
+    .memo-phones  { font-size: .82rem !important; }
+
+    /* Table */
+    .memo-table {
+        font-size: .80rem !important;
+        width: 100% !important;
+    }
+    .memo-table th,
+    .memo-table td {
+        padding: 3px 5px !important;
+    }
+    .tfoot-qty td,
+    .tfoot-row td {
+        padding: 3px 5px !important;
+        font-size: .80rem !important;
+    }
+    .tfoot-grand {
+        font-size: .85rem !important;
+    }
+    .tfoot-remaining {
+        font-size: .90rem !important;
+    }
+
+    /* Avoid page break inside totals */
+    tfoot { page-break-inside: avoid; }
 }
 </style>
 @endpush
