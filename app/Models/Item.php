@@ -6,26 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Item extends Model
 {
-    protected $fillable = ['name', 'code', 'category_id', 'type_id', 'brand_id', 'unit_type_id', 'purchase_price', 'sale_price', 'unit', 'description', 'image'];
+    protected $fillable = ['name', 'code', 'category_id', 'purchase_price', 'sale_price', 'unit'];
 
     public function category()
     {
         return $this->belongsTo(Category::class);
-    }
-
-    public function itemType()
-    {
-        return $this->belongsTo(ItemType::class, 'type_id');
-    }
-
-    public function itemBrand()
-    {
-        return $this->belongsTo(ItemBrand::class, 'brand_id');
-    }
-
-    public function unitType()
-    {
-        return $this->belongsTo(UnitType::class, 'unit_type_id');
     }
 
     public function stock()

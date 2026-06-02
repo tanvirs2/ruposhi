@@ -31,7 +31,7 @@
 
             // Accordion open states
             $inCustomer = in_array($_seg, ['customers','customer-payments','customer-areas']) || $_path === 'customers-ledger';
-            $inItems    = in_array($_seg, ['items','categories','item-types','item-brands','unit-types']);
+            $inItems    = in_array($_seg, ['items','categories']);
             $inStock    = $_seg === 'stock';
             $inSupplier = in_array($_seg, ['suppliers','supplier-payments']) || in_array($_path, ['suppliers-due-report','suppliers-ledger']);
             $inReports  = $_seg === 'reports';
@@ -90,21 +90,6 @@
                         <span class="nav-icon"><i class="fas fa-tags"></i></span>
                         <span class="nav-label">আইটেম ক্যাটাগরি</span>
                         <button type="button" class="info-btn" data-info="পণ্যের ক্যাটাগরি তৈরি করুন। যেমন: চাল, ডাল, তেল। ক্যাটাগরি দিয়ে পণ্য ফিল্টার করা যাবে।">i</button>
-                    </a>
-                    <a href="{{ route('item-types.index') }}" class="nav-item nav-child {{ $_seg==='item-types' ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fas fa-layer-group"></i></span>
-                        <span class="nav-label">আইটেম টাইপ</span>
-                        <button type="button" class="info-btn" data-info="পণ্যের ধরন তৈরি করুন। যেমন: মিনিকেট, নাজিরশাইল। ক্যাটাগরির চেয়ে আরও নির্দিষ্ট শ্রেণীবিভাগ।">i</button>
-                    </a>
-                    <a href="{{ route('item-brands.index') }}" class="nav-item nav-child {{ $_seg==='item-brands' ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fas fa-copyright"></i></span>
-                        <span class="nav-label">আইটেম ব্র্যান্ড</span>
-                        <button type="button" class="info-btn" data-info="পণ্যের ব্র্যান্ড তৈরি করুন। যেমন: প্রাণ, স্কয়ার, ফ্রেশ। একই পণ্যের বিভিন্ন ব্র্যান্ড আলাদা করুন।">i</button>
-                    </a>
-                    <a href="{{ route('unit-types.index') }}" class="nav-item nav-child {{ $_seg==='unit-types' ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fas fa-ruler"></i></span>
-                        <span class="nav-label">ইউনিট টাইপ</span>
-                        <button type="button" class="info-btn" data-info="পরিমাপের একক তৈরি করুন। যেমন: বস্তা, কেজি, লিটার, পিস। প্রতিটি পণ্যে এককটি নির্ধারণ করা যাবে।">i</button>
                     </a>
                 </div>
             </div>

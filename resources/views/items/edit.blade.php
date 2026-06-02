@@ -13,41 +13,11 @@
             </div>
 
             <div class="form-group-field">
-                <label>ব্র্যান্ড</label>
-                <select name="brand_id" class="form-select">
-                    <option value="">ব্র্যান্ড নির্বাচন করুন</option>
-                    @foreach($itemBrands as $brand)
-                        <option value="{{ $brand->id }}" @selected(old('brand_id', $item->brand_id) == $brand->id)>{{ $brand->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="form-group-field">
-                <label>টাইপ</label>
-                <select name="type_id" class="form-select">
-                    <option value="">টাইপ নির্বাচন করুন</option>
-                    @foreach($itemTypes as $type)
-                        <option value="{{ $type->id }}" @selected(old('type_id', $item->type_id) == $type->id)>{{ $type->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="form-group-field">
                 <label>ক্যাটাগরি</label>
                 <select name="category_id" class="form-select">
                     <option value="">ক্যাটাগরি নির্বাচন করুন</option>
                     @foreach($categories as $cat)
                         <option value="{{ $cat->id }}" @selected(old('category_id', $item->category_id) == $cat->id)>{{ $cat->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="form-group-field">
-                <label>ইউনিট টাইপ</label>
-                <select name="unit_type_id" class="form-select">
-                    <option value="">ইউনিট নির্বাচন করুন</option>
-                    @foreach($unitTypes as $ut)
-                        <option value="{{ $ut->id }}" @selected(old('unit_type_id', $item->unit_type_id) == $ut->id)>{{ $ut->name }}{{ $ut->short ? ' ('.$ut->short.')' : '' }}</option>
                     @endforeach
                 </select>
             </div>
@@ -59,28 +29,28 @@
 
             <div class="form-group-field">
                 <label>ক্রয় মূল্য <span class="req">*</span>
-                    <button type="button" class="info-btn" data-info="প্রতি বস্তা/ইউনিটের ক্রয় মূল্য। এটি লাভ হিসাব করতে ব্যবহার হয়। মাল রিসিভের সময় এই মূল্য আপডেট করা যাবে।">i</button>
+                    <button type="button" class="info-btn" data-info="প্রতি বস্তা/ইউনিটের ক্রয় মূল্য। লাভ হিসাবে ব্যবহার হয়।">i</button>
                 </label>
                 <input type="text" inputmode="decimal" name="purchase_price" value="{{ old('purchase_price', $item->purchase_price) }}" required>
             </div>
 
             <div class="form-group-field">
                 <label>বিক্রয় মূল্য
-                    <button type="button" class="info-btn" data-info="প্রতি বস্তা/ইউনিটের ডিফল্ট বিক্রয় মূল্য। বিক্রয়ের সময় প্রয়োজনে পরিবর্তন করা যাবে।">i</button>
+                    <button type="button" class="info-btn" data-info="ডিফল্ট বিক্রয় মূল্য। বিক্রয়ের সময় পরিবর্তন করা যাবে।">i</button>
                 </label>
                 <input type="text" inputmode="decimal" name="sale_price" value="{{ old('sale_price', $item->sale_price) }}">
             </div>
 
             <div class="form-group-field">
-                <label>সর্বনিম্ন স্টক
-                    <button type="button" class="info-btn" data-info="স্টক এই পরিমাণের নিচে নামলে 'স্টক কম' সতর্কতা দেখাবে। আপনার ব্যবসার চাহিদা অনুযায়ী সেট করুন।">i</button>
-                </label>
-                <input type="text" inputmode="decimal" name="min_quantity" value="{{ old('min_quantity', $item->stock?->min_quantity ?? 5) }}">
+                <label>ইউনিট</label>
+                <input type="text" name="unit" value="{{ old('unit', $item->unit) }}" placeholder="বস্তা">
             </div>
 
-            <div class="form-group-field form-full">
-                <label>বিবরণ</label>
-                <textarea name="description" rows="2">{{ old('description', $item->description) }}</textarea>
+            <div class="form-group-field">
+                <label>সর্বনিম্ন স্টক
+                    <button type="button" class="info-btn" data-info="স্টক এই পরিমাণের নিচে নামলে সতর্কতা দেখাবে।">i</button>
+                </label>
+                <input type="text" inputmode="decimal" name="min_quantity" value="{{ old('min_quantity', $item->stock?->min_quantity ?? 5) }}">
             </div>
         </div>
         <div class="form-actions">

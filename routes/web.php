@@ -8,9 +8,6 @@ use App\Http\Controllers\CustomerAreaController;
 use App\Http\Controllers\CustomerPaymentController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\ItemTypeController;
-use App\Http\Controllers\ItemBrandController;
-use App\Http\Controllers\UnitTypeController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierPaymentController;
 use App\Http\Controllers\SaleController;
@@ -47,9 +44,6 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('items',       ItemController::class);
     Route::resource('categories',  CategoryController::class)->except('show');
-    Route::resource('item-types',  ItemTypeController::class)->except('show');
-    Route::resource('item-brands', ItemBrandController::class)->except('show');
-    Route::resource('unit-types',  UnitTypeController::class)->except('show');
     /* Suppliers */
     Route::resource('suppliers', SupplierController::class);
     Route::get('suppliers/{supplier}/ledger', [SupplierController::class, 'ledger'])->name('suppliers.ledger');

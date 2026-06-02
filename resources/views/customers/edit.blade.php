@@ -20,10 +20,6 @@
                 <input type="text" name="phone" value="{{ old('phone', $customer->phone) }}">
             </div>
             <div class="form-group-field">
-                <label>ইমেইল</label>
-                <input type="email" name="email" value="{{ old('email', $customer->email) }}">
-            </div>
-            <div class="form-group-field">
                 <label>এরিয়া</label>
                 <select name="area_id" class="form-select">
                     <option value="">এরিয়া নির্বাচন করুন</option>

@@ -51,10 +51,9 @@ class CustomerController extends Controller
         $request->validate([
             'name'  => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
         ]);
 
-        Customer::create($request->only('name', 'proprietor', 'phone', 'email', 'address', 'area_id'));
+        Customer::create($request->only('name', 'proprietor', 'phone', 'address', 'area_id'));
 
         return redirect()->route('customers.index')->with('success', 'কাস্টমার সফলভাবে যোগ করা হয়েছে।');
     }
@@ -70,10 +69,9 @@ class CustomerController extends Controller
         $request->validate([
             'name'  => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
         ]);
 
-        $customer->update($request->only('name', 'proprietor', 'phone', 'email', 'address', 'area_id'));
+        $customer->update($request->only('name', 'proprietor', 'phone', 'address', 'area_id'));
 
         return redirect()->route('customers.index')->with('success', 'কাস্টমার সফলভাবে আপডেট করা হয়েছে।');
     }
