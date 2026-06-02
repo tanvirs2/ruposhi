@@ -306,7 +306,6 @@
 
     <header class="topbar">
         <div class="topbar-left">
-            <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
             <div class="page-title">
                 <h1>@yield('page-title', 'ড্যাশবোর্ড')</h1>
                 <span class="breadcrumb">@hasSection('breadcrumb') @yield('breadcrumb') @else স্বাগতম, <strong>{{ auth()->user()->name }}</strong> @endif</span>
