@@ -151,7 +151,6 @@
                         'payment'    => 'cl-payment-row',
                         'discount'   => 'cl-discount-row',
                         'extra_cost' => 'cl-extracost-row',
-                        'labor_cost' => 'cl-laborcost-row',
                         default      => '',
                     };
                 @endphp
@@ -185,11 +184,6 @@
                         @elseif($row['type'] === 'extra_cost')
                             <span class="cl-extracost-label">
                                 <i class="fas fa-plus-circle" style="font-size:.72rem;margin-right:3px"></i>
-                                {{ $row['label'] }}
-                            </span>
-                        @elseif($row['type'] === 'labor_cost')
-                            <span class="cl-laborcost-label">
-                                <i class="fas fa-person-digging" style="font-size:.72rem;margin-right:3px"></i>
                                 {{ $row['label'] }}
                             </span>
                         @else

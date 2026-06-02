@@ -170,20 +170,6 @@ class CustomerController extends Controller
                     'credit'   => 0,
                 ]);
             }
-            // Labor cost row (debit — adds to balance)
-            if ($sale->labor_cost > 0) {
-                $rows->push([
-                    'sort_key' => $saleTime,
-                    'datetime' => $saleTime,
-                    'sale_id'  => $sale->id,
-                    'type'     => 'labor_cost',
-                    'label'    => 'শ্রমিক খরচ',
-                    'qty'      => 0,
-                    'rate'     => 0,
-                    'debit'    => $sale->labor_cost,
-                    'credit'   => 0,
-                ]);
-            }
             // Initial payment on the sale (paid_amount > 0)
             if ($sale->paid_amount > 0) {
                 $rows->push([

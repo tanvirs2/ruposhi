@@ -170,11 +170,10 @@
                     $isItem      = $row->type === 'item';
                     $isPay       = $row->type === 'payment' || $row->type === 'purchase_payment';
                     $isExtraCost = $row->type === 'extra_cost';
-                    $isLaborCost = $row->type === 'labor_cost';
                     $isNewGroup  = $row->purchase_id && $row->purchase_id !== $prevPurchaseId;
                     if ($row->purchase_id) $prevPurchaseId = $row->purchase_id;
                     elseif ($row->type === 'payment') $prevPurchaseId = null;
-                    $rowClass = $isPay ? 'sl-payment-row' : ($isExtraCost ? 'sl-extracost-row' : ($isLaborCost ? 'sl-laborcost-row' : 'sl-item-row'));
+                    $rowClass = $isPay ? 'sl-payment-row' : ($isExtraCost ? 'sl-extracost-row' : 'sl-item-row');
                 @endphp
                 <tr class="{{ $rowClass }} {{ $isNewGroup ? 'sl-new-group' : '' }}">
 

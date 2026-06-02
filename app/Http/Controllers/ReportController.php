@@ -175,7 +175,7 @@ class ReportController extends Controller
                 'sales.created_at   as sale_time',
                 'sales.paid_amount',
                 'sales.due_amount',
-                DB::raw('(sales.extra_cost + COALESCE(sales.labor_cost, 0)) as extra_cost'),
+                'sales.extra_cost',
                 'sales.discount',
                 'customers.name     as customer_name',
                 'items.name         as item_name',
@@ -446,8 +446,8 @@ class ReportController extends Controller
         // ── Revenue ───────────────────────────────────────────────
         $grossSales = Sale::whereBetween('sale_date', [$from, $to])->sum('total_amount');
         $discounts  = Sale::whereBetween('sale_date', [$from, $to])->sum('discount');
-        $extraCost  = Sale::whereBetween('sale_date', [$from, $to])->selectRaw('SUM(extra_cost + COALESCE(labor_cost,0))')->value(DB::raw('SUM(extra_cost + COALESCE(labor_cost,0))'));
-        $laborCost  = 0; // merged into extraCost
+        $extraCost  = Sale::whereBetween('sale_date', [$from, $to])->sum('extra_cost');
+        $laborCost  = 0; // merged into extra_cost (labor_cost column dropped)
         // Extras are pass-through (collected from customer, paid out) — exclude from net revenue
         $netRevenue = $grossSales - $extraCost;
 
