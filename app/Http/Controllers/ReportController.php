@@ -264,7 +264,7 @@ class ReportController extends Controller
         $rows = DB::table('sale_items')
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->leftJoin('stocks', 'items.id', '=', 'stocks.item_id')
+            ->leftJoin('stock', 'items.id', '=', 'stock.item_id')
             ->whereBetween('sales.sale_date', [$from, $to])
             ->selectRaw('
                 items.id,
@@ -273,7 +273,7 @@ class ReportController extends Controller
                 SUM(sale_items.quantity) as sold_qty,
                 SUM(sale_items.subtotal) as revenue,
                 SUM(items.purchase_price * sale_items.quantity) as cost,
-                MAX(stocks.quantity) as current_stock
+                MAX(stock.quantity) as current_stock
             ')
             ->groupBy('items.id', 'items.name', 'items.purchase_price')
             ->orderByDesc('sold_qty')
@@ -716,13 +716,13 @@ class ReportController extends Controller
         $rows = DB::table('sale_items')
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->leftJoin('stocks', 'items.id', '=', 'stocks.item_id')
+            ->leftJoin('stock', 'items.id', '=', 'stock.item_id')
             ->whereBetween('sales.sale_date', [$from, $to])
             ->selectRaw('items.name, items.purchase_price,
                 SUM(sale_items.quantity) as sold_qty,
                 SUM(sale_items.subtotal) as revenue,
                 SUM(items.purchase_price * sale_items.quantity) as cost,
-                MAX(stocks.quantity) as current_stock')
+                MAX(stock.quantity) as current_stock')
             ->groupBy('items.id', 'items.name', 'items.purchase_price')
             ->orderByDesc('sold_qty')
             ->get();
