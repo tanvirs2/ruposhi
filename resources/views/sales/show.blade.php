@@ -367,13 +367,10 @@
     }
 
     /* Hide UI chrome */
-    .sidebar, .topbar, .no-print,
-    .main-wrapper > *:not(#app),
-    nav, header, footer { display: none !important; }
+    .sidebar, .topbar, .no-print { display: none !important; }
 
-    .main-wrapper  { margin-left: 0 !important; padding: 0 !important; }
-    .main-content  { padding: 0 !important; margin: 0 !important; }
-    .content       { padding: 0 !important; margin: 0 !important; }
+    .main-wrapper { margin-left: 0 !important; padding: 0 !important; }
+    .content      { padding: 0 !important; margin: 0 !important; }
 
     /* Screen arc → hidden; print name → shown */
     .screen-only   { display: none !important; }
