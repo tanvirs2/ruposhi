@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Stock;
 use App\Models\Item;
 use App\Models\SaleItem;
+use App\Models\PurchaseItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
@@ -41,18 +42,28 @@ class StockController extends Controller
             ->groupBy('item_id')
             ->pluck('total_qty', 'item_id');
 
+        // Today's received qty per item (from purchases on filterDate)
+        $todayReceive = PurchaseItem::select('purchase_items.item_id', DB::raw('SUM(purchase_items.quantity) as total_qty'))
+            ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
+            ->whereDate('purchases.purchase_date', $filterDate)
+            ->groupBy('purchase_items.item_id')
+            ->pluck('total_qty', 'purchase_items.item_id');
+
         // ── Grand totals (across ALL stock items, not just the current page) ──
-        $grandStockQty   = Stock::sum('quantity');
-        $grandStockValue = Stock::join('items', 'items.id', '=', 'stock.item_id')
+        $grandStockQty      = Stock::sum('quantity');
+        $grandStockValue    = Stock::join('items', 'items.id', '=', 'stock.item_id')
             ->selectRaw('SUM(stock.quantity * COALESCE(items.purchase_price, 0)) as v')
             ->value('v') ?? 0;
-        $grandTodaySales = SaleItem::whereHas('sale', fn($q) => $q->whereDate('sale_date', $filterDate))
+        $grandTodaySales    = SaleItem::whereHas('sale', fn($q) => $q->whereDate('sale_date', $filterDate))
             ->sum('quantity');
-        $grandTotalSales = SaleItem::sum('quantity');
+        $grandTotalSales    = SaleItem::sum('quantity');
+        $grandTodayReceive  = PurchaseItem::join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
+            ->whereDate('purchases.purchase_date', $filterDate)
+            ->sum('purchase_items.quantity');
 
         return view('stock.index', compact(
-            'stock', 'todaySales', 'totalSales', 'filterDate', 'updatedDate',
-            'grandStockQty', 'grandStockValue', 'grandTodaySales', 'grandTotalSales'
+            'stock', 'todaySales', 'totalSales', 'todayReceive', 'filterDate', 'updatedDate',
+            'grandStockQty', 'grandStockValue', 'grandTodaySales', 'grandTotalSales', 'grandTodayReceive'
         ));
     }
 
