@@ -610,6 +610,16 @@ function updateRowTotal(id) {
         const isLoss = item.priceEntered && item.cost > 0 && item.price < item.cost;
         lossWarn.style.display = isLoss ? 'inline-flex' : 'none';
     }
+
+    // ── Excessive profit warning per row (>25% margin) ────────
+    const EXCESS_PCT = 25;
+    const excessWarn = document.getElementById('excess-warn-' + id);
+    if (excessWarn) {
+        const pct = item.cost > 0 ? (item.price - item.cost) / item.cost * 100 : 0;
+        const isExcess = item.priceEntered && item.cost > 0 && pct > EXCESS_PCT;
+        excessWarn.style.display = isExcess ? 'inline-flex' : 'none';
+        if (isExcess) excessWarn.title = `লাভ: ${pct.toFixed(1)}%`;
+    }
 }
 
 function profitClass(profit, cost) {
@@ -684,6 +694,15 @@ function renderCart() {
                            border-radius:20px;padding:1px 7px;vertical-align:middle;white-space:nowrap">
                     ⚠ লোকসান!
                 </span>
+                ${(()=>{ const pct=c.cost>0?(c.price-c.cost)/c.cost*100:0; const isEx=c.priceEntered&&c.cost>0&&pct>25; return `<span id="excess-warn-${c.id}"
+                    title="${isEx?`লাভ: ${pct.toFixed(1)}%`:''}"
+                    style="display:${isEx?'inline-flex':'none'};
+                           align-items:center;gap:3px;margin-left:5px;
+                           font-size:.72rem;font-weight:700;color:#92400e;
+                           background:#fef9c3;border:1px solid #fde68a;
+                           border-radius:20px;padding:1px 7px;vertical-align:middle;white-space:nowrap">
+                    ⚠ অতিরিক্ত লাভ!
+                </span>`; })()}
             </td>
             <td id="row-profit-${c.id}" class="col-secret ${pClass}" style="${secretDisplay}">${profitStr}</td>
             <td id="row-total-${c.id}">৳ ${(c.qty * c.price).toFixed(0)}</td>
@@ -816,8 +835,9 @@ function checkExtraPayWarning() {
     warn.style.display = (!hasItems && hasCustomer && currentPrevDue === 0 && paid > 0) ? 'block' : 'none';
 }
 
-let _stockConfirmPending = false;
-let _lossConfirmPending  = false;
+let _stockConfirmPending  = false;
+let _lossConfirmPending   = false;
+let _excessConfirmPending = false;
 document.getElementById('saleForm').addEventListener('submit', function(e) {
     // Ensure paid_amount is numeric (never empty)
     const paidEl     = document.getElementById('paidInput');
@@ -872,6 +892,23 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
         return;
     }
     _lossConfirmPending = false;
+
+    // ── Excessive profit warning on submit ───────────────────
+    const EXCESS_PCT = 25;
+    const excessItems = cart.filter(c => c.priceEntered && c.cost > 0 && (c.price - c.cost) / c.cost * 100 > EXCESS_PCT);
+    if (excessItems.length && !_excessConfirmPending) {
+        e.preventDefault();
+        const lines = excessItems.map(c => {
+            const pct = ((c.price - c.cost) / c.cost * 100).toFixed(1);
+            return `• ${c.name}\n  ক্রয়: ৳${c.cost.toFixed(0)}  →  বিক্রয়: ৳${c.price.toFixed(0)}  (লাভ: ${pct}%)`;
+        }).join('\n');
+        showExcessConfirm(lines, () => {
+            _excessConfirmPending = true;
+            document.getElementById('saleForm').requestSubmit();
+        });
+        return;
+    }
+    _excessConfirmPending = false;
 
     if (_stockConfirmPending) { _stockConfirmPending = false; return; }
     const overItems = cart.filter(c => c.qty > (c.stock ?? Infinity));
@@ -934,6 +971,57 @@ function showStockConfirm(details, onConfirm) {
     d.style.display = 'flex';
     document.getElementById('stockConfirmCancel').onclick = () => { d.style.display = 'none'; };
     document.getElementById('stockConfirmOk').onclick    = () => { d.style.display = 'none'; onConfirm(); };
+}
+
+// ── Excessive profit confirm dialog ─────────────────────────
+function showExcessConfirm(details, onConfirm) {
+    let d = document.getElementById('excessConfirmDialog');
+    if (!d) {
+        d = document.createElement('div');
+        d.id = 'excessConfirmDialog';
+        d.style.cssText = `
+            position:fixed;inset:0;z-index:99998;
+            background:rgba(0,0,0,.45);display:flex;
+            align-items:center;justify-content:center;
+        `;
+        d.innerHTML = `
+            <div style="background:#fff;border-radius:14px;padding:28px 26px;
+                        max-width:440px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+                    <div style="width:44px;height:44px;border-radius:50%;background:#fef9c3;
+                                color:#92400e;display:flex;align-items:center;justify-content:center;
+                                font-size:1.4rem;flex-shrink:0">⚠</div>
+                    <div>
+                        <h3 style="font-size:1rem;color:#0f172a;margin:0">অতিরিক্ত লাভ!</h3>
+                        <p style="font-size:.78rem;color:#64748b;margin:2px 0 0">লাভের পরিমাণ ২৫%-এর বেশি — নিশ্চিত করুন</p>
+                    </div>
+                </div>
+                <pre id="excessConfirmLines" style="font-size:.82rem;color:#92400e;
+                    background:#fef9c3;border:1px solid #fde68a;border-radius:8px;
+                    padding:10px 12px;white-space:pre-wrap;margin-bottom:16px;
+                    font-family:inherit;line-height:1.6"></pre>
+                <p style="font-size:.84rem;color:#64748b;margin-bottom:20px">
+                    মূল্য সঠিক আছে? তবুও বিক্রয় সম্পন্ন করবেন?
+                </p>
+                <div style="display:flex;gap:10px;justify-content:flex-end">
+                    <button id="excessConfirmCancel"
+                        style="padding:9px 20px;border-radius:8px;border:1.5px solid #e2e8f0;
+                               background:#fff;cursor:pointer;font-size:.88rem;font-weight:600;color:#475569">
+                        বাতিল — মূল্য ঠিক করুন
+                    </button>
+                    <button id="excessConfirmOk"
+                        style="padding:9px 20px;border-radius:8px;border:none;
+                               background:#d97706;color:#fff;cursor:pointer;font-size:.88rem;font-weight:600">
+                        হ্যাঁ, সঠিক আছে
+                    </button>
+                </div>
+            </div>`;
+        document.body.appendChild(d);
+    }
+    document.getElementById('excessConfirmLines').textContent = details;
+    d.style.display = 'flex';
+    document.getElementById('excessConfirmCancel').onclick = () => { d.style.display = 'none'; };
+    document.getElementById('excessConfirmOk').onclick    = () => { d.style.display = 'none'; onConfirm(); };
 }
 
 // ── Loss confirm dialog ──────────────────────────────────────
