@@ -103,6 +103,29 @@
             <span class="stat-value">{{ $sales->count() }}</span>
         </div>
     </div>
+    @if($grandExtraCost > 0 || $grandLaborCost > 0 || $grandDiscount > 0)
+    <div class="stat-card" style="border-left:4px solid #8b5cf6;background:linear-gradient(135deg,#faf5ff,#ede9fe)">
+        <div class="stat-icon" style="background:#ddd6fe;color:#7c3aed"><i class="fas fa-coins"></i></div>
+        <div class="stat-body">
+            <span class="stat-label" style="color:#6d28d9;font-weight:700">অন্যান্য খরচ / ছাড়</span>
+            @if($grandExtraCost > 0)
+            <span style="font-size:.72rem;color:#7c3aed;display:block;margin-top:2px">
+                অতিরিক্ত: ৳ {{ number_format($grandExtraCost, 0) }}
+            </span>
+            @endif
+            @if($grandLaborCost > 0)
+            <span style="font-size:.72rem;color:#7c3aed;display:block">
+                শ্রমিক: ৳ {{ number_format($grandLaborCost, 0) }}
+            </span>
+            @endif
+            @if($grandDiscount > 0)
+            <span style="font-size:.72rem;color:#15803d;display:block">
+                ছাড়: − ৳ {{ number_format($grandDiscount, 0) }}
+            </span>
+            @endif
+        </div>
+    </div>
+    @endif
 </div>
 
 {{-- Per-item detail table (old-system style) ───────────────── --}}
@@ -125,6 +148,9 @@
                     <th class="tc col-hide-tablet">পরিমাণ কেজি</th>
                     <th class="tr col-hide-tablet">বিক্রয় মূল্য</th>
                     <th class="tr">মোট মূল্য</th>
+                    <th class="tr col-hide-tablet" style="color:#15803d">ছাড়</th>
+                    <th class="tr col-hide-tablet" style="color:#7c3aed">অতি. খরচ</th>
+                    <th class="tr col-hide-tablet" style="color:#7c3aed">শ্রমিক খরচ</th>
                     <th class="tr">জমা</th>
                     <th class="tr">বাকী</th>
                     <th class="tc col-hide-tablet">ইউজার</th>
@@ -132,12 +158,17 @@
                 </tr>
             </thead>
             <tbody>
-                @php $running = 0; $lastSaleId = null; $totalQty = 0; $totalKgSum = 0; @endphp
+                @php
+                    $running = 0; $lastSaleId = null;
+                    $totalQty = 0; $totalKgSum = 0;
+                    $shownSaleIds = [];
+                @endphp
                 @forelse($saleItems as $row)
                 @php
                     $running += $row->amount;
                     $isNewSale = ($row->sale_id !== $lastSaleId);
                     $lastSaleId = $row->sale_id;
+                    $showCosts = $isNewSale; // show extra/labor/discount only once per sale
                     // Extract KG from item name (50kg, 25kg, ৫০কেজি, etc.)
                     preg_match('/(৫০|২৫|50|25)\s*(কেজি|kg)/ui', $row->item_name, $m);
                     $kgPer = isset($m[1]) ? (int) str_replace(['৫০','২৫'],['50','25'], $m[1]) : null;
@@ -163,6 +194,27 @@
                     <td class="tc col-hide-tablet">{{ $totalKg ?? '—' }}</td>
                     <td class="tr col-hide-tablet">{{ number_format($row->rate, 0) }}</td>
                     <td class="tr" style="font-weight:600">{{ number_format($running, 0) }}</td>
+                    {{-- ছাড় --}}
+                    <td class="tr col-hide-tablet" style="color:#15803d;font-size:.8rem">
+                        @if($showCosts && ($row->discount ?? 0) > 0)
+                            − {{ number_format($row->discount, 0) }}
+                        @else —
+                        @endif
+                    </td>
+                    {{-- অতিরিক্ত খরচ --}}
+                    <td class="tr col-hide-tablet" style="color:#7c3aed;font-size:.8rem">
+                        @if($showCosts && ($row->extra_cost ?? 0) > 0)
+                            + {{ number_format($row->extra_cost, 0) }}
+                        @else —
+                        @endif
+                    </td>
+                    {{-- শ্রমিক খরচ --}}
+                    <td class="tr col-hide-tablet" style="color:#7c3aed;font-size:.8rem">
+                        @if($showCosts && ($row->labor_cost ?? 0) > 0)
+                            + {{ number_format($row->labor_cost, 0) }}
+                        @else —
+                        @endif
+                    </td>
                     <td class="tr" style="color:#16a34a">
                         @if($isNewSale) {{ number_format($row->paid_amount, 0) }} @else — @endif
                     </td>
@@ -183,7 +235,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="11" class="empty-row">এই সময়কালে কোনো বিক্রয় নেই</td>
+                    <td colspan="14" class="empty-row">এই সময়কালে কোনো বিক্রয় নেই</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -192,9 +244,18 @@
                 <tr class="tfoot-summary">
                     <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
                     <td class="tc" style="font-weight:800">{{ $totalQty }}</td>
-                    <td class="tc" style="font-weight:800">{{ $totalKgSum ?: '—' }}</td>
+                    <td class="tc col-hide-tablet" style="font-weight:800">{{ $totalKgSum ?: '—' }}</td>
                     <td></td>
                     <td class="tr" style="font-weight:800">{{ number_format($saleItems->sum('amount'), 0) }}</td>
+                    <td class="tr col-hide-tablet" style="color:#15803d;font-weight:700">
+                        {{ $grandDiscount > 0 ? '− '.number_format($grandDiscount, 0) : '—' }}
+                    </td>
+                    <td class="tr col-hide-tablet" style="color:#7c3aed;font-weight:700">
+                        {{ $grandExtraCost > 0 ? '+ '.number_format($grandExtraCost, 0) : '—' }}
+                    </td>
+                    <td class="tr col-hide-tablet" style="color:#7c3aed;font-weight:700">
+                        {{ $grandLaborCost > 0 ? '+ '.number_format($grandLaborCost, 0) : '—' }}
+                    </td>
                     <td class="tr" style="color:#16a34a;font-weight:700">{{ number_format($grandItemPaid, 0) }}</td>
                     <td class="tr" style="color:#dc2626;font-weight:700">{{ number_format($grandDue, 0) }}</td>
                     <td colspan="2"></td>

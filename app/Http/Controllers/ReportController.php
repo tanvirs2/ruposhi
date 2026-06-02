@@ -171,26 +171,34 @@ class ReportController extends Controller
             ->when($request->customer_id, fn($q) => $q->where('sales.customer_id', $request->customer_id))
             ->select(
                 DB::raw('DATE(sales.sale_date) as date'),
-                'sales.id         as sale_id',
-                'sales.created_at as sale_time',
+                'sales.id           as sale_id',
+                'sales.created_at   as sale_time',
                 'sales.paid_amount',
                 'sales.due_amount',
-                'customers.name   as customer_name',
-                'items.name       as item_name',
+                'sales.extra_cost',
+                'sales.labor_cost',
+                'sales.discount',
+                'customers.name     as customer_name',
+                'items.name         as item_name',
                 'sale_items.quantity as qty',
                 'sale_items.price    as rate',
                 'sale_items.subtotal as amount',
-                'users.name       as user_name'
+                'users.name         as user_name'
             )
             ->orderBy('sales.sale_date')
             ->orderBy('sales.id')
             ->orderBy('sale_items.id')
             ->get();
 
+        $grandExtraCost = $itemSales->sum('extra_cost');
+        $grandLaborCost = $itemSales->sum('labor_cost');
+        $grandDiscount  = $itemSales->sum('discount');
+
         return view('reports.sales', compact(
             'sales', 'saleItems', 'customers',
             'standalonePayments', 'noItemSales',
             'grandTotal', 'grandPaid', 'grandItemPaid', 'grandDue', 'grandStandalone',
+            'grandExtraCost', 'grandLaborCost', 'grandDiscount',
             'from', 'to'
         ));
     }
