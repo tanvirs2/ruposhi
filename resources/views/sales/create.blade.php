@@ -603,6 +603,13 @@ function updateRowTotal(id) {
         profitCell.style.display = profitVisible ? '' : 'none';
         profitCell.innerHTML     = `${sign(profitPerUnit)}${Math.abs(profitPerUnit).toFixed(0)}<small style="display:block;font-size:.72rem;font-weight:500;opacity:.75">${sign(profitTotal)}${Math.abs(profitTotal).toFixed(0)} মোট</small>`;
     }
+
+    // ── Loss warning per row ──────────────────────────────────
+    const lossWarn = document.getElementById('loss-warn-' + id);
+    if (lossWarn) {
+        const isLoss = item.priceEntered && item.cost > 0 && item.price < item.cost;
+        lossWarn.style.display = isLoss ? 'inline-flex' : 'none';
+    }
 }
 
 function profitClass(profit, cost) {
@@ -669,6 +676,14 @@ function renderCart() {
                 <input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.priceEntered ? c.price : ''}"
                     style="width:100px"
                     oninput="updatePrice(${c.id},this.value)" class="inline-input">
+                <span id="loss-warn-${c.id}"
+                    style="display:${c.priceEntered && c.cost > 0 && c.price < c.cost ? 'inline-flex' : 'none'};
+                           align-items:center;gap:3px;margin-left:5px;
+                           font-size:.72rem;font-weight:700;color:#b91c1c;
+                           background:#fee2e2;border:1px solid #fca5a5;
+                           border-radius:20px;padding:1px 7px;vertical-align:middle;white-space:nowrap">
+                    ⚠ লোকসান!
+                </span>
             </td>
             <td id="row-profit-${c.id}" class="col-secret ${pClass}" style="${secretDisplay}">${profitStr}</td>
             <td id="row-total-${c.id}">৳ ${(c.qty * c.price).toFixed(0)}</td>
@@ -802,6 +817,7 @@ function checkExtraPayWarning() {
 }
 
 let _stockConfirmPending = false;
+let _lossConfirmPending  = false;
 document.getElementById('saleForm').addEventListener('submit', function(e) {
     // Ensure paid_amount is numeric (never empty)
     const paidEl     = document.getElementById('paidInput');
@@ -841,6 +857,21 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
         return;
     }
     document.getElementById('walkinWarning').style.display = 'none';
+
+    // ── Loss warning on submit ───────────────────────────────
+    const lossItems = cart.filter(c => c.priceEntered && c.cost > 0 && c.price < c.cost);
+    if (lossItems.length && !_lossConfirmPending) {
+        e.preventDefault();
+        const lines = lossItems.map(c =>
+            `• ${c.name}\n  ক্রয়: ৳${c.cost.toFixed(0)}  →  বিক্রয়: ৳${c.price.toFixed(0)}  (লোকসান: ৳${(c.cost - c.price).toFixed(0)}/পিস)`
+        ).join('\n');
+        showLossConfirm(lines, () => {
+            _lossConfirmPending = true;
+            document.getElementById('saleForm').requestSubmit();
+        });
+        return;
+    }
+    _lossConfirmPending = false;
 
     if (_stockConfirmPending) { _stockConfirmPending = false; return; }
     const overItems = cart.filter(c => c.qty > (c.stock ?? Infinity));
@@ -903,6 +934,57 @@ function showStockConfirm(details, onConfirm) {
     d.style.display = 'flex';
     document.getElementById('stockConfirmCancel').onclick = () => { d.style.display = 'none'; };
     document.getElementById('stockConfirmOk').onclick    = () => { d.style.display = 'none'; onConfirm(); };
+}
+
+// ── Loss confirm dialog ──────────────────────────────────────
+function showLossConfirm(details, onConfirm) {
+    let d = document.getElementById('lossConfirmDialog');
+    if (!d) {
+        d = document.createElement('div');
+        d.id = 'lossConfirmDialog';
+        d.style.cssText = `
+            position:fixed;inset:0;z-index:99998;
+            background:rgba(0,0,0,.45);display:flex;
+            align-items:center;justify-content:center;
+        `;
+        d.innerHTML = `
+            <div style="background:#fff;border-radius:14px;padding:28px 26px;
+                        max-width:440px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+                    <div style="width:44px;height:44px;border-radius:50%;background:#fee2e2;
+                                color:#b91c1c;display:flex;align-items:center;justify-content:center;
+                                font-size:1.4rem;flex-shrink:0">⚠</div>
+                    <div>
+                        <h3 style="font-size:1rem;color:#0f172a;margin:0">লোকসানে বিক্রয়!</h3>
+                        <p style="font-size:.78rem;color:#64748b;margin:2px 0 0">ক্রয়মূল্যের নিচে বিক্রয় হচ্ছে</p>
+                    </div>
+                </div>
+                <pre id="lossConfirmLines" style="font-size:.82rem;color:#b91c1c;
+                    background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;
+                    padding:10px 12px;white-space:pre-wrap;margin-bottom:16px;
+                    font-family:inherit;line-height:1.6"></pre>
+                <p style="font-size:.84rem;color:#64748b;margin-bottom:20px">
+                    তবুও কি বিক্রয় সম্পন্ন করবেন?
+                </p>
+                <div style="display:flex;gap:10px;justify-content:flex-end">
+                    <button id="lossConfirmCancel"
+                        style="padding:9px 20px;border-radius:8px;border:1.5px solid #e2e8f0;
+                               background:#fff;cursor:pointer;font-size:.88rem;font-weight:600;color:#475569">
+                        বাতিল — মূল্য ঠিক করুন
+                    </button>
+                    <button id="lossConfirmOk"
+                        style="padding:9px 20px;border-radius:8px;border:none;
+                               background:#dc2626;color:#fff;cursor:pointer;font-size:.88rem;font-weight:600">
+                        হ্যাঁ, লোকসানে বিক্রয় করুন
+                    </button>
+                </div>
+            </div>`;
+        document.body.appendChild(d);
+    }
+    document.getElementById('lossConfirmLines').textContent = details;
+    d.style.display = 'flex';
+    document.getElementById('lossConfirmCancel').onclick = () => { d.style.display = 'none'; };
+    document.getElementById('lossConfirmOk').onclick    = () => { d.style.display = 'none'; onConfirm(); };
 }
 
 // ── Stock alert toast ────────────────────────────────────────
