@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\SaleExtraCost;
 use App\Models\SaleLog;
 use App\Models\Customer;
 use App\Models\Item;
 use App\Models\Stock;
+use App\Models\ExtraCostCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\StoreConfigController;
@@ -42,8 +44,9 @@ class SaleController extends Controller
         $items          = Item::with('stock:id,item_id,quantity')
                             ->select('id','name','sale_price','purchase_price')
                             ->orderBy('name')->get();
-        $paymentMethods = StoreConfigController::getGroupedPaymentMethods();
-        return view('sales.create', compact('customers', 'items', 'paymentMethods'));
+        $paymentMethods   = StoreConfigController::getGroupedPaymentMethods();
+        $extraCategories  = ExtraCostCategory::orderBy('name')->pluck('name');
+        return view('sales.create', compact('customers', 'items', 'paymentMethods', 'extraCategories'));
     }
 
     public function store(Request $request)
@@ -69,8 +72,13 @@ class SaleController extends Controller
         DB::transaction(function () use ($request, &$sale) {
             $total      = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
             $discount   = $request->discount   ?? 0;
-            $extraCost  = $request->extra_cost ?? 0;
             $laborCost  = $request->labor_cost ?? 0;
+
+            // Categorised extra costs — sum all rows
+            $extraCostRows = collect($request->extra_costs ?? [])
+                ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
+            $extraCost = $extraCostRows->sum('amount');
+
             $net        = $total - $discount + $extraCost + $laborCost;
             $due        = max(0, $net - $request->paid_amount);
 
@@ -107,6 +115,15 @@ class SaleController extends Controller
                 Stock::where('item_id', $row['id'])->decrement('quantity', $row['qty']);
             }
 
+            // Save categorised extra costs
+            foreach ($extraCostRows as $row) {
+                SaleExtraCost::create([
+                    'sale_id'       => $sale->id,
+                    'category_name' => $row['category'],
+                    'amount'        => $row['amount'],
+                ]);
+            }
+
             if ($request->customer_id) {
                 $customer = Customer::find($request->customer_id);
                 // Net effect: customer.due += (net - paid)
@@ -120,7 +137,7 @@ class SaleController extends Controller
 
     public function show(Sale $sale)
     {
-        $sale->load('items.item', 'customer', 'user');
+        $sale->load('items.item', 'customer', 'user', 'extraCosts');
         $store = [
             'name'    => \App\Models\StoreConfig::get('store_name', 'আমার চালের দোকান'),
             'owner'   => \App\Models\StoreConfig::get('store_owner', ''),

@@ -21,6 +21,7 @@ use App\Http\Controllers\ExtraExpenseController;
 use App\Http\Controllers\StoreConfigController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ExtraCostCategoryController;
 
 /* ── Auth ──────────────────────────────────────────────────── */
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
@@ -97,6 +98,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/store-config/multimedia/interval',   [StoreConfigController::class, 'updateMultimediaInterval'])->name('store-config.multimedia.interval');
     Route::post('/store-config/multimedia/upload',     [StoreConfigController::class, 'uploadMultimedia'])->name('store-config.multimedia.upload');
     Route::delete('/store-config/multimedia',          [StoreConfigController::class, 'deleteMultimedia'])->name('store-config.multimedia.delete');
+
+    /* Extra Cost Categories */
+    Route::get('/extra-cost-categories',                   [ExtraCostCategoryController::class, 'index'])->name('extra-cost-categories.index');
+    Route::post('/extra-cost-categories',                  [ExtraCostCategoryController::class, 'store'])->name('extra-cost-categories.store');
+    Route::put('/extra-cost-categories/{extraCostCategory}',    [ExtraCostCategoryController::class, 'update'])->name('extra-cost-categories.update');
+    Route::delete('/extra-cost-categories/{extraCostCategory}', [ExtraCostCategoryController::class, 'destroy'])->name('extra-cost-categories.destroy');
 
     /* Profile */
     Route::get('/profile',          [ProfileController::class, 'edit'])->name('profile.edit');

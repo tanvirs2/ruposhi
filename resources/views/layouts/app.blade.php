@@ -273,6 +273,10 @@
                 <span class="nav-label">স্টোর কনফিগ</span>
                 <button type="button" class="info-btn" data-info="ব্যবসার নাম, ঠিকানা, ফোন ও অন্যান্য তথ্য সেটআপ করুন। এই তথ্য চালান ও রিপোর্টে দেখা যাবে।">i</button>
             </a>
+            <a href="{{ route('extra-cost-categories.index') }}" class="nav-item {{ $_seg==='extra-cost-categories' ? 'active' : '' }}">
+                <span class="nav-icon"><i class="fas fa-coins"></i></span>
+                <span class="nav-label">খরচের ক্যাটাগরি</span>
+            </a>
         </div>
     </nav>
 

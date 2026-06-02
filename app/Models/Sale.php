@@ -24,4 +24,9 @@ class Sale extends Model
     {
         return $this->hasMany(SaleItem::class);
     }
+
+    public function extraCosts()
+    {
+        return $this->hasMany(SaleExtraCost::class);
+    }
 }

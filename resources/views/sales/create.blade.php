@@ -119,7 +119,7 @@
                         <span id="totalDisplay">৳ 0.00</span>
                         <button type="button" id="discountToggleBtn" onclick="toggleField('discount')"
                             class="cost-toggle-btn" title="ছাড় যোগ করুন">+ ছাড়</button>
-                        <button type="button" id="extraCostToggleBtn" onclick="toggleField('extra')"
+                        <button type="button" id="extraCostToggleBtn" onclick="toggleExtraCosts()"
                             class="cost-toggle-btn" title="অতিরিক্ত খরচ যোগ করুন">+ খরচ</button>
                         <button type="button" id="laborCostToggleBtn" onclick="toggleField('labor')"
                             class="cost-toggle-btn" title="শ্রমিক খরচ যোগ করুন">+ শ্রমিক</button>
@@ -133,12 +133,25 @@
                         <input type="text" inputmode="decimal" name="discount" id="discountInput" value="0">
                     </div>
                 </div>
+                {{-- Categorised extra costs --}}
                 <div id="extraRow" style="display:none">
-                    <div class="form-group-field" style="margin-bottom:0">
-                        <label>অতিরিক্ত খরচ (৳)
-                            <button type="button" class="info-btn" data-info="পরিবহন, ডেলিভারি বা অন্য কোনো খরচ যা কাস্টমারের বিলে যোগ হবে।">i</button>
-                        </label>
-                        <input type="text" inputmode="decimal" name="extra_cost" id="extraInput" value="0">
+                    <div style="border:1.5px solid #e2e8f0;border-radius:8px;padding:12px 12px 8px;background:#fafafa">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                            <span style="font-size:.82rem;font-weight:700;color:#475569">
+                                <i class="fas fa-coins" style="color:#7c3aed"></i> অতিরিক্ত খরচ
+                            </span>
+                            <a href="{{ route('extra-cost-categories.index') }}" target="_blank"
+                               style="font-size:.72rem;color:var(--accent);text-decoration:none">
+                                <i class="fas fa-gear"></i> ক্যাটাগরি ম্যানেজ
+                            </a>
+                        </div>
+                        <div id="extraCostRows"></div>
+                        <button type="button" onclick="addExtraCostRow()"
+                            style="margin-top:6px;width:100%;padding:7px;border:1.5px dashed #c4b5fd;
+                                   border-radius:6px;background:transparent;color:#7c3aed;
+                                   font-size:.8rem;font-weight:600;cursor:pointer">
+                            <i class="fas fa-plus"></i> আরেকটি খরচ যোগ করুন
+                        </button>
                     </div>
                 </div>
                 <div id="laborRow" style="display:none">
@@ -721,7 +734,7 @@ function updateSummary() {
     const total    = cart.reduce((s, c) => s + c.qty * c.price, 0);
     const totalCost= cart.reduce((s, c) => s + c.qty * c.cost,  0);
     const discount = parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0;
-    const extra    = parseFloat(toEnglishDigits(document.getElementById('extraInput').value))    || 0;
+    const extra    = getExtraCostTotal();
     const labor    = parseFloat(toEnglishDigits(document.getElementById('laborInput').value))    || 0;
     const net      = Math.max(0, total - discount + extra + labor);
     const paid     = parseFloat(toEnglishDigits(document.getElementById('paidInput').value)) || 0;
@@ -756,9 +769,72 @@ function updateSummary() {
     }
 }
 
+// ── Categorised extra costs ──────────────────────────────────
+const extraCategories = @json($extraCategories);
+let extraCostRowCount = 0;
+
+function getExtraCostTotal() {
+    let total = 0;
+    document.querySelectorAll('.extra-cost-amount').forEach(inp => {
+        total += parseFloat(toEnglishDigits(inp.value)) || 0;
+    });
+    return total;
+}
+
+function toggleExtraCosts() {
+    const row = document.getElementById('extraRow');
+    const btn = document.getElementById('extraCostToggleBtn');
+    const open = row.style.display === 'none';
+    row.style.display = open ? 'block' : 'none';
+    btn.textContent   = open ? '✕ খরচ' : '+ খরচ';
+    btn.classList.toggle('active', open);
+    if (open && document.getElementById('extraCostRows').children.length === 0) {
+        addExtraCostRow(); // auto-add first row
+    }
+    if (!open) {
+        // Clear rows and update total
+        document.getElementById('extraCostRows').innerHTML = '';
+        extraCostRowCount = 0;
+        updateSummary();
+    }
+}
+
+function addExtraCostRow() {
+    const idx  = extraCostRowCount++;
+    const opts = extraCategories.map(c =>
+        `<option value="${c}">${c}</option>`
+    ).join('');
+    const row = document.createElement('div');
+    row.id = `ecr-${idx}`;
+    row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px';
+    row.innerHTML = `
+        <select name="extra_costs[${idx}][category]" class="extra-cost-cat form-select"
+            style="flex:1;padding:6px 8px;font-size:.82rem;min-width:0"
+            onchange="updateSummary()">
+            <option value="">-- ক্যাটাগরি --</option>
+            ${opts}
+        </select>
+        <input type="text" inputmode="decimal" name="extra_costs[${idx}][amount]"
+            placeholder="৳ পরিমাণ" value=""
+            class="extra-cost-amount"
+            style="width:90px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem"
+            oninput="updateSummary()">
+        <button type="button" onclick="removeExtraCostRow(${idx})"
+            style="padding:5px 8px;border:none;background:#fee2e2;color:#dc2626;border-radius:6px;cursor:pointer;flex-shrink:0">
+            <i class="fas fa-times"></i>
+        </button>`;
+    document.getElementById('extraCostRows').appendChild(row);
+    row.querySelector('select').focus();
+}
+
+function removeExtraCostRow(idx) {
+    const el = document.getElementById(`ecr-${idx}`);
+    if (el) el.remove();
+    updateSummary();
+}
+
 const fieldMap = {
     discount: { row: 'discountRow', btn: 'discountToggleBtn', inp: 'discountInput', labelOn: '✕ ছাড়',    labelOff: '+ ছাড়' },
-    extra:    { row: 'extraRow',    btn: 'extraCostToggleBtn', inp: 'extraInput',   labelOn: '✕ খরচ',    labelOff: '+ খরচ' },
     labor:    { row: 'laborRow',    btn: 'laborCostToggleBtn', inp: 'laborInput',   labelOn: '✕ শ্রমিক', labelOff: '+ শ্রমিক' },
 };
 
@@ -778,7 +854,7 @@ function toggleField(key) {
 // Backward-compat name (in case anything still calls toggleDiscount)
 function toggleDiscount() { toggleField('discount'); }
 
-['discountInput', 'extraInput', 'laborInput'].forEach(id => {
+['discountInput', 'laborInput'].forEach(id => {
     document.getElementById(id).addEventListener('input', updateSummary);
 });
 document.getElementById('paidInput').addEventListener('input', function() { updateSummary(); checkExtraPayWarning(); });
@@ -792,7 +868,7 @@ function getNet() {
     return Math.max(0,
         cart.reduce((s, c) => s + c.qty * c.price, 0)
         - (parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0)
-        + (parseFloat(toEnglishDigits(document.getElementById('extraInput').value))    || 0)
+        + getExtraCostTotal()
         + (parseFloat(toEnglishDigits(document.getElementById('laborInput').value))    || 0)
     );
 }
@@ -847,7 +923,9 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
     const hasCustomer= !!document.getElementById('customerIdInput').value;
     const paid       = parseFloat(toEnglishDigits(paidEl.value)) || 0;
     const net        = cart.reduce((s, c) => s + c.qty * c.price, 0)
-                       - (parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0);
+                       - (parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0)
+                       + getExtraCostTotal()
+                       + (parseFloat(toEnglishDigits(document.getElementById('laborInput').value)) || 0);
 
     // No items: require customer + paid amount
     if (!hasItems) {

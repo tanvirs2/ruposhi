@@ -131,7 +131,14 @@
                 <td class="tr tfoot-amount" style="color:#15803d">− {{ number_format($sale->discount, 0) }} টাকা</td>
             </tr>
             @endif
-            @if($sale->extra_cost > 0)
+            @foreach($sale->extraCosts as $ec)
+            <tr class="tfoot-row">
+                <td colspan="4" class="tfoot-label">{{ $ec->category_name }}</td>
+                <td class="tr tfoot-amount">+ {{ number_format($ec->amount, 0) }} টাকা</td>
+            </tr>
+            @endforeach
+            @if($sale->extra_cost > 0 && $sale->extraCosts->isEmpty())
+            {{-- Legacy single extra_cost (old records before categorized system) --}}
             <tr class="tfoot-row">
                 <td colspan="4" class="tfoot-label">অতিরিক্ত খরচ</td>
                 <td class="tr tfoot-amount">+ {{ number_format($sale->extra_cost, 0) }} টাকা</td>
