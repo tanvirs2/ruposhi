@@ -149,15 +149,16 @@ class SaleController extends Controller
 
     public function edit(Sale $sale)
     {
-        $sale->load('items.item', 'customer.area');
-        $customers      = Customer::with('area:id,name')
-                            ->select('id','name','phone','due_amount','area_id')
-                            ->orderBy('name')->get();
-        $items          = Item::with('stock:id,item_id,quantity')
-                            ->select('id','name','sale_price','purchase_price')
-                            ->orderBy('name')->get();
-        $paymentMethods = StoreConfigController::getGroupedPaymentMethods();
-        return view('sales.edit', compact('sale', 'customers', 'items', 'paymentMethods'));
+        $sale->load('items.item', 'customer.area', 'extraCosts');
+        $customers       = Customer::with('area:id,name')
+                             ->select('id','name','phone','due_amount','area_id')
+                             ->orderBy('name')->get();
+        $items           = Item::with('stock:id,item_id,quantity')
+                             ->select('id','name','sale_price','purchase_price')
+                             ->orderBy('name')->get();
+        $paymentMethods  = StoreConfigController::getGroupedPaymentMethods();
+        $extraCategories = ExtraCostCategory::orderBy('name')->pluck('name');
+        return view('sales.edit', compact('sale', 'customers', 'items', 'paymentMethods', 'extraCategories'));
     }
 
     public function update(Request $request, Sale $sale)
@@ -196,9 +197,12 @@ class SaleController extends Controller
             $sale->items()->delete();
 
             // ── 4. Calculate new totals ─────────────────────────────
-            $total     = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
-            $discount  = $request->discount   ?? 0;
-            $extraCost = $request->extra_cost ?? 0;
+            $total = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
+            $discount = $request->discount ?? 0;
+
+            $extraCostRows = collect($request->extra_costs ?? [])
+                ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
+            $extraCost = $extraCostRows->sum('amount');
             $net       = $total - $discount + $extraCost;
             $due       = max(0, $net - $request->paid_amount);
 
@@ -213,7 +217,6 @@ class SaleController extends Controller
                 'total_amount'   => $net,
                 'discount'       => $discount,
                 'extra_cost'     => $extraCost,
-                'labor_cost'     => 0,
                 'paid_amount'    => $request->paid_amount,
                 'due_amount'     => $due,
                 'previous_due'   => $previousDue,
@@ -235,6 +238,16 @@ class SaleController extends Controller
                     'subtotal' => $row['qty'] * $row['price'],
                 ]);
                 Stock::where('item_id', $row['id'])->decrement('quantity', $row['qty']);
+            }
+
+            // ── 7b. Replace extra costs ─────────────────────────────
+            $sale->extraCosts()->delete();
+            foreach ($extraCostRows as $row) {
+                SaleExtraCost::create([
+                    'sale_id'       => $sale->id,
+                    'category_name' => $row['category'],
+                    'amount'        => $row['amount'],
+                ]);
             }
 
             // ── 8. Apply new customer due effect ────────────────────
