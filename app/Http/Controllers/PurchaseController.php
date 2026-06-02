@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
+use App\Models\PurchaseExtraCost;
+use App\Models\ExtraCostCategory;
 use App\Models\Supplier;
 use App\Models\Item;
 use App\Models\Stock;
@@ -39,8 +41,9 @@ class PurchaseController extends Controller
         $items          = Item::with('stock:id,item_id,quantity')
                             ->select('id','name','purchase_price')
                             ->orderBy('name')->get();
-        $paymentMethods = StoreConfigController::getGroupedPaymentMethods();
-        return view('purchases.create', compact('suppliers', 'items', 'paymentMethods'));
+        $paymentMethods  = StoreConfigController::getGroupedPaymentMethods();
+        $extraCategories = ExtraCostCategory::orderBy('name')->pluck('name');
+        return view('purchases.create', compact('suppliers', 'items', 'paymentMethods', 'extraCategories'));
     }
 
     public function store(Request $request)
@@ -57,18 +60,18 @@ class PurchaseController extends Controller
 
         $purchase = null;
         DB::transaction(function () use ($request, &$purchase) {
-            $itemsTotal = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
-            $extraCost  = $request->extra_cost ?? 0;
-            $laborCost  = $request->labor_cost ?? 0;
-            $total      = $itemsTotal + $extraCost + $laborCost;
-            $due        = $total - $request->paid_amount; // allows negative (credit/advance)
+            $itemsTotal    = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
+            $extraCostRows = collect($request->extra_costs ?? [])
+                ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
+            $extraCost = $extraCostRows->sum('amount');
+            $total     = $itemsTotal + $extraCost;
+            $due       = $total - $request->paid_amount; // allows negative (credit/advance)
 
             $purchase = Purchase::create([
                 'supplier_id'    => $request->supplier_id ?: null,
                 'user_id'        => auth()->id(),
                 'total_amount'   => $total,
                 'extra_cost'     => $extraCost,
-                'labor_cost'     => $laborCost,
                 'paid_amount'    => $request->paid_amount,
                 'due_amount'     => $due,
                 'payment_method' => $request->payment_method ?? 'নগদ',
@@ -96,6 +99,15 @@ class PurchaseController extends Controller
                 Item::where('id', $row['id'])->update(['purchase_price' => $row['price']]);
             }
 
+            // Save categorised extra costs
+            foreach ($extraCostRows as $row) {
+                PurchaseExtraCost::create([
+                    'purchase_id'   => $purchase->id,
+                    'category_name' => $row['category'],
+                    'amount'        => $row['amount'],
+                ]);
+            }
+
             if ($request->supplier_id) {
                 $supplier = Supplier::find($request->supplier_id);
                 // net effect: supplier.due += (total - paid) — allows negative credit
@@ -108,14 +120,15 @@ class PurchaseController extends Controller
 
     public function edit(Purchase $purchase)
     {
-        $purchase->load('items.item', 'supplier', 'user');
+        $purchase->load('items.item', 'supplier', 'user', 'extraCosts');
         $suppliers      = Supplier::select('id','name','phone','address','due_amount')
                             ->orderBy('name')->get();
         $items          = Item::with('stock:id,item_id,quantity')
                             ->select('id','name','purchase_price')
                             ->orderBy('name')->get();
-        $paymentMethods = StoreConfigController::getGroupedPaymentMethods();
-        return view('purchases.edit', compact('purchase', 'suppliers', 'items', 'paymentMethods'));
+        $paymentMethods  = StoreConfigController::getGroupedPaymentMethods();
+        $extraCategories = ExtraCostCategory::orderBy('name')->pluck('name');
+        return view('purchases.edit', compact('purchase', 'suppliers', 'items', 'paymentMethods', 'extraCategories'));
     }
 
     public function update(Request $request, Purchase $purchase)
@@ -145,17 +158,17 @@ class PurchaseController extends Controller
             $purchase->items()->delete();
 
             // 3. Recalculate & save
-            $itemsTotal = collect($request->items)->sum(fn($i) => $i['qty'] * $i['price']);
-            $extraCost  = $request->extra_cost ?? 0;
-            $laborCost  = $request->labor_cost ?? 0;
-            $total      = $itemsTotal + $extraCost + $laborCost;
-            $due        = $total - $request->paid_amount; // allows negative (credit/advance)
+            $itemsTotal    = collect($request->items)->sum(fn($i) => $i['qty'] * $i['price']);
+            $extraCostRows = collect($request->extra_costs ?? [])
+                ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
+            $extraCost = $extraCostRows->sum('amount');
+            $total     = $itemsTotal + $extraCost;
+            $due       = $total - $request->paid_amount;
 
             $purchase->update([
                 'supplier_id'    => $request->supplier_id ?: null,
                 'total_amount'   => $total,
                 'extra_cost'     => $extraCost,
-                'labor_cost'     => $laborCost,
                 'paid_amount'    => $request->paid_amount,
                 'due_amount'     => $due,
                 'payment_method' => $request->payment_method ?? 'নগদ',
@@ -177,6 +190,16 @@ class PurchaseController extends Controller
                 Item::where('id', $row['id'])->update(['purchase_price' => $row['price']]);
             }
 
+            // 4b. Replace extra costs
+            $purchase->extraCosts()->delete();
+            foreach ($extraCostRows as $row) {
+                PurchaseExtraCost::create([
+                    'purchase_id'   => $purchase->id,
+                    'category_name' => $row['category'],
+                    'amount'        => $row['amount'],
+                ]);
+            }
+
             // 5. Re-apply supplier due (allows negative credit)
             if ($request->supplier_id) {
                 $supplier = Supplier::find($request->supplier_id);
@@ -189,7 +212,7 @@ class PurchaseController extends Controller
 
     public function show(Purchase $purchase)
     {
-        $purchase->load('items.item', 'supplier', 'user');
+        $purchase->load('items.item', 'supplier', 'user', 'extraCosts');
         return view('purchases.show', compact('purchase'));
     }
 

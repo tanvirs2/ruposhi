@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Purchase extends Model
 {
-    protected $fillable = ['supplier_id', 'user_id', 'total_amount', 'extra_cost', 'labor_cost', 'paid_amount', 'due_amount', 'payment_method', 'notes', 'purchase_date'];
+    protected $fillable = ['supplier_id', 'user_id', 'total_amount', 'extra_cost', 'paid_amount', 'due_amount', 'payment_method', 'notes', 'purchase_date'];
 
     protected $casts = ['purchase_date' => 'date'];
 
@@ -23,5 +23,10 @@ class Purchase extends Model
     public function items()
     {
         return $this->hasMany(PurchaseItem::class);
+    }
+
+    public function extraCosts()
+    {
+        return $this->hasMany(PurchaseExtraCost::class);
     }
 }

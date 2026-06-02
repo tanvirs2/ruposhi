@@ -38,7 +38,7 @@ class SupplierController extends Controller
 
         // Purchases in range — expand to item-level rows
         $purchases = $supplier->purchases()
-            ->with('items.item')
+            ->with('items.item', 'extraCosts')
             ->whereBetween('purchase_date', [$from, $to])
             ->orderBy('purchase_date')
             ->orderBy('created_at')
@@ -65,8 +65,25 @@ class SupplierController extends Controller
                 ]);
                 $iIdx++;
             }
-            // Extra cost row (debit)
-            if (($p->extra_cost ?? 0) > 0) {
+            // Extra cost rows (categorised — new system)
+            if ($p->extraCosts->isNotEmpty()) {
+                foreach ($p->extraCosts as $ecIdx => $ec) {
+                    $rows->push((object)[
+                        'date'        => $p->purchase_date,
+                        'sort_key'    => $baseKey . '_e' . sprintf('%04d', $ecIdx),
+                        'type'        => 'extra_cost',
+                        'label'       => $ec->category_name,
+                        'ref'         => '#PUR-' . str_pad($p->id, 4, '0', STR_PAD_LEFT),
+                        'qty'         => 0,
+                        'rate'        => 0,
+                        'debit'       => $ec->amount,
+                        'credit'      => 0,
+                        'purchase_id' => $p->id,
+                        'link'        => route('purchases.show', $p),
+                    ]);
+                }
+            } elseif (($p->extra_cost ?? 0) > 0) {
+                // Legacy fallback: old record without extraCosts rows
                 $rows->push((object)[
                     'date'        => $p->purchase_date,
                     'sort_key'    => $baseKey . '_e',
@@ -76,22 +93,6 @@ class SupplierController extends Controller
                     'qty'         => 0,
                     'rate'        => 0,
                     'debit'       => $p->extra_cost,
-                    'credit'      => 0,
-                    'purchase_id' => $p->id,
-                    'link'        => route('purchases.show', $p),
-                ]);
-            }
-            // Labor cost row (debit)
-            if (($p->labor_cost ?? 0) > 0) {
-                $rows->push((object)[
-                    'date'        => $p->purchase_date,
-                    'sort_key'    => $baseKey . '_l',
-                    'type'        => 'labor_cost',
-                    'label'       => 'শ্রমিক খরচ',
-                    'ref'         => '#PUR-' . str_pad($p->id, 4, '0', STR_PAD_LEFT),
-                    'qty'         => 0,
-                    'rate'        => 0,
-                    'debit'       => $p->labor_cost,
                     'credit'      => 0,
                     'purchase_id' => $p->id,
                     'link'        => route('purchases.show', $p),
