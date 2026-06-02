@@ -71,15 +71,14 @@ class SaleController extends Controller
         $sale = null;
         DB::transaction(function () use ($request, &$sale) {
             $total      = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
-            $discount   = $request->discount   ?? 0;
-            $laborCost  = $request->labor_cost ?? 0;
+            $discount   = $request->discount ?? 0;
 
             // Categorised extra costs — sum all rows
             $extraCostRows = collect($request->extra_costs ?? [])
                 ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
             $extraCost = $extraCostRows->sum('amount');
 
-            $net        = $total - $discount + $extraCost + $laborCost;
+            $net        = $total - $discount + $extraCost;
             $due        = max(0, $net - $request->paid_amount);
 
             // Capture the customer's outstanding balance before this sale
@@ -93,7 +92,7 @@ class SaleController extends Controller
                 'total_amount' => $net,
                 'discount'     => $discount,
                 'extra_cost'   => $extraCost,
-                'labor_cost'   => $laborCost,
+                'labor_cost'   => 0,
                 'paid_amount'  => $request->paid_amount,
                 'due_amount'   => $due,
                 'previous_due' => $previousDue,
@@ -201,8 +200,7 @@ class SaleController extends Controller
             $total     = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
             $discount  = $request->discount   ?? 0;
             $extraCost = $request->extra_cost ?? 0;
-            $laborCost = $request->labor_cost ?? 0;
-            $net       = $total - $discount + $extraCost + $laborCost;
+            $net       = $total - $discount + $extraCost;
             $due       = max(0, $net - $request->paid_amount);
 
             // ── 5. Capture previous_due AFTER reversing old effects ─
@@ -216,7 +214,7 @@ class SaleController extends Controller
                 'total_amount'   => $net,
                 'discount'       => $discount,
                 'extra_cost'     => $extraCost,
-                'labor_cost'     => $laborCost,
+                'labor_cost'     => 0,
                 'paid_amount'    => $request->paid_amount,
                 'due_amount'     => $due,
                 'previous_due'   => $previousDue,

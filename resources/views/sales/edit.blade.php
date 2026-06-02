@@ -133,11 +133,6 @@
                     <input type="text" inputmode="decimal" name="extra_cost" id="extraInput"
                         value="{{ $sale->extra_cost ?? 0 }}">
                 </div>
-                <div class="form-group-field">
-                    <label>শ্রমিক খরচ (৳)</label>
-                    <input type="text" inputmode="decimal" name="labor_cost" id="laborInput"
-                        value="{{ $sale->labor_cost ?? 0 }}">
-                </div>
 
                 <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0.00</span></div>
 
@@ -514,7 +509,6 @@ function getNet() {
         cart.reduce((s, c) => s + c.qty * c.price, 0)
         - (parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0)
         + (parseFloat(toEnglishDigits(document.getElementById('extraInput').value))    || 0)
-        + (parseFloat(toEnglishDigits(document.getElementById('laborInput').value))    || 0)
     );
 }
 
@@ -523,8 +517,7 @@ function updateSummary() {
     const totalCost = cart.reduce((s, c) => s + c.qty * c.cost,  0);
     const discount  = parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0;
     const extra     = parseFloat(toEnglishDigits(document.getElementById('extraInput').value))    || 0;
-    const labor     = parseFloat(toEnglishDigits(document.getElementById('laborInput').value))    || 0;
-    const net       = Math.max(0, total - discount + extra + labor);
+    const net       = Math.max(0, total - discount + extra);
     const paid      = parseFloat(toEnglishDigits(document.getElementById('paidInput').value)) || 0;
     const due       = Math.max(0, net - paid);
     const profit    = net - totalCost;
@@ -555,7 +548,7 @@ function updateSummary() {
     if (footTotal) footTotal.textContent = '৳ ' + total.toFixed(0);
 }
 
-['discountInput', 'extraInput', 'laborInput'].forEach(id => {
+['discountInput', 'extraInput'].forEach(id => {
     document.getElementById(id).addEventListener('input', function() {
         if (prevDuePay > 0) document.getElementById('paidInput').value = (getNet() + prevDuePay).toFixed(0);
         updateSummary();

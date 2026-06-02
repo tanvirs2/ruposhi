@@ -121,8 +121,6 @@
                             class="cost-toggle-btn" title="ছাড় যোগ করুন">+ ছাড়</button>
                         <button type="button" id="extraCostToggleBtn" onclick="toggleExtraCosts()"
                             class="cost-toggle-btn" title="অতিরিক্ত খরচ যোগ করুন">+ খরচ</button>
-                        <button type="button" id="laborCostToggleBtn" onclick="toggleField('labor')"
-                            class="cost-toggle-btn" title="শ্রমিক খরচ যোগ করুন">+ শ্রমিক</button>
                     </span>
                 </div>
                 <div id="discountRow" style="display:none">
@@ -152,14 +150,6 @@
                                    font-size:.8rem;font-weight:600;cursor:pointer">
                             <i class="fas fa-plus"></i> আরেকটি খরচ যোগ করুন
                         </button>
-                    </div>
-                </div>
-                <div id="laborRow" style="display:none">
-                    <div class="form-group-field" style="margin-bottom:0">
-                        <label>শ্রমিক খরচ (৳)
-                            <button type="button" class="info-btn" data-info="মাল লোডিং/আনলোডিং বা শ্রমিকের মজুরি কাস্টমারের বিলে যোগ হবে।">i</button>
-                        </label>
-                        <input type="text" inputmode="decimal" name="labor_cost" id="laborInput" value="0">
                     </div>
                 </div>
                 <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0.00</span></div>
@@ -735,11 +725,10 @@ function updateSummary() {
     const totalCost= cart.reduce((s, c) => s + c.qty * c.cost,  0);
     const discount = parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0;
     const extra    = getExtraCostTotal();
-    const labor    = parseFloat(toEnglishDigits(document.getElementById('laborInput').value))    || 0;
-    const net      = Math.max(0, total - discount + extra + labor);
+    const net      = Math.max(0, total - discount + extra);
     const paid     = parseFloat(toEnglishDigits(document.getElementById('paidInput').value)) || 0;
     const due      = Math.max(0, net - paid);
-    const profit   = net - totalCost - extra - labor;  // extras don't count as profit
+    const profit   = net - totalCost - extra;  // extras don't count as profit
     const marginPct= totalCost > 0 ? (profit / totalCost * 100) : 0;
 
     // Update cart tfoot totals
@@ -834,8 +823,7 @@ function removeExtraCostRow(idx) {
 }
 
 const fieldMap = {
-    discount: { row: 'discountRow', btn: 'discountToggleBtn', inp: 'discountInput', labelOn: '✕ ছাড়',    labelOff: '+ ছাড়' },
-    labor:    { row: 'laborRow',    btn: 'laborCostToggleBtn', inp: 'laborInput',   labelOn: '✕ শ্রমিক', labelOff: '+ শ্রমিক' },
+    discount: { row: 'discountRow', btn: 'discountToggleBtn', inp: 'discountInput', labelOn: '✕ ছাড়', labelOff: '+ ছাড়' },
 };
 
 function toggleField(key) {
@@ -854,9 +842,7 @@ function toggleField(key) {
 // Backward-compat name (in case anything still calls toggleDiscount)
 function toggleDiscount() { toggleField('discount'); }
 
-['discountInput', 'laborInput'].forEach(id => {
-    document.getElementById(id).addEventListener('input', updateSummary);
-});
+document.getElementById('discountInput').addEventListener('input', updateSummary);
 document.getElementById('paidInput').addEventListener('input', function() { updateSummary(); checkExtraPayWarning(); });
 
 // Ensure paid_amount always has a numeric value before submit
@@ -869,7 +855,6 @@ function getNet() {
         cart.reduce((s, c) => s + c.qty * c.price, 0)
         - (parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0)
         + getExtraCostTotal()
-        + (parseFloat(toEnglishDigits(document.getElementById('laborInput').value))    || 0)
     );
 }
 
@@ -924,8 +909,7 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
     const paid       = parseFloat(toEnglishDigits(paidEl.value)) || 0;
     const net        = cart.reduce((s, c) => s + c.qty * c.price, 0)
                        - (parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0)
-                       + getExtraCostTotal()
-                       + (parseFloat(toEnglishDigits(document.getElementById('laborInput').value)) || 0);
+                       + getExtraCostTotal();
 
     // No items: require customer + paid amount
     if (!hasItems) {
