@@ -56,8 +56,6 @@
                         <tr>
                             <th>#</th>
                             <th>আইটেমের নাম</th>
-                            <th>ব্র্যান্ড</th>
-                            <th>টাইপ</th>
                             <th>ক্যাটাগরি</th>
                             <th>ক্রয় মূল্য</th>
                             <th>বিক্রয় মূল্য</th>
@@ -75,14 +73,12 @@
                                     <div class="mono" style="font-size:.75rem;color:#94a3b8">{{ $s->item->code }}</div>
                                 @endif
                             </td>
-                            <td>{{ $s->item->itemBrand?->name ?? '—' }}</td>
-                            <td>{{ $s->item->itemType?->name ?? '—' }}</td>
                             <td>{{ $s->item->category?->name ?? '—' }}</td>
                             <td>৳ {{ number_format($s->item->purchase_price, 2) }}</td>
                             <td>৳ {{ number_format($s->item->sale_price, 2) }}</td>
                             <td>
                                 <strong style="font-size:1rem">{{ number_format($s->quantity, 0) }}</strong>
-                                <span style="color:#64748b;font-size:.8rem"> {{ $s->item->unitType?->short ?? $s->item->unit }}</span>
+                                <span style="color:#64748b;font-size:.8rem"> {{ $s->item->unit }}</span>
                             </td>
                             <td>
                                 @if($s->quantity <= 0)

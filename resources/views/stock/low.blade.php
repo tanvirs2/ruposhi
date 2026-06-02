@@ -41,7 +41,6 @@
                 <tr>
                     <th>#</th>
                     <th>আইটেমের নাম</th>
-                    <th>ব্র্যান্ড</th>
                     <th>ক্যাটাগরি</th>
                     <th class="tc">
                         {{ $filterDate === now()->toDateString() ? 'আজকের' : \Carbon\Carbon::parse($filterDate)->format('d/m') }} বিক্রয়
@@ -59,7 +58,7 @@
                 @forelse($stock as $s)
                 @php
                     $itemId   = $s->item_id;
-                    $unit     = $s->item->unitType?->short ?? $s->item->unit ?? '';
+                    $unit     = $s->item->unit ?? '';
                     $todayQty = $todaySales[$itemId] ?? 0;
                     $totalQty = $totalSales[$itemId] ?? 0;
                     $stockVal = $s->quantity * ($s->item->purchase_price ?? 0);
@@ -68,7 +67,6 @@
                 <tr style="{{ $s->quantity <= 0 ? 'background:#fff5f5' : 'background:#fffbeb' }}">
                     <td class="mono">{{ $loop->iteration }}</td>
                     <td><strong>{{ $s->item->name }}</strong></td>
-                    <td>{{ $s->item->itemBrand?->name ?? '—' }}</td>
                     <td>{{ $s->item->category?->name ?? '—' }}</td>
                     <td class="tc">
                         @if($todayQty > 0)

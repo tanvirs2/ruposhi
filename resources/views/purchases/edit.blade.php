@@ -185,7 +185,7 @@ $existingItems = $purchase->items->map(fn($pi) => [
     'name'         => $pi->item->name ?? '?',
     'price'        => floatval($pi->price),
     'qty'          => floatval($pi->quantity),
-    'currentStock' => floatval(($pi->item->stock->quantity ?? 0)) + floatval($pi->quantity), // add back sold qty
+    'currentStock' => floatval(($pi->item->stock?->quantity ?? 0)) + floatval($pi->quantity), // add back sold qty
     'lastPrice'    => floatval($pi->price),
     'priceEntered' => true,
 ]);

@@ -42,7 +42,6 @@
                 <tr>
                     <th>#</th>
                     <th>আইটেম</th>
-                    <th>ব্র্যান্ড</th>
                     <th>ক্যাটাগরি</th>
                     <th class="tc">সর্বশেষ আপডেট</th>
                     <th class="tc">
@@ -63,7 +62,7 @@
                 @forelse($stock as $s)
                 @php
                     $itemId      = $s->item_id;
-                    $unit        = $s->item->unitType?->short ?? $s->item->unit ?? '';
+                    $unit        = $s->item->unit ?? '';
                     $todayQty    = $todaySales[$itemId] ?? 0;
                     $totalQty    = $totalSales[$itemId] ?? 0;
                     $stockVal     = $s->quantity * ($s->item->purchase_price ?? 0);
@@ -81,7 +80,6 @@
                             <span class="badge-new-stock">নতুন</span>
                         @endif
                     </td>
-                    <td>{{ $s->item->itemBrand?->name ?? '—' }}</td>
                     <td>{{ $s->item->category?->name ?? '—' }}</td>
                     <td class="tc" style="font-size:.78rem;white-space:nowrap">
                         @if($updatedAt)

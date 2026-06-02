@@ -280,7 +280,7 @@ $existingItems = $sale->items->map(fn($si) => [
     'price'        => floatval($si->price),
     'defaultPrice' => floatval($si->price),
     'qty'          => floatval($si->quantity),
-    'stock'        => floatval($si->item->stock->quantity ?? 0) + floatval($si->quantity),
+    'stock'        => floatval($si->item->stock?->quantity ?? 0) + floatval($si->quantity),
     // add back the sold qty so stock shows correctly
 ]);
 @endphp
