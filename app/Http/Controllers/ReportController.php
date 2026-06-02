@@ -175,8 +175,7 @@ class ReportController extends Controller
                 'sales.created_at   as sale_time',
                 'sales.paid_amount',
                 'sales.due_amount',
-                'sales.extra_cost',
-                'sales.labor_cost',
+                DB::raw('(sales.extra_cost + COALESCE(sales.labor_cost, 0)) as extra_cost'),
                 'sales.discount',
                 'customers.name     as customer_name',
                 'items.name         as item_name',
@@ -191,14 +190,13 @@ class ReportController extends Controller
             ->get();
 
         $grandExtraCost = $itemSales->sum('extra_cost');
-        $grandLaborCost = $itemSales->sum('labor_cost');
         $grandDiscount  = $itemSales->sum('discount');
 
         return view('reports.sales', compact(
             'sales', 'saleItems', 'customers',
             'standalonePayments', 'noItemSales',
             'grandTotal', 'grandPaid', 'grandItemPaid', 'grandDue', 'grandStandalone',
-            'grandExtraCost', 'grandLaborCost', 'grandDiscount',
+            'grandExtraCost', 'grandDiscount',
             'from', 'to'
         ));
     }
@@ -448,10 +446,10 @@ class ReportController extends Controller
         // ── Revenue ───────────────────────────────────────────────
         $grossSales = Sale::whereBetween('sale_date', [$from, $to])->sum('total_amount');
         $discounts  = Sale::whereBetween('sale_date', [$from, $to])->sum('discount');
-        $extraCost  = Sale::whereBetween('sale_date', [$from, $to])->sum('extra_cost');
-        $laborCost  = Sale::whereBetween('sale_date', [$from, $to])->sum('labor_cost');
-        // Extras & labor are pass-through (collected from customer, paid out) — exclude from net revenue
-        $netRevenue = $grossSales - $extraCost - $laborCost;
+        $extraCost  = Sale::whereBetween('sale_date', [$from, $to])->selectRaw('SUM(extra_cost + COALESCE(labor_cost,0))')->value(DB::raw('SUM(extra_cost + COALESCE(labor_cost,0))'));
+        $laborCost  = 0; // merged into extraCost
+        // Extras are pass-through (collected from customer, paid out) — exclude from net revenue
+        $netRevenue = $grossSales - $extraCost;
 
         // ── COGS (cost of goods sold) ─────────────────────────────
         $cogs = DB::table('sale_items')

@@ -101,12 +101,6 @@
         <span style="color:#dc2626">− ৳ {{ number_format($extraCost, 2) }}</span>
     </div>
     @endif
-    @if(($laborCost ?? 0) > 0)
-    <div class="pl-row pl-row-sub">
-        <span>বাদ: শ্রমিক খরচ (pass-through)</span>
-        <span style="color:#dc2626">− ৳ {{ number_format($laborCost, 2) }}</span>
-    </div>
-    @endif
     <div class="pl-row pl-row-total">
         <span>নিট বিক্রয় আয়</span>
         <span>৳ {{ number_format($netRevenue, 2) }}</span>

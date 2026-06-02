@@ -103,19 +103,14 @@
             <span class="stat-value">{{ $sales->count() }}</span>
         </div>
     </div>
-    @if($grandExtraCost > 0 || $grandLaborCost > 0 || $grandDiscount > 0)
+    @if($grandExtraCost > 0 || $grandDiscount > 0)
     <div class="stat-card" style="border-left:4px solid #8b5cf6;background:linear-gradient(135deg,#faf5ff,#ede9fe)">
         <div class="stat-icon" style="background:#ddd6fe;color:#7c3aed"><i class="fas fa-coins"></i></div>
         <div class="stat-body">
             <span class="stat-label" style="color:#6d28d9;font-weight:700">অন্যান্য খরচ / ছাড়</span>
             @if($grandExtraCost > 0)
             <span style="font-size:.72rem;color:#7c3aed;display:block;margin-top:2px">
-                অতিরিক্ত: ৳ {{ number_format($grandExtraCost, 0) }}
-            </span>
-            @endif
-            @if($grandLaborCost > 0)
-            <span style="font-size:.72rem;color:#7c3aed;display:block">
-                শ্রমিক: ৳ {{ number_format($grandLaborCost, 0) }}
+                অতি. খরচ: ৳ {{ number_format($grandExtraCost, 0) }}
             </span>
             @endif
             @if($grandDiscount > 0)
@@ -150,7 +145,6 @@
                     <th class="tr">মোট মূল্য</th>
                     <th class="tr col-hide-tablet" style="color:#15803d">ছাড়</th>
                     <th class="tr col-hide-tablet" style="color:#7c3aed">অতি. খরচ</th>
-                    <th class="tr col-hide-tablet" style="color:#7c3aed">শ্রমিক খরচ</th>
                     <th class="tr">জমা</th>
                     <th class="tr">বাকী</th>
                     <th class="tc col-hide-tablet">ইউজার</th>
@@ -208,13 +202,6 @@
                         @else —
                         @endif
                     </td>
-                    {{-- শ্রমিক খরচ --}}
-                    <td class="tr col-hide-tablet" style="color:#7c3aed;font-size:.8rem">
-                        @if($showCosts && ($row->labor_cost ?? 0) > 0)
-                            + {{ number_format($row->labor_cost, 0) }}
-                        @else —
-                        @endif
-                    </td>
                     <td class="tr" style="color:#16a34a">
                         @if($isNewSale) {{ number_format($row->paid_amount, 0) }} @else — @endif
                     </td>
@@ -235,7 +222,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="14" class="empty-row">এই সময়কালে কোনো বিক্রয় নেই</td>
+                    <td colspan="13" class="empty-row">এই সময়কালে কোনো বিক্রয় নেই</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -252,9 +239,6 @@
                     </td>
                     <td class="tr col-hide-tablet" style="color:#7c3aed;font-weight:700">
                         {{ $grandExtraCost > 0 ? '+ '.number_format($grandExtraCost, 0) : '—' }}
-                    </td>
-                    <td class="tr col-hide-tablet" style="color:#7c3aed;font-weight:700">
-                        {{ $grandLaborCost > 0 ? '+ '.number_format($grandLaborCost, 0) : '—' }}
                     </td>
                     <td class="tr" style="color:#16a34a;font-weight:700">{{ number_format($grandItemPaid, 0) }}</td>
                     <td class="tr" style="color:#dc2626;font-weight:700">{{ number_format($grandDue, 0) }}</td>
