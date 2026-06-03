@@ -414,6 +414,20 @@
 
             <div class="topbar-divider"></div>
 
+            {{-- Chat Icon --}}
+            <div class="chat-topbar-wrap" id="chatTopbarWrap">
+                <a href="{{ route('chat.index') }}" class="ctrl-btn chat-icon-btn" id="chatIconBtn" title="চ্যাট">
+                    <i class="fas fa-comments"></i>
+                    @if($chatUnread > 0)
+                        <span class="chat-badge" id="chatBadge">{{ $chatUnread > 9 ? '9+' : $chatUnread }}</span>
+                    @else
+                        <span class="chat-badge" id="chatBadge" style="display:none">0</span>
+                    @endif
+                </a>
+            </div>
+
+            <div class="topbar-divider"></div>
+
             <div class="search-box">
                 <i class="fas fa-search"></i>
                 <input type="text" placeholder="অনুসন্ধান করুন..." id="globalSearch">

@@ -20,6 +20,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ExtraCostCategoryController;
 use App\Http\Controllers\SmsController;
+use App\Http\Controllers\ChatController;
 
 /* ── Auth ──────────────────────────────────────────────────── */
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
@@ -57,6 +58,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('purchases', PurchaseController::class);
     Route::resource('employees', EmployeeController::class);
     Route::resource('expenses',  ExtraExpenseController::class);
+
+    // Chat
+    Route::get('/chat',               [ChatController::class, 'index'])->name('chat.index');
+    Route::post('/chat/send',         [ChatController::class, 'send'])->name('chat.send');
+    Route::get('/chat/poll',          [ChatController::class, 'poll'])->name('chat.poll');
+    Route::get('/chat/unread',        [ChatController::class, 'unread'])->name('chat.unread');
 
     // SMS
     Route::get('/sms',                          [SmsController::class, 'index'])->name('sms.index');

@@ -5,6 +5,8 @@ namespace App\View\Composers;
 use App\Models\Stock;
 use App\Models\Customer;
 use App\Models\Supplier;
+use App\Models\ChatMessage;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class NotificationComposer
@@ -33,6 +35,9 @@ class NotificationComposer
                     + ($notifCustomersDue  > 0 ? 1 : 0)
                     + ($notifSuppliersDue  > 0 ? 1 : 0);
 
+        // Chat unread
+        $chatUnread = Auth::check() ? ChatMessage::unreadCount(Auth::id()) : 0;
+
         $view->with([
             'notifOutOfStock'       => $notifOutOfStock,
             'notifLowStock'         => $notifLowStock,
@@ -41,6 +46,7 @@ class NotificationComposer
             'notifSuppliersDue'     => $notifSuppliersDue,
             'notifTotalSupplierDue' => $notifTotalSupplierDue,
             'notifTotal'            => $notifTotal,
+            'chatUnread'            => $chatUnread,
         ]);
     }
 }
