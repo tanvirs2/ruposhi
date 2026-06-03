@@ -18,7 +18,10 @@ class ChatController extends Controller
     public function index(Request $request)
     {
         $me    = Auth::user();
-        $users = User::where('id', '!=', $me->id)->orderBy('name')->get();
+        // Only colleagues in the same shop appear in the chat list
+        $users = User::where('id', '!=', $me->id)
+            ->where('shop_id', $me->shop_id)
+            ->orderBy('name')->get();
 
         // Build user list with last message + unread count
         $userList = $users->map(function ($u) use ($me) {

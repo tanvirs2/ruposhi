@@ -19,6 +19,7 @@ class DashboardController extends Controller
             'today_sales' => Sale::whereDate('sale_date', today())->sum('total_amount'),
             'stock_value' => DB::table('stock')
                 ->join('items', 'stock.item_id', '=', 'items.id')
+                ->where('stock.shop_id', auth()->user()->shop_id)
                 ->sum(DB::raw('stock.quantity * items.purchase_price')),
         ];
 

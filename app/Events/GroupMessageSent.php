@@ -17,11 +17,12 @@ class GroupMessageSent implements ShouldBroadcastNow
     public function __construct(public GroupChatMessage $message) {}
 
     /**
-     * Broadcast on every user's private channel so all receive it.
+     * Broadcast only to users in the same shop as the message.
      */
     public function broadcastOn(): array
     {
-        return User::pluck('id')
+        return User::where('shop_id', $this->message->shop_id)
+            ->pluck('id')
             ->map(fn($id) => new PrivateChannel('chat.user.' . $id))
             ->all();
     }

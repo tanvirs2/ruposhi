@@ -168,6 +168,7 @@ class ReportController extends Controller
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
             ->selectRaw('
                 SUM(sale_items.subtotal) as revenue,
                 SUM(items.purchase_price * sale_items.quantity) as cost
@@ -193,6 +194,7 @@ class ReportController extends Controller
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
             ->selectRaw('
                 items.name,
                 items.purchase_price,
@@ -299,6 +301,7 @@ class ReportController extends Controller
             ->leftJoin('customers', 'sales.customer_id', '=', 'customers.id')
             ->leftJoin('users',     'sales.user_id',     '=', 'users.id')
             ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
             ->when($request->customer_id, fn($q) => $q->where('sales.customer_id', $request->customer_id))
             ->select(
                 DB::raw('DATE(sales.sale_date) as date'),
@@ -328,6 +331,7 @@ class ReportController extends Controller
             ->join('sales',          'sale_extra_costs.sale_id', '=', 'sales.id')
             ->leftJoin('customers',  'sales.customer_id',        '=', 'customers.id')
             ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
             ->when($request->customer_id, fn($q) => $q->where('sales.customer_id', $request->customer_id))
             ->select(
                 'sales.id          as sale_id',
@@ -397,6 +401,7 @@ class ReportController extends Controller
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->leftJoin('stock', 'items.id', '=', 'stock.item_id')
             ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
             ->selectRaw('
                 items.id,
                 items.name,
@@ -610,6 +615,7 @@ class ReportController extends Controller
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
             ->sum(DB::raw('items.purchase_price * sale_items.quantity'));
 
         $grossProfit  = $netRevenue - $cogs;
@@ -630,6 +636,7 @@ class ReportController extends Controller
         // ── Monthly breakdown ─────────────────────────────────────
         $monthly = DB::table('sales')
             ->whereBetween('sale_date', [$from, $to])
+            ->where('shop_id', auth()->user()->shop_id)
             ->selectRaw("DATE_FORMAT(sale_date,'%Y-%m') as month,
                 SUM(total_amount) as revenue,
                 COUNT(*) as sale_count")
@@ -642,6 +649,7 @@ class ReportController extends Controller
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
             ->selectRaw("DATE_FORMAT(sales.sale_date,'%Y-%m') as month,
                 SUM(items.purchase_price * sale_items.quantity) as cost")
             ->groupBy('month')
@@ -649,6 +657,7 @@ class ReportController extends Controller
 
         $expsByMonth = DB::table('extra_expenses')
             ->whereBetween('expense_date', [$from, $to])
+            ->where('shop_id', auth()->user()->shop_id)
             ->selectRaw("DATE_FORMAT(expense_date,'%Y-%m') as month, SUM(amount) as total")
             ->groupBy('month')
             ->pluck('total', 'month');
@@ -664,6 +673,7 @@ class ReportController extends Controller
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
             ->selectRaw('
                 items.name,
                 SUM(sale_items.quantity) as qty,
@@ -680,6 +690,7 @@ class ReportController extends Controller
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
             ->selectRaw('
                 sales.sale_date,
                 sales.id as sale_id,
@@ -716,6 +727,7 @@ class ReportController extends Controller
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
             ->sum(DB::raw('items.purchase_price * sale_items.quantity'));
         $grossProfit   = $grossSales - $cogs;
         $totalExpenses = ExtraExpense::whereBetween('expense_date', [$from, $to])->sum('amount');
@@ -725,6 +737,7 @@ class ReportController extends Controller
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
             ->selectRaw('items.name,
                 SUM(sale_items.quantity) as qty,
                 SUM(sale_items.subtotal) as revenue,
@@ -771,6 +784,7 @@ class ReportController extends Controller
             ->join('sales',    'sale_items.sale_id',  '=', 'sales.id')
             ->leftJoin('customers', 'sales.customer_id', '=', 'customers.id')
             ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
             ->select(
                 DB::raw('DATE(sales.sale_date) as date'),
                 'sales.id          as sale_id',
@@ -801,6 +815,7 @@ class ReportController extends Controller
             ->join('sales',    'sale_items.sale_id',  '=', 'sales.id')
             ->leftJoin('customers', 'sales.customer_id', '=', 'customers.id')
             ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
             ->select(
                 DB::raw('DATE(sales.sale_date) as date'),
                 'sales.id as sale_id', 'customers.name as customer_name',
@@ -849,6 +864,7 @@ class ReportController extends Controller
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->leftJoin('stock', 'items.id', '=', 'stock.item_id')
             ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
             ->selectRaw('items.name, items.purchase_price,
                 SUM(sale_items.quantity) as sold_qty,
                 SUM(sale_items.subtotal) as revenue,
