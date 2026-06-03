@@ -382,7 +382,6 @@
 <script>
 const RECEIVER_ID = {{ $activeUser ? $activeUser->id : 'null' }};
 let lastMsgId     = {{ $messages->isNotEmpty() ? $messages->last()->id : 0 }};
-let pollTimer     = null;
 
 // ── Auto-scroll to bottom ────────────────────────────────────
 function scrollBottom(smooth = false) {
@@ -471,45 +470,20 @@ function escHtml(str) {
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
 }
 
-// ── Polling ──────────────────────────────────────────────────
-function startPolling() {
-    if (!RECEIVER_ID) return;
-    pollTimer = setInterval(pollMessages, 3000);
-}
-
-function pollMessages() {
-    fetch(`{{ route('chat.poll') }}?with=${RECEIVER_ID}&last_id=${lastMsgId}`, {
-        headers: { 'Accept': 'application/json',
-                   'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
-    })
-    .then(r => r.json())
-    .then(data => {
-        data.messages.forEach(msg => {
-            if (msg.sender_id != {{ auth()->id() }}) {
-                appendBubble(msg, false);
-                scrollBottom(true);
-            }
-            lastMsgId = Math.max(lastMsgId, msg.id);
-        });
-
-        // Update topbar chat badge
-        const badge = document.getElementById('chatBadge');
-        if (badge) {
-            if (data.total_unread > 0) {
-                badge.textContent = data.total_unread > 9 ? '9+' : data.total_unread;
-                badge.style.display = 'flex';
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-    })
-    .catch(() => {});
-}
-
-startPolling();
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) { clearInterval(pollTimer); }
-    else { startPolling(); }
+// ── WebSocket: receive messages via layout's Reverb connection ──
+window.addEventListener('ws:message', function (e) {
+    const msg = e.detail;
+    // Only show if it's from the person we're chatting with
+    if (RECEIVER_ID && msg.sender_id == RECEIVER_ID) {
+        appendBubble(msg, false);
+        scrollBottom(true);
+        lastMsgId = Math.max(lastMsgId, msg.id);
+        // Mark as read
+        fetch(`{{ route('chat.poll') }}?with=${RECEIVER_ID}&last_id=${msg.id - 1}`, {
+            headers: { 'Accept':'application/json',
+                       'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
+        }).catch(() => {});
+    }
 });
 </script>
 @endpush

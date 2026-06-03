@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js" defer></script>
     @stack('styles')
 </head>
 <body>
@@ -939,6 +940,39 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 @endif
 
+{{-- ══ WebSocket / Reverb Bootstrap ══════════════════════════════ --}}
+@auth
+<script>
+(function waitForPusher() {
+    if (typeof Pusher === 'undefined') { return setTimeout(waitForPusher, 50); }
+
+    const pusher = new Pusher('{{ env('REVERB_APP_KEY') }}', {
+        wsHost:           '{{ env('REVERB_HOST', 'localhost') }}',
+        wsPort:            {{ env('REVERB_PORT', 8080) }},
+        wssPort:           {{ env('REVERB_PORT', 8080) }},
+        forceTLS:          {{ env('REVERB_SCHEME', 'http') === 'https' ? 'true' : 'false' }},
+        enabledTransports: ['ws', 'wss'],
+        cluster:           'mt1',
+        authEndpoint:      '/broadcasting/auth',
+        auth: { headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content } },
+    });
+
+    const channel = pusher.subscribe('private-chat.user.{{ auth()->id() }}');
+
+    channel.bind('pusher:subscription_error', function(err) {
+        console.warn('[Reverb] subscription error:', err);
+    });
+
+    channel.bind('message.sent', function(data) {
+        // Broadcast to any listener on the page (mini-chat or full-chat view)
+        window.dispatchEvent(new CustomEvent('ws:message', { detail: data }));
+    });
+
+    window._reverb = pusher;
+})();
+</script>
+@endauth
+
 {{-- ══ Mini Chat Widget ═══════════════════════════════════════════ --}}
 <div id="miniChatRoot">
 
@@ -1196,9 +1230,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const UNRD_URL = '{{ route('chat.unread') }}';
 
     let mcOpen       = false;
-    let mcActiveUser = null;   // {id, name, color}
-    let mcLastId     = 0;
-    let mcPollTimer  = null;
+    let mcActiveUser = null;   // {id, name}
     let mcUsers      = [];
 
     // ── FAB toggle ────────────────────────────────────────────
@@ -1208,14 +1240,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('miniChatFab').style.background = mcOpen ? '#475569' : '';
         document.getElementById('miniChatFabIcon').className = mcOpen ? 'fas fa-xmark' : 'fas fa-comments';
         if (mcOpen && mcUsers.length === 0) mcLoadUsers();
-        if (!mcOpen) { clearInterval(mcPollTimer); }
     };
 
     // ── Back to user list ─────────────────────────────────────
     window.mcBackToUsers = function () {
-        clearInterval(mcPollTimer);
         mcActiveUser = null;
-        mcLastId = 0;
         document.getElementById('mcPanelConv').style.display  = 'none';
         document.getElementById('mcPanelUsers').style.display = 'flex';
         mcLoadUsers();
@@ -1223,12 +1252,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Load user list ────────────────────────────────────────
     function mcLoadUsers() {
-        fetch(CHAT_URL + '?mc=1', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(r => r.json())
-        .then(data => {
-            mcUsers = data;
-            renderUserList(data);
-        })
+        fetch(CHAT_URL + '?mc=1', { headers: { 'Accept': 'application/json' } })
+        .then(r => r.json()).then(data => { mcUsers = data; renderUserList(data); })
         .catch(() => {});
     }
 
@@ -1237,40 +1262,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderUserList(users) {
         const el = document.getElementById('mcUserList');
-        if (!users.length) {
-            el.innerHTML = '<div class="mc-loading" style="font-size:.8rem">কোনো ব্যবহারকারী নেই</div>';
-            return;
-        }
+        if (!users.length) { el.innerHTML = '<div class="mc-loading" style="font-size:.8rem">কোনো ব্যবহারকারী নেই</div>'; return; }
         el.innerHTML = users.map(u => `
-            <div class="mc-user-row" onclick="mcOpenConv(${u.id}, ${JSON.stringify(u.name)})">
+            <div class="mc-user-row" onclick="mcOpenConv(${u.id},${JSON.stringify(u.name)})">
                 <div class="mc-avatar" style="background:${mcAvatarColor(u.id)}">${mcInitial(u.name)}</div>
                 <div class="mc-user-meta">
                     <div class="mc-user-name">${escH(u.name)}</div>
                     <div class="mc-user-last">${u.last_msg ? escH(u.last_msg) : '<em style="color:#cbd5e1">কোনো বার্তা নেই</em>'}</div>
                 </div>
                 ${u.unread > 0 ? `<span class="mc-unread">${u.unread}</span>` : ''}
-            </div>`
-        ).join('');
+            </div>`).join('');
     }
 
     // ── Open conversation ─────────────────────────────────────
     window.mcOpenConv = function (userId, userName) {
-        mcActiveUser = { id: userId, name: userName, color: mcAvatarColor(userId) };
-        mcLastId = 0;
-
+        mcActiveUser = { id: userId, name: userName };
         document.getElementById('mcPanelUsers').style.display = 'none';
         document.getElementById('mcPanelConv').style.display  = 'flex';
-
         const av = document.getElementById('mcConvAvatar');
-        av.textContent       = mcInitial(userName);
-        av.style.background  = mcAvatarColor(userId);
+        av.textContent = mcInitial(userName); av.style.background = mcAvatarColor(userId);
         document.getElementById('mcConvName').textContent = userName;
-
-        document.getElementById('mcMessages').innerHTML =
-            '<div class="mc-loading"><i class="fas fa-spinner fa-spin"></i></div>';
-
+        document.getElementById('mcMessages').innerHTML = '<div class="mc-loading"><i class="fas fa-spinner fa-spin"></i></div>';
         mcFetchHistory();
-        mcStartPoll();
         setTimeout(() => document.getElementById('mcInput').focus(), 100);
     };
 
@@ -1288,46 +1301,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 data.messages.forEach(m => appendMcBubble(m));
                 mcScrollBottom();
             }
-            if (data.messages.length) mcLastId = data.messages[data.messages.length - 1].id;
             updateBadge(data.total_unread);
         });
     }
 
-    function mcStartPoll() {
-        clearInterval(mcPollTimer);
-        mcPollTimer = setInterval(mcPoll, 3000);
-    }
+    // ── WebSocket: receive incoming message ───────────────────
+    window.addEventListener('ws:message', function (e) {
+        const msg = e.detail;
+        // Update badge
+        fetch(UNRD_URL, { headers:{ 'Accept':'application/json' } })
+            .then(r => r.json()).then(d => updateBadge(d.count)).catch(()=>{});
 
-    function mcPoll() {
-        if (!mcActiveUser) return;
-        fetch(`${POLL_URL}?with=${mcActiveUser.id}&last_id=${mcLastId}`, {
-            headers: { 'Accept':'application/json', 'X-CSRF-TOKEN': CSRF }
-        })
-        .then(r => r.json())
-        .then(data => {
-            data.messages.forEach(m => {
-                if (m.sender_id != ME) { appendMcBubble(m); mcScrollBottom(true); }
-                mcLastId = Math.max(mcLastId, m.id);
-            });
-            updateBadge(data.total_unread);
-        });
-    }
+        // Append to conversation if it's open and from the active user
+        if (mcOpen && mcActiveUser && msg.sender_id == mcActiveUser.id) {
+            appendMcBubble(msg);
+            mcScrollBottom(true);
+            // Mark as read immediately
+            fetch(`${POLL_URL}?with=${mcActiveUser.id}&last_id=${msg.id - 1}`, {
+                headers: { 'Accept':'application/json', 'X-CSRF-TOKEN': CSRF }
+            }).catch(()=>{});
+        }
+
+        // Refresh user list (updates last message + unread count)
+        if (mcOpen && !mcActiveUser) mcLoadUsers();
+    });
 
     // ── Append bubble ─────────────────────────────────────────
     function appendMcBubble(msg) {
         const box = document.getElementById('mcMessages');
         const empty = box.querySelector('.mc-empty-conv');
         if (empty) empty.remove();
-
         const isMine = msg.sender_id == ME;
         const row = document.createElement('div');
         row.className = 'mc-bubble-row ' + (isMine ? 'mine' : 'theirs');
         row.dataset.id = msg.id;
-        row.innerHTML = `
-            <div>
-                <div class="mc-bubble">${escH(msg.message).replace(/\n/g,'<br>')}</div>
-                <div class="mc-time">${msg.created_at}</div>
-            </div>`;
+        row.innerHTML = `<div><div class="mc-bubble">${escH(msg.message).replace(/\n/g,'<br>')}</div><div class="mc-time">${msg.created_at}</div></div>`;
         box.appendChild(row);
     }
 
@@ -1337,35 +1345,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ── Send ──────────────────────────────────────────────────
-    window.mcKeyDown = function (e) {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); mcSend(); }
-    };
+    window.mcKeyDown = function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); mcSend(); } };
     window.mcSend = function () {
         const input = document.getElementById('mcInput');
         const text  = input.value.trim();
         if (!text || !mcActiveUser) return;
-
         const btn = document.getElementById('mcSendBtn');
         btn.disabled = true;
-
         fetch(SEND_URL, {
             method: 'POST',
             headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN': CSRF },
             body: JSON.stringify({ receiver_id: mcActiveUser.id, message: text }),
         })
         .then(r => r.json())
-        .then(msg => {
-            input.value = ''; input.style.height = 'auto';
-            appendMcBubble(msg);
-            mcScrollBottom(true);
-            mcLastId = msg.id;
-        })
+        .then(msg => { input.value = ''; input.style.height = 'auto'; appendMcBubble(msg); mcScrollBottom(true); })
         .finally(() => { btn.disabled = false; input.focus(); });
     };
 
     // ── Badge helpers ─────────────────────────────────────────
     function updateBadge(count) {
-        ['mcFabBadge', 'chatBadge'].forEach(id => {
+        ['mcFabBadge','chatBadge'].forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
             el.textContent = count > 9 ? '9+' : count;
@@ -1373,16 +1372,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Passive global unread poll (when mini chat closed)
-    setInterval(() => {
-        if (mcOpen) return;
-        fetch(UNRD_URL, { headers:{ 'Accept':'application/json' } })
-        .then(r => r.json())
-        .then(d => updateBadge(d.count))
-        .catch(()=>{});
-    }, 15000);
-
-    // Auto-grow textarea
+    // Textarea auto-grow
     document.getElementById('mcInput').addEventListener('input', function () {
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 80) + 'px';

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageSent;
 use App\Models\ChatMessage;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -80,6 +81,9 @@ class ChatController extends Controller
             'message'     => trim($request->message),
             'is_read'     => false,
         ]);
+
+        // Broadcast to receiver via WebSocket
+        broadcast(new MessageSent($msg));
 
         return response()->json([
             'id'         => $msg->id,
