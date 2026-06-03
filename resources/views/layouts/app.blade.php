@@ -1040,16 +1040,18 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div id="mcMessages" class="mc-messages"></div>
             <div class="mc-input-bar">
-                <div class="mc-input-inner">
-                    <textarea id="mcInput" class="mc-input" rows="1" placeholder="বার্তা লিখুন..."
-                        maxlength="2000" onkeydown="mcKeyDown(event)"></textarea>
-                    <span class="chat-inline-loader mc-inline-loader" id="mcSendLoader">
-                        <span></span><span></span><span></span>
-                    </span>
-                </div>
+                <textarea id="mcInput" class="mc-input" rows="1" placeholder="বার্তা লিখুন..."
+                    maxlength="2000" onkeydown="mcKeyDown(event)"></textarea>
                 <button class="mc-send-btn" onclick="mcSend()" id="mcSendBtn">
                     <i class="fas fa-paper-plane"></i>
                 </button>
+            </div>
+            <div class="mc-hint-row">
+                <span id="mcHintText" style="font-size:.68rem;color:#94a3b8">Enter → পাঠান</span>
+                <span class="chat-inline-loader" id="mcSendLoader">
+                    <span></span><span></span><span></span>
+                    <span style="margin-left:3px;font-size:.68rem;color:var(--accent)">পাঠানো হচ্ছে</span>
+                </span>
             </div>
         </div>
     </div>
@@ -1243,9 +1245,11 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 .mc-send-btn:hover { filter: brightness(1.1); }
 .mc-send-btn:disabled { opacity: .7; cursor: not-allowed; }
-/* mc inline loader uses smaller dots from app.css .chat-inline-loader,
-   override bottom position to fit the smaller mc-input */
-.mc-inline-loader { bottom: 7px; right: 8px; }
+.mc-hint-row {
+    display: flex; align-items: center; gap: 5px;
+    padding: 3px 10px 6px;
+    min-height: 16px;
+}
 </style>
 
 <script>
@@ -1494,9 +1498,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = document.getElementById('mcInput');
         const text  = input.value.trim();
         if (!text || !mcActiveUser) return;
-        const btn    = document.getElementById('mcSendBtn');
-        const mcLoad = document.getElementById('mcSendLoader');
+        const btn        = document.getElementById('mcSendBtn');
+        const mcLoad     = document.getElementById('mcSendLoader');
+        const mcHintText = document.getElementById('mcHintText');
         btn.disabled = true;
+        mcHintText.style.display = 'none';
         mcLoad.classList.add('active');
 
         const isGroup = mcActiveUser.group === true;
@@ -1518,6 +1524,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .finally(() => {
             btn.disabled = false;
             mcLoad.classList.remove('active');
+            mcHintText.style.display = '';
             input.focus();
         });
     };

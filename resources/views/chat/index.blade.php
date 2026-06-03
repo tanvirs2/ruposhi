@@ -117,21 +117,20 @@
         {{-- Input --}}
         <div class="chat-input-bar">
             <div class="chat-input-wrap">
-                <div class="chat-input-inner">
-                    <textarea id="chatInput" class="chat-input" rows="1"
-                        placeholder="{{ $activeUser->name }}-কে বার্তা লিখুন..."
-                        maxlength="2000"
-                        onkeydown="chatKeyDown(event)"></textarea>
-                    <span class="chat-inline-loader" id="chatSendLoader">
-                        <span></span><span></span><span></span>
-                    </span>
-                </div>
+                <textarea id="chatInput" class="chat-input" rows="1"
+                    placeholder="{{ $activeUser->name }}-কে বার্তা লিখুন..."
+                    maxlength="2000"
+                    onkeydown="chatKeyDown(event)"></textarea>
                 <button type="button" class="chat-send-btn" id="chatSendBtn" onclick="sendMessage()" title="পাঠান (Enter)">
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
-            <div style="font-size:.72rem;color:#cbd5e1;margin-top:4px;padding-left:4px">
-                Enter → পাঠান &nbsp;·&nbsp; Shift+Enter → নতুন লাইন
+            <div class="chat-input-hint" id="chatHintRow">
+                <span id="chatHintText">Enter → পাঠান &nbsp;·&nbsp; Shift+Enter → নতুন লাইন</span>
+                <span class="chat-inline-loader" id="chatSendLoader">
+                    <span></span><span></span><span></span>
+                    <span style="margin-left:4px;font-size:.72rem;color:var(--accent);letter-spacing:.02em">পাঠানো হচ্ছে</span>
+                </span>
             </div>
         </div>
 
@@ -187,9 +186,11 @@ function sendMessage() {
     const text  = input.value.trim();
     if (!text || !RECEIVER_ID) return;
 
-    const btn    = document.getElementById('chatSendBtn');
-    const loader = document.getElementById('chatSendLoader');
+    const btn      = document.getElementById('chatSendBtn');
+    const loader   = document.getElementById('chatSendLoader');
+    const hintText = document.getElementById('chatHintText');
     btn.disabled = true;
+    hintText.style.display = 'none';
     loader.classList.add('active');
 
     fetch('{{ route('chat.send') }}', {
@@ -213,6 +214,7 @@ function sendMessage() {
     .finally(() => {
         btn.disabled = false;
         loader.classList.remove('active');
+        hintText.style.display = '';
         input.focus();
     });
 }
