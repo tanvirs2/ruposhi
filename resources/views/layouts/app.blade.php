@@ -940,37 +940,53 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 @endif
 
-{{-- ══ WebSocket / Reverb Bootstrap ══════════════════════════════ --}}
+{{-- ══ WebSocket Bootstrap (Reverb locally / Pusher on production) ══ --}}
 @auth
+@php
+    $wsBroadcaster = config('broadcasting.default', 'log');
+    $wsUseReverb   = $wsBroadcaster === 'reverb';
+    $wsUsePusher   = $wsBroadcaster === 'pusher';
+@endphp
+@if($wsUseReverb || $wsUsePusher)
 <script>
 (function waitForPusher() {
     if (typeof Pusher === 'undefined') { return setTimeout(waitForPusher, 50); }
 
-    const pusher = new Pusher('{{ env('REVERB_APP_KEY') }}', {
-        wsHost:           '{{ env('REVERB_HOST', 'localhost') }}',
-        wsPort:            {{ env('REVERB_PORT', 8080) }},
-        wssPort:           {{ env('REVERB_PORT', 8080) }},
-        forceTLS:          {{ env('REVERB_SCHEME', 'http') === 'https' ? 'true' : 'false' }},
-        enabledTransports: ['ws', 'wss'],
-        cluster:           'mt1',
-        authEndpoint:      '/broadcasting/auth',
+    @if($wsUseReverb)
+    // ── Local: Laravel Reverb ────────────────────────────────
+    var pusher = new Pusher('{{ env('REVERB_APP_KEY') }}', {
+        wsHost:            '{{ env('REVERB_HOST', 'localhost') }}',
+        wsPort:             {{ env('REVERB_PORT', 8080) }},
+        wssPort:            {{ env('REVERB_PORT', 8080) }},
+        forceTLS:           {{ env('REVERB_SCHEME', 'http') === 'https' ? 'true' : 'false' }},
+        enabledTransports:  ['ws', 'wss'],
+        cluster:            'mt1',
+        authEndpoint:       '/broadcasting/auth',
         auth: { headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content } },
     });
+    @else
+    // ── Production: Pusher Cloud ─────────────────────────────
+    var pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
+        cluster:      '{{ env('PUSHER_APP_CLUSTER', 'mt1') }}',
+        forceTLS:     true,
+        authEndpoint: '/broadcasting/auth',
+        auth: { headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content } },
+    });
+    @endif
 
-    const channel = pusher.subscribe('private-chat.user.{{ auth()->id() }}');
+    var channel = pusher.subscribe('private-chat.user.{{ auth()->id() }}');
 
     channel.bind('pusher:subscription_error', function(err) {
-        console.warn('[Reverb] subscription error:', err);
+        console.warn('[WS] subscription error:', err);
     });
-
     channel.bind('message.sent', function(data) {
-        // Broadcast to any listener on the page (mini-chat or full-chat view)
         window.dispatchEvent(new CustomEvent('ws:message', { detail: data }));
     });
 
-    window._reverb = pusher;
+    window._ws = pusher;
 })();
 </script>
+@endif
 @endauth
 
 {{-- ══ Mini Chat Widget ═══════════════════════════════════════════ --}}
