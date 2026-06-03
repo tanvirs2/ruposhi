@@ -197,14 +197,6 @@
                             @if($row->link)
                                 <a href="{{ $row->link }}" class="sl-ref-link">{{ $row->ref }}</a>
                             @endif
-                        @elseif($isLaborCost)
-                            <span class="sl-laborcost-label">
-                                <i class="fas fa-person-digging" style="font-size:.72rem;margin-right:3px"></i>
-                                {{ $row->label }}
-                            </span>
-                            @if($row->link)
-                                <a href="{{ $row->link }}" class="sl-ref-link">{{ $row->ref }}</a>
-                            @endif
                         @else
                             <span class="sl-pay-label">
                                 <i class="fas fa-circle-check" style="font-size:.72rem"></i>
