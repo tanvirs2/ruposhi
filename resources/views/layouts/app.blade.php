@@ -20,7 +20,7 @@
     <div class="sidebar-header">
         <div class="brand">
             <div class="brand-icon"><i class="fas fa-boxes-stacked"></i></div>
-            <span class="brand-name">Inventory</span>
+            <span class="brand-name">{{ auth()->user()->shop?->name ?? 'Inventory' }}</span>
         </div>
         <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
     </div>
@@ -309,7 +309,7 @@
         <div class="topbar-left">
             <div class="page-title">
                 <h1>@yield('page-title', 'ড্যাশবোর্ড')</h1>
-                <span class="breadcrumb">@hasSection('breadcrumb') @yield('breadcrumb') @else স্বাগতম, <strong>{{ auth()->user()->name }}</strong> @endif</span>
+                <span class="breadcrumb">@hasSection('breadcrumb') @yield('breadcrumb') @else স্বাগতম, <strong>{{ auth()->user()->name }}</strong>@if(auth()->user()->shop) &nbsp;·&nbsp; <i class="fas fa-store" style="font-size:.72rem;opacity:.7"></i> {{ auth()->user()->shop->name }} @endif @endif</span>
             </div>
         </div>
         <div class="topbar-right">
