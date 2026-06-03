@@ -82,8 +82,8 @@ class ChatController extends Controller
             'is_read'     => false,
         ]);
 
-        // Broadcast to receiver via WebSocket
-        broadcast(new MessageSent($msg));
+        // Broadcast to receiver via WebSocket (fails silently if Reverb not running)
+        try { broadcast(new MessageSent($msg)); } catch (\Throwable) {}
 
         return response()->json([
             'id'         => $msg->id,
