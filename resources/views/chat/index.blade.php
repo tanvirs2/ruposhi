@@ -117,13 +117,17 @@
         {{-- Input --}}
         <div class="chat-input-bar">
             <div class="chat-input-wrap">
-                <textarea id="chatInput" class="chat-input" rows="1"
-                    placeholder="{{ $activeUser->name }}-কে বার্তা লিখুন..."
-                    maxlength="2000"
-                    onkeydown="chatKeyDown(event)"></textarea>
+                <div class="chat-input-inner">
+                    <textarea id="chatInput" class="chat-input" rows="1"
+                        placeholder="{{ $activeUser->name }}-কে বার্তা লিখুন..."
+                        maxlength="2000"
+                        onkeydown="chatKeyDown(event)"></textarea>
+                    <span class="chat-inline-loader" id="chatSendLoader">
+                        <span></span><span></span><span></span>
+                    </span>
+                </div>
                 <button type="button" class="chat-send-btn" id="chatSendBtn" onclick="sendMessage()" title="পাঠান (Enter)">
-                    <i class="fas fa-paper-plane" id="chatSendIcon"></i>
-                    <span class="chat-send-loader" id="chatSendLoader"></span>
+                    <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
             <div style="font-size:.72rem;color:#cbd5e1;margin-top:4px;padding-left:4px">
@@ -184,11 +188,9 @@ function sendMessage() {
     if (!text || !RECEIVER_ID) return;
 
     const btn    = document.getElementById('chatSendBtn');
-    const icon   = document.getElementById('chatSendIcon');
     const loader = document.getElementById('chatSendLoader');
     btn.disabled = true;
-    icon.style.display   = 'none';
-    loader.style.display = 'inline-block';
+    loader.classList.add('active');
 
     fetch('{{ route('chat.send') }}', {
         method: 'POST',
@@ -210,8 +212,7 @@ function sendMessage() {
     .catch(() => alert('পাঠানো ব্যর্থ হয়েছে।'))
     .finally(() => {
         btn.disabled = false;
-        icon.style.display   = '';
-        loader.style.display = 'none';
+        loader.classList.remove('active');
         input.focus();
     });
 }

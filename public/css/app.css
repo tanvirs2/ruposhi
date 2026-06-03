@@ -1726,14 +1726,40 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
 }
 .chat-send-btn:hover { filter: brightness(1.08); transform: scale(1.05); }
 .chat-send-btn:active { transform: scale(.97); }
-.chat-send-btn:disabled { opacity: .8; cursor: not-allowed; transform: none; }
-.chat-send-loader {
+.chat-send-btn:disabled { opacity: .7; cursor: not-allowed; transform: none; }
+
+/* ── Inline "sending" dot-loader inside input ─────────────────── */
+.chat-input-inner, .mc-input-inner {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+}
+.chat-input-inner .chat-input,
+.mc-input-inner .mc-input { flex: 1; }
+
+.chat-inline-loader {
     display: none;
-    width: 14px; height: 14px;
-    border: 2px solid rgba(255,255,255,.35);
-    border-top-color: #fff;
+    align-items: center;
+    gap: 3px;
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    pointer-events: none;
+}
+.chat-inline-loader.active { display: flex; }
+.chat-inline-loader span {
+    width: 5px; height: 5px;
     border-radius: 50%;
-    animation: spin .55s linear infinite;
+    background: var(--accent);
+    opacity: .3;
+    animation: dotPulse 1s ease-in-out infinite;
+}
+.chat-inline-loader span:nth-child(2) { animation-delay: .18s; }
+.chat-inline-loader span:nth-child(3) { animation-delay: .36s; }
+@keyframes dotPulse {
+    0%, 80%, 100% { opacity: .25; transform: scale(.85); }
+    40%           { opacity: 1;   transform: scale(1.15); }
 }
 .chat-topbar-wrap { position: relative; }
 .chat-icon-btn { position: relative; }
