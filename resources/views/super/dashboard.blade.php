@@ -16,6 +16,15 @@
         </div>
     </div>
     <div class="sa-stat">
+        <div class="sa-stat-icon" style="background:linear-gradient(135deg,#10b981,#059669)">
+            <i class="fas fa-circle-check"></i>
+        </div>
+        <div>
+            <div class="sa-stat-val">{{ $shops->where('is_active', true)->count() }}</div>
+            <div class="sa-stat-lbl">সক্রিয় শপ</div>
+        </div>
+    </div>
+    <div class="sa-stat">
         <div class="sa-stat-icon" style="background:linear-gradient(135deg,#3b82f6,#6366f1)">
             <i class="fas fa-users"></i>
         </div>
@@ -25,12 +34,21 @@
         </div>
     </div>
     <div class="sa-stat">
-        <div class="sa-stat-icon" style="background:linear-gradient(135deg,#10b981,#059669)">
-            <i class="fas fa-circle-check"></i>
+        <div class="sa-stat-icon" style="background:linear-gradient(135deg,#fbbf24,#f59e0b)">
+            <i class="fas fa-money-bill-wave"></i>
         </div>
         <div>
-            <div class="sa-stat-val">{{ $shops->where('is_active', true)->count() }}</div>
-            <div class="sa-stat-lbl">সক্রিয় শপ</div>
+            <div class="sa-stat-val" style="font-size:1.35rem">৳ {{ number_format($monthRevenue,0) }}</div>
+            <div class="sa-stat-lbl">এই মাসের বিক্রয়</div>
+        </div>
+    </div>
+    <div class="sa-stat">
+        <div class="sa-stat-icon" style="background:linear-gradient(135deg,#ef4444,#b91c1c)">
+            <i class="fas fa-file-invoice-dollar"></i>
+        </div>
+        <div>
+            <div class="sa-stat-val" style="font-size:1.35rem">৳ {{ number_format($totalCustomerDue,0) }}</div>
+            <div class="sa-stat-lbl">মোট কাস্টমার বাকী</div>
         </div>
     </div>
 </div>
@@ -57,16 +75,14 @@
             <tr>
                 <th>শপ</th>
                 <th>স্ট্যাটাস</th>
+                <th>বিক্রয় সংখ্যা</th>
                 <th>মোট বিক্রয় (৳)</th>
+                <th>স্টাফ</th>
                 <th>অ্যাকশন</th>
             </tr>
         </thead>
         <tbody>
             @foreach($shopSales as $shop)
-            @php
-                $sale = $shop->sales->first();
-                $total = $sale->total ?? 0;
-            @endphp
             <tr>
                 <td style="font-weight:600">
                     <i class="fas fa-store" style="color:#f59e0b;margin-left:6px"></i>
@@ -77,7 +93,9 @@
                         {{ $shop->is_active ? 'সক্রিয়' : 'নিষ্ক্রিয়' }}
                     </span>
                 </td>
-                <td style="font-weight:600;color:#fbbf24">৳ {{ number_format($total, 2) }}</td>
+                <td style="color:#94a3b8">{{ $shop->sales_count }}</td>
+                <td style="font-weight:600;color:#fbbf24">৳ {{ number_format($shop->total_revenue ?? 0, 0) }}</td>
+                <td style="color:#94a3b8">{{ $shop->users_count }}</td>
                 <td>
                     <a href="{{ route('super.shops.show', $shop) }}" class="sa-btn sa-btn-ghost sa-btn-sm">
                         <i class="fas fa-eye"></i> দেখুন

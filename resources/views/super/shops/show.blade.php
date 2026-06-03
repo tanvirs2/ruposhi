@@ -74,6 +74,9 @@
             <div style="color:#64748b;font-size:.86rem;padding:10px 0">কোনো ব্যবহারকারী নেই</div>
         @else
         <table class="sa-table">
+            <thead>
+                <tr><th>নাম / ইমেইল</th><th>রোল</th><th>পাসওয়ার্ড রিসেট</th></tr>
+            </thead>
             <tbody>
                 @foreach($shop->users as $u)
                 <tr>
@@ -88,6 +91,13 @@
                             {{ $u->role==='admin' ? 'অ্যাডমিন' : 'স্টাফ' }}
                         </span>
                     </td>
+                    <td>
+                        <button type="button"
+                                onclick="showResetModal({{ $u->id }}, '{{ addslashes($u->name) }}')"
+                                class="sa-btn sa-btn-ghost sa-btn-sm">
+                            <i class="fas fa-key"></i> রিসেট
+                        </button>
+                    </td>
                 </tr>
                 @endforeach
             </tbody>
@@ -95,5 +105,56 @@
         @endif
     </div>
 </div>
+
+{{-- Password Reset Modal --}}
+<div id="resetModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;
+                             display:none;align-items:center;justify-content:center">
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:16px;
+                padding:28px;width:380px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+        <h3 style="margin:0 0 6px;font-size:1.05rem;font-weight:700;color:#f1f5f9">
+            <i class="fas fa-key" style="color:#f59e0b"></i> পাসওয়ার্ড রিসেট
+        </h3>
+        <p id="resetModalSubtitle" style="margin:0 0 20px;font-size:.84rem;color:#94a3b8"></p>
+
+        <form id="resetForm" method="POST" action="">
+            @csrf
+            <div class="sa-field">
+                <label class="sa-label">নতুন পাসওয়ার্ড <span style="color:#ef4444">*</span></label>
+                <input type="text" name="password" id="resetPassword" class="sa-input"
+                       placeholder="কমপক্ষে ৬ অক্ষর" minlength="6" required autocomplete="off">
+                <div style="font-size:.76rem;color:#64748b;margin-top:6px">
+                    <i class="fas fa-eye-slash"></i> এই পাসওয়ার্ডটি নিরাপদ জায়গায় সংরক্ষণ করুন।
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+                <button type="button" onclick="closeResetModal()" class="sa-btn sa-btn-ghost">
+                    বাতিল
+                </button>
+                <button type="submit" class="sa-btn sa-btn-primary">
+                    <i class="fas fa-save"></i> আপডেট করুন
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+function showResetModal(userId, userName) {
+    document.getElementById('resetModalSubtitle').textContent = userName + ' এর পাসওয়ার্ড পরিবর্তন করুন';
+    document.getElementById('resetForm').action = '/super/users/' + userId + '/reset-password';
+    document.getElementById('resetPassword').value = '';
+    const modal = document.getElementById('resetModal');
+    modal.style.display = 'flex';
+    setTimeout(() => document.getElementById('resetPassword').focus(), 100);
+}
+function closeResetModal() {
+    document.getElementById('resetModal').style.display = 'none';
+}
+document.getElementById('resetModal').addEventListener('click', function(e) {
+    if (e.target === this) closeResetModal();
+});
+</script>
+@endpush
 
 @endsection

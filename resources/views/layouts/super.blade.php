@@ -144,6 +144,9 @@
             <a href="{{ route('super.shops.create') }}" class="{{ $r==='super.shops.create' ? 'active' : '' }}">
                 <i class="fas fa-plus-circle"></i> নতুন শপ
             </a>
+            <a href="{{ route('super.reports') }}" class="{{ $r==='super.reports' ? 'active' : '' }}">
+                <i class="fas fa-chart-bar"></i> শপ রিপোর্ট
+            </a>
         </nav>
         <div class="sa-foot">
             <form method="POST" action="{{ route('logout') }}">

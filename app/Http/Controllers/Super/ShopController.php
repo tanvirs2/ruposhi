@@ -89,4 +89,23 @@ class ShopController extends Controller
         return redirect()->route('super.shops.index')
                          ->with('success', 'শপ মুছে ফেলা হয়েছে।');
     }
+
+    /**
+     * Reset a shop user's password (super admin only).
+     * Cannot reset super_admin accounts.
+     */
+    public function resetPassword(Request $request, User $user)
+    {
+        if ($user->role === 'super_admin' || !$user->shop_id) {
+            abort(403, 'Super admin পাসওয়ার্ড এখান থেকে পরিবর্তন করা যাবে না।');
+        }
+
+        $request->validate([
+            'password' => 'required|min:6',
+        ]);
+
+        $user->update(['password' => Hash::make($request->password)]);
+
+        return back()->with('success', "'{$user->name}' এর পাসওয়ার্ড আপডেট হয়েছে।");
+    }
 }
