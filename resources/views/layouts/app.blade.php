@@ -1292,7 +1292,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
         if (!users.length) { el.innerHTML = groupRow + '<div class="mc-loading" style="font-size:.8rem">কোনো ব্যবহারকারী নেই</div>'; return; }
         el.innerHTML = groupRow + users.map(u => `
-            <div class="mc-user-row" onclick="mcOpenConv(${u.id},${JSON.stringify(u.name)})">
+            <div class="mc-user-row" onclick="mcOpenConvById(${u.id})">
                 <div class="mc-avatar" style="background:${mcAvatarColor(u.id)}">${mcInitial(u.name)}</div>
                 <div class="mc-user-meta">
                     <div class="mc-user-name">${escH(u.name)}</div>
@@ -1300,6 +1300,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 ${u.unread > 0 ? `<span class="mc-unread">${u.unread}</span>` : ''}
             </div>`).join('');
+    }
+
+    // id দিয়ে user খুঁজে mcOpenConv কল করে — onclick attribute-এ name দেওয়া যায় না
+    window.mcOpenConvById = function (id) {
+        const u = mcUsers.find(x => x.id == id);
+        if (u) mcOpenConv(u.id, u.name);
     }
 
     // ── Group chat in mini window ─────────────────────────────
