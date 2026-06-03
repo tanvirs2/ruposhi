@@ -21,6 +21,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ExtraCostCategoryController;
 use App\Http\Controllers\SmsController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\Super\DashboardController as SuperDashboard;
 use App\Http\Controllers\Super\ShopController;
 
@@ -126,6 +127,9 @@ Route::middleware(['auth', 'shop.scope'])->group(function () {
     Route::post('/extra-cost-categories',                  [ExtraCostCategoryController::class, 'store'])->name('extra-cost-categories.store');
     Route::put('/extra-cost-categories/{extraCostCategory}',    [ExtraCostCategoryController::class, 'update'])->name('extra-cost-categories.update');
     Route::delete('/extra-cost-categories/{extraCostCategory}', [ExtraCostCategoryController::class, 'destroy'])->name('extra-cost-categories.destroy');
+
+    /* Shop staff/user management — shop admin only */
+    Route::resource('users', UserController::class)->except('show')->middleware('shop.admin');
 
     /* Profile */
     Route::get('/profile',          [ProfileController::class, 'edit'])->name('profile.edit');
