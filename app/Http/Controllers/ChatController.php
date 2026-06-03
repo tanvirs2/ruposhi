@@ -39,7 +39,7 @@ class ChatController extends Controller
         $activeUserId = (int) $request->get('with', 0);
         $activeUser   = $activeUserId ? $users->firstWhere('id', $activeUserId) : null;
 
-        $messages = [];
+        $messages = collect();
         if ($activeUser) {
             $messages = ChatMessage::conversation($me->id, $activeUser->id)->get();
             // Mark received messages as read
