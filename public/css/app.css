@@ -1726,6 +1726,15 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
 }
 .chat-send-btn:hover { filter: brightness(1.08); transform: scale(1.05); }
 .chat-send-btn:active { transform: scale(.97); }
+.chat-send-btn:disabled { opacity: .8; cursor: not-allowed; transform: none; }
+.chat-send-loader {
+    display: none;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .55s linear infinite;
+}
 .chat-topbar-wrap { position: relative; }
 .chat-icon-btn { position: relative; }
 .chat-badge {

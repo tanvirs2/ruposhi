@@ -95,7 +95,8 @@
                     maxlength="2000"
                     onkeydown="chatKeyDown(event)"></textarea>
                 <button type="button" class="chat-send-btn" id="chatSendBtn" onclick="sendMessage()">
-                    <i class="fas fa-paper-plane"></i>
+                    <i class="fas fa-paper-plane" id="chatSendIcon"></i>
+                    <span class="chat-send-loader" id="chatSendLoader"></span>
                 </button>
             </div>
             <div style="font-size:.72rem;color:#cbd5e1;margin-top:4px;padding-left:4px">
@@ -138,8 +139,12 @@ function chatKeyDown(e) {
 function sendMessage() {
     const text = chatInput.value.trim();
     if (!text) return;
-    const btn = document.getElementById('chatSendBtn');
+    const btn    = document.getElementById('chatSendBtn');
+    const icon   = document.getElementById('chatSendIcon');
+    const loader = document.getElementById('chatSendLoader');
     btn.disabled = true;
+    icon.style.display   = 'none';
+    loader.style.display = 'inline-block';
 
     fetch(SEND_URL, {
         method: 'POST',
@@ -154,7 +159,12 @@ function sendMessage() {
         scrollBottom(true);
         lastMsgId = msg.id;
     })
-    .finally(() => { btn.disabled = false; chatInput.focus(); });
+    .finally(() => {
+        btn.disabled = false;
+        icon.style.display   = '';
+        loader.style.display = 'none';
+        chatInput.focus();
+    });
 }
 
 // ── Append bubble ────────────────────────────────────────────

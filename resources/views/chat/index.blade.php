@@ -122,7 +122,8 @@
                     maxlength="2000"
                     onkeydown="chatKeyDown(event)"></textarea>
                 <button type="button" class="chat-send-btn" id="chatSendBtn" onclick="sendMessage()" title="পাঠান (Enter)">
-                    <i class="fas fa-paper-plane"></i>
+                    <i class="fas fa-paper-plane" id="chatSendIcon"></i>
+                    <span class="chat-send-loader" id="chatSendLoader"></span>
                 </button>
             </div>
             <div style="font-size:.72rem;color:#cbd5e1;margin-top:4px;padding-left:4px">
@@ -182,8 +183,12 @@ function sendMessage() {
     const text  = input.value.trim();
     if (!text || !RECEIVER_ID) return;
 
-    const btn = document.getElementById('chatSendBtn');
+    const btn    = document.getElementById('chatSendBtn');
+    const icon   = document.getElementById('chatSendIcon');
+    const loader = document.getElementById('chatSendLoader');
     btn.disabled = true;
+    icon.style.display   = 'none';
+    loader.style.display = 'inline-block';
 
     fetch('{{ route('chat.send') }}', {
         method: 'POST',
@@ -203,7 +208,12 @@ function sendMessage() {
         lastMsgId = msg.id;
     })
     .catch(() => alert('পাঠানো ব্যর্থ হয়েছে।'))
-    .finally(() => { btn.disabled = false; input.focus(); });
+    .finally(() => {
+        btn.disabled = false;
+        icon.style.display   = '';
+        loader.style.display = 'none';
+        input.focus();
+    });
 }
 
 // ── Append bubble to DOM ─────────────────────────────────────
