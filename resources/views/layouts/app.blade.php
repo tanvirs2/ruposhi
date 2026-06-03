@@ -939,5 +939,459 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 @endif
 
+{{-- ══ Mini Chat Widget ═══════════════════════════════════════════ --}}
+<div id="miniChatRoot">
+
+    {{-- Collapsed FAB --}}
+    <button id="miniChatFab" onclick="miniChatToggle()" title="চ্যাট খুলুন">
+        <i class="fas fa-comments" id="miniChatFabIcon"></i>
+        <span class="mc-fab-badge" id="mcFabBadge" style="{{ $chatUnread > 0 ? '' : 'display:none' }}">
+            {{ $chatUnread > 9 ? '9+' : $chatUnread }}
+        </span>
+    </button>
+
+    {{-- Mini chat window --}}
+    <div id="miniChatWin" style="display:none">
+        {{-- === USER LIST panel === --}}
+        <div id="mcPanelUsers">
+            <div class="mc-head">
+                <span style="font-weight:700;font-size:.86rem;display:flex;align-items:center;gap:7px">
+                    <i class="fas fa-comments" style="color:var(--accent)"></i> চ্যাট
+                </span>
+                <div style="display:flex;gap:4px">
+                    <a href="{{ route('chat.index') }}" class="mc-head-btn" title="পূর্ণ পর্দা" style="text-decoration:none">
+                        <i class="fas fa-expand"></i>
+                    </a>
+                    <button class="mc-head-btn" onclick="miniChatToggle()" title="বন্ধ করুন">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="mcUserList" class="mc-list">
+                <div class="mc-loading"><i class="fas fa-spinner fa-spin"></i></div>
+            </div>
+        </div>
+
+        {{-- === CONVERSATION panel === --}}
+        <div id="mcPanelConv" style="display:none">
+            <div class="mc-head">
+                <button class="mc-head-btn" onclick="mcBackToUsers()" title="ফিরে যান" style="margin-right:4px">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="mc-avatar-sm" id="mcConvAvatar">?</div>
+                <span id="mcConvName" style="font-weight:700;font-size:.85rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+                <button class="mc-head-btn" onclick="miniChatToggle()" title="বন্ধ করুন">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <div id="mcMessages" class="mc-messages"></div>
+            <div class="mc-input-bar">
+                <textarea id="mcInput" class="mc-input" rows="1" placeholder="বার্তা লিখুন..."
+                    maxlength="2000" onkeydown="mcKeyDown(event)"></textarea>
+                <button class="mc-send-btn" onclick="mcSend()" id="mcSendBtn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ══ FAB ══════════════════════════════════════════════════════ */
+#miniChatFab {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: var(--accent, #0f9489);
+    color: #fff;
+    border: none; cursor: pointer;
+    font-size: 1.15rem;
+    box-shadow: 0 4px 20px rgba(15,148,137,.45);
+    z-index: 8000;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .15s, box-shadow .15s;
+}
+#miniChatFab:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(15,148,137,.55); }
+.mc-fab-badge {
+    position: absolute; top: -3px; right: -3px;
+    min-width: 18px; height: 18px;
+    background: #ef4444; color: #fff;
+    border-radius: 999px; font-size: .65rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 3px;
+    border: 2px solid var(--surface, #fff);
+}
+
+/* ══ Window ═══════════════════════════════════════════════════ */
+#miniChatWin {
+    position: fixed;
+    bottom: 86px; right: 24px;
+    width: 320px;
+    height: 440px;
+    border-radius: 14px;
+    background: var(--surface, #fff);
+    border: 1.5px solid var(--border, #e2e8f0);
+    box-shadow: 0 12px 40px rgba(0,0,0,.18);
+    z-index: 7999;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: mcSlideUp .2s ease;
+}
+@keyframes mcSlideUp {
+    from { opacity:0; transform: translateY(12px) scale(.97); }
+    to   { opacity:1; transform: translateY(0) scale(1); }
+}
+
+/* Panels fill the window */
+#mcPanelUsers, #mcPanelConv {
+    display: flex; flex-direction: column;
+    height: 100%;
+}
+
+/* ══ Header ═══════════════════════════════════════════════════ */
+.mc-head {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1.5px solid var(--border, #e2e8f0);
+    background: var(--bg, #f8fafc);
+    flex-shrink: 0;
+}
+.mc-head-btn {
+    width: 26px; height: 26px;
+    border: none; background: transparent;
+    border-radius: 6px; cursor: pointer;
+    color: #94a3b8; font-size: .78rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .1s, color .1s;
+    flex-shrink: 0;
+}
+.mc-head-btn:hover { background: var(--border); color: var(--text-primary); }
+
+/* ══ User list ════════════════════════════════════════════════ */
+.mc-list { flex: 1; overflow-y: auto; }
+.mc-loading { padding: 24px; text-align: center; color: #94a3b8; }
+.mc-user-row {
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .1s;
+}
+.mc-user-row:hover { background: var(--bg); }
+.mc-user-row:last-child { border-bottom: none; }
+.mc-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    color: #fff; font-weight: 700; font-size: .82rem;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.mc-avatar-sm {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: #3b82f6;
+    color: #fff; font-weight: 700; font-size: .68rem;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.mc-user-meta { flex: 1; min-width: 0; }
+.mc-user-name { font-size: .82rem; font-weight: 700; color: var(--text-primary); }
+.mc-user-last {
+    font-size: .72rem; color: #94a3b8;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    margin-top: 1px;
+}
+.mc-unread {
+    min-width: 18px; height: 18px;
+    background: var(--accent); color: #fff;
+    border-radius: 999px; font-size: .64rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 3px; flex-shrink: 0;
+}
+
+/* ══ Messages ═════════════════════════════════════════════════ */
+.mc-messages {
+    flex: 1; overflow-y: auto;
+    padding: 10px 10px 4px;
+    display: flex; flex-direction: column;
+    gap: 3px;
+    background: var(--bg);
+}
+.mc-date-div {
+    text-align: center;
+    font-size: .66rem; color: #94a3b8;
+    margin: 6px 0 4px;
+    position: relative;
+}
+.mc-date-div::before {
+    content:''; position:absolute; top:50%; left:0; right:0;
+    height:1px; background:var(--border);
+}
+.mc-date-div span { background: var(--bg); padding: 0 8px; position: relative; }
+.mc-bubble-row {
+    display: flex; align-items: flex-end; gap: 5px;
+    margin-bottom: 2px;
+}
+.mc-bubble-row.mine  { flex-direction: row-reverse; }
+.mc-bubble {
+    max-width: 75%;
+    padding: 7px 11px;
+    border-radius: 14px;
+    font-size: .81rem;
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+.mine  .mc-bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.theirs .mc-bubble { background: var(--surface); color: var(--text-primary); border: 1.5px solid var(--border); border-bottom-left-radius: 4px; }
+.mc-time { font-size: .62rem; color: #94a3b8; margin-top: 2px; }
+.mine .mc-time { text-align: right; }
+.mc-empty-conv { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#94a3b8; font-size:.78rem; gap:6px; }
+.mc-empty-conv i { font-size: 1.5rem; color: #cbd5e1; }
+
+/* ══ Input ════════════════════════════════════════════════════ */
+.mc-input-bar {
+    display: flex; align-items: flex-end; gap: 6px;
+    padding: 8px 10px;
+    border-top: 1.5px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+}
+.mc-input {
+    flex: 1;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 7px 10px;
+    font-family: inherit; font-size: .82rem;
+    color: var(--text-primary);
+    background: var(--bg);
+    resize: none; outline: none;
+    max-height: 80px;
+    line-height: 1.45;
+    transition: border-color .15s;
+}
+.mc-input:focus { border-color: var(--accent); }
+.mc-send-btn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--accent); color: #fff;
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .8rem; flex-shrink: 0;
+    transition: background .12s;
+}
+.mc-send-btn:hover { filter: brightness(1.1); }
+.mc-send-btn:disabled { opacity: .5; }
+</style>
+
+<script>
+(function () {
+    const ME       = {{ auth()->id() }};
+    const CSRF     = document.querySelector('meta[name=csrf-token]').content;
+    const CHAT_URL = '{{ route('chat.index') }}';
+    const SEND_URL = '{{ route('chat.send') }}';
+    const POLL_URL = '{{ route('chat.poll') }}';
+    const UNRD_URL = '{{ route('chat.unread') }}';
+
+    let mcOpen       = false;
+    let mcActiveUser = null;   // {id, name, color}
+    let mcLastId     = 0;
+    let mcPollTimer  = null;
+    let mcUsers      = [];
+
+    // ── FAB toggle ────────────────────────────────────────────
+    window.miniChatToggle = function () {
+        mcOpen = !mcOpen;
+        document.getElementById('miniChatWin').style.display = mcOpen ? 'flex' : 'none';
+        document.getElementById('miniChatFab').style.background = mcOpen ? '#475569' : '';
+        document.getElementById('miniChatFabIcon').className = mcOpen ? 'fas fa-xmark' : 'fas fa-comments';
+        if (mcOpen && mcUsers.length === 0) mcLoadUsers();
+        if (!mcOpen) { clearInterval(mcPollTimer); }
+    };
+
+    // ── Back to user list ─────────────────────────────────────
+    window.mcBackToUsers = function () {
+        clearInterval(mcPollTimer);
+        mcActiveUser = null;
+        mcLastId = 0;
+        document.getElementById('mcPanelConv').style.display  = 'none';
+        document.getElementById('mcPanelUsers').style.display = 'flex';
+        mcLoadUsers();
+    };
+
+    // ── Load user list ────────────────────────────────────────
+    function mcLoadUsers() {
+        fetch(CHAT_URL + '?mc=1', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json())
+        .then(data => {
+            mcUsers = data;
+            renderUserList(data);
+        })
+        .catch(() => {});
+    }
+
+    function mcAvatarColor(id) { return id % 2 === 0 ? '#3b82f6' : '#7c3aed'; }
+    function mcInitial(name)   { return name ? name.charAt(0).toUpperCase() : '?'; }
+
+    function renderUserList(users) {
+        const el = document.getElementById('mcUserList');
+        if (!users.length) {
+            el.innerHTML = '<div class="mc-loading" style="font-size:.8rem">কোনো ব্যবহারকারী নেই</div>';
+            return;
+        }
+        el.innerHTML = users.map(u => `
+            <div class="mc-user-row" onclick="mcOpenConv(${u.id}, ${JSON.stringify(u.name)})">
+                <div class="mc-avatar" style="background:${mcAvatarColor(u.id)}">${mcInitial(u.name)}</div>
+                <div class="mc-user-meta">
+                    <div class="mc-user-name">${escH(u.name)}</div>
+                    <div class="mc-user-last">${u.last_msg ? escH(u.last_msg) : '<em style="color:#cbd5e1">কোনো বার্তা নেই</em>'}</div>
+                </div>
+                ${u.unread > 0 ? `<span class="mc-unread">${u.unread}</span>` : ''}
+            </div>`
+        ).join('');
+    }
+
+    // ── Open conversation ─────────────────────────────────────
+    window.mcOpenConv = function (userId, userName) {
+        mcActiveUser = { id: userId, name: userName, color: mcAvatarColor(userId) };
+        mcLastId = 0;
+
+        document.getElementById('mcPanelUsers').style.display = 'none';
+        document.getElementById('mcPanelConv').style.display  = 'flex';
+
+        const av = document.getElementById('mcConvAvatar');
+        av.textContent       = mcInitial(userName);
+        av.style.background  = mcAvatarColor(userId);
+        document.getElementById('mcConvName').textContent = userName;
+
+        document.getElementById('mcMessages').innerHTML =
+            '<div class="mc-loading"><i class="fas fa-spinner fa-spin"></i></div>';
+
+        mcFetchHistory();
+        mcStartPoll();
+        setTimeout(() => document.getElementById('mcInput').focus(), 100);
+    };
+
+    function mcFetchHistory() {
+        fetch(`${POLL_URL}?with=${mcActiveUser.id}&last_id=0`, {
+            headers: { 'Accept':'application/json', 'X-CSRF-TOKEN': CSRF }
+        })
+        .then(r => r.json())
+        .then(data => {
+            const box = document.getElementById('mcMessages');
+            if (!data.messages.length) {
+                box.innerHTML = `<div class="mc-empty-conv"><i class="fas fa-comments"></i><div>${escH(mcActiveUser.name)}-এর সাথে কথোপকথন শুরু করুন</div></div>`;
+            } else {
+                box.innerHTML = '';
+                data.messages.forEach(m => appendMcBubble(m));
+                mcScrollBottom();
+            }
+            if (data.messages.length) mcLastId = data.messages[data.messages.length - 1].id;
+            updateBadge(data.total_unread);
+        });
+    }
+
+    function mcStartPoll() {
+        clearInterval(mcPollTimer);
+        mcPollTimer = setInterval(mcPoll, 3000);
+    }
+
+    function mcPoll() {
+        if (!mcActiveUser) return;
+        fetch(`${POLL_URL}?with=${mcActiveUser.id}&last_id=${mcLastId}`, {
+            headers: { 'Accept':'application/json', 'X-CSRF-TOKEN': CSRF }
+        })
+        .then(r => r.json())
+        .then(data => {
+            data.messages.forEach(m => {
+                if (m.sender_id != ME) { appendMcBubble(m); mcScrollBottom(true); }
+                mcLastId = Math.max(mcLastId, m.id);
+            });
+            updateBadge(data.total_unread);
+        });
+    }
+
+    // ── Append bubble ─────────────────────────────────────────
+    function appendMcBubble(msg) {
+        const box = document.getElementById('mcMessages');
+        const empty = box.querySelector('.mc-empty-conv');
+        if (empty) empty.remove();
+
+        const isMine = msg.sender_id == ME;
+        const row = document.createElement('div');
+        row.className = 'mc-bubble-row ' + (isMine ? 'mine' : 'theirs');
+        row.dataset.id = msg.id;
+        row.innerHTML = `
+            <div>
+                <div class="mc-bubble">${escH(msg.message).replace(/\n/g,'<br>')}</div>
+                <div class="mc-time">${msg.created_at}</div>
+            </div>`;
+        box.appendChild(row);
+    }
+
+    function mcScrollBottom(smooth = false) {
+        const el = document.getElementById('mcMessages');
+        if (el) el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'instant' });
+    }
+
+    // ── Send ──────────────────────────────────────────────────
+    window.mcKeyDown = function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); mcSend(); }
+    };
+    window.mcSend = function () {
+        const input = document.getElementById('mcInput');
+        const text  = input.value.trim();
+        if (!text || !mcActiveUser) return;
+
+        const btn = document.getElementById('mcSendBtn');
+        btn.disabled = true;
+
+        fetch(SEND_URL, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN': CSRF },
+            body: JSON.stringify({ receiver_id: mcActiveUser.id, message: text }),
+        })
+        .then(r => r.json())
+        .then(msg => {
+            input.value = ''; input.style.height = 'auto';
+            appendMcBubble(msg);
+            mcScrollBottom(true);
+            mcLastId = msg.id;
+        })
+        .finally(() => { btn.disabled = false; input.focus(); });
+    };
+
+    // ── Badge helpers ─────────────────────────────────────────
+    function updateBadge(count) {
+        ['mcFabBadge', 'chatBadge'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = count > 9 ? '9+' : count;
+            el.style.display = count > 0 ? 'flex' : 'none';
+        });
+    }
+
+    // Passive global unread poll (when mini chat closed)
+    setInterval(() => {
+        if (mcOpen) return;
+        fetch(UNRD_URL, { headers:{ 'Accept':'application/json' } })
+        .then(r => r.json())
+        .then(d => updateBadge(d.count))
+        .catch(()=>{});
+    }, 15000);
+
+    // Auto-grow textarea
+    document.getElementById('mcInput').addEventListener('input', function () {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 80) + 'px';
+    });
+
+    function escH(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+})();
+</script>
 </body>
 </html>

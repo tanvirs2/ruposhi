@@ -49,6 +49,18 @@ class ChatController extends Controller
                 ->update(['is_read' => true]);
         }
 
+        // Mini-chat AJAX user list request
+        if ($request->has('mc')) {
+            return response()->json(
+                $userList->map(fn($item) => [
+                    'id'       => $item['user']->id,
+                    'name'     => $item['user']->name,
+                    'last_msg' => $item['last'] ? mb_substr($item['last']->message, 0, 40) : null,
+                    'unread'   => $item['unread'],
+                ])
+            );
+        }
+
         return view('chat.index', compact('userList', 'activeUser', 'messages', 'me'));
     }
 
