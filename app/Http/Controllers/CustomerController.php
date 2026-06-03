@@ -118,7 +118,7 @@ class CustomerController extends Controller
         }
 
         // ── Sales within period → item-level rows ────────────────
-        $sales = Sale::with(['items.item'])
+        $sales = Sale::with(['items.item', 'extraCosts'])
             ->where('customer_id', $customer->id)
             ->whereBetween('sale_date', [$from, $to])
             ->orderBy('sale_date')->orderBy('id')
@@ -156,8 +156,23 @@ class CustomerController extends Controller
                     'credit'   => $sale->discount,
                 ]);
             }
-            // Extra cost row (debit — adds to balance)
-            if ($sale->extra_cost > 0) {
+            // Extra cost rows (categorized — new system)
+            if ($sale->extraCosts->isNotEmpty()) {
+                foreach ($sale->extraCosts as $ec) {
+                    $rows->push([
+                        'sort_key' => $saleTime,
+                        'datetime' => $saleTime,
+                        'sale_id'  => $sale->id,
+                        'type'     => 'extra_cost',
+                        'label'    => $ec->category_name,
+                        'qty'      => 0,
+                        'rate'     => 0,
+                        'debit'    => $ec->amount,
+                        'credit'   => 0,
+                    ]);
+                }
+            } elseif (($sale->extra_cost ?? 0) > 0) {
+                // Legacy fallback: old record without extraCosts rows
                 $rows->push([
                     'sort_key' => $saleTime,
                     'datetime' => $saleTime,
