@@ -335,6 +335,78 @@
 
             <div class="topbar-divider"></div>
 
+            {{-- Notification Bell --}}
+            <div class="notif-wrap" id="notifWrap">
+                <button class="ctrl-btn notif-bell-btn" id="notifBtn" onclick="toggleNotif(event)" title="বিজ্ঞপ্তি">
+                    <i class="fas fa-bell"></i>
+                    @if($notifTotal > 0)
+                        <span class="notif-badge">{{ $notifTotal > 9 ? '9+' : $notifTotal }}</span>
+                    @endif
+                </button>
+                <div class="notif-dropdown" id="notifDropdown">
+                    <div class="notif-header">
+                        <span><i class="fas fa-bell" style="margin-right:6px;color:var(--accent)"></i>বিজ্ঞপ্তি</span>
+                        @if($notifTotal > 0)
+                            <span class="notif-count-badge">{{ $notifTotal }} টি সতর্কতা</span>
+                        @endif
+                    </div>
+                    <div class="notif-body">
+                        @if($notifOutOfStock > 0)
+                        <a href="{{ route('stock.low') }}" class="notif-item notif-danger" onclick="closeNotif()">
+                            <div class="notif-icon-wrap notif-icon-red"><i class="fas fa-circle-xmark"></i></div>
+                            <div class="notif-content">
+                                <div class="notif-title">স্টক শেষ</div>
+                                <div class="notif-desc">{{ $notifOutOfStock }}টি পণ্যের স্টক শেষ হয়ে গেছে</div>
+                            </div>
+                            <i class="fas fa-chevron-right notif-arrow"></i>
+                        </a>
+                        @endif
+
+                        @if($notifLowStock > 0)
+                        <a href="{{ route('stock.low') }}" class="notif-item notif-warning" onclick="closeNotif()">
+                            <div class="notif-icon-wrap notif-icon-yellow"><i class="fas fa-triangle-exclamation"></i></div>
+                            <div class="notif-content">
+                                <div class="notif-title">কম স্টক</div>
+                                <div class="notif-desc">{{ $notifLowStock }}টি পণ্যের স্টক সীমার নিচে</div>
+                            </div>
+                            <i class="fas fa-chevron-right notif-arrow"></i>
+                        </a>
+                        @endif
+
+                        @if($notifCustomersDue > 0)
+                        <a href="{{ route('reports.customer-due') }}" class="notif-item notif-info" onclick="closeNotif()">
+                            <div class="notif-icon-wrap notif-icon-blue"><i class="fas fa-users"></i></div>
+                            <div class="notif-content">
+                                <div class="notif-title">কাস্টমার বাকী</div>
+                                <div class="notif-desc">{{ $notifCustomersDue }}জনের মোট ৳{{ number_format($notifTotalCustomerDue, 0) }} বাকী</div>
+                            </div>
+                            <i class="fas fa-chevron-right notif-arrow"></i>
+                        </a>
+                        @endif
+
+                        @if($notifSuppliersDue > 0)
+                        <a href="{{ route('suppliers.due-report') }}" class="notif-item notif-orange" onclick="closeNotif()">
+                            <div class="notif-icon-wrap notif-icon-orange"><i class="fas fa-truck"></i></div>
+                            <div class="notif-content">
+                                <div class="notif-title">সরবরাহকারী বকেয়া</div>
+                                <div class="notif-desc">{{ $notifSuppliersDue }}জনকে মোট ৳{{ number_format($notifTotalSupplierDue, 0) }} দেওয়ার বাকী</div>
+                            </div>
+                            <i class="fas fa-chevron-right notif-arrow"></i>
+                        </a>
+                        @endif
+
+                        @if($notifTotal === 0)
+                        <div class="notif-empty">
+                            <i class="fas fa-circle-check"></i>
+                            <div>সব ঠিকঠাক আছে!</div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            <div class="topbar-divider"></div>
+
             <div class="search-box">
                 <i class="fas fa-search"></i>
                 <input type="text" placeholder="অনুসন্ধান করুন..." id="globalSearch">
@@ -429,6 +501,19 @@
 <script src="{{ asset('js/app.js') }}"></script>
 
 <script>
+/* ── Notification Bell ── */
+function toggleNotif(e) {
+    e.stopPropagation();
+    document.getElementById('notifDropdown').classList.toggle('open');
+}
+function closeNotif() {
+    document.getElementById('notifDropdown').classList.remove('open');
+}
+document.addEventListener('click', function(e) {
+    var wrap = document.getElementById('notifWrap');
+    if (wrap && !wrap.contains(e.target)) closeNotif();
+});
+
 /* ── Sidebar active-link highlighter (JS, bypasses Blade/cache) ── */
 (function () {
     var path = window.location.pathname;          // e.g. /customers/3/ledger
