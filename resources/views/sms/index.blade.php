@@ -45,7 +45,7 @@
 </div>
 
 {{-- ── API Setup panel ────────────────────────────────────────── --}}
-<div id="apiWrap" style="{{ $apiReady ? 'display:none' : 'display:block' }};margin-bottom:20px">
+<div id="apiWrap" style="display:none;margin-bottom:20px">
     <div class="card api-setup-card">
         <div class="api-setup-head">
             <span style="display:flex;align-items:center;gap:10px">
