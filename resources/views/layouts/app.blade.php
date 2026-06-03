@@ -1260,8 +1260,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Back to user list ─────────────────────────────────────
     window.mcBackToUsers = function () {
-        clearInterval(mcPollTimer);
-        mcActiveUser = null; mcLastId = 0;
+        clearInterval(mcPollTimer); clearInterval(mcGroupPollTimer);
+        mcActiveUser = null; mcLastId = 0; mcGroupLastId = 0;
+        document.getElementById('mcInput').placeholder = 'বার্তা লিখুন...';
         document.getElementById('mcPanelConv').style.display  = 'none';
         document.getElementById('mcPanelUsers').style.display = 'flex';
         mcLoadUsers();
@@ -1279,8 +1280,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderUserList(users) {
         const el = document.getElementById('mcUserList');
-        if (!users.length) { el.innerHTML = '<div class="mc-loading" style="font-size:.8rem">কোনো ব্যবহারকারী নেই</div>'; return; }
-        el.innerHTML = users.map(u => `
+        const groupRow = `
+            <div class="mc-user-row" onclick="mcOpenGroup()">
+                <div class="mc-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444);font-size:.75rem">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="mc-user-meta">
+                    <div class="mc-user-name">📢 সবাই (গ্রুপ)</div>
+                    <div class="mc-user-last">সকল ব্যবহারকারী</div>
+                </div>
+            </div>`;
+        if (!users.length) { el.innerHTML = groupRow + '<div class="mc-loading" style="font-size:.8rem">কোনো ব্যবহারকারী নেই</div>'; return; }
+        el.innerHTML = groupRow + users.map(u => `
             <div class="mc-user-row" onclick="mcOpenConv(${u.id},${JSON.stringify(u.name)})">
                 <div class="mc-avatar" style="background:${mcAvatarColor(u.id)}">${mcInitial(u.name)}</div>
                 <div class="mc-user-meta">
@@ -1289,6 +1300,68 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 ${u.unread > 0 ? `<span class="mc-unread">${u.unread}</span>` : ''}
             </div>`).join('');
+    }
+
+    // ── Group chat in mini window ─────────────────────────────
+    let mcGroupLastId = 0;
+    let mcGroupPollTimer = null;
+    const GROUP_SEND_URL = '{{ route('chat.group.send') }}';
+    const GROUP_POLL_URL = '{{ route('chat.group.poll') }}';
+
+    window.mcOpenGroup = function () {
+        mcActiveUser = { id: 'group', name: 'সবাই (গ্রুপ)', group: true };
+        document.getElementById('mcPanelUsers').style.display = 'none';
+        document.getElementById('mcPanelConv').style.display  = 'flex';
+        const av = document.getElementById('mcConvAvatar');
+        av.innerHTML = '<i class="fas fa-users" style="font-size:.6rem"></i>';
+        av.style.background = 'linear-gradient(135deg,#f59e0b,#ef4444)';
+        document.getElementById('mcConvName').textContent = '📢 সবাই — গ্রুপ';
+        document.getElementById('mcInput').placeholder = 'সবাইকে বার্তা লিখুন...';
+        document.getElementById('mcMessages').innerHTML = '<div class="mc-loading"><i class="fas fa-spinner fa-spin"></i></div>';
+        mcFetchGroupHistory();
+        clearInterval(mcGroupPollTimer);
+        mcGroupPollTimer = setInterval(mcGroupPoll, 3000);
+        setTimeout(() => document.getElementById('mcInput').focus(), 100);
+    };
+
+    function mcFetchGroupHistory() {
+        fetch(`${GROUP_POLL_URL}?last_id=0`, { headers:{ 'Accept':'application/json', 'X-CSRF-TOKEN': CSRF } })
+        .then(r => r.json()).then(data => {
+            const box = document.getElementById('mcMessages');
+            if (!data.messages.length) {
+                box.innerHTML = `<div class="mc-empty-conv"><i class="fas fa-users"></i><div>গ্রুপ চ্যাট শুরু করুন</div></div>`;
+            } else {
+                box.innerHTML = '';
+                data.messages.forEach(m => appendMcGroupBubble(m));
+                mcScrollBottom();
+                mcGroupLastId = data.messages[data.messages.length - 1].id;
+            }
+        });
+    }
+
+    function mcGroupPoll() {
+        fetch(`${GROUP_POLL_URL}?last_id=${mcGroupLastId}`, { headers:{ 'Accept':'application/json', 'X-CSRF-TOKEN': CSRF } })
+        .then(r => r.json()).then(data => {
+            data.messages.forEach(m => {
+                if (m.sender_id != ME && !document.querySelector(`#mcMessages [data-id="${m.id}"]`)) {
+                    appendMcGroupBubble(m); mcScrollBottom(true);
+                }
+                mcGroupLastId = Math.max(mcGroupLastId, m.id);
+            });
+        }).catch(()=>{});
+    }
+
+    function appendMcGroupBubble(msg) {
+        const box = document.getElementById('mcMessages');
+        const empty = box.querySelector('.mc-empty-conv');
+        if (empty) empty.remove();
+        const isMine = msg.sender_id == ME;
+        const row = document.createElement('div');
+        row.className = 'mc-bubble-row ' + (isMine ? 'mine' : 'theirs');
+        row.dataset.id = msg.id;
+        const senderHtml = !isMine ? `<div style="font-size:.65rem;font-weight:700;color:#f59e0b;margin-bottom:2px">${escH(msg.sender_name)}</div>` : '';
+        row.innerHTML = `<div>${senderHtml}<div class="mc-bubble">${escH(msg.message).replace(/\n/g,'<br>')}</div><div class="mc-time">${msg.created_at}</div></div>`;
+        box.appendChild(row);
     }
 
     // ── Open conversation ─────────────────────────────────────
@@ -1327,8 +1400,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── WebSocket: receive incoming message (when Reverb/Pusher running) ──
     window.addEventListener('ws:message', function (e) {
         const msg = e.detail;
+
+        if (msg.is_group) {
+            // Group message
+            if (mcOpen && mcActiveUser && mcActiveUser.group) {
+                if (!document.querySelector(`#mcMessages [data-id="${msg.id}"]`)) {
+                    appendMcGroupBubble(msg); mcScrollBottom(true);
+                }
+                mcGroupLastId = Math.max(mcGroupLastId, msg.id);
+            }
+            return;
+        }
+
+        // Private message
         updateBadge_fetch();
-        if (mcOpen && mcActiveUser && msg.sender_id == mcActiveUser.id) {
+        if (mcOpen && mcActiveUser && !mcActiveUser.group && msg.sender_id == mcActiveUser.id) {
             if (!document.querySelector(`#mcMessages [data-id="${msg.id}"]`)) {
                 appendMcBubble(msg); mcScrollBottom(true);
             }
@@ -1392,13 +1478,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!text || !mcActiveUser) return;
         const btn = document.getElementById('mcSendBtn');
         btn.disabled = true;
-        fetch(SEND_URL, {
+
+        const isGroup = mcActiveUser.group === true;
+        const url  = isGroup ? GROUP_SEND_URL : SEND_URL;
+        const body = isGroup ? { message: text } : { receiver_id: mcActiveUser.id, message: text };
+
+        fetch(url, {
             method: 'POST',
             headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN': CSRF },
-            body: JSON.stringify({ receiver_id: mcActiveUser.id, message: text }),
+            body: JSON.stringify(body),
         })
         .then(r => r.json())
-        .then(msg => { input.value = ''; input.style.height = 'auto'; appendMcBubble(msg); mcScrollBottom(true); })
+        .then(msg => {
+            input.value = ''; input.style.height = 'auto';
+            if (isGroup) { appendMcGroupBubble(msg); mcGroupLastId = msg.id; }
+            else         { appendMcBubble(msg); }
+            mcScrollBottom(true);
+        })
         .finally(() => { btn.disabled = false; input.focus(); });
     };
 

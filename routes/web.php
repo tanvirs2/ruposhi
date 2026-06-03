@@ -59,11 +59,15 @@ Route::middleware('auth')->group(function () {
     Route::resource('employees', EmployeeController::class);
     Route::resource('expenses',  ExtraExpenseController::class);
 
-    // Chat
+    // Chat (private)
     Route::get('/chat',               [ChatController::class, 'index'])->name('chat.index');
     Route::post('/chat/send',         [ChatController::class, 'send'])->name('chat.send');
     Route::get('/chat/poll',          [ChatController::class, 'poll'])->name('chat.poll');
     Route::get('/chat/unread',        [ChatController::class, 'unread'])->name('chat.unread');
+    // Chat (group)
+    Route::get('/chat/group',         [ChatController::class, 'groupIndex'])->name('chat.group');
+    Route::post('/chat/group/send',   [ChatController::class, 'groupSend'])->name('chat.group.send');
+    Route::get('/chat/group/poll',    [ChatController::class, 'groupPoll'])->name('chat.group.poll');
 
     // SMS
     Route::get('/sms',                          [SmsController::class, 'index'])->name('sms.index');

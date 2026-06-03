@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\GroupMessageSent;
 use App\Events\MessageSent;
 use App\Models\ChatMessage;
+use App\Models\GroupChatMessage;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -141,5 +143,60 @@ class ChatController extends Controller
     public function unread()
     {
         return response()->json(['count' => ChatMessage::unreadCount(Auth::id())]);
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // Group Chat
+    // ──────────────────────────────────────────────────────────
+
+    public function groupIndex()
+    {
+        $messages = GroupChatMessage::with('sender')
+            ->latest()->take(100)->get()->reverse()->values();
+
+        return view('chat.group', compact('messages'));
+    }
+
+    public function groupSend(Request $request)
+    {
+        $request->validate(['message' => 'required|string|max:2000']);
+
+        $msg = GroupChatMessage::create([
+            'sender_id' => Auth::id(),
+            'message'   => trim($request->message),
+        ]);
+        $msg->load('sender');
+
+        try { broadcast(new GroupMessageSent($msg)); } catch (\Throwable) {}
+
+        return response()->json([
+            'id'          => $msg->id,
+            'sender_id'   => $msg->sender_id,
+            'sender_name' => $msg->sender->name,
+            'message'     => $msg->message,
+            'created_at'  => $msg->created_at->format('h:i a'),
+            'date'        => $msg->created_at->format('d M'),
+            'is_group'    => true,
+        ]);
+    }
+
+    public function groupPoll(Request $request)
+    {
+        $lastId   = (int) ($request->last_id ?? 0);
+        $messages = GroupChatMessage::with('sender')
+            ->where('id', '>', $lastId)
+            ->orderBy('id')
+            ->get()
+            ->map(fn($m) => [
+                'id'          => $m->id,
+                'sender_id'   => $m->sender_id,
+                'sender_name' => $m->sender->name,
+                'message'     => $m->message,
+                'created_at'  => $m->created_at->format('h:i a'),
+                'date'        => $m->created_at->format('d M'),
+                'is_group'    => true,
+            ]);
+
+        return response()->json(['messages' => $messages]);
     }
 }

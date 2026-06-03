@@ -15,6 +15,16 @@
         </div>
 
         <div class="chat-user-list">
+            {{-- Group chat entry --}}
+            <a href="{{ route('chat.group') }}" class="chat-user-row">
+                <div class="chat-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">
+                    <i class="fas fa-users" style="font-size:.8rem"></i>
+                </div>
+                <div class="chat-user-info">
+                    <div class="chat-user-name">📢 সবাই (গ্রুপ)</div>
+                    <div class="chat-user-last">সকল ব্যবহারকারী</div>
+                </div>
+            </a>
             @forelse($userList as $item)
             @php $u = $item['user']; @endphp
             <a href="{{ route('chat.index', ['with' => $u->id]) }}"
