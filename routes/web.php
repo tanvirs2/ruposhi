@@ -19,6 +19,7 @@ use App\Http\Controllers\StoreConfigController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ExtraCostCategoryController;
+use App\Http\Controllers\SmsController;
 
 /* ── Auth ──────────────────────────────────────────────────── */
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
@@ -56,6 +57,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('purchases', PurchaseController::class);
     Route::resource('employees', EmployeeController::class);
     Route::resource('expenses',  ExtraExpenseController::class);
+
+    // SMS
+    Route::get('/sms',                          [SmsController::class, 'index'])->name('sms.index');
+    Route::post('/sms/send',                    [SmsController::class, 'send'])->name('sms.send');
+    Route::post('/sms/send-custom',             [SmsController::class, 'sendCustom'])->name('sms.send-custom');
+    Route::delete('/sms/log/{smsLog}',          [SmsController::class, 'destroyLog'])->name('sms.log.destroy');
 
     Route::get('/stock',              [StockController::class, 'index'])->name('stock.index');
     Route::get('/stock/report',       [StockController::class, 'report'])->name('stock.report');

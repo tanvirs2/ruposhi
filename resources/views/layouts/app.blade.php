@@ -262,6 +262,13 @@
                 <span class="nav-icon"><i class="fas fa-coins"></i></span>
                 <span class="nav-label">খরচের ক্যাটাগরি</span>
             </a>
+            <a href="{{ route('sms.index') }}" class="nav-item {{ $_seg==='sms' ? 'active' : '' }}">
+                <span class="nav-icon"><i class="fas fa-comment-sms"></i></span>
+                <span class="nav-label">SMS পাঠান</span>
+                @if(isset($notifTotal))
+                    {{-- badge if needed in future --}}
+                @endif
+            </a>
         </div>
     </nav>
 
