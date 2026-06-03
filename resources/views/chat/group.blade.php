@@ -106,16 +106,7 @@
 </div>
 @endsection
 
-@push('styles')
-<style>
-.grp-av { background: linear-gradient(135deg,#f59e0b,#ef4444) !important; }
-.grp-sender-name {
-    font-size: .7rem; font-weight: 700;
-    color: #f59e0b;
-    margin-bottom: 3px;
-}
-</style>
-@endpush
+{{-- Chat CSS (incl. .grp-av, .grp-sender-name) lives in public/css/app.css --}}
 
 @push('scripts')
 <script>
