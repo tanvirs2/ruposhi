@@ -44,13 +44,13 @@
                     <th>আইটেম</th>
                     <th>ক্যাটাগরি</th>
                     <th class="tc">সর্বশেষ আপডেট</th>
-                    <th class="tc">
-                        {{ $filterDate === now()->toDateString() ? 'আজকের' : \Carbon\Carbon::parse($filterDate)->format('d/m') }} বিক্রয়
-                    </th>
                     <th class="tc">মোট বিক্রয়</th>
                     <th class="tc">পূর্বের স্টক</th>
                     <th class="tc" style="color:#0d9488">
                         {{ $filterDate === now()->toDateString() ? 'আজ' : \Carbon\Carbon::parse($filterDate)->format('d/m') }} গ্রহণ
+                    </th>
+                    <th class="tc">
+                        {{ $filterDate === now()->toDateString() ? 'আজকের' : \Carbon\Carbon::parse($filterDate)->format('d/m') }} বিক্রয়
                     </th>
                     <th class="tc">বর্তমান স্টক</th>
                     <th class="tr">ক্রয় মূল্য</th>
@@ -95,14 +95,6 @@
                         @endif
                     </td>
                     <td class="tc">
-                        @if($todayQty > 0)
-                            <span style="color:#16a34a;font-weight:600">{{ number_format($todayQty, 0) }}</span>
-                            <span style="color:#94a3b8;font-size:.8rem"> {{ $unit }}</span>
-                        @else
-                            <span style="color:#cbd5e1">—</span>
-                        @endif
-                    </td>
-                    <td class="tc">
                         <span style="font-weight:600">{{ number_format($totalQty, 0) }}</span>
                         <span style="color:#94a3b8;font-size:.8rem"> {{ $unit }}</span>
                     </td>
@@ -115,6 +107,15 @@
                     <td class="tc">
                         @if($receiveQty > 0)
                             <span style="color:#0d9488;font-weight:700">+{{ number_format($receiveQty, 0) }}</span>
+                            <span style="color:#94a3b8;font-size:.8rem"> {{ $unit }}</span>
+                        @else
+                            <span style="color:#cbd5e1">—</span>
+                        @endif
+                    </td>
+                    {{-- আজকের বিক্রয় --}}
+                    <td class="tc">
+                        @if($todayQty > 0)
+                            <span style="color:#16a34a;font-weight:600">{{ number_format($todayQty, 0) }}</span>
                             <span style="color:#94a3b8;font-size:.8rem"> {{ $unit }}</span>
                         @else
                             <span style="color:#cbd5e1">—</span>
@@ -158,12 +159,12 @@
             <tfoot>
                 <tr class="tfoot-summary">
                     <td colspan="5" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট স্টক</td>
-                    <td class="tc" style="font-weight:800;color:#16a34a">{{ number_format($grandTodaySales, 0) }}</td>
                     <td class="tc" style="font-weight:800">{{ number_format($grandTotalSales, 0) }}</td>
                     <td class="tc" style="font-weight:800;color:#475569">{{ number_format($grandStockQty - $grandTodayReceive, 0) }}</td>
                     <td class="tc" style="font-weight:800;color:#0d9488">
                         @if($grandTodayReceive > 0)+{{ number_format($grandTodayReceive, 0) }}@else —@endif
                     </td>
+                    <td class="tc" style="font-weight:800;color:#16a34a">{{ number_format($grandTodaySales, 0) }}</td>
                     <td class="tc" style="font-weight:800">{{ number_format($grandStockQty, 0) }}</td>
                     <td></td>
                     <td class="tr" style="font-weight:800;color:{{ $grandStockValue < 0 ? '#dc2626' : 'inherit' }}">
