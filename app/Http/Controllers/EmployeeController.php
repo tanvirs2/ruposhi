@@ -53,6 +53,9 @@ class EmployeeController extends Controller
 
     public function destroy(Employee $employee)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
+        }
         $employee->delete();
         return redirect()->route('employees.index')->with('success', 'কর্মচারী মুছে ফেলা হয়েছে।');
     }

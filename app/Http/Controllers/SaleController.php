@@ -262,6 +262,9 @@ class SaleController extends Controller
 
     public function destroy(Sale $sale)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
+        }
         DB::transaction(function () use ($sale) {
             // Log before delete
             $this->logSale($sale, 'deleted', 'মুছে ফেলা হয়েছে');

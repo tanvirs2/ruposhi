@@ -79,6 +79,9 @@ class CustomerPaymentController extends Controller
 
     public function destroy(CustomerPayment $customerPayment)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
+        }
         DB::transaction(function () use ($customerPayment) {
             // Reverse the payment — add due back
             Customer::where('id', $customerPayment->customer_id)

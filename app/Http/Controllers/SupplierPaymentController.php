@@ -62,6 +62,9 @@ class SupplierPaymentController extends Controller
 
     public function destroy(SupplierPayment $supplierPayment)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
+        }
         Supplier::where('id', $supplierPayment->supplier_id)
             ->increment('due_amount', $supplierPayment->amount);
         $supplierPayment->delete();

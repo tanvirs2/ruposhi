@@ -70,7 +70,7 @@
                     <td>{{ $p->notes ?? '—' }}</td>
                     <td>{{ $p->user->name }}</td>
                     <td>
-                        <form method="POST" action="{{ route('customer-payments.destroy', $p) }}"
+                        <form class="admin-only" method="POST" action="{{ route('customer-payments.destroy', $p) }}"
                             onsubmit="return confirm('এই পরিশোধ মুছলে কাস্টমারের বাকী বাড়বে। নিশ্চিত?')">
                             @csrf @method('DELETE')
                             <button type="submit" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button>

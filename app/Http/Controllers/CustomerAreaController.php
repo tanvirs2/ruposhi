@@ -39,6 +39,9 @@ class CustomerAreaController extends Controller
 
     public function destroy(CustomerArea $customerArea)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
+        }
         $customerArea->delete();
         return redirect()->route('customer-areas.index')->with('success', 'এরিয়া মুছে ফেলা হয়েছে।');
     }

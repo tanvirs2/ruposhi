@@ -85,6 +85,9 @@ class ExtraExpenseController extends Controller
 
     public function destroy(ExtraExpense $expense)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
+        }
         $expense->delete();
         return redirect()->route('expenses.index')->with('success', 'রেকর্ড মুছে ফেলা হয়েছে।');
     }

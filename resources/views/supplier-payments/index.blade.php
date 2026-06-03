@@ -58,7 +58,7 @@
                     <td>{{ $p->notes ?? '—' }}</td>
                     <td>{{ $p->user->name }}</td>
                     <td>
-                        <form method="POST" action="{{ route('supplier-payments.destroy', $p) }}"
+                        <form class="admin-only" method="POST" action="{{ route('supplier-payments.destroy', $p) }}"
                               onsubmit="return confirm('এই পরিশোধ মুছে ফেলবেন? বকেয়া পুনরুদ্ধার হবে।')">
                             @csrf @method('DELETE')
                             <button type="submit" class="btn-icon-sm btn-icon-danger" title="মুছুন">

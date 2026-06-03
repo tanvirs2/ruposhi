@@ -39,6 +39,9 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
+        }
         $category->delete();
         return redirect()->route('categories.index')->with('success', 'ক্যাটাগরি মুছে ফেলা হয়েছে।');
     }

@@ -73,7 +73,7 @@
                     <td>
                         <div class="action-btns">
                             <a href="{{ route('sales.show',$sale) }}" class="btn-icon-sm"><i class="fas fa-eye"></i></a>
-                            <form method="POST" action="{{ route('sales.destroy',$sale) }}" onsubmit="return confirm('এই বিক্রয় মুছে ফেলবেন? স্টক পুনরুদ্ধার হবে।')">
+                            <form class="admin-only" method="POST" action="{{ route('sales.destroy',$sale) }}" onsubmit="return confirm('এই বিক্রয় মুছে ফেলবেন? স্টক পুনরুদ্ধার হবে।')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button>
                             </form>

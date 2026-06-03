@@ -100,7 +100,7 @@
                     <td>
                         <div class="action-btns">
                             <a href="{{ route('expenses.edit', $exp) }}" class="btn-icon-sm"><i class="fas fa-pen"></i></a>
-                            <form method="POST" action="{{ route('expenses.destroy', $exp) }}" onsubmit="return confirm('মুছে ফেলবেন?')">
+                            <form class="admin-only" method="POST" action="{{ route('expenses.destroy', $exp) }}" onsubmit="return confirm('মুছে ফেলবেন?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button>
                             </form>

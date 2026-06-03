@@ -218,6 +218,9 @@ class PurchaseController extends Controller
 
     public function destroy(Purchase $purchase)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
+        }
         DB::transaction(function () use ($purchase) {
             // Restore stock
             foreach ($purchase->items as $pi) {

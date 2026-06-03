@@ -33,7 +33,7 @@
                     <td>
                         <div class="action-btns">
                             <a href="{{ route('employees.edit', $emp) }}" class="btn-icon-sm"><i class="fas fa-pen"></i></a>
-                            <form method="POST" action="{{ route('employees.destroy', $emp) }}" onsubmit="return confirm('এই কর্মচারী মুছে ফেলবেন?')">
+                            <form class="admin-only" method="POST" action="{{ route('employees.destroy', $emp) }}" onsubmit="return confirm('এই কর্মচারী মুছে ফেলবেন?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button>
                             </form>

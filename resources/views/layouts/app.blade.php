@@ -13,7 +13,7 @@
     <script src="https://js.pusher.com/8.2.0/pusher.min.js" defer></script>
     @stack('styles')
 </head>
-<body>
+<body class="role-{{ auth()->user()->role }}">
 
 <!-- Sidebar -->
 <aside class="sidebar" id="sidebar">
@@ -265,6 +265,7 @@
                 <button type="button" class="info-btn" data-info="এই শপের স্টাফ ও অ্যাডমিন লগইন অ্যাকাউন্ট তৈরি ও পরিচালনা করুন।">i</button>
             </a>
             @endif
+            @if(auth()->user()->role === 'admin')
             <a href="{{ route('store-config.index') }}" class="nav-item {{ $_seg==='store-config' ? 'active' : '' }}">
                 <span class="nav-icon"><i class="fas fa-store"></i></span>
                 <span class="nav-label">স্টোর কনফিগ</span>
@@ -274,6 +275,7 @@
                 <span class="nav-icon"><i class="fas fa-coins"></i></span>
                 <span class="nav-label">খরচের ক্যাটাগরি</span>
             </a>
+            @endif
             <a href="{{ route('sms.index') }}" class="nav-item {{ $_seg==='sms' ? 'active' : '' }}">
                 <span class="nav-icon"><i class="fas fa-comment-sms"></i></span>
                 <span class="nav-label">SMS পাঠান</span>

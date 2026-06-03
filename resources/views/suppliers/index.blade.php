@@ -55,7 +55,7 @@
                             <a href="{{ route('suppliers.edit', $supplier) }}" class="btn-icon-sm" title="সম্পাদনা">
                                 <i class="fas fa-pen"></i>
                             </a>
-                            <form method="POST" action="{{ route('suppliers.destroy', $supplier) }}" onsubmit="return confirm('মুছে ফেলবেন?')">
+                            <form class="admin-only" method="POST" action="{{ route('suppliers.destroy', $supplier) }}" onsubmit="return confirm('মুছে ফেলবেন?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button>
                             </form>

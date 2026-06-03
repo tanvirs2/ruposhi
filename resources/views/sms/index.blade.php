@@ -44,8 +44,8 @@
     </div>
 </div>
 
-{{-- ── API Setup panel ────────────────────────────────────────── --}}
-<div id="apiWrap" style="display:none;margin-bottom:20px">
+{{-- ── API Setup panel — admin only ───────────────────────────── --}}
+<div id="apiWrap" class="admin-only" style="display:none;margin-bottom:20px">
     <div class="card api-setup-card">
         <div class="api-setup-head">
             <span style="display:flex;align-items:center;gap:10px">
@@ -331,7 +331,7 @@
                         <span>{{ $log->created_at->format('h:ia') }}</span>
                     </td>
                     <td class="tc">
-                        <form method="POST" action="{{ route('sms.log.destroy', $log) }}"
+                        <form class="admin-only" method="POST" action="{{ route('sms.log.destroy', $log) }}"
                               onsubmit="return confirm('লগ মুছে ফেলবেন?')">
                             @csrf @method('DELETE')
                             <button type="submit" class="btn-icon-sm btn-icon-danger" title="মুছুন">

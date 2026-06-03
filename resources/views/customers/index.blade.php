@@ -91,7 +91,7 @@
                             <a href="{{ route('customers.edit', $customer) }}" class="btn-icon-sm" title="সম্পাদনা">
                                 <i class="fas fa-pen"></i>
                             </a>
-                            <form method="POST" action="{{ route('customers.destroy', $customer) }}"
+                            <form class="admin-only" method="POST" action="{{ route('customers.destroy', $customer) }}"
                                   onsubmit="return confirm('এই কাস্টমার মুছে ফেলবেন?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn-icon-sm btn-icon-danger" title="মুছুন">

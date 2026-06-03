@@ -237,6 +237,9 @@ class SupplierController extends Controller
 
     public function destroy(Supplier $supplier)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
+        }
         $supplier->delete();
         return redirect()->route('suppliers.index')->with('success', 'সরবরাহকারী মুছে ফেলা হয়েছে।');
     }

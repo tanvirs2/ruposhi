@@ -82,7 +82,7 @@ Route::middleware(['auth', 'shop.scope'])->group(function () {
     Route::get('/sms',                          [SmsController::class, 'index'])->name('sms.index');
     Route::post('/sms/send',                    [SmsController::class, 'send'])->name('sms.send');
     Route::post('/sms/send-custom',             [SmsController::class, 'sendCustom'])->name('sms.send-custom');
-    Route::post('/sms/settings',                [SmsController::class, 'saveSettings'])->name('sms.settings');
+    Route::post('/sms/settings',                [SmsController::class, 'saveSettings'])->name('sms.settings')->middleware('shop.admin');
     Route::delete('/sms/log/{smsLog}',          [SmsController::class, 'destroyLog'])->name('sms.log.destroy');
 
     Route::get('/stock',              [StockController::class, 'index'])->name('stock.index');
@@ -113,20 +113,25 @@ Route::middleware(['auth', 'shop.scope'])->group(function () {
 
     Route::get('/reports/sale-logs', [ReportController::class, 'saleLogs'])->name('reports.sale-logs');
 
-    Route::get('/store-config', [StoreConfigController::class, 'index'])->name('store-config.index');
-    Route::put('/store-config', [StoreConfigController::class, 'update'])->name('store-config.update');
-    Route::post('/store-config/payment-method',        [StoreConfigController::class, 'addPaymentMethod'])->name('store-config.payment-method.add');
-    Route::delete('/store-config/payment-method',      [StoreConfigController::class, 'deletePaymentMethod'])->name('store-config.payment-method.delete');
-    Route::post('/store-config/multimedia/toggle',     [StoreConfigController::class, 'toggleMultimedia'])->name('store-config.multimedia.toggle');
-    Route::post('/store-config/multimedia/interval',   [StoreConfigController::class, 'updateMultimediaInterval'])->name('store-config.multimedia.interval');
-    Route::post('/store-config/multimedia/upload',     [StoreConfigController::class, 'uploadMultimedia'])->name('store-config.multimedia.upload');
-    Route::delete('/store-config/multimedia',          [StoreConfigController::class, 'deleteMultimedia'])->name('store-config.multimedia.delete');
+    /* Store Config — admin only */
+    Route::middleware('shop.admin')->group(function () {
+        Route::get('/store-config', [StoreConfigController::class, 'index'])->name('store-config.index');
+        Route::put('/store-config', [StoreConfigController::class, 'update'])->name('store-config.update');
+        Route::post('/store-config/payment-method',        [StoreConfigController::class, 'addPaymentMethod'])->name('store-config.payment-method.add');
+        Route::delete('/store-config/payment-method',      [StoreConfigController::class, 'deletePaymentMethod'])->name('store-config.payment-method.delete');
+        Route::post('/store-config/multimedia/toggle',     [StoreConfigController::class, 'toggleMultimedia'])->name('store-config.multimedia.toggle');
+        Route::post('/store-config/multimedia/interval',   [StoreConfigController::class, 'updateMultimediaInterval'])->name('store-config.multimedia.interval');
+        Route::post('/store-config/multimedia/upload',     [StoreConfigController::class, 'uploadMultimedia'])->name('store-config.multimedia.upload');
+        Route::delete('/store-config/multimedia',          [StoreConfigController::class, 'deleteMultimedia'])->name('store-config.multimedia.delete');
+    });
 
-    /* Extra Cost Categories */
-    Route::get('/extra-cost-categories',                   [ExtraCostCategoryController::class, 'index'])->name('extra-cost-categories.index');
-    Route::post('/extra-cost-categories',                  [ExtraCostCategoryController::class, 'store'])->name('extra-cost-categories.store');
-    Route::put('/extra-cost-categories/{extraCostCategory}',    [ExtraCostCategoryController::class, 'update'])->name('extra-cost-categories.update');
-    Route::delete('/extra-cost-categories/{extraCostCategory}', [ExtraCostCategoryController::class, 'destroy'])->name('extra-cost-categories.destroy');
+    /* Extra Cost Categories — admin only */
+    Route::middleware('shop.admin')->group(function () {
+        Route::get('/extra-cost-categories',                   [ExtraCostCategoryController::class, 'index'])->name('extra-cost-categories.index');
+        Route::post('/extra-cost-categories',                  [ExtraCostCategoryController::class, 'store'])->name('extra-cost-categories.store');
+        Route::put('/extra-cost-categories/{extraCostCategory}',    [ExtraCostCategoryController::class, 'update'])->name('extra-cost-categories.update');
+        Route::delete('/extra-cost-categories/{extraCostCategory}', [ExtraCostCategoryController::class, 'destroy'])->name('extra-cost-categories.destroy');
+    });
 
     /* Shop staff/user management — shop admin only */
     Route::resource('users', UserController::class)->except('show')->middleware('shop.admin');

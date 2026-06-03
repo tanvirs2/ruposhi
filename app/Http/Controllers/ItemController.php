@@ -74,6 +74,9 @@ class ItemController extends Controller
 
     public function destroy(Item $item)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
+        }
         $item->delete();
         return redirect()->route('items.index')->with('success', 'আইটেম মুছে ফেলা হয়েছে।');
     }

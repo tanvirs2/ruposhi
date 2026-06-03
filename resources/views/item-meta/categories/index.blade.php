@@ -21,7 +21,7 @@
                     <td>
                         <div class="action-btns">
                             <a href="{{ route('categories.edit', $row) }}" class="btn-icon-sm"><i class="fas fa-pen"></i></a>
-                            <form method="POST" action="{{ route('categories.destroy', $row) }}" onsubmit="return confirm('মুছে ফেলবেন?')">
+                            <form class="admin-only" method="POST" action="{{ route('categories.destroy', $row) }}" onsubmit="return confirm('মুছে ফেলবেন?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button>
                             </form>

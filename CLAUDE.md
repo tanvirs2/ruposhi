@@ -7,6 +7,12 @@
 - **Prod app path:** `~/domains/pos.numaanhussain.com/pos_app`
 - **Prod public:** symlinked `public_html → pos_app/public`
 - **GitHub:** `https://github.com/tanvirs2/ruposhi.git`
+- **Dev server:** `php artisan serve --port=8899`
+
+## Git Branch Strategy
+- **`main`** — v1 (single-shop, stable production backup — do NOT touch)
+- **`v2-multi-shop`** — active development branch (multi-tenant)
+- **⚠️ RULE:** Only commit locally. NEVER `git push` without explicit user request.
 
 ## Deploy Command (ALWAYS use this exact command)
 ```bash
@@ -20,6 +26,84 @@ cd ~/domains/pos.numaanhussain.com/pos_app && git pull origin main && php artisa
 - Bengali UI (`Hind Siliguri` font)
 - CSS: `public/css/app.css` (custom, no Tailwind)
 - No npm/Vite build step needed — CSS/JS are static files
+
+---
+
+## ⚡ v2 Multi-Shop Architecture (branch: `v2-multi-shop`)
+
+### Concept
+One super admin manages multiple isolated shops. Each shop's data (products, sales, customers, etc.) is fully scoped to that shop and invisible to other shops.
+
+### Roles
+| Role | shop_id | Access |
+|------|---------|--------|
+| `super_admin` | `null` | All shops — control panel at `/super` |
+| `admin` | shop ID | Full access to own shop + staff management |
+| `staff` | shop ID | Own shop (limited — no user management) |
+
+### Core Isolation: Global Scope
+- **`app/Scopes/ShopScope.php`** — auto-filters every Eloquent query by `auth()->user()->shop_id`
+  - `super_admin` bypasses (no filter)
+  - Applied via `HasShopScope` trait on all 22 tenant models
+- **`app/Traits/HasShopScope.php`** — applied to models; auto-fills `shop_id` on `creating`
+- **`app/Models/User.php`** — deliberately has NO ShopScope (powers auth); all User queries must be **manually** scoped by `shop_id`
+
+### ⚠️ Critical Gotchas
+1. **Raw `DB::table()` queries bypass global scope** — must manually add `->where('shop_id', ...)` or `->where('sales.shop_id', ...)`
+2. **`User` model has NO global scope** — always filter manually: `User::where('shop_id', $shopId)`
+3. **Route model binding respects global scope** — cross-shop ID access returns 404 automatically
+4. **Per-shop composite unique constraints** — `(shop_id, col)` not global unique (e.g. items.code, store_config.key)
+
+### Models with `HasShopScope` (22 total)
+Item, Sale, Purchase, Customer, Supplier, Category, Stock, Employee, ExtraExpense, CustomerArea, CustomerPayment, SupplierPayment, SaleLog, SmsLog, ChatMessage, GroupChatMessage, ExtraCostCategory, StoreConfig, SaleItem, PurchaseItem, SaleExtraCost, PurchaseExtraCost
+
+### Middleware
+| Alias | File | Purpose |
+|-------|------|---------|
+| `super_admin` | `app/Http/Middleware/SuperAdmin.php` | Aborts 403 if not super_admin |
+| `shop.scope` | `app/Http/Middleware/SetShopScope.php` | Redirects super_admin → control panel; aborts 403 if shop-less user |
+| `shop.admin` | `app/Http/Middleware/ShopAdmin.php` | Aborts 403 if not admin (protects user management) |
+
+### Route Groups
+```
+/super/*         → [auth, super_admin]  — super admin control panel
+/*               → [auth, shop.scope]   — all shop users
+/users/*         → + shop.admin         — admin-only user management
+```
+
+### Key Files (v2)
+| File | Purpose |
+|------|---------|
+| `app/Models/Shop.php` | Shops table — name, address, phone, logo, is_active |
+| `app/Scopes/ShopScope.php` | Core isolation — filters queries by shop_id |
+| `app/Traits/HasShopScope.php` | Applied to all tenant models |
+| `app/Http/Controllers/Super/ShopController.php` | CRUD for shops + provision admin account |
+| `app/Http/Controllers/Super/DashboardController.php` | Super admin dashboard |
+| `app/Http/Controllers/UserController.php` | Shop-scoped staff/user management (manual scope) |
+| `resources/views/layouts/super.blade.php` | Dark control panel layout for super admin |
+| `resources/views/super/` | Super admin views (dashboard, shops) |
+| `resources/views/users/` | User management views (index, create, edit) |
+
+### UserController (staff management) — Important
+```php
+// All methods manually scope — User has no global scope
+private function shopId(): int { return (int) auth()->user()->shop_id; }
+private function scopedUsers() {
+    return User::where('shop_id', $this->shopId())->where('role', '!=', 'super_admin');
+}
+```
+- `store()` — validates role `in(['admin','staff'])`, forces correct shop_id
+- `update()` — blocks self-demotion; cross-shop edit → 404
+- `destroy()` — blocks self-delete and removing last admin
+
+### Testing Pattern (tinker)
+```php
+php artisan tinker --execute="Auth::loginUsingId(1); echo Item::count();"
+```
+Switch user contexts with `Auth::loginUsingId(N)` to verify shop isolation.
+
+### Seeder
+`database/seeders/SuperAdminSeeder.php` — creates `super@admin.com/password` (super_admin), default shop "প্রধান শাখা", assigns all existing data to shop 1.
 
 ---
 
@@ -73,15 +157,18 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 ## Database Tables (Key)
 | Table | Purpose |
 |-------|---------|
-| `sales` | Sales with `total_amount`, `paid_amount`, `due_amount`, `previous_due`, `extra_cost`, `labor_cost`, `is_edited`, `edit_note` |
-| `sale_items` | Line items per sale |
-| `purchases` | Stock receives with `extra_cost`, `labor_cost` |
-| `purchase_items` | Line items per purchase |
-| `customers` | `due_amount` can be negative (credit) |
-| `suppliers` | `due_amount` can be negative (credit) |
-| `stock` | One row per item, `quantity` can be negative |
+| `shops` | Shop records — name, address, phone, logo, is_active |
+| `sales` | Sales with `shop_id`, `total_amount`, `paid_amount`, `due_amount`, `previous_due`, `extra_cost`, `labor_cost`, `is_edited`, `edit_note` |
+| `sale_items` | Line items per sale (has `shop_id`) |
+| `purchases` | Stock receives with `shop_id`, `extra_cost`, `labor_cost` |
+| `purchase_items` | Line items per purchase (has `shop_id`) |
+| `customers` | `shop_id`, `due_amount` can be negative (credit) |
+| `suppliers` | `shop_id`, `due_amount` can be negative (credit) |
+| `stock` | `shop_id`, one row per item per shop, `quantity` can be negative |
 | `sale_logs` | Edit/delete audit log with JSON snapshot |
-| `items` | Products with `purchase_price`, `sale_price` |
+| `items` | `shop_id`, products with `purchase_price`, `sale_price` |
+| `store_config` | `shop_id`, key-value; composite unique `(shop_id, key)` |
+| `users` | `shop_id` (nullable for super_admin), role = super_admin/admin/staff |
 
 ---
 
@@ -108,18 +195,25 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 - `salesReport()` — daily sales with standalone payments, no-item sales sections
 - `saleLogs()` — audit log of edits and deletions
 - All date defaults: `now()->toDateString()` (today, NOT startOfMonth)
+- ⚠️ All 16+ `DB::table()` raw queries manually filtered with `->where('sales.shop_id', auth()->user()->shop_id)`
 
 ### SupplierController
 - `ledger()` — auto-fix supplier due (NO max(0) cap — allows negative credit)
 - `ledgerSelect()` — shows blue "অগ্রিম" badge for credit suppliers
+
+### UserController (v2)
+- Shop-scoped staff management — all queries manually scoped by `shop_id`
+- Guards: self-delete blocked, last-admin blocked, cross-shop edit → 404, super_admin role injection rejected
 
 ---
 
 ## Views Structure
 
 ### Layouts
-- `resources/views/layouts/app.blade.php` — sidebar with JS-based active highlight
+- `resources/views/layouts/app.blade.php` — sidebar with JS-based active highlight; shows shop name in brand/breadcrumb
+- `resources/views/layouts/super.blade.php` — dark control panel layout for super admin
 - Sidebar JS uses `window.location.pathname` for active state
+- Admin-only sidebar link: "ব্যবহারকারী" (user management) — guarded by `@if(auth()->user()->role === 'admin')`
 
 ### Sale Invoice (`sales/show.blade.php`)
 - Store name as SVG arc (`partials/store-name-arc.blade.php`)
@@ -144,6 +238,11 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 | `reports/sales.blade.php` | 5-card stats, no-item payments section, standalone payments |
 | `reports/sale-logs.blade.php` | Audit log with eye modal |
 | `stock/index.blade.php` | Zero-stock rows hidden, negative stock in red |
+| `users/index.blade.php` | Staff list with role badge, "আপনি" tag for self |
+| `users/create.blade.php` | Create staff/admin account |
+| `users/edit.blade.php` | Edit; role select disabled for self + hidden input fallback |
+| `super/shops/index.blade.php` | All shops table with status |
+| `super/shops/create.blade.php` | Provision new shop + admin account in one form |
 
 ---
 
@@ -162,6 +261,8 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 .badge-red   { background:#fee2e2; color:#dc2626; }
 .badge-green { background:#dcfce7; color:#15803d; }
 /* Credit/advance: background:#eff6ff; color:#1d4ed8 */
+
+/* Super admin control panel uses .sa-* prefix classes */
 ```
 
 ---
@@ -203,6 +304,7 @@ Stored in `sale_logs.snapshot` (JSON) with: id, sale_date, customer_name, total_
 ## Store Config Keys
 Accessed via `\App\Models\StoreConfig::get('key', 'default')`:
 - `store_name`, `store_owner`, `store_tagline`, `store_phone`, `store_phone2`, `store_address`
+- ⚠️ In v2: config is per-shop (shop_id column + composite unique key) — each shop has its own store_name etc.
 
 ---
 
@@ -236,7 +338,26 @@ Accessed via `\App\Models\StoreConfig::get('key', 'default')`:
 23. Performance: Dropdown queries use column selection (not full rows)
 24. **Rule: NEVER cache business data** — due_amount, prices, stock change frequently
 
+### Session 3 — v2 Multi-Shop (branch: `v2-multi-shop`)
+25. Core multi-tenant architecture: `shops` table, `shop_id` on all tenant tables, role enum (super_admin/admin/staff)
+26. `ShopScope` global scope + `HasShopScope` trait — auto-filter + auto-fill shop_id
+27. Three middleware: `super_admin`, `shop.scope`, `shop.admin`
+28. Super admin control panel (`/super`) — dark layout, shop CRUD, provision shop + admin account together
+29. Closed data leaks: 16 raw DB::table() queries in ReportController manually scoped
+30. Closed data leaks: DashboardController stock_value query, ChatController user list, GroupMessageSent broadcast
+31. Per-shop store_config: composite unique `(shop_id, key)`
+32. Shop name shown in sidebar brand and topbar breadcrumb
+33. Shop-scoped staff/user management: UserController (manual scope), index/create/edit views, `shop.admin` gate
+34. Security guards: cross-shop edit→404, self-delete blocked, last-admin blocked, super_admin role injection rejected
+
 ---
 
 ## Backup
 Pre-clean DB backup: `storage/backup_before_clean_20260530_073214.sql`
+
+## Test Accounts (local dev)
+| Email | Password | Role | Shop |
+|-------|----------|------|------|
+| `super@admin.com` | `password` | super_admin | — |
+| existing admin | (original) | admin | প্রধান শাখা (id=1) |
+| `mirpur@shop.com` | `secret123` | admin | মিরপুর শাখা (id=2) |

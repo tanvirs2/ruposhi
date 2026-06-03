@@ -78,6 +78,9 @@ class CustomerController extends Controller
 
     public function destroy(Customer $customer)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
+        }
         $customer->delete();
         return redirect()->route('customers.index')->with('success', 'কাস্টমার মুছে ফেলা হয়েছে।');
     }

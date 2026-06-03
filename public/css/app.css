@@ -1775,3 +1775,8 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
     .chat-wrap { grid-template-columns: 1fr; height: auto; }
     .chat-sidebar { height: 220px; border-right: none; border-bottom: 1.5px solid var(--border); }
 }
+
+/* ── Staff role restrictions ────────────────────────────────────── */
+/* Hide admin-only UI elements for staff users */
+.role-staff .admin-only { display: none !important; }
+

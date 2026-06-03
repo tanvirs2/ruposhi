@@ -18,7 +18,7 @@
                     <td>
                         <div class="action-btns">
                             <a href="{{ route('customer-areas.edit', $area) }}" class="btn-icon-sm"><i class="fas fa-pen"></i></a>
-                            <form method="POST" action="{{ route('customer-areas.destroy', $area) }}"
+                            <form class="admin-only" method="POST" action="{{ route('customer-areas.destroy', $area) }}"
                                 onsubmit="return confirm('এই এরিয়া মুছে ফেলবেন?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button>

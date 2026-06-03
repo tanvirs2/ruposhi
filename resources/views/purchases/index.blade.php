@@ -53,7 +53,7 @@
                     <td>
                         <div class="action-btns">
                             <a href="{{ route('purchases.show',$purchase) }}" class="btn-icon-sm" title="বিবরণ"><i class="fas fa-eye"></i></a>
-                            <form method="POST" action="{{ route('purchases.destroy',$purchase) }}"
+                            <form class="admin-only" method="POST" action="{{ route('purchases.destroy',$purchase) }}"
                                 onsubmit="return confirm('এই রিসিভ মুছলে স্টক কমে যাবে। নিশ্চিত?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn-icon-sm btn-icon-danger" title="মুছুন"><i class="fas fa-trash"></i></button>

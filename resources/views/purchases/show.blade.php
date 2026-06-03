@@ -157,7 +157,7 @@
         <a href="{{ route('purchases.edit', $purchase) }}" class="btn" style="background:#fef9c3;color:#92400e;border:1px solid #fde68a">
             <i class="fas fa-pen-to-square"></i> সংশোধন
         </a>
-        <form method="POST" action="{{ route('purchases.destroy',$purchase) }}" style="margin-left:auto"
+        <form class="admin-only" method="POST" action="{{ route('purchases.destroy',$purchase) }}" style="margin-left:auto"
             onsubmit="return confirm('মুছলে স্টক কমে যাবে। নিশ্চিত?')">
             @csrf @method('DELETE')
             <button type="submit" class="btn" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5">
