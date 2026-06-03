@@ -21,6 +21,11 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
+
+            // Super admin → control panel; everyone else → shop dashboard
+            if (Auth::user()->role === 'super_admin') {
+                return redirect()->intended(route('super.dashboard'));
+            }
             return redirect()->intended(route('dashboard'));
         }
 

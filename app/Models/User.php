@@ -23,11 +23,31 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'shop_id',
     ];
+
+    /* ── Role helpers ──────────────────────────────────────── */
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'super_admin';
+    }
 
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->role === 'staff';
+    }
+
+    /* ── Relations ─────────────────────────────────────────── */
+
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class);
     }
 
     public function sales()

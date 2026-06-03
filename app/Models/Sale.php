@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasShopScope;
 use Illuminate\Database\Eloquent\Model;
 
 class Sale extends Model
 {
+    use HasShopScope;
+
     protected $fillable = ['customer_id', 'user_id', 'total_amount', 'discount', 'extra_cost', 'paid_amount', 'due_amount', 'previous_due', 'status', 'payment_method', 'notes', 'sale_date', 'is_edited', 'edit_note'];
 
     protected $casts = ['sale_date' => 'date'];

@@ -21,14 +21,22 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ExtraCostCategoryController;
 use App\Http\Controllers\SmsController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\Super\DashboardController as SuperDashboard;
+use App\Http\Controllers\Super\ShopController;
 
 /* ── Auth ──────────────────────────────────────────────────── */
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
 Route::post('/login', [AuthController::class, 'login'])->middleware('guest');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-/* ── Protected ─────────────────────────────────────────────── */
-Route::middleware('auth')->group(function () {
+/* ── Super Admin routes ────────────────────────────────────── */
+Route::middleware(['auth', 'super_admin'])->prefix('super')->name('super.')->group(function () {
+    Route::get('/dashboard', [SuperDashboard::class, 'index'])->name('dashboard');
+    Route::resource('shops', ShopController::class);
+});
+
+/* ── Protected (shop users) ────────────────────────────────── */
+Route::middleware(['auth', 'shop.scope'])->group(function () {
 
     Route::get('/', fn() => redirect()->route('dashboard'));
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

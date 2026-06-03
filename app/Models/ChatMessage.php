@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasShopScope;
 use Illuminate\Database\Eloquent\Model;
 
 class ChatMessage extends Model
 {
+    use HasShopScope;
+
     protected $fillable = ['sender_id', 'receiver_id', 'message', 'is_read'];
 
     protected $casts = ['is_read' => 'boolean'];

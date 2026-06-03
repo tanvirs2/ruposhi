@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasShopScope;
 use Illuminate\Database\Eloquent\Model;
 
 class Customer extends Model
 {
+    use HasShopScope;
+
     protected $fillable = ['name', 'proprietor', 'phone', 'address', 'area_id', 'due_amount'];
 
     public function area()

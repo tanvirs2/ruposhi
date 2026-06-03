@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasShopScope;
 use Illuminate\Database\Eloquent\Model;
 
 class Item extends Model
 {
+    use HasShopScope;
+
     protected $fillable = ['name', 'code', 'category_id', 'purchase_price', 'sale_price', 'unit'];
 
     public function category()

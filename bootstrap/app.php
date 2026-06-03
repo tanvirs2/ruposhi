@@ -16,6 +16,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\NoCacheHeaders::class,
         ]);
+
+        // Named middleware aliases
+        $middleware->alias([
+            'super_admin'    => \App\Http\Middleware\SuperAdmin::class,
+            'shop.scope'     => \App\Http\Middleware\SetShopScope::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

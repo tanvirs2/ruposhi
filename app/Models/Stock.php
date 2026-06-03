@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasShopScope;
 use Illuminate\Database\Eloquent\Model;
 
 class Stock extends Model
 {
+    use HasShopScope;
+
     protected $table = 'stock';
     protected $fillable = ['item_id', 'quantity', 'min_quantity'];
 
