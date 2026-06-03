@@ -11,12 +11,18 @@ class SupplierController extends Controller
 {
     public function index(Request $request)
     {
-        $suppliers = Supplier::when($request->search, fn($q) =>
+        $baseQuery = Supplier::when($request->search, fn($q) =>
             $q->where('name', 'like', "%{$request->search}%")
               ->orWhere('phone', 'like', "%{$request->search}%")
-        )->latest()->paginate(15);
+        );
 
-        return view('suppliers.index', compact('suppliers'));
+        $grossDue    = (clone $baseQuery)->where('due_amount', '>', 0)->sum('due_amount');
+        $totalCredit = abs((clone $baseQuery)->where('due_amount', '<', 0)->sum('due_amount'));
+        $totalDue    = $grossDue - $totalCredit;
+
+        $suppliers = $baseQuery->latest()->paginate(15);
+
+        return view('suppliers.index', compact('suppliers', 'grossDue', 'totalCredit', 'totalDue'));
     }
 
     public function ledgerSelect()

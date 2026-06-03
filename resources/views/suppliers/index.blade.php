@@ -66,6 +66,29 @@
                 <tr><td colspan="6" class="empty-row">কোনো সরবরাহকারী পাওয়া যায়নি</td></tr>
                 @endforelse
             </tbody>
+            @if($suppliers->isNotEmpty())
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">মোট বকেয়া</td>
+                    <td style="font-weight:800;color:#dc2626">৳ {{ number_format($grossDue, 0) }}</td>
+                    <td></td>
+                </tr>
+                @if($totalCredit > 0)
+                <tr class="tfoot-summary">
+                    <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">মোট অগ্রিম (−)</td>
+                    <td style="font-weight:800;color:#1d4ed8">৳ {{ number_format($totalCredit, 0) }}</td>
+                    <td></td>
+                </tr>
+                <tr class="tfoot-summary">
+                    <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">নিট বকেয়া</td>
+                    <td style="font-weight:800;color:{{ $totalDue > 0 ? '#dc2626' : '#16a34a' }}">
+                        ৳ {{ number_format(abs($totalDue), 0) }}
+                    </td>
+                    <td></td>
+                </tr>
+                @endif
+            </tfoot>
+            @endif
         </table>
     </div>
     <div class="pagination-wrap">{{ $suppliers->withQueryString()->links() }}</div>
