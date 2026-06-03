@@ -14,8 +14,9 @@ class SmsService
 
     public function __construct()
     {
-        $this->apiKey   = config('sms.api_key', '');
-        $this->senderId = config('sms.sender_id', '');
+        // Read from StoreConfig DB first, fallback to .env
+        $this->apiKey   = \App\Models\StoreConfig::get('sms_api_key',   config('sms.api_key',   ''));
+        $this->senderId = \App\Models\StoreConfig::get('sms_sender_id', config('sms.sender_id', ''));
     }
 
     /**

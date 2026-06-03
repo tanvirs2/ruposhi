@@ -4,6 +4,69 @@
 
 @section('content')
 
+{{-- ── API Setup (collapsible) ───────────────────────────── --}}
+@php
+    $apiReady = !empty($smsApiKey) && !empty($smsSenderId);
+@endphp
+<div class="card" style="margin-bottom:20px">
+    <button type="button" onclick="toggleApiPanel()"
+        style="width:100%;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border:none;background:transparent;cursor:pointer;font-family:inherit">
+        <span style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:.9rem;color:var(--text-primary)">
+            <span style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;
+                background:{{ $apiReady ? '#ccfbf1' : '#fef3c7' }};color:{{ $apiReady ? '#0d9488' : '#d97706' }}">
+                <i class="fas fa-{{ $apiReady ? 'plug-circle-check' : 'plug-circle-exclamation' }}"></i>
+            </span>
+            BulkSMSBD API সেটআপ
+            @if($apiReady)
+                <span style="font-size:.75rem;font-weight:600;background:#ccfbf1;color:#0d9488;padding:2px 10px;border-radius:999px">
+                    <i class="fas fa-check" style="margin-right:3px"></i>সংযুক্ত
+                </span>
+            @else
+                <span style="font-size:.75rem;font-weight:600;background:#fef3c7;color:#d97706;padding:2px 10px;border-radius:999px">
+                    <i class="fas fa-exclamation" style="margin-right:3px"></i>সেটআপ করুন
+                </span>
+            @endif
+        </span>
+        <i class="fas fa-chevron-down" id="apiChevron" style="color:#94a3b8;transition:.2s;{{ $apiReady ? '' : 'transform:rotate(180deg)' }}"></i>
+    </button>
+
+    <div id="apiPanel" style="{{ $apiReady ? 'display:none' : 'display:block' }};border-top:1.5px solid var(--border)">
+        <form method="POST" action="{{ route('sms.settings') }}" style="padding:20px">
+            @csrf
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+                <div>
+                    <label class="form-label">
+                        API Key
+                        <a href="https://bulksmsbd.net" target="_blank"
+                           style="font-size:.74rem;color:var(--accent);margin-left:6px;font-weight:400">
+                            <i class="fas fa-external-link-alt"></i> BulkSMSBD
+                        </a>
+                    </label>
+                    <input type="text" name="sms_api_key" class="form-input"
+                        value="{{ $smsApiKey }}"
+                        placeholder="আপনার API Key এখানে দিন">
+                </div>
+                <div>
+                    <label class="form-label">Sender ID</label>
+                    <input type="text" name="sms_sender_id" class="form-input"
+                        value="{{ $smsSenderId }}"
+                        placeholder="যেমন: 8809611..."
+                        style="font-family:monospace">
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> সংরক্ষণ করুন
+                </button>
+                <span style="font-size:.78rem;color:#94a3b8">
+                    <i class="fas fa-lock" style="margin-right:3px"></i>
+                    তথ্য encrypted database-এ সংরক্ষিত হবে
+                </span>
+            </div>
+        </form>
+    </div>
+</div>
+
 {{-- ── Stats bar ──────────────────────────────────────────── --}}
 @php
     $totalSent    = \App\Models\SmsLog::where('status','sent')->count();
@@ -32,17 +95,20 @@
             <span class="stat-value">{{ number_format($totalFailed) }}</span>
         </div>
     </div>
-    <div class="stat-card" style="border-left:4px solid {{ config('sms.api_key') ? '#0d9488' : '#f59e0b' }}">
-        <div class="stat-icon" style="background:{{ config('sms.api_key') ? '#ccfbf1' : '#fef3c7' }};color:{{ config('sms.api_key') ? '#0d9488' : '#d97706' }}">
-            <i class="fas fa-{{ config('sms.api_key') ? 'plug-circle-check' : 'plug-circle-exclamation' }}"></i>
+    <div class="stat-card" style="border-left:4px solid {{ $apiReady ? '#0d9488' : '#f59e0b' }}">
+        <div class="stat-icon" style="background:{{ $apiReady ? '#ccfbf1' : '#fef3c7' }};color:{{ $apiReady ? '#0d9488' : '#d97706' }}">
+            <i class="fas fa-{{ $apiReady ? 'plug-circle-check' : 'plug-circle-exclamation' }}"></i>
         </div>
         <div class="stat-body">
             <span class="stat-label">API অবস্থা</span>
             <span class="stat-value" style="font-size:.92rem">
-                @if(config('sms.api_key') && config('sms.sender_id'))
+                @if($apiReady)
                     <span style="color:#0d9488">সংযুক্ত</span>
                 @else
-                    <a href="{{ route('store-config.index') }}" style="color:#d97706;font-size:.82rem">সেটআপ করুন</a>
+                    <button type="button" onclick="toggleApiPanel()"
+                        style="color:#d97706;font-size:.82rem;background:none;border:none;cursor:pointer;font-family:inherit;font-weight:700;padding:0">
+                        সেটআপ করুন ↑
+                    </button>
                 @endif
             </span>
         </div>
@@ -406,6 +472,15 @@
 
 @push('scripts')
 <script>
+// ── API Panel toggle ────────────────────────────────────────
+function toggleApiPanel() {
+    const panel   = document.getElementById('apiPanel');
+    const chevron = document.getElementById('apiChevron');
+    const open = panel.style.display === 'none';
+    panel.style.display   = open ? 'block' : 'none';
+    chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
 // ── Mode tabs (list / custom) ───────────────────────────────
 function switchMode(mode) {
     const isList = mode === 'list';

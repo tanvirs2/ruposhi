@@ -62,6 +62,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/sms',                          [SmsController::class, 'index'])->name('sms.index');
     Route::post('/sms/send',                    [SmsController::class, 'send'])->name('sms.send');
     Route::post('/sms/send-custom',             [SmsController::class, 'sendCustom'])->name('sms.send-custom');
+    Route::post('/sms/settings',                [SmsController::class, 'saveSettings'])->name('sms.settings');
     Route::delete('/sms/log/{smsLog}',          [SmsController::class, 'destroyLog'])->name('sms.log.destroy');
 
     Route::get('/stock',              [StockController::class, 'index'])->name('stock.index');

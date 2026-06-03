@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Supplier;
 use App\Models\SmsLog;
+use App\Models\StoreConfig;
 use App\Services\SmsService;
 use Illuminate\Http\Request;
 
@@ -12,6 +13,8 @@ class SmsController extends Controller
 {
     public function index(Request $request)
     {
+        $smsApiKey   = StoreConfig::get('sms_api_key',   '');
+        $smsSenderId = StoreConfig::get('sms_sender_id', '');
         $customers = Customer::orderBy('name')->get(['id', 'name', 'phone', 'due_amount']);
         $suppliers = Supplier::orderBy('name')->get(['id', 'name', 'phone', 'due_amount']);
 
@@ -21,7 +24,7 @@ class SmsController extends Controller
 
         $templates = $this->templates();
 
-        return view('sms.index', compact('customers', 'suppliers', 'logs', 'templates'));
+        return view('sms.index', compact('customers', 'suppliers', 'logs', 'templates', 'smsApiKey', 'smsSenderId'));
     }
 
     public function send(Request $request, SmsService $sms)
@@ -76,6 +79,19 @@ class SmsController extends Controller
         if ($result['failed'] > 0) $msg .= " {$result['failed']}টি ব্যর্থ হয়েছে।";
 
         return back()->with($result['failed'] === count($recipients) ? 'error' : 'success', $msg);
+    }
+
+    public function saveSettings(Request $request)
+    {
+        $request->validate([
+            'sms_api_key'   => 'nullable|string|max:200',
+            'sms_sender_id' => 'nullable|string|max:50',
+        ]);
+
+        StoreConfig::set('sms_api_key',   trim($request->sms_api_key   ?? ''));
+        StoreConfig::set('sms_sender_id', trim($request->sms_sender_id ?? ''));
+
+        return back()->with('success', 'SMS সেটিংস সংরক্ষণ হয়েছে।');
     }
 
     public function destroyLog(SmsLog $smsLog)
