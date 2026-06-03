@@ -382,6 +382,7 @@
 <script>
 const RECEIVER_ID = {{ $activeUser ? $activeUser->id : 'null' }};
 let lastMsgId     = {{ $messages->isNotEmpty() ? $messages->last()->id : 0 }};
+let pollTimer     = null;
 
 // ── Auto-scroll to bottom ────────────────────────────────────
 function scrollBottom(smooth = false) {
@@ -470,20 +471,43 @@ function escHtml(str) {
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
 }
 
-// ── WebSocket: receive messages via layout's Reverb connection ──
+// ── WebSocket: instant delivery when Reverb/Pusher running ──────
 window.addEventListener('ws:message', function (e) {
     const msg = e.detail;
-    // Only show if it's from the person we're chatting with
     if (RECEIVER_ID && msg.sender_id == RECEIVER_ID) {
-        appendBubble(msg, false);
-        scrollBottom(true);
+        if (!document.querySelector(`[data-id="${msg.id}"]`)) {
+            appendBubble(msg, false);
+            scrollBottom(true);
+        }
         lastMsgId = Math.max(lastMsgId, msg.id);
-        // Mark as read
-        fetch(`{{ route('chat.poll') }}?with=${RECEIVER_ID}&last_id=${msg.id - 1}`, {
-            headers: { 'Accept':'application/json',
-                       'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
-        }).catch(() => {});
     }
+});
+
+// ── Polling fallback (3s) — works without Reverb/Pusher ─────────
+function startPolling() {
+    if (!RECEIVER_ID) return;
+    pollTimer = setInterval(function () {
+        fetch(`{{ route('chat.poll') }}?with=${RECEIVER_ID}&last_id=${lastMsgId}`, {
+            headers: { 'Accept': 'application/json',
+                       'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
+        })
+        .then(r => r.json())
+        .then(function (data) {
+            data.messages.forEach(function (msg) {
+                if (msg.sender_id != {{ auth()->id() }} && !document.querySelector(`[data-id="${msg.id}"]`)) {
+                    appendBubble(msg, false);
+                    scrollBottom(true);
+                }
+                lastMsgId = Math.max(lastMsgId, msg.id);
+            });
+        }).catch(function () {});
+    }, 3000);
+}
+
+startPolling();
+document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { clearInterval(pollTimer); }
+    else { startPolling(); }
 });
 </script>
 @endpush

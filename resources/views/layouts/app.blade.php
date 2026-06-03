@@ -1260,7 +1260,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Back to user list ─────────────────────────────────────
     window.mcBackToUsers = function () {
-        mcActiveUser = null;
+        clearInterval(mcPollTimer);
+        mcActiveUser = null; mcLastId = 0;
         document.getElementById('mcPanelConv').style.display  = 'none';
         document.getElementById('mcPanelUsers').style.display = 'flex';
         mcLoadUsers();
@@ -1300,6 +1301,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('mcConvName').textContent = userName;
         document.getElementById('mcMessages').innerHTML = '<div class="mc-loading"><i class="fas fa-spinner fa-spin"></i></div>';
         mcFetchHistory();
+        mcStartPoll();
         setTimeout(() => document.getElementById('mcInput').focus(), 100);
     };
 
@@ -1316,31 +1318,53 @@ document.addEventListener('DOMContentLoaded', () => {
                 box.innerHTML = '';
                 data.messages.forEach(m => appendMcBubble(m));
                 mcScrollBottom();
+                mcLastId = data.messages[data.messages.length - 1].id;
             }
             updateBadge(data.total_unread);
         });
     }
 
-    // ── WebSocket: receive incoming message ───────────────────
+    // ── WebSocket: receive incoming message (when Reverb/Pusher running) ──
     window.addEventListener('ws:message', function (e) {
         const msg = e.detail;
-        // Update badge
-        fetch(UNRD_URL, { headers:{ 'Accept':'application/json' } })
-            .then(r => r.json()).then(d => updateBadge(d.count)).catch(()=>{});
-
-        // Append to conversation if it's open and from the active user
+        updateBadge_fetch();
         if (mcOpen && mcActiveUser && msg.sender_id == mcActiveUser.id) {
-            appendMcBubble(msg);
-            mcScrollBottom(true);
-            // Mark as read immediately
-            fetch(`${POLL_URL}?with=${mcActiveUser.id}&last_id=${msg.id - 1}`, {
-                headers: { 'Accept':'application/json', 'X-CSRF-TOKEN': CSRF }
-            }).catch(()=>{});
+            if (!document.querySelector(`#mcMessages [data-id="${msg.id}"]`)) {
+                appendMcBubble(msg); mcScrollBottom(true);
+            }
+            mcLastId = Math.max(mcLastId, msg.id);
         }
-
-        // Refresh user list (updates last message + unread count)
         if (mcOpen && !mcActiveUser) mcLoadUsers();
     });
+
+    // ── Polling fallback (works even without Reverb/Pusher) ──
+    let mcLastId   = 0;
+    let mcPollTimer = null;
+
+    function mcStartPoll() {
+        clearInterval(mcPollTimer);
+        if (!mcActiveUser) return;
+        mcPollTimer = setInterval(function () {
+            fetch(`${POLL_URL}?with=${mcActiveUser.id}&last_id=${mcLastId}`, {
+                headers: { 'Accept':'application/json', 'X-CSRF-TOKEN': CSRF }
+            })
+            .then(r => r.json())
+            .then(function (data) {
+                data.messages.forEach(function (m) {
+                    if (m.sender_id != ME && !document.querySelector(`#mcMessages [data-id="${m.id}"]`)) {
+                        appendMcBubble(m); mcScrollBottom(true);
+                    }
+                    mcLastId = Math.max(mcLastId, m.id);
+                });
+                if (data.messages.length) updateBadge(data.total_unread);
+            }).catch(function(){});
+        }, 3000);
+    }
+
+    function updateBadge_fetch() {
+        fetch(UNRD_URL, { headers:{ 'Accept':'application/json' } })
+            .then(r => r.json()).then(d => updateBadge(d.count)).catch(()=>{});
+    }
 
     // ── Append bubble ─────────────────────────────────────────
     function appendMcBubble(msg) {
