@@ -15,6 +15,137 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
+    // ══════════════════════════════════════════════════════════
+    // Business Growth Module
+    // ══════════════════════════════════════════════════════════
+    public function growth(Request $request)
+    {
+        $period   = $request->get('period', 'monthly');
+        $year     = (int) $request->get('year', now()->year);
+        $dateFrom = $request->get('date_from', now()->startOfMonth()->toDateString());
+        $dateTo   = $request->get('date_to',   now()->toDateString());
+
+        [$labels, $revenue, $cogs, $expenses, $profit, $summary, $prev] =
+            $this->buildGrowthData($period, $year, $dateFrom, $dateTo);
+
+        $years = Sale::selectRaw('YEAR(sale_date) as y')->groupBy('y')->orderByDesc('y')->pluck('y');
+        if ($years->isEmpty()) $years = collect([now()->year]);
+
+        return view('reports.growth', compact(
+            'period','year','dateFrom','dateTo',
+            'labels','revenue','cogs','expenses','profit',
+            'summary','prev','years'
+        ));
+    }
+
+    private function buildGrowthData(string $period, int $year, string $dateFrom, string $dateTo): array
+    {
+        [$from, $to, $prevFrom, $prevTo, $labels] = match ($period) {
+            'yearly' => $this->yearlyRange(),
+            'range'  => $this->rangeData($dateFrom, $dateTo),
+            default  => $this->monthlyRange($year),
+        };
+
+        $revenue  = $this->groupedSales($from, $to, $period, $year, $dateFrom, $dateTo);
+        $cogs     = $this->groupedPurchases($from, $to, $period, $year, $dateFrom, $dateTo);
+        $expenses = $this->groupedExpenses($from, $to, $period, $year, $dateFrom, $dateTo);
+
+        // Align to labels
+        $rev = $cog = $exp = $pro = [];
+        foreach ($labels as $lbl) {
+            $r = $revenue[$lbl]  ?? 0;
+            $c = $cogs[$lbl]     ?? 0;
+            $e = $expenses[$lbl] ?? 0;
+            $rev[] = round($r, 2);
+            $cog[] = round($c, 2);
+            $exp[] = round($e, 2);
+            $pro[] = round($r - $c - $e, 2);
+        }
+
+        $summary = [
+            'revenue'  => array_sum($rev),
+            'cogs'     => array_sum($cog),
+            'expenses' => array_sum($exp),
+            'profit'   => array_sum($pro),
+            'sales_count' => Sale::whereBetween('sale_date', [$from, $to])->count(),
+        ];
+
+        // Previous period for growth %
+        $prev = [
+            'revenue'  => Sale::whereBetween('sale_date', [$prevFrom, $prevTo])->sum('total_amount'),
+            'cogs'     => Purchase::whereBetween('purchase_date', [$prevFrom, $prevTo])->sum('total_amount'),
+            'expenses' => ExtraExpense::where('type','expense')->whereBetween('expense_date',[$prevFrom,$prevTo])->sum('amount'),
+        ];
+        $prev['profit'] = $prev['revenue'] - $prev['cogs'] - $prev['expenses'];
+
+        return [$labels, $rev, $cog, $exp, $pro, $summary, $prev];
+    }
+
+    private function yearlyRange(): array
+    {
+        $endYear   = now()->year;
+        $startYear = $endYear - 5;
+        $labels    = range($startYear, $endYear);
+        return [
+            "$startYear-01-01", "$endYear-12-31",
+            ($startYear-1)."-01-01", ($startYear-1)."-12-31",
+            array_map('strval', $labels),
+        ];
+    }
+
+    private function monthlyRange(int $year): array
+    {
+        $labels = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+        return [
+            "$year-01-01", "$year-12-31",
+            ($year-1)."-01-01", ($year-1)."-12-31",
+            $labels,
+        ];
+    }
+
+    private function rangeData(string $from, string $to): array
+    {
+        $start = \Carbon\Carbon::parse($from);
+        $end   = \Carbon\Carbon::parse($to);
+        $days  = $start->diffInDays($end) + 1;
+
+        // Labels: each day as d-M
+        $labels = [];
+        for ($d = clone $start; $d <= $end; $d->addDay()) {
+            $labels[] = $d->format('d/m');
+        }
+
+        // Previous period of same length
+        $prevTo   = $start->copy()->subDay()->toDateString();
+        $prevFrom = $start->copy()->subDays($days)->toDateString();
+
+        return [$from, $to, $prevFrom, $prevTo, $labels];
+    }
+
+    private function groupedSales(string $from, string $to, string $period, int $year, string $dfrom, string $dto)
+    {
+        $fmt = $period === 'yearly' ? '%Y' : ($period === 'range' ? '%d/%m' : '%m');
+        return Sale::whereBetween('sale_date', [$from, $to])
+            ->selectRaw("DATE_FORMAT(sale_date, '$fmt') as p, SUM(total_amount) as total")
+            ->groupBy('p')->pluck('total', 'p')->toArray();
+    }
+
+    private function groupedPurchases(string $from, string $to, string $period, int $year, string $dfrom, string $dto)
+    {
+        $fmt = $period === 'yearly' ? '%Y' : ($period === 'range' ? '%d/%m' : '%m');
+        return Purchase::whereBetween('purchase_date', [$from, $to])
+            ->selectRaw("DATE_FORMAT(purchase_date, '$fmt') as p, SUM(total_amount) as total")
+            ->groupBy('p')->pluck('total', 'p')->toArray();
+    }
+
+    private function groupedExpenses(string $from, string $to, string $period, int $year, string $dfrom, string $dto)
+    {
+        $fmt = $period === 'yearly' ? '%Y' : ($period === 'range' ? '%d/%m' : '%m');
+        return ExtraExpense::where('type','expense')->whereBetween('expense_date', [$from, $to])
+            ->selectRaw("DATE_FORMAT(expense_date, '$fmt') as p, SUM(amount) as total")
+            ->groupBy('p')->pluck('total', 'p')->toArray();
+    }
+
     public function index(Request $request)
     {
         $from = $request->from ?? now()->toDateString();

@@ -81,6 +81,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/stock/low',          [StockController::class, 'low'])->name('stock.low');
     Route::patch('/stock/{stock}',    [StockController::class, 'adjust'])->name('stock.adjust');
 
+    Route::get('/reports/growth',                        [ReportController::class, 'growth'])->name('reports.growth');
     Route::get('/reports',                            [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/daily-payments',             [ReportController::class, 'dailyPayments'])->name('reports.daily-payments');
     Route::get('/reports/daily-supplier-payments',    [ReportController::class, 'dailySupplierPayments'])->name('reports.daily-supplier-payments');

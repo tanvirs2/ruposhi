@@ -248,6 +248,10 @@
                         <span class="nav-icon"><i class="fas fa-clock-rotate-left"></i></span>
                         <span class="nav-label">সংশোধন / মুছে ফেলার লগ</span>
                     </a>
+                    <a href="{{ route('reports.growth') }}" class="nav-item nav-child {{ $_path==='reports/growth' ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
+                        <span class="nav-label">ব্যবসার প্রবৃদ্ধি</span>
+                    </a>
                 </div>
             </div>
         </div>
