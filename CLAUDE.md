@@ -10,16 +10,27 @@
 - **Dev server:** `php artisan serve --port=8000`
 
 ## Git Branch Strategy
-- **`main`** — v1 (single-shop, stable production backup — do NOT touch)
-- **`v2-multi-shop`** — active development branch (multi-tenant)
+- **`main`** — active branch (v2 multi-shop) — all development happens here
+- **`v2-multi-shop`** — older/stale branch, behind main
 - **⚠️ RULE:** Only commit locally. NEVER `git push` without explicit user request.
 
 ## Deploy Command (ALWAYS use this exact command)
 ```bash
 cd ~/domains/pos.numaanhussain.com/pos_app && git pull origin main && php artisan migrate
 ```
+After pulling, also run:
+```bash
+php artisan config:clear && php artisan route:clear && php artisan view:clear
+```
 - `git pull origin main` — NOT bare `git pull` (doesn't work on production)
 - User runs SSH commands themselves — NEVER ask for passwords or initiate SSH
+
+## First-Time Production Setup (seeders)
+After initial deploy of v2, run once on server:
+```bash
+php artisan db:seed --class=SuperAdminSeeder   # backfills super_admin_id + shop_id on existing data
+php artisan db:seed --class=RootUserSeeder      # creates root@system.com account
+```
 
 ## Tech Stack
 - Laravel 12, PHP 8.2, MySQL 8, Blade templating
@@ -29,21 +40,37 @@ cd ~/domains/pos.numaanhussain.com/pos_app && git pull origin main && php artisa
 
 ---
 
-## ⚡ v2 Multi-Shop Architecture (branch: `v2-multi-shop`)
+## ⚡ v2 Multi-Shop / Multi-Tenant Architecture
 
 ### Concept
-One super admin manages multiple isolated shops. Each shop's data (products, sales, customers, etc.) is fully scoped to that shop and invisible to other shops.
+**Role hierarchy:** root → reseller → super_admin → admin → staff
+
+Each **super_admin** is a business owner who can own multiple branches (shops).
+- Root and resellers manage super_admin accounts and licenses from separate panels.
+- Each shop's data is fully isolated — invisible to other shops.
+- One login URL (`/login`) for everyone — role-based redirect after auth.
 
 ### Roles
-| Role | shop_id | Access |
-|------|---------|--------|
-| `super_admin` | `null` | All shops — control panel at `/super` |
-| `admin` | shop ID | Full access to own shop + staff management |
-| `staff` | shop ID | Own shop (limited — no user management) |
+| Role | shop_id | Access | Panel |
+|------|---------|--------|-------|
+| `root` | `null` | Everything — manage resellers & super_admins | `/root` |
+| `reseller` | `null` | Own clients' licenses | `/reseller` |
+| `super_admin` | `null` | Own shops — branch control panel | `/super` |
+| `admin` | shop ID | Full access to own shop + staff management | `/` |
+| `staff` | shop ID | Own shop (limited — no user management) | `/` |
+
+### Multi-Branch (super_admin owns multiple shops)
+- `shops.super_admin_id` — FK to `users.id` — each shop has one owner
+- `users.myShops()` — hasMany relation: all shops owned by this super_admin
+- `licenses.max_shops` — branch limit (1=basic, null=unlimited)
+- `shops.is_locked` — system-controlled lock when license limit exceeded
+- `users.syncShopLocks()` — called on dashboard visit + license change; oldest shops protected first
+- **Data NEVER deleted** — locked shops are inaccessible until license upgraded
 
 ### Core Isolation: Global Scope
 - **`app/Scopes/ShopScope.php`** — auto-filters every Eloquent query by `auth()->user()->shop_id`
-  - `super_admin` bypasses (no filter)
+  - `super_admin` with `shop_id = null` bypasses (control panel mode)
+  - `super_admin` who "entered" a shop has `shop_id` set in memory → filtered like a real admin
   - Applied via `HasShopScope` trait on all 22 tenant models
 - **`app/Traits/HasShopScope.php`** — applied to models; auto-fills `shop_id` on `creating`
 - **`app/Models/User.php`** — deliberately has NO ShopScope (powers auth); all User queries must be **manually** scoped by `shop_id`
@@ -53,6 +80,8 @@ One super admin manages multiple isolated shops. Each shop's data (products, sal
 2. **`User` model has NO global scope** — always filter manually: `User::where('shop_id', $shopId)`
 3. **Route model binding respects global scope** — cross-shop ID access returns 404 automatically
 4. **Per-shop composite unique constraints** — `(shop_id, col)` not global unique (e.g. items.code, store_config.key)
+5. **`orWhere` in search must be wrapped** — `$q->where(fn($s) => $s->whereHas(...)->orWhere('id', ...))` to avoid bypassing shop_id scope
+6. **`canManageShop()` not `role !== 'admin'`** — super_admin inside a shop must pass admin-only gates; use `User::canManageShop()` everywhere
 
 ### Models with `HasShopScope` (22 total)
 Item, Sale, Purchase, Customer, Supplier, Category, Stock, Employee, ExtraExpense, CustomerArea, CustomerPayment, SupplierPayment, SaleLog, SmsLog, ChatMessage, GroupChatMessage, ExtraCostCategory, StoreConfig, SaleItem, PurchaseItem, SaleExtraCost, PurchaseExtraCost
@@ -60,29 +89,65 @@ Item, Sale, Purchase, Customer, Supplier, Category, Stock, Employee, ExtraExpens
 ### Middleware
 | Alias | File | Purpose |
 |-------|------|---------|
+| `root` | `app/Http/Middleware/RootMiddleware.php` | Aborts 403 if not root |
+| `reseller` | `app/Http/Middleware/ResellerMiddleware.php` | Aborts 403 if not reseller |
 | `super_admin` | `app/Http/Middleware/SuperAdmin.php` | Aborts 403 if not super_admin |
-| `shop.scope` | `app/Http/Middleware/SetShopScope.php` | Redirects super_admin → control panel; aborts 403 if shop-less user |
-| `shop.admin` | `app/Http/Middleware/ShopAdmin.php` | Aborts 403 if not admin (protects user management) |
+| `shop.scope` | `app/Http/Middleware/SetShopScope.php` | Redirects super_admin → control panel; checks shop ownership + lock status; aborts 403 if shop-less |
+| `shop.admin` | `app/Http/Middleware/ShopAdmin.php` | Aborts 403 if not `canManageShop()` |
+| `check.subscription` | `app/Http/Middleware/CheckSubscription.php` | Locks out expired super_admin, shows warning/grace banners |
+
+### SetShopScope middleware — important security checks
+1. If super_admin has no `active_shop_id` in session → redirect to `/super/dashboard`
+2. If `active_shop_id` shop doesn't belong to this super_admin → clear session, redirect with error
+3. If shop `is_locked` → clear session, redirect with error (catches real-time license downgrades)
+4. Sets `$user->shop_id = activeShopId` in memory (not saved to DB) so global scope applies
 
 ### Route Groups
 ```
-/super/*         → [auth, super_admin]  — super admin control panel
-/*               → [auth, shop.scope]   — all shop users
-/users/*         → + shop.admin         — admin-only user management
+/root/*          → [auth, root]                         — root admin panel
+/reseller/*      → [auth, reseller]                     — reseller panel
+/super/*         → [auth, super_admin, check.subscription] — super admin control panel
+/*               → [auth, shop.scope, check.subscription]  — shop users
+/users/*         → + shop.admin                         — admin-only staff management
 ```
 
-### Key Files (v2)
+### Login Flow
+Single `/login` for all roles. After auth, redirect by role:
+- `root` → `/root/dashboard`
+- `reseller` → `/reseller/dashboard`
+- `super_admin` → check subscription → `/super/dashboard` (or `/subscription-expired`)
+- `admin`/`staff` → `/dashboard`
+
+### Key Files
 | File | Purpose |
 |------|---------|
-| `app/Models/Shop.php` | Shops table — name, address, phone, logo, is_active |
+| `app/Models/Shop.php` | Shops — name, address, phone, logo, is_active, is_locked, super_admin_id |
+| `app/Models/License.php` | Licenses — plan, expires_at, grace_ends_at, max_shops; status: active/warning/grace/expired |
+| `app/Models/User.php` | Users — role helpers, myShops(), syncShopLocks(), canManageShop(), activeLicense() |
 | `app/Scopes/ShopScope.php` | Core isolation — filters queries by shop_id |
 | `app/Traits/HasShopScope.php` | Applied to all tenant models |
-| `app/Http/Controllers/Super/ShopController.php` | CRUD for shops + provision admin account |
-| `app/Http/Controllers/Super/DashboardController.php` | Super admin dashboard |
+| `app/Http/Controllers/Root/SuperAdminController.php` | Root: CRUD for super_admins + license management |
+| `app/Http/Controllers/Root/ResellerController.php` | Root: CRUD for resellers |
+| `app/Http/Controllers/Reseller/ClientController.php` | Reseller: manage clients + extend licenses |
+| `app/Http/Controllers/Super/ShopController.php` | Super admin: CRUD for own shops, enter/exit shop |
+| `app/Http/Controllers/Super/DashboardController.php` | Super admin dashboard — calls syncShopLocks() |
+| `app/Http/Controllers/Super/ReportController.php` | Super admin reports (scoped to own shops) |
 | `app/Http/Controllers/UserController.php` | Shop-scoped staff/user management (manual scope) |
 | `resources/views/layouts/super.blade.php` | Dark control panel layout for super admin |
 | `resources/views/super/` | Super admin views (dashboard, shops) |
+| `resources/views/root/` | Root admin views |
+| `resources/views/reseller/` | Reseller views |
 | `resources/views/users/` | User management views (index, create, edit) |
+
+### User::canManageShop()
+```php
+public function canManageShop(): bool
+{
+    return $this->role === 'admin'
+        || ($this->role === 'super_admin' && session('active_shop_id'));
+}
+```
+Use this — NOT `role === 'admin'` — for any admin-only gate inside shop controllers.
 
 ### UserController (staff management) — Important
 ```php
@@ -102,8 +167,9 @@ php artisan tinker --execute="Auth::loginUsingId(1); echo Item::count();"
 ```
 Switch user contexts with `Auth::loginUsingId(N)` to verify shop isolation.
 
-### Seeder
-`database/seeders/SuperAdminSeeder.php` — creates `super@admin.com/password` (super_admin), default shop "প্রধান শাখা", assigns all existing data to shop 1.
+### Seeders
+- `SuperAdminSeeder` — backfills `super_admin_id` on existing shops, assigns all existing data to shop 1
+- `RootUserSeeder` — creates `root@system.com / password` (root role)
 
 ---
 
@@ -111,20 +177,25 @@ Switch user contexts with `Auth::loginUsingId(N)` to verify shop isolation.
 
 ### Customer/Supplier Due Amount
 - **Allows negative values** (credit/advance balance from overpayment)
-- Formula: `customer.due = customer.due + net - paid` (no max(0) cap)
+- Formula: `customer.due = customer.due + net - paid` (NO `max(0,...)` cap — ever)
 - Negative due shown as: 🔵 "অগ্রিম ৳X" badge (blue)
 - Positive due shown as: 🔴 "৳X" badge (red)
-- `SaleController` and `PurchaseController` use this formula consistently
+- `SaleController`, `PurchaseController`, `CustomerPaymentController`, `SupplierPaymentController` all use this formula — no cap
+
+### ⚠️ NEVER use max(0, ...) on due amounts
+This was a historical bug. Any cap on due_amount destroys the credit balance feature.
+- `CustomerPaymentController::store()` → `due = previousDue - amount` (no cap)
+- `SupplierPaymentController::store()` → `due = supplierDue - amount` (no cap)
 
 ### No-item Sales (Previous Due Payment)
 - Users create a "sale" with NO items to pay off previous customer due
 - These appear in the daily sales report as a separate section
-- `$grandNoItemDueReduction = min(paid, previous_due)` — only effective due reduction counts
+- `$grandNoItemDueReduction = min(paid, max(0, previous_due))` — only positive previous dues can be reduced
 - `sale.previous_due` is captured BEFORE the sale is made
 
 ### No-item Purchases (Advance Supplier Payment)
 - Users can submit a purchase with NO items — treated as advance payment to supplier
-- `items` validation is `nullable` (not required) in PurchaseController
+- `items` validation is `nullable` (not required) in both `store()` and `update()`
 - `due_amount = total - paid` (allows negative — no `max(0,...)` cap)
 - Negative due on purchase = advance/credit for that supplier
 - Yellow warning shown in create form when paid > 0 with no items
@@ -133,7 +204,7 @@ Switch user contexts with `Auth::loginUsingId(N)` to verify shop isolation.
 
 ### Due Auto-fix (in ledgers)
 - `CustomerController::ledger()` recalculates `due_amount` from all sales — NO `max(0,...)`
-- `SupplierController::ledger()` same — NO `max(0,...)` cap (was a bug, now fixed)
+- `SupplierController::ledger()` same — NO `max(0,...)` cap
 - Formula: `realTotalDue = allTimePurchases/Sales - allTimePaid - allTimePayments`
 - Auto-fix runs every time ledger is opened and corrects any stale due_amount
 
@@ -157,7 +228,8 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 ## Database Tables (Key)
 | Table | Purpose |
 |-------|---------|
-| `shops` | Shop records — name, address, phone, logo, is_active |
+| `shops` | Shop records — name, address, phone, logo, is_active, is_locked, super_admin_id |
+| `licenses` | Subscription licenses — user_id, reseller_id, plan, expires_at, grace_ends_at, max_shops |
 | `sales` | Sales with `shop_id`, `total_amount`, `paid_amount`, `due_amount`, `previous_due`, `extra_cost`, `labor_cost`, `is_edited`, `edit_note` |
 | `sale_items` | Line items per sale (has `shop_id`) |
 | `purchases` | Stock receives with `shop_id`, `extra_cost`, `labor_cost` |
@@ -168,7 +240,8 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 | `sale_logs` | Edit/delete audit log with JSON snapshot |
 | `items` | `shop_id`, products with `purchase_price`, `sale_price` |
 | `store_config` | `shop_id`, key-value; composite unique `(shop_id, key)` |
-| `users` | `shop_id` (nullable for super_admin), role = super_admin/admin/staff |
+| `users` | `shop_id` (nullable for root/reseller/super_admin), role = root/reseller/super_admin/admin/staff |
+| `resellers` | Reseller profile — commission, max_clients, can_extend_license |
 
 ---
 
@@ -177,25 +250,36 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 ### SaleController
 - `store()` — creates sale, decrements stock, updates `customer.due += net - paid`
 - `update()` — reverses old effects then re-applies, logs before change
-- `destroy()` — restores stock, reverses due, logs deletion
+- `destroy()` — checks `canManageShop()`, restores stock, reverses due, logs deletion
+- `index()` — search with `orWhere('id')` wrapped in sub-closure (prevents shop scope bypass)
 - `logSale()` — saves snapshot to `sale_logs` table
 - After store: redirects to `sales.show`
 
 ### PurchaseController
 - `store()` — creates purchase, increments stock, updates `supplier.due += total - paid`
-- `update()` — reverses old then re-applies
-- `destroy()` — decrements stock, reverses supplier due
+- `update()` — items are `nullable` (advance payments can be edited without items), reverses old then re-applies
+- `destroy()` — checks `canManageShop()`, decrements stock, reverses supplier due
+- `index()` — search with `orWhere('id')` wrapped in sub-closure
 - After store: redirects to `purchases.show` (invoice)
 - **Supplier is required** — cannot submit without selecting
 - **Items are optional** — no items = advance payment to supplier
 - `due_amount = total - paid` — NO `max(0,...)` cap, allows negative credit
 - `$request->items ?? []` — handles empty cart gracefully
 
+### CustomerPaymentController
+- `store()` — `due = previousDue - amount` (NO cap — allows credit)
+- `destroy()` — checks `canManageShop()`, reverses payment
+
+### SupplierPaymentController
+- `store()` — `due = supplierDue - amount` (NO cap — allows credit)
+- `destroy()` — checks `canManageShop()`, reverses payment
+
 ### ReportController
 - `salesReport()` — daily sales with standalone payments, no-item sales sections
+- `grandNoItemDueReduction` uses `min(paid, max(0, previous_due))` — handles negative previous_due
 - `saleLogs()` — audit log of edits and deletions
 - All date defaults: `now()->toDateString()` (today, NOT startOfMonth)
-- ⚠️ All 16+ `DB::table()` raw queries manually filtered with `->where('sales.shop_id', auth()->user()->shop_id)`
+- ⚠️ All `DB::table()` raw queries manually filtered with `->where('sales.shop_id', auth()->user()->shop_id)`
 
 ### SupplierController
 - `ledger()` — auto-fix supplier due (NO max(0) cap — allows negative credit)
@@ -205,6 +289,16 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 - Shop-scoped staff management — all queries manually scoped by `shop_id`
 - Guards: self-delete blocked, last-admin blocked, cross-shop edit → 404, super_admin role injection rejected
 
+### Super\ShopController
+- `enter()` — sets `session('active_shop_id')`, checks ownership and lock status
+- `exitShop()` — clears session, returns to super dashboard
+- `store()` — checks `license->canAddShops($count)` before creating, sets `super_admin_id`
+- `resetPassword()` — resets any staff user's password scoped to super_admin's shops
+
+### Super\DashboardController
+- Calls `auth()->user()->syncShopLocks()` on every visit (auto-sync locked shops)
+- All data scoped to `super_admin_id = auth()->id()`
+
 ---
 
 ## Views Structure
@@ -213,7 +307,7 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 - `resources/views/layouts/app.blade.php` — sidebar with JS-based active highlight; shows shop name in brand/breadcrumb
 - `resources/views/layouts/super.blade.php` — dark control panel layout for super admin
 - Sidebar JS uses `window.location.pathname` for active state
-- Admin-only sidebar link: "ব্যবহারকারী" (user management) — guarded by `@if(auth()->user()->role === 'admin')`
+- Admin-only sidebar link: "ব্যবহারকারী" — guarded by `@if(auth()->user()->canManageShop())`
 
 ### Sale Invoice (`sales/show.blade.php`)
 - Store name as SVG arc (`partials/store-name-arc.blade.php`)
@@ -230,7 +324,7 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 | `sales/edit.blade.php` | Same as create but pre-populated, inline item-change button |
 | `sales/show.blade.php` | Invoice: tfoot order = ছাড় → পূর্বের বাকী → extra/labor → বিক্রয় মোট → সর্বমোট → পরিশোধ → বাকী |
 | `purchases/create.blade.php` | Supplier required, items optional, yellow warning for no-item+paid |
-| `purchases/edit.blade.php` | Same style as create |
+| `purchases/edit.blade.php` | Same style as create; items nullable |
 | `purchases/index.blade.php` | Blue "অগ্রিম" badge for negative due rows; tfoot shows net credit in blue |
 | `purchases/show.blade.php` | Full due display logic (see Due Display Logic above) |
 | `customers/ledger.blade.php` | Running balance, "নতুন বিক্রয়" button pre-selects customer |
@@ -241,8 +335,14 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 | `users/index.blade.php` | Staff list with role badge, "আপনি" tag for self |
 | `users/create.blade.php` | Create staff/admin account |
 | `users/edit.blade.php` | Edit; role select disabled for self + hidden input fallback |
-| `super/shops/index.blade.php` | All shops table with status |
-| `super/shops/create.blade.php` | Provision new shop + admin account in one form |
+| `super/dashboard.blade.php` | Locked shop warning banner; branch count X/max; add-branch button disabled at limit |
+| `super/shops/index.blade.php` | Locked rows dimmed, lock icon, no enter/edit buttons for locked shops |
+| `super/shops/create.blade.php` | Simplified (no admin creation); shows locked/upgrade page if canAdd=false |
+| `super/shops/show.blade.php` | Shop detail with sales, customers, items count |
+| `root/super-admins/index.blade.php` | Shows shop_count/max_shops pill |
+| `root/super-admins/create.blade.php` | Create super_admin with max_shops field |
+| `root/super-admins/show.blade.php` | License info + renew form with max_shops |
+| `subscription/expired.blade.php` | Lock page shown when license expired |
 
 ---
 
@@ -308,7 +408,7 @@ Accessed via `\App\Models\StoreConfig::get('key', 'default')`:
 
 ---
 
-## Recently Completed Features
+## Completed Features (All Sessions)
 
 ### Session 1
 1. Daily sales report — no-item sale payments, standalone CustomerPayments
@@ -338,17 +438,39 @@ Accessed via `\App\Models\StoreConfig::get('key', 'default')`:
 23. Performance: Dropdown queries use column selection (not full rows)
 24. **Rule: NEVER cache business data** — due_amount, prices, stock change frequently
 
-### Session 3 — v2 Multi-Shop (branch: `v2-multi-shop`)
-25. Core multi-tenant architecture: `shops` table, `shop_id` on all tenant tables, role enum (super_admin/admin/staff)
+### Session 3 — v2 Multi-Shop
+25. Core multi-tenant architecture: `shops` table, `shop_id` on all tenant tables, role enum
 26. `ShopScope` global scope + `HasShopScope` trait — auto-filter + auto-fill shop_id
-27. Three middleware: `super_admin`, `shop.scope`, `shop.admin`
-28. Super admin control panel (`/super`) — dark layout, shop CRUD, provision shop + admin account together
-29. Closed data leaks: 16 raw DB::table() queries in ReportController manually scoped
-30. Closed data leaks: DashboardController stock_value query, ChatController user list, GroupMessageSent broadcast
+27. Middleware: `super_admin`, `shop.scope`, `shop.admin`, `check.subscription`
+28. Super admin control panel (`/super`) — dark layout, shop CRUD, enter/exit shop
+29. Closed data leaks: all `DB::table()` queries in ReportController manually scoped
+30. Closed data leaks: DashboardController stock_value query, ChatController user list
 31. Per-shop store_config: composite unique `(shop_id, key)`
 32. Shop name shown in sidebar brand and topbar breadcrumb
-33. Shop-scoped staff/user management: UserController (manual scope), index/create/edit views, `shop.admin` gate
-34. Security guards: cross-shop edit→404, self-delete blocked, last-admin blocked, super_admin role injection rejected
+33. Shop-scoped staff/user management: UserController (manual scope), `shop.admin` gate
+34. Security guards: cross-shop edit→404, self-delete blocked, last-admin blocked
+
+### Session 4 — Reseller/Root/License system
+35. Root admin panel (`/root`) — manage resellers and super_admins
+36. Reseller panel (`/reseller`) — manage own clients and extend licenses
+37. License model — plan, expires_at, grace_ends_at, max_shops, status (active/warning/grace/expired)
+38. Subscription check middleware — warning/grace banners, lock on expired
+39. super_admin owns multiple shops: `shops.super_admin_id` FK
+40. `max_shops` on license — controls branch limit per super_admin
+41. `is_locked` on shops — data preserved but inaccessible when over license limit
+42. `syncShopLocks()` — auto-sync on dashboard + license change; oldest shops protected first
+43. SetShopScope: checks shop ownership AND lock status on every request
+44. Super admin dashboard: locked shop warning banner, branch count X/max, disabled add button at limit
+45. Fixed: ReportController showed all super_admins' shops — scoped to `super_admin_id = auth()->id()`
+
+### Session 5 — Bug Fixes
+46. Fixed: `destroy()` in Sale/Purchase/CustomerPayment/SupplierPayment + 9 other controllers used `role !== 'admin'` — changed to `canManageShop()` so super_admin inside a shop can perform admin actions
+47. Fixed: `PurchaseController::update()` had `items` as `required|array|min:1` — changed to `nullable` so advance-payment purchases can be edited
+48. Fixed: `SetShopScope` middleware didn't check `is_locked` — added check so super_admin is kicked out if shop gets locked while they're inside
+49. Fixed: `SaleController::index()` and `PurchaseController::index()` — `orWhere('id', X)` without grouping could bypass shop_id scope; wrapped in sub-closure
+50. Fixed: `CustomerPaymentController::store()` had `max(0, due - paid)` cap — removed; allows negative credit
+51. Fixed: `SupplierPaymentController::store()` same `max(0,...)` bug — removed
+52. Fixed: `salesReport()` `grandNoItemDueReduction` used `min(paid, previous_due)` which broke when `previous_due` was negative; fixed with `max(0, previous_due)`
 
 ---
 
@@ -356,8 +478,9 @@ Accessed via `\App\Models\StoreConfig::get('key', 'default')`:
 Pre-clean DB backup: `storage/backup_before_clean_20260530_073214.sql`
 
 ## Test Accounts (local dev)
-| Email | Password | Role | Shop |
-|-------|----------|------|------|
-| `super@admin.com` | `password` | super_admin | — |
+| Email | Password | Role | Notes |
+|-------|----------|------|-------|
+| `root@system.com` | `password` | root | System root — manage all |
+| `super@admin.com` | `password` | super_admin | Owns প্রধান শাখা (id=1) |
 | existing admin | (original) | admin | প্রধান শাখা (id=1) |
 | `mirpur@shop.com` | `secret123` | admin | মিরপুর শাখা (id=2) |
