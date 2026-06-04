@@ -4,6 +4,28 @@
 
 @section('content')
 
+{{-- Locked shops warning --}}
+@php $lockedCount = $shops->where('is_locked', true)->count(); @endphp
+@if($lockedCount > 0)
+<div style="background:#7f1d1d44;border:1px solid #991b1b;border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px">
+    <i class="fas fa-lock" style="font-size:1.4rem;color:#f87171;flex-shrink:0"></i>
+    <div>
+        <div style="font-weight:700;color:#fca5a5;margin-bottom:3px">
+            {{ $lockedCount }}টি শাখা লক করা আছে
+        </div>
+        <div style="font-size:.84rem;color:#fda4af">
+            আপনার লাইসেন্স সীমার বাইরে থাকা শাখাগুলো সাময়িকভাবে বন্ধ।
+            <strong>ডেটা সম্পূর্ণ সুরক্ষিত আছে।</strong>
+            লাইসেন্স আপগ্রেড করলেই আবার অ্যাক্সেস ফিরে পাবেন।
+        </div>
+    </div>
+    <a href="{{ route('super.shops.index') }}" class="sa-btn sa-btn-sm"
+       style="background:#991b1b;color:#fecaca;flex-shrink:0;border:1px solid #b91c1c">
+        <i class="fas fa-store"></i> শাখা দেখুন
+    </a>
+</div>
+@endif
+
 {{-- Stat cards --}}
 <div class="sa-stat-grid">
     <div class="sa-stat">

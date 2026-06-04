@@ -179,6 +179,9 @@ class SuperAdminController extends Controller
             $latestLicense->update($updateFields);
         }
 
+        // Auto-lock/unlock shops based on the new max_shops limit
+        $user->refresh()->syncShopLocks();
+
         return redirect()->back()
             ->with('success', "{$user->name}-এর লাইসেন্স {$days} দিন বাড়ানো হয়েছে।");
     }

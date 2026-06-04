@@ -54,39 +54,67 @@
         </thead>
         <tbody>
             @foreach($shops as $shop)
-            <tr>
+            <tr style="{{ $shop->is_locked ? 'opacity:.6' : '' }}">
                 <td style="font-weight:600">
-                    <i class="fas fa-store" style="color:#f59e0b;margin-left:6px"></i>
+                    @if($shop->is_locked)
+                        <i class="fas fa-lock" style="color:#f87171;margin-left:6px"></i>
+                    @else
+                        <i class="fas fa-store" style="color:#f59e0b;margin-left:6px"></i>
+                    @endif
                     {{ $shop->name }}
-                    @if($shop->address)
+                    @if($shop->is_locked)
+                        <div style="font-size:.74rem;color:#f87171;font-weight:400;margin-top:3px">
+                            <i class="fas fa-triangle-exclamation"></i>
+                            লাইসেন্স সীমা — ডেটা সুরক্ষিত, অ্যাক্সেস বন্ধ
+                        </div>
+                    @elseif($shop->address)
                         <div style="font-size:.76rem;color:#64748b;font-weight:400;margin-top:2px">
                             <i class="fas fa-location-dot"></i> {{ $shop->address }}
                         </div>
                     @endif
                 </td>
                 <td>{{ $shop->phone ?? '—' }}</td>
-                <td><span class="sa-pill" style="background:#1e3a8a;color:#bfdbfe">{{ $shop->users_count }} জন</span></td>
                 <td>
-                    <span class="sa-pill {{ $shop->is_active ? 'sa-pill-on' : 'sa-pill-off' }}">
-                        {{ $shop->is_active ? 'সক্রিয়' : 'নিষ্ক্রিয়' }}
-                    </span>
+                    @if($shop->is_locked)
+                        <span class="sa-pill" style="background:#7f1d1d44;color:#fca5a5;border:1px solid #7f1d1d66">লক</span>
+                    @else
+                        <span class="sa-pill" style="background:#1e3a8a;color:#bfdbfe">{{ $shop->users_count }} জন</span>
+                    @endif
+                </td>
+                <td>
+                    @if($shop->is_locked)
+                        <span class="sa-pill" style="background:#1e293b;color:#475569">🔒 লক</span>
+                    @else
+                        <span class="sa-pill {{ $shop->is_active ? 'sa-pill-on' : 'sa-pill-off' }}">
+                            {{ $shop->is_active ? 'সক্রিয়' : 'নিষ্ক্রিয়' }}
+                        </span>
+                    @endif
                 </td>
                 <td>
                     <div style="display:flex;gap:6px">
-                        <form method="POST" action="{{ route('super.shops.enter', $shop) }}" style="margin:0">
-                            @csrf
-                            <button class="sa-btn sa-btn-primary sa-btn-sm" title="এই শপে প্রবেশ করে অ্যাডমিন হিসেবে কাজ করুন">
-                                <i class="fas fa-right-to-bracket"></i> প্রবেশ
-                            </button>
-                        </form>
-                        <a href="{{ route('super.shops.show', $shop) }}" class="sa-btn sa-btn-ghost sa-btn-sm" title="বিস্তারিত">
-                            <i class="fas fa-eye"></i>
-                        </a>
-                        <a href="{{ route('super.shops.edit', $shop) }}" class="sa-btn sa-btn-ghost sa-btn-sm" title="সম্পাদনা">
-                            <i class="fas fa-pen"></i>
-                        </a>
+                        @if($shop->is_locked)
+                            {{-- Locked: show upgrade prompt, no entry --}}
+                            <span class="sa-btn sa-btn-sm"
+                                  style="background:#7f1d1d44;color:#fca5a5;border:1px solid #7f1d1d66;cursor:not-allowed"
+                                  title="লাইসেন্স আপগ্রেড করলে অ্যাক্সেস ফিরে পাবেন">
+                                <i class="fas fa-lock"></i> লক
+                            </span>
+                        @else
+                            <form method="POST" action="{{ route('super.shops.enter', $shop) }}" style="margin:0">
+                                @csrf
+                                <button class="sa-btn sa-btn-primary sa-btn-sm" title="এই শাখায় প্রবেশ করুন">
+                                    <i class="fas fa-right-to-bracket"></i> প্রবেশ
+                                </button>
+                            </form>
+                            <a href="{{ route('super.shops.show', $shop) }}" class="sa-btn sa-btn-ghost sa-btn-sm" title="বিস্তারিত">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{{ route('super.shops.edit', $shop) }}" class="sa-btn sa-btn-ghost sa-btn-sm" title="সম্পাদনা">
+                                <i class="fas fa-pen"></i>
+                            </a>
+                        @endif
                         <form method="POST" action="{{ route('super.shops.destroy', $shop) }}"
-                              onsubmit="return confirm('এই শপ মুছে ফেলবেন? শপের সব ডেটা থেকে যাবে কিন্তু শপ মুছে যাবে।')" style="margin:0">
+                              onsubmit="return confirm('এই শাখা মুছে ফেলবেন? সব ডেটা স্থায়ীভাবে মুছে যাবে!')" style="margin:0">
                             @csrf @method('DELETE')
                             <button class="sa-btn sa-btn-danger sa-btn-sm" title="মুছুন">
                                 <i class="fas fa-trash"></i>

@@ -64,8 +64,11 @@ class ClientController extends Controller
             'shop_id'  => null,
         ]);
 
-        $shop = Shop::create(['name' => $request->shop_name, 'is_active' => true]);
-        $user->update(['shop_id' => $shop->id]);
+        Shop::create([
+            'name'           => $request->shop_name,
+            'super_admin_id' => $user->id,
+            'is_active'      => true,
+        ]);
 
         $days    = License::daysForPlan($request->plan);
         $starts  = Carbon::now();
@@ -114,6 +117,9 @@ class ClientController extends Controller
         } else {
             $license->extendByDays($days, $resellerId);
         }
+
+        // Auto-lock/unlock shops based on updated license
+        $user->refresh()->syncShopLocks();
 
         return redirect()->back()
             ->with('success', "{$user->name}-এর লাইসেন্স {$days} দিন বাড়ানো হয়েছে।");

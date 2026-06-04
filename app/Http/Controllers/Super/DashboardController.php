@@ -11,6 +11,10 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        // Auto-sync shop lock states whenever super_admin visits their panel.
+        // This catches any license changes made by root/reseller while they were away.
+        auth()->user()->syncShopLocks();
+
         $superAdminId = auth()->id();
 
         // Only this super_admin's shops

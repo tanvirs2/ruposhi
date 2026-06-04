@@ -31,6 +31,12 @@ class ShopController extends Controller
         // Security: only enter shops that belong to this super_admin
         abort_unless($shop->super_admin_id === auth()->id(), 403, 'এই শপে অ্যাক্সেস নেই।');
 
+        // Locked shop — data is safe but access blocked until license upgrade
+        if ($shop->is_locked) {
+            return redirect()->route('super.shops.index')
+                ->with('error', "'{$shop->name}' শাখাটি লাইসেন্স সীমার কারণে লক করা আছে। লাইসেন্স আপগ্রেড করলে এই শাখার সব ডেটা পুনরায় ব্যবহার করতে পারবেন।");
+        }
+
         session([
             'active_shop_id'   => $shop->id,
             'active_shop_name' => $shop->name,

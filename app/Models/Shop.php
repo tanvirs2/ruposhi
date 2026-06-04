@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Shop extends Model
 {
-    protected $fillable = ['name', 'address', 'phone', 'logo', 'is_active', 'super_admin_id'];
+    protected $fillable = ['name', 'address', 'phone', 'logo', 'is_active', 'is_locked', 'super_admin_id'];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_locked' => 'boolean',
     ];
 
     /* ── Relations ─────────────────────────────────────────── */

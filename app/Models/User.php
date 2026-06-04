@@ -95,6 +95,46 @@ class User extends Authenticatable
         return $this->hasMany(Shop::class, 'super_admin_id');
     }
 
+    /**
+     * Sync shop lock states based on current license max_shops.
+     *
+     * Rules:
+     *   - Data is NEVER deleted — locked shops are just inaccessible.
+     *   - Oldest shops (lowest ID) are protected first.
+     *   - When license upgrades, extra shops auto-unlock.
+     *   - null max_shops = unlimited → unlock all.
+     */
+    public function syncShopLocks(): void
+    {
+        if ($this->role !== 'super_admin') {
+            return;
+        }
+
+        $license  = $this->activeLicense();
+        $maxShops = $license?->max_shops; // null = unlimited
+
+        // Get all shops ordered oldest-first (oldest = most protected)
+        $shops = Shop::where('super_admin_id', $this->id)
+                     ->orderBy('id')
+                     ->get();
+
+        if (is_null($maxShops)) {
+            // Unlimited license → unlock everything
+            Shop::where('super_admin_id', $this->id)
+                ->where('is_locked', true)
+                ->update(['is_locked' => false]);
+            return;
+        }
+
+        // Lock/unlock based on position vs limit
+        foreach ($shops as $index => $shop) {
+            $shouldBeLocked = ($index + 1) > $maxShops;
+            if ($shop->is_locked !== $shouldBeLocked) {
+                $shop->update(['is_locked' => $shouldBeLocked]);
+            }
+        }
+    }
+
     public function licenses()
     {
         return $this->hasMany(License::class);
