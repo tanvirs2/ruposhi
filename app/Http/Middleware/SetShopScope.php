@@ -18,13 +18,24 @@ class SetShopScope
         if (auth()->check()) {
             $user = auth()->user();
 
-            // Super admin belongs in the control panel, not shop pages
             if ($user->role === 'super_admin') {
-                return redirect()->route('super.dashboard');
-            }
+                // Super admin may "enter" a shop and operate as its admin.
+                $activeShopId = session('active_shop_id');
 
+                // Not inside any shop → back to the control panel.
+                if (!$activeShopId) {
+                    return redirect()->route('super.dashboard');
+                }
+
+                // Act as that shop for THIS request only. Setting shop_id in
+                // memory makes every scope, query and auto-fill treat the
+                // super admin exactly like that shop's admin. syncOriginal()
+                // keeps it dirty-free so it is never written back to the DB.
+                $user->shop_id = $activeShopId;
+                $user->syncOriginal();
+            }
             // Non-super-admin with no shop assigned → block
-            if (is_null($user->shop_id)) {
+            elseif (is_null($user->shop_id)) {
                 abort(403, 'আপনার অ্যাকাউন্টে কোনো শপ নির্ধারিত নেই। অ্যাডমিনের সাথে যোগাযোগ করুন।');
             }
         }

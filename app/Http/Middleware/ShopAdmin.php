@@ -15,8 +15,9 @@ class ShopAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Only a shop admin may manage staff accounts (not staff, not super admin)
-        if (!auth()->check() || auth()->user()->role !== 'admin') {
+        // Only a shop admin may manage staff/settings — or a super admin who
+        // has "entered" this shop (Task 5). Plain staff are blocked.
+        if (!auth()->check() || !auth()->user()->canManageShop()) {
             abort(403, 'শুধুমাত্র শপ অ্যাডমিন ব্যবহারকারী পরিচালনা করতে পারবেন।');
         }
 

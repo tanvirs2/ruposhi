@@ -7,7 +7,7 @@
 - **Prod app path:** `~/domains/pos.numaanhussain.com/pos_app`
 - **Prod public:** symlinked `public_html → pos_app/public`
 - **GitHub:** `https://github.com/tanvirs2/ruposhi.git`
-- **Dev server:** `php artisan serve --port=8899`
+- **Dev server:** `php artisan serve --port=8000`
 
 ## Git Branch Strategy
 - **`main`** — v1 (single-shop, stable production backup — do NOT touch)

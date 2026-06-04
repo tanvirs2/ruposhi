@@ -20,8 +20,11 @@ class ShopScope implements Scope
 
         $user = auth()->user();
 
-        // super_admin sees all shops — no filter
-        if ($user->role === 'super_admin') {
+        // Super admin with NO active shop sees everything (control panel).
+        // When a super admin "enters" a shop, SetShopScope sets shop_id in
+        // memory for the request — then they are filtered exactly like that
+        // shop's own admin.
+        if ($user->role === 'super_admin' && empty($user->shop_id)) {
             return;
         }
 

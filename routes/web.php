@@ -35,6 +35,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware(['auth', 'super_admin'])->prefix('super')->name('super.')->group(function () {
     Route::get('/dashboard', [SuperDashboard::class, 'index'])->name('dashboard');
     Route::resource('shops', ShopController::class);
+    Route::post('/shops/{shop}/enter', [ShopController::class, 'enter'])->name('shops.enter');
+    Route::post('/exit-shop',          [ShopController::class, 'exitShop'])->name('shops.exit');
     Route::get('/reports', [SuperReportController::class, 'index'])->name('reports');
     Route::post('/users/{user}/reset-password', [ShopController::class, 'resetPassword'])->name('users.reset-password');
 });

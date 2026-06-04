@@ -16,6 +16,33 @@ class ShopController extends Controller
         return view('super.shops.index', compact('shops'));
     }
 
+    /**
+     * "Enter" a shop — the super admin starts operating inside it exactly
+     * like that shop's own admin (sales, stock, reports, staff, settings).
+     * The chosen shop is remembered in the session; SetShopScope applies it
+     * to every shop-page request.
+     */
+    public function enter(Shop $shop)
+    {
+        session([
+            'active_shop_id'   => $shop->id,
+            'active_shop_name' => $shop->name,
+        ]);
+
+        return redirect()->route('dashboard')
+                         ->with('success', "'{$shop->name}' শপে প্রবেশ করেছেন।");
+    }
+
+    /**
+     * Leave the entered shop and return to the super admin control panel.
+     */
+    public function exitShop()
+    {
+        session()->forget(['active_shop_id', 'active_shop_name']);
+
+        return redirect()->route('super.dashboard');
+    }
+
     public function create()
     {
         return view('super.shops.create');

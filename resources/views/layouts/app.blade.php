@@ -258,14 +258,14 @@
 
         <div class="nav-section">
             <span class="nav-section-label">সেটিংস</span>
-            @if(auth()->user()->role === 'admin')
+            @if(auth()->user()->canManageShop())
             <a href="{{ route('users.index') }}" class="nav-item {{ $_seg==='users' ? 'active' : '' }}">
                 <span class="nav-icon"><i class="fas fa-users-gear"></i></span>
                 <span class="nav-label">ব্যবহারকারী</span>
                 <button type="button" class="info-btn" data-info="এই শপের স্টাফ ও অ্যাডমিন লগইন অ্যাকাউন্ট তৈরি ও পরিচালনা করুন।">i</button>
             </a>
             @endif
-            @if(auth()->user()->role === 'admin')
+            @if(auth()->user()->canManageShop())
             <a href="{{ route('store-config.index') }}" class="nav-item {{ $_seg==='store-config' ? 'active' : '' }}">
                 <span class="nav-icon"><i class="fas fa-store"></i></span>
                 <span class="nav-label">স্টোর কনফিগ</span>
@@ -296,7 +296,7 @@
                 <a href="{{ route('profile.edit') }}" style="text-decoration:none">
                     <span class="user-name">{{ auth()->user()->name }}</span>
                 </a>
-                <span class="user-role">{{ auth()->user()->role === 'admin' ? 'অ্যাডমিন' : 'স্টাফ' }}</span>
+                <span class="user-role">{{ auth()->user()->role === 'super_admin' ? 'সুপার অ্যাডমিন' : (auth()->user()->role === 'admin' ? 'অ্যাডমিন' : 'স্টাফ') }}</span>
             </div>
             <a href="{{ route('profile.edit') }}" class="logout-btn" title="প্রোফাইল" style="color:#94a3b8">
                 <i class="fas fa-user-pen"></i>
@@ -313,6 +313,21 @@
 
 <!-- Main -->
 <div class="main-wrapper" id="mainWrapper">
+
+    @if(auth()->user()->role === 'super_admin' && session('active_shop_id'))
+    <div style="background:linear-gradient(90deg,#b45309,#d97706);color:#fff;padding:9px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:.88rem;font-weight:600">
+        <span>
+            <i class="fas fa-user-shield"></i>
+            সুপার অ্যাডমিন মোড — আপনি <strong>{{ session('active_shop_name') }}</strong> শপে কাজ করছেন
+        </span>
+        <form method="POST" action="{{ route('super.shops.exit') }}" style="margin:0">
+            @csrf
+            <button type="submit" style="background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.55);color:#fff;padding:5px 16px;border-radius:7px;cursor:pointer;font-weight:600;font-size:.84rem;font-family:inherit">
+                <i class="fas fa-arrow-left"></i> কন্ট্রোল প্যানেলে ফিরুন
+            </button>
+        </form>
+    </div>
+    @endif
 
     <header class="topbar">
         <div class="topbar-left">

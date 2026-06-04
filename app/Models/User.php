@@ -43,6 +43,17 @@ class User extends Authenticatable
         return $this->role === 'staff';
     }
 
+    /**
+     * Can this user manage the current shop as its admin?
+     * True for a real shop admin, OR a super admin who has "entered" a shop
+     * (Task 5 — super admin operating inside a shop like its own admin).
+     */
+    public function canManageShop(): bool
+    {
+        return $this->role === 'admin'
+            || ($this->role === 'super_admin' && session('active_shop_id'));
+    }
+
     /* ── Relations ─────────────────────────────────────────── */
 
     public function shop()

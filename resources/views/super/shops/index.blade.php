@@ -54,6 +54,12 @@
                 </td>
                 <td>
                     <div style="display:flex;gap:6px">
+                        <form method="POST" action="{{ route('super.shops.enter', $shop) }}" style="margin:0">
+                            @csrf
+                            <button class="sa-btn sa-btn-primary sa-btn-sm" title="এই শপে প্রবেশ করে অ্যাডমিন হিসেবে কাজ করুন">
+                                <i class="fas fa-right-to-bracket"></i> প্রবেশ
+                            </button>
+                        </form>
                         <a href="{{ route('super.shops.show', $shop) }}" class="sa-btn sa-btn-ghost sa-btn-sm" title="বিস্তারিত">
                             <i class="fas fa-eye"></i>
                         </a>

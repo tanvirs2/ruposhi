@@ -13,9 +13,12 @@ trait HasShopScope
     {
         static::addGlobalScope(new ShopScope());
 
-        // Auto-fill shop_id on create
+        // Auto-fill shop_id on create using the auth user's effective shop.
+        // For a super admin who has "entered" a shop, SetShopScope sets that
+        // shop_id in memory, so new records land in the entered shop. A super
+        // admin outside any shop has a null shop_id and is skipped.
         static::creating(function ($model) {
-            if (auth()->check() && auth()->user()->role !== 'super_admin') {
+            if (auth()->check() && auth()->user()->shop_id) {
                 $model->shop_id = $model->shop_id ?? auth()->user()->shop_id;
             }
         });
