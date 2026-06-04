@@ -11,8 +11,8 @@ class SuperAdminSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Create Super Admin (no shop)
-        User::updateOrCreate(
+        // 1. Create Super Admin (shop_id stays null — shops point back via super_admin_id)
+        $superAdmin = User::updateOrCreate(
             ['email' => 'super@admin.com'],
             [
                 'name'     => 'Super Admin',
@@ -22,11 +22,16 @@ class SuperAdminSeeder extends Seeder
             ]
         );
 
-        // 2. Create a default shop
+        // 2. Create a default shop owned by this super_admin
         $shop = Shop::firstOrCreate(
             ['name' => 'প্রধান শাখা'],
-            ['address' => 'ঢাকা', 'phone' => '01700000000', 'is_active' => true]
+            ['address' => 'ঢাকা', 'phone' => '01700000000', 'is_active' => true, 'super_admin_id' => $superAdmin->id]
         );
+
+        // Backfill super_admin_id if shop already existed without it
+        if (!$shop->super_admin_id) {
+            $shop->update(['super_admin_id' => $superAdmin->id]);
+        }
 
         // 3. Assign all existing users (admin/staff) to this default shop
         User::whereNull('shop_id')

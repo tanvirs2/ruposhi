@@ -4,23 +4,42 @@
 
 @section('content')
 
+@php
+    $license   = auth()->user()->activeLicense();
+    $shopCount = $shops->count();
+    $canAdd    = $license && $license->canAddShops($shopCount);
+@endphp
+
 <div class="sa-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
         <h2 style="font-size:1.02rem;font-weight:700;margin:0;color:#f1f5f9">
-            <i class="fas fa-store" style="color:#f59e0b"></i> শপ তালিকা ({{ $shops->count() }})
+            <i class="fas fa-store" style="color:#f59e0b"></i> আমার শাখা
+            <span style="font-size:.78rem;color:#64748b;font-weight:400;margin-right:6px">
+                {{ $shopCount }}{{ $license ? '/'.($license->max_shops ?? '∞') : '' }} শাখা
+            </span>
         </h2>
-        <a href="{{ route('super.shops.create') }}" class="sa-btn sa-btn-primary sa-btn-sm">
-            <i class="fas fa-plus"></i> নতুন শপ
-        </a>
+        @if($canAdd)
+            <a href="{{ route('super.shops.create') }}" class="sa-btn sa-btn-primary sa-btn-sm">
+                <i class="fas fa-plus"></i> নতুন শাখা
+            </a>
+        @else
+            <span title="লাইসেন্স সীমা পূর্ণ — নতুন শাখার জন্য লাইসেন্স আপগ্রেড করুন"
+                  style="display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:8px;
+                         background:#1e293b;color:#475569;font-size:.78rem;font-weight:600;cursor:not-allowed">
+                <i class="fas fa-lock"></i> শাখা সীমা পূর্ণ
+            </span>
+        @endif
     </div>
 
     @if($shops->isEmpty())
         <div class="sa-empty">
             <i class="fas fa-store-slash"></i>
-            <div>এখনো কোনো শপ তৈরি হয়নি</div>
-            <a href="{{ route('super.shops.create') }}" class="sa-btn sa-btn-primary" style="margin-top:16px">
-                <i class="fas fa-plus"></i> প্রথম শপ তৈরি করুন
-            </a>
+            <div>এখনো কোনো শাখা তৈরি হয়নি</div>
+            @if($canAdd)
+                <a href="{{ route('super.shops.create') }}" class="sa-btn sa-btn-primary" style="margin-top:16px">
+                    <i class="fas fa-plus"></i> প্রথম শাখা তৈরি করুন
+                </a>
+            @endif
         </div>
     @else
     <table class="sa-table">

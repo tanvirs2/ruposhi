@@ -6,13 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class Shop extends Model
 {
-    protected $fillable = ['name', 'address', 'phone', 'logo', 'is_active'];
+    protected $fillable = ['name', 'address', 'phone', 'logo', 'is_active', 'super_admin_id'];
 
     protected $casts = [
         'is_active' => 'boolean',
     ];
 
     /* ── Relations ─────────────────────────────────────────── */
+
+    // The super_admin who owns this shop
+    public function superAdmin()  { return $this->belongsTo(User::class, 'super_admin_id'); }
 
     public function users()       { return $this->hasMany(User::class); }
     public function items()       { return $this->hasMany(Item::class); }

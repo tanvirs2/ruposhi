@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Shop;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,6 +26,18 @@ class SetShopScope
                 // Not inside any shop → back to the control panel.
                 if (!$activeShopId) {
                     return redirect()->route('super.dashboard');
+                }
+
+                // Security: verify this shop actually belongs to this super_admin.
+                $shop = Shop::where('id', $activeShopId)
+                             ->where('super_admin_id', $user->id)
+                             ->first();
+
+                if (!$shop) {
+                    // Invalid shop in session — clear it and send back to panel.
+                    session()->forget(['active_shop_id', 'active_shop_name']);
+                    return redirect()->route('super.dashboard')
+                                     ->with('error', 'শপ অ্যাক্সেস নিশ্চিত করা যায়নি।');
                 }
 
                 // Act as that shop for THIS request only. Setting shop_id in

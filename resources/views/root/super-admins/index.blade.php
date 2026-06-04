@@ -20,7 +20,7 @@
                 <th>#</th>
                 <th>নাম</th>
                 <th>ইমেইল</th>
-                <th>শপ</th>
+                <th>শাখা</th>
                 <th>মেয়াদ শেষ</th>
                 <th>অবস্থা</th>
                 <th>অ্যাকশন</th>
@@ -33,7 +33,11 @@
                 <td style="color:#475569">{{ $i + 1 }}</td>
                 <td>{{ $u->name }}</td>
                 <td style="color:#64748b;font-size:.83rem">{{ $u->email }}</td>
-                <td style="font-size:.83rem">{{ $u->shop?->name ?? '—' }}</td>
+                <td style="font-size:.83rem">
+                    <span class="rt-pill" style="background:#1e3a5f44;color:#93c5fd;border:1px solid #1e3a5f">
+                        {{ $u->my_shops_count }} / {{ $lic?->max_shops ?? '∞' }}
+                    </span>
+                </td>
                 <td style="font-size:.82rem">
                     @if($lic)
                         {{ $lic->expires_at->format('d M Y') }}

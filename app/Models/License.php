@@ -17,6 +17,7 @@ class License extends Model
         'extended_by',
         'extended_at',
         'notes',
+        'max_shops',
     ];
 
     protected $casts = [
@@ -142,6 +143,18 @@ class License extends Model
             'extended_by'   => $extendedById,
             'extended_at'   => Carbon::now(),
         ]);
+    }
+
+    /**
+     * Can this super_admin add another shop?
+     * null max_shops = unlimited. Otherwise checks against current count.
+     */
+    public function canAddShops(int $currentShopCount): bool
+    {
+        if (is_null($this->max_shops)) {
+            return true; // unlimited
+        }
+        return $currentShopCount < $this->max_shops;
     }
 
     /* ── Plan helpers ────────────────────────────────────────── */

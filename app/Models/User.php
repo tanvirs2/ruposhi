@@ -89,6 +89,12 @@ class User extends Authenticatable
         return $this->belongsTo(Shop::class);
     }
 
+    /** All shops owned by this super_admin */
+    public function myShops()
+    {
+        return $this->hasMany(Shop::class, 'super_admin_id');
+    }
+
     public function licenses()
     {
         return $this->hasMany(License::class);

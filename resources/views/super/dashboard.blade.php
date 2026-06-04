@@ -57,11 +57,22 @@
 <div class="sa-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
         <h2 style="font-size:1.02rem;font-weight:700;margin:0;color:#f1f5f9">
-            <i class="fas fa-chart-column" style="color:#f59e0b"></i> শপ অনুযায়ী বিক্রয়
+            <i class="fas fa-chart-column" style="color:#f59e0b"></i> শাখা অনুযায়ী বিক্রয়
+            @if($license)
+                <span style="font-size:.74rem;color:#64748b;font-weight:400;margin-right:8px">
+                    ({{ $shopCount }}/{{ $license->max_shops ?? '∞' }} শাখা)
+                </span>
+            @endif
         </h2>
-        <a href="{{ route('super.shops.create') }}" class="sa-btn sa-btn-primary sa-btn-sm">
-            <i class="fas fa-plus"></i> নতুন শপ
-        </a>
+        @if($license && $license->canAddShops($shopCount))
+            <a href="{{ route('super.shops.create') }}" class="sa-btn sa-btn-primary sa-btn-sm">
+                <i class="fas fa-plus"></i> নতুন শাখা
+            </a>
+        @else
+            <span class="sa-btn sa-btn-ghost sa-btn-sm" style="opacity:.5;cursor:not-allowed" title="লাইসেন্স সীমা পূর্ণ">
+                <i class="fas fa-lock"></i> নতুন শাখা
+            </span>
+        @endif
     </div>
 
     @if($shopSales->isEmpty())

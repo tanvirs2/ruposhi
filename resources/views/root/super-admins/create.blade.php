@@ -52,6 +52,15 @@
             </div>
         </div>
 
+        <div class="rt-field">
+            <label class="rt-label">সর্বোচ্চ শাখা সংখ্যা</label>
+            <input class="rt-input" type="number" name="max_shops" value="{{ old('max_shops', 1) }}" min="1"
+                   placeholder="খালি রাখলে ১টি (basic)">
+            <small style="color:#64748b;font-size:.77rem">
+                ১ = শুধু প্রথম শাখা (basic) &nbsp;|&nbsp; ২+ = একাধিক শাখা &nbsp;|&nbsp; খালি = ১টি
+            </small>
+        </div>
+
         @if($resellers->count())
         <div class="rt-field">
             <label class="rt-label">রিসেলার (ঐচ্ছিক)</label>

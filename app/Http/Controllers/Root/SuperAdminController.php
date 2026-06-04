@@ -15,10 +15,8 @@ class SuperAdminController extends Controller
     public function index()
     {
         $superAdmins = User::where('role', 'super_admin')
-            ->with([
-                'licenses' => fn($q) => $q->latest('expires_at')->limit(1),
-                'shop',
-            ])
+            ->with(['licenses' => fn($q) => $q->latest('expires_at')->limit(1)])
+            ->withCount('myShops')
             ->latest()
             ->get();
 
@@ -42,9 +40,10 @@ class SuperAdminController extends Controller
             'plan'        => 'required|in:monthly,quarterly,yearly,custom',
             'custom_days' => 'required_if:plan,custom|nullable|integer|min:1',
             'reseller_id' => 'nullable|exists:users,id',
+            'max_shops'   => 'nullable|integer|min:1',
         ]);
 
-        // Create the super_admin user (no shop_id — they manage shops)
+        // Create the super_admin user (shop_id stays null — shops point back via super_admin_id)
         $user = User::create([
             'name'     => $request->name,
             'email'    => $request->email,
@@ -53,19 +52,20 @@ class SuperAdminController extends Controller
             'shop_id'  => null,
         ]);
 
-        // Create their first shop
-        $shop = Shop::create([
-            'name'      => $request->shop_name,
-            'is_active' => true,
+        // Create their first shop (owned by this super_admin)
+        Shop::create([
+            'name'           => $request->shop_name,
+            'super_admin_id' => $user->id,
+            'is_active'      => true,
         ]);
-
-        // Assign user to shop
-        $user->update(['shop_id' => $shop->id]);
 
         // Create license
         $days      = $request->plan === 'custom' ? (int) $request->custom_days : License::daysForPlan($request->plan);
         $starts    = Carbon::now();
         $expires   = $starts->copy()->addDays($days);
+
+        // max_shops: null=unlimited, default=1 (basic)
+        $maxShops = $request->filled('max_shops') ? (int) $request->max_shops : 1;
 
         License::create([
             'user_id'       => $user->id,
@@ -77,6 +77,7 @@ class SuperAdminController extends Controller
             'extended_by'   => auth()->id(),
             'extended_at'   => Carbon::now(),
             'notes'         => $request->notes,
+            'max_shops'     => $maxShops,
         ]);
 
         return redirect()->route('root.super-admins.index')
@@ -139,6 +140,7 @@ class SuperAdminController extends Controller
             'days'        => 'required_if:extend_type,days|nullable|integer|min:1|max:3650',
             'plan'        => 'required_if:extend_type,plan|nullable|in:monthly,quarterly,yearly',
             'from'        => 'required|in:expiry,today',
+            'max_shops'   => 'nullable|integer|min:1',
         ]);
 
         $days    = $request->extend_type === 'plan'
@@ -167,8 +169,14 @@ class SuperAdminController extends Controller
             $license->extendByDays($days, auth()->id());
         }
 
-        if ($request->filled('notes') && $license) {
-            $license->update(['notes' => $request->notes]);
+        // Update notes and/or max_shops on the license if provided
+        $updateFields = [];
+        if ($request->filled('notes')) $updateFields['notes'] = $request->notes;
+        if ($request->filled('max_shops')) $updateFields['max_shops'] = (int) $request->max_shops;
+
+        $latestLicense = $user->activeLicense();
+        if ($latestLicense && $updateFields) {
+            $latestLicense->update($updateFields);
         }
 
         return redirect()->back()

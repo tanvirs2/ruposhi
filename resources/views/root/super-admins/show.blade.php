@@ -57,6 +57,11 @@
             <span class="rt-pill rt-pill-{{ $st }}" style="margin-top:8px;display:inline-block">
                 {{ ['active'=>'সক্রিয়','warning'=>'সংকট — '.$currentLic->daysUntilExpiry().' দিন বাকি','grace'=>'গ্রেস — '.$currentLic->graceDaysLeft().' দিন বাকি','expired'=>'মেয়াদ শেষ'][$st] }}
             </span>
+            <div style="margin-top:10px;color:#94a3b8;font-size:.8rem">
+                <i class="fas fa-store" style="color:#f59e0b"></i>
+                শাখা সীমা: <strong style="color:#fbbf24">{{ $currentLic->max_shops ?? '∞' }}</strong>
+                &nbsp;|&nbsp; বর্তমান: <strong style="color:#86efac">{{ $superAdmin->myShops()->count() }}</strong>
+            </div>
         </div>
         @endif
 
@@ -95,6 +100,14 @@
                     <option value="expiry">বর্তমান মেয়াদ শেষের পর থেকে</option>
                     <option value="today">আজ থেকে</option>
                 </select>
+            </div>
+
+            <div class="rt-field">
+                <label class="rt-label">সর্বোচ্চ শাখা (ঐচ্ছিক)</label>
+                <input class="rt-input" type="number" name="max_shops"
+                       value="{{ $currentLic?->max_shops ?? 1 }}" min="1"
+                       placeholder="১ = basic, ২+ = multi-branch">
+                <small style="color:#64748b;font-size:.76rem">খালি রাখলে বর্তমান সীমা বজায় থাকবে</small>
             </div>
 
             <div class="rt-field">

@@ -10,27 +10,34 @@ use Illuminate\Support\Facades\Hash;
 
 class ShopController extends Controller
 {
+    /** Only shops owned by the currently logged-in super_admin */
+    private function myShops()
+    {
+        return Shop::where('super_admin_id', auth()->id());
+    }
+
     public function index()
     {
-        $shops = Shop::withCount('users')->latest()->get();
+        $shops = $this->myShops()->withCount('users')->latest()->get();
         return view('super.shops.index', compact('shops'));
     }
 
     /**
      * "Enter" a shop — the super admin starts operating inside it exactly
      * like that shop's own admin (sales, stock, reports, staff, settings).
-     * The chosen shop is remembered in the session; SetShopScope applies it
-     * to every shop-page request.
      */
     public function enter(Shop $shop)
     {
+        // Security: only enter shops that belong to this super_admin
+        abort_unless($shop->super_admin_id === auth()->id(), 403, 'এই শপে অ্যাক্সেস নেই।');
+
         session([
             'active_shop_id'   => $shop->id,
             'active_shop_name' => $shop->name,
         ]);
 
         return redirect()->route('dashboard')
-                         ->with('success', "'{$shop->name}' শপে প্রবেশ করেছেন।");
+                         ->with('success', "'{$shop->name}' শাখায় প্রবেশ করেছেন।");
     }
 
     /**
@@ -39,64 +46,71 @@ class ShopController extends Controller
     public function exitShop()
     {
         session()->forget(['active_shop_id', 'active_shop_name']);
-
         return redirect()->route('super.dashboard');
     }
 
     public function create()
     {
-        return view('super.shops.create');
+        $license   = auth()->user()->activeLicense();
+        $shopCount = $this->myShops()->count();
+        $canAdd    = $license && $license->canAddShops($shopCount);
+
+        return view('super.shops.create', compact('license', 'shopCount', 'canAdd'));
     }
 
     public function store(Request $request)
     {
+        // Check branch limit before creating
+        $license   = auth()->user()->activeLicense();
+        $shopCount = $this->myShops()->count();
+
+        if (!$license || !$license->canAddShops($shopCount)) {
+            $max = $license?->max_shops ?? 1;
+            return back()->with('error', "আপনার লাইসেন্সে সর্বোচ্চ {$max}টি শাখা অনুমোদিত। নতুন শাখার জন্য লাইসেন্স আপগ্রেড করুন।");
+        }
+
         $data = $request->validate([
-            'name'             => 'required|string|max:150',
-            'address'          => 'nullable|string|max:255',
-            'phone'            => 'nullable|string|max:20',
-            // Admin account for this shop
-            'admin_name'       => 'required|string|max:100',
-            'admin_email'      => 'required|email|unique:users,email',
-            'admin_password'   => 'required|min:6',
+            'name'    => 'required|string|max:150',
+            'address' => 'nullable|string|max:255',
+            'phone'   => 'nullable|string|max:20',
         ]);
 
-        // Create shop
         $shop = Shop::create([
-            'name'    => $data['name'],
-            'address' => $data['address'] ?? null,
-            'phone'   => $data['phone'] ?? null,
-        ]);
-
-        // Create admin user for this shop
-        User::create([
-            'name'     => $data['admin_name'],
-            'email'    => $data['admin_email'],
-            'password' => Hash::make($data['admin_password']),
-            'role'     => 'admin',
-            'shop_id'  => $shop->id,
+            'name'           => $data['name'],
+            'address'        => $data['address'] ?? null,
+            'phone'          => $data['phone'] ?? null,
+            'super_admin_id' => auth()->id(),
+            'is_active'      => true,
         ]);
 
         return redirect()->route('super.shops.index')
-                         ->with('success', "'{$shop->name}' শপ তৈরি হয়েছে।");
+                         ->with('success', "'{$shop->name}' শাখা তৈরি হয়েছে। এখন এতে প্রবেশ করে স্টাফ যোগ করুন।");
     }
 
     public function show(Shop $shop)
     {
+        abort_unless($shop->super_admin_id === auth()->id(), 403);
+
         $shop->load(['users', 'sales', 'customers', 'items']);
-        $totalSales    = $shop->sales()->sum('total_amount');
+        $totalSales     = $shop->sales()->sum('total_amount');
         $totalCustomers = $shop->customers()->count();
-        $totalItems    = $shop->items()->count();
+        $totalItems     = $shop->items()->count();
+
         return view('super.shops.show', compact('shop', 'totalSales', 'totalCustomers', 'totalItems'));
     }
 
     public function edit(Shop $shop)
     {
+        abort_unless($shop->super_admin_id === auth()->id(), 403);
+
         $admins = $shop->users()->where('role', 'admin')->get();
         return view('super.shops.edit', compact('shop', 'admins'));
     }
 
     public function update(Request $request, Shop $shop)
     {
+        abort_unless($shop->super_admin_id === auth()->id(), 403);
+
         $data = $request->validate([
             'name'      => 'required|string|max:150',
             'address'   => 'nullable|string|max:255',
@@ -112,19 +126,23 @@ class ShopController extends Controller
 
     public function destroy(Shop $shop)
     {
+        abort_unless($shop->super_admin_id === auth()->id(), 403);
+
         $shop->delete();
         return redirect()->route('super.shops.index')
-                         ->with('success', 'শপ মুছে ফেলা হয়েছে।');
+                         ->with('success', 'শাখা মুছে ফেলা হয়েছে।');
     }
 
     /**
      * Reset a shop user's password (super admin only).
-     * Cannot reset super_admin accounts.
      */
     public function resetPassword(Request $request, User $user)
     {
-        if ($user->role === 'super_admin' || !$user->shop_id) {
-            abort(403, 'Super admin পাসওয়ার্ড এখান থেকে পরিবর্তন করা যাবে না।');
+        // Only allow resetting passwords for users in this super_admin's shops
+        $myShopIds = $this->myShops()->pluck('id');
+
+        if ($user->role === 'super_admin' || !$myShopIds->contains($user->shop_id)) {
+            abort(403, 'এই ব্যবহারকারীর পাসওয়ার্ড পরিবর্তন করার অনুমতি নেই।');
         }
 
         $request->validate([

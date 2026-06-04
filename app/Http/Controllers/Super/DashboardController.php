@@ -11,30 +11,44 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $shops      = Shop::withCount('users')->get();
-        $totalShops = $shops->count();
-        $totalUsers = User::whereNotNull('shop_id')->count();
+        $superAdminId = auth()->id();
 
-        // Aggregate totals across all shops (this month)
-        $thisMonth  = now()->startOfMonth()->toDateString();
-        $today      = now()->toDateString();
+        // Only this super_admin's shops
+        $myShopIds = Shop::where('super_admin_id', $superAdminId)->pluck('id');
+
+        $shops      = Shop::whereIn('id', $myShopIds)->withCount('users')->get();
+        $totalShops = $shops->count();
+        $totalUsers = User::whereIn('shop_id', $myShopIds)->count();
+
+        // Revenue & dues scoped to this super_admin's shops
+        $thisMonth = now()->startOfMonth()->toDateString();
+        $today     = now()->toDateString();
 
         $monthRevenue = DB::table('sales')
+            ->whereIn('shop_id', $myShopIds)
             ->whereBetween('sale_date', [$thisMonth, $today])
             ->sum('total_amount') ?? 0;
 
-        $totalCustomerDue = DB::table('customers')->sum('due_amount') ?? 0;
+        $totalCustomerDue = DB::table('customers')
+            ->whereIn('shop_id', $myShopIds)
+            ->sum('due_amount') ?? 0;
 
         // Per-shop sales summary
-        $shopSales = Shop::withCount('users')
+        $shopSales = Shop::whereIn('id', $myShopIds)
+            ->withCount('users')
             ->withSum('sales as total_revenue', 'total_amount')
             ->withCount('sales as sales_count')
             ->latest()
             ->get();
 
+        // License info for the "add branch" button
+        $license   = auth()->user()->activeLicense();
+        $shopCount = $totalShops;
+
         return view('super.dashboard', compact(
             'shops', 'totalShops', 'totalUsers',
-            'shopSales', 'monthRevenue', 'totalCustomerDue'
+            'shopSales', 'monthRevenue', 'totalCustomerDue',
+            'license', 'shopCount'
         ));
     }
 }
