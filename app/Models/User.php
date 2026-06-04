@@ -28,6 +28,16 @@ class User extends Authenticatable
 
     /* ── Role helpers ──────────────────────────────────────── */
 
+    public function isRoot(): bool
+    {
+        return $this->role === 'root';
+    }
+
+    public function isReseller(): bool
+    {
+        return $this->role === 'reseller';
+    }
+
     public function isSuperAdmin(): bool
     {
         return $this->role === 'super_admin';
@@ -54,11 +64,39 @@ class User extends Authenticatable
             || ($this->role === 'super_admin' && session('active_shop_id'));
     }
 
+    /* ── License helpers ────────────────────────────────────── */
+
+    /** Active license record for this super_admin */
+    public function activeLicense(): ?License
+    {
+        return $this->licenses()->latest('expires_at')->first();
+    }
+
+    /** Is this super_admin's subscription currently locked (fully expired)? */
+    public function isSubscriptionLocked(): bool
+    {
+        if ($this->role !== 'super_admin') {
+            return false;
+        }
+        $license = $this->activeLicense();
+        return is_null($license) || $license->isLocked();
+    }
+
     /* ── Relations ─────────────────────────────────────────── */
 
     public function shop()
     {
         return $this->belongsTo(Shop::class);
+    }
+
+    public function licenses()
+    {
+        return $this->hasMany(License::class);
+    }
+
+    public function resellerProfile()
+    {
+        return $this->hasOne(Reseller::class);
     }
 
     public function sales()

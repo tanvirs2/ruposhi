@@ -314,6 +314,8 @@
 <!-- Main -->
 <div class="main-wrapper" id="mainWrapper">
 
+    @include('partials.subscription-banner')
+
     @if(auth()->user()->role === 'super_admin' && session('active_shop_id'))
     <div style="background:linear-gradient(90deg,#b45309,#d97706);color:#fff;padding:9px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:.88rem;font-weight:600">
         <span>

@@ -19,9 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Named middleware aliases
         $middleware->alias([
-            'super_admin'    => \App\Http\Middleware\SuperAdmin::class,
-            'shop.scope'     => \App\Http\Middleware\SetShopScope::class,
-            'shop.admin'     => \App\Http\Middleware\ShopAdmin::class,
+            'super_admin'        => \App\Http\Middleware\SuperAdmin::class,
+            'shop.scope'         => \App\Http\Middleware\SetShopScope::class,
+            'shop.admin'         => \App\Http\Middleware\ShopAdmin::class,
+            'check.subscription' => \App\Http\Middleware\CheckSubscription::class,
+            'root'               => \App\Http\Middleware\RootAdmin::class,
+            'reseller'           => \App\Http\Middleware\ResellerAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

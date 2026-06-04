@@ -22,10 +22,27 @@ class AuthController extends Controller
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            // Super admin → control panel; everyone else → shop dashboard
-            if (Auth::user()->role === 'super_admin') {
+            $role = Auth::user()->role;
+
+            // Root → root panel
+            if ($role === 'root') {
+                return redirect()->intended(route('root.dashboard'));
+            }
+
+            // Reseller → reseller panel
+            if ($role === 'reseller') {
+                return redirect()->intended(route('reseller.dashboard'));
+            }
+
+            // Super admin → check subscription first
+            if ($role === 'super_admin') {
+                if (Auth::user()->isSubscriptionLocked()) {
+                    return redirect()->route('subscription.expired');
+                }
                 return redirect()->intended(route('super.dashboard'));
             }
+
+            // Admin / Staff → shop dashboard
             return redirect()->intended(route('dashboard'));
         }
 

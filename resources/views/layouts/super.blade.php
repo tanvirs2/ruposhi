@@ -158,6 +158,7 @@
 
     {{-- Main --}}
     <div class="sa-main">
+        @include('partials.subscription-banner')
         <div class="sa-top">
             <h1>@yield('page-title', 'সুপার অ্যাডমিন')</h1>
             <div class="sa-badge">

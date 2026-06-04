@@ -31,8 +31,28 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middl
 Route::post('/login', [AuthController::class, 'login'])->middleware('guest');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+/* ── Subscription expired page ─────────────────────────────── */
+Route::get('/subscription-expired', function () {
+    return view('subscription.expired');
+})->name('subscription.expired')->middleware('auth');
+
+/* ── Root Admin routes ─────────────────────────────────────── */
+Route::middleware(['auth', 'root'])->prefix('root')->name('root.')->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\Root\DashboardController::class, 'index'])->name('dashboard');
+    Route::resource('super-admins', \App\Http\Controllers\Root\SuperAdminController::class);
+    Route::post('/super-admins/{user}/extend-license', [\App\Http\Controllers\Root\SuperAdminController::class, 'extendLicense'])->name('super-admins.extend-license');
+    Route::resource('resellers', \App\Http\Controllers\Root\ResellerController::class);
+});
+
+/* ── Reseller routes ───────────────────────────────────────── */
+Route::middleware(['auth', 'reseller'])->prefix('reseller')->name('reseller.')->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\Reseller\DashboardController::class, 'index'])->name('dashboard');
+    Route::resource('clients', \App\Http\Controllers\Reseller\ClientController::class);
+    Route::post('/clients/{user}/extend-license', [\App\Http\Controllers\Reseller\ClientController::class, 'extendLicense'])->name('clients.extend-license');
+});
+
 /* ── Super Admin routes ────────────────────────────────────── */
-Route::middleware(['auth', 'super_admin'])->prefix('super')->name('super.')->group(function () {
+Route::middleware(['auth', 'super_admin', 'check.subscription'])->prefix('super')->name('super.')->group(function () {
     Route::get('/dashboard', [SuperDashboard::class, 'index'])->name('dashboard');
     Route::resource('shops', ShopController::class);
     Route::post('/shops/{shop}/enter', [ShopController::class, 'enter'])->name('shops.enter');
@@ -42,7 +62,7 @@ Route::middleware(['auth', 'super_admin'])->prefix('super')->name('super.')->gro
 });
 
 /* ── Protected (shop users) ────────────────────────────────── */
-Route::middleware(['auth', 'shop.scope'])->group(function () {
+Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function () {
 
     Route::get('/', fn() => redirect()->route('dashboard'));
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
