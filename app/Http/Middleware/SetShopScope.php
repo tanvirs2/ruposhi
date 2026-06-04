@@ -54,8 +54,14 @@ class SetShopScope
                 $user->shop_id = $activeShopId;
                 $user->syncOriginal();
             }
-            // Non-super-admin with no shop assigned → block
+            // Wrong-role user on a shop route → redirect to their proper panel
             elseif (is_null($user->shop_id)) {
+                if ($user->role === 'root') {
+                    return redirect()->route('root.dashboard');
+                }
+                if ($user->role === 'reseller') {
+                    return redirect()->route('reseller.dashboard');
+                }
                 abort(403, 'আপনার অ্যাকাউন্টে কোনো শপ নির্ধারিত নেই। অ্যাডমিনের সাথে যোগাযোগ করুন।');
             }
         }

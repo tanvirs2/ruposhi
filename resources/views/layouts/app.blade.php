@@ -301,13 +301,13 @@
             <a href="{{ route('profile.edit') }}" class="logout-btn" title="প্রোফাইল" style="color:#94a3b8">
                 <i class="fas fa-user-pen"></i>
             </a>
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="logout-btn" title="লগআউট">
-                    <i class="fas fa-right-from-bracket"></i>
-                </button>
-            </form>
         </div>
+        <form method="POST" action="{{ route('logout') }}" style="margin-top:8px">
+            @csrf
+            <button type="submit" class="sidebar-logout-btn">
+                <i class="fas fa-right-from-bracket"></i> লগআউট
+            </button>
+        </form>
     </div>
 </aside>
 
