@@ -48,6 +48,27 @@ class SuperAdminSeeder extends Seeder
             \DB::table($table)->whereNull('shop_id')->update(['shop_id' => $shop->id]);
         }
 
+        // 5. Backfill line-item / extra-cost child rows from their parent.
+        //    The line-item migration ran during `migrate`, while parents still
+        //    had shop_id = NULL — so existing children stayed NULL. Now that the
+        //    parents are assigned, copy shop_id down. Idempotent (only NULLs).
+        $childMap = [
+            'sale_items'           => ['parent' => 'sales',     'fk' => 'sale_id'],
+            'purchase_items'       => ['parent' => 'purchases', 'fk' => 'purchase_id'],
+            'sale_extra_costs'     => ['parent' => 'sales',     'fk' => 'sale_id'],
+            'purchase_extra_costs' => ['parent' => 'purchases', 'fk' => 'purchase_id'],
+        ];
+        foreach ($childMap as $child => $info) {
+            if (\Schema::hasTable($child) && \Schema::hasColumn($child, 'shop_id')) {
+                \DB::statement("
+                    UPDATE {$child} c
+                    JOIN {$info['parent']} p ON c.{$info['fk']} = p.id
+                    SET c.shop_id = p.shop_id
+                    WHERE c.shop_id IS NULL
+                ");
+            }
+        }
+
         $this->command->info('✅ Super Admin তৈরি হয়েছে: super@admin.com / password');
         $this->command->info("✅ Default shop: {$shop->name} (ID: {$shop->id})");
     }
