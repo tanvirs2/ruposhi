@@ -14,7 +14,8 @@ class ReportController extends Controller
         $from = $request->get('from', now()->startOfMonth()->toDateString());
         $to   = $request->get('to',   now()->toDateString());
 
-        $shops = Shop::with('users')->get();
+        // Only this super_admin's shops — never show other owners' data
+        $shops = Shop::where('super_admin_id', auth()->id())->with('users')->get();
 
         // Per-shop aggregated stats for the date range
         $shopStats = [];
