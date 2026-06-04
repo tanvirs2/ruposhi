@@ -40,6 +40,13 @@ class SetShopScope
                                      ->with('error', 'শপ অ্যাক্সেস নিশ্চিত করা যায়নি।');
                 }
 
+                // Shop locked after session was started (e.g. license downgraded remotely)
+                if ($shop->is_locked) {
+                    session()->forget(['active_shop_id', 'active_shop_name']);
+                    return redirect()->route('super.dashboard')
+                                     ->with('error', "'{$shop->name}' শাখাটি লাইসেন্স সীমার কারণে লক হয়েছে। লাইসেন্স আপগ্রেড করুন।");
+                }
+
                 // Act as that shop for THIS request only. Setting shop_id in
                 // memory makes every scope, query and auto-fill treat the
                 // super admin exactly like that shop's admin. syncOriginal()

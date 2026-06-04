@@ -39,7 +39,7 @@ class CustomerAreaController extends Controller
 
     public function destroy(CustomerArea $customerArea)
     {
-        if (auth()->user()->role !== 'admin') {
+        if (!auth()->user()->canManageShop()) {
             abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
         }
         $customerArea->delete();

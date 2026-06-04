@@ -290,7 +290,9 @@ class ReportController extends Controller
         // Effective due reduction from no-item sales:
         // Only min(paid, previous_due) actually reduces a customer's due.
         // If customer had 0 due and paid 5000 → reduces 0 due, not other customers' dues.
-        $grandNoItemDueReduction = $noItemSales->sum(fn($s) => min($s->paid_amount, $s->previous_due ?? 0));
+        // previous_due can be negative (customer had credit). Only positive previous dues
+        // can actually be reduced — negative means customer already had advance balance.
+        $grandNoItemDueReduction = $noItemSales->sum(fn($s) => min($s->paid_amount, max(0, $s->previous_due ?? 0)));
         // Net due = item-sale dues minus EFFECTIVE payments toward previous dues
         $grandDue           = max(0, $itemSales->sum('due_amount') - $grandNoItemDueReduction - $grandStandalone);
 

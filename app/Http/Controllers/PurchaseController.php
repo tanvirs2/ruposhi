@@ -19,8 +19,11 @@ class PurchaseController extends Controller
     {
         $query = Purchase::with('supplier')
             ->when($request->search, fn($q) =>
-                $q->whereHas('supplier', fn($s) => $s->where('name', 'like', "%{$request->search}%"))
-                  ->orWhere('id', $request->search)
+                // Wrap in a sub-group so the OR doesn't bypass the global shop_id scope
+                $q->where(fn($sub) =>
+                    $sub->whereHas('supplier', fn($s) => $s->where('name', 'like', "%{$request->search}%"))
+                        ->orWhere('id', $request->search)
+                )
             );
 
         $grandTotal  = (clone $query)->sum('total_amount');
@@ -134,13 +137,13 @@ class PurchaseController extends Controller
     public function update(Request $request, Purchase $purchase)
     {
         $request->validate([
-            'purchase_date'  => 'required|date',
-            'supplier_id'    => 'required|exists:suppliers,id',
-            'items'          => 'required|array|min:1',
-            'items.*.id'     => 'required|exists:items,id',
-            'items.*.qty'    => 'required|numeric|min:0.01',
-            'items.*.price'  => 'required|numeric|min:0',
-            'paid_amount'    => 'required|numeric|min:0',
+            'purchase_date'       => 'required|date',
+            'supplier_id'         => 'required|exists:suppliers,id',
+            'items'               => 'nullable|array',  // nullable: allows editing advance-payment purchases
+            'items.*.id'          => 'required_with:items|exists:items,id',
+            'items.*.qty'         => 'required_with:items|numeric|min:0.01',
+            'items.*.price'       => 'required_with:items|numeric|min:0',
+            'paid_amount'         => 'required|numeric|min:0',
         ]);
 
         DB::transaction(function () use ($request, $purchase) {
@@ -158,7 +161,7 @@ class PurchaseController extends Controller
             $purchase->items()->delete();
 
             // 3. Recalculate & save
-            $itemsTotal    = collect($request->items)->sum(fn($i) => $i['qty'] * $i['price']);
+            $itemsTotal    = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
             $extraCostRows = collect($request->extra_costs ?? [])
                 ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
             $extraCost = $extraCostRows->sum('amount');
@@ -177,7 +180,7 @@ class PurchaseController extends Controller
             ]);
 
             // 4. Re-add items, stock & price
-            foreach ($request->items as $row) {
+            foreach ($request->items ?? [] as $row) {
                 PurchaseItem::create([
                     'purchase_id' => $purchase->id,
                     'item_id'     => $row['id'],
@@ -218,7 +221,8 @@ class PurchaseController extends Controller
 
     public function destroy(Purchase $purchase)
     {
-        if (auth()->user()->role !== 'admin') {
+        // Allow shop admin OR super_admin who has entered this shop
+        if (!auth()->user()->canManageShop()) {
             abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
         }
         DB::transaction(function () use ($purchase) {

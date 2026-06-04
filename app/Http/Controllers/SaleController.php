@@ -20,8 +20,11 @@ class SaleController extends Controller
     {
         $query = Sale::with(['customer', 'items.item'])
             ->when($request->search, fn($q) =>
-                $q->whereHas('customer', fn($c) => $c->where('name', 'like', "%{$request->search}%"))
-                  ->orWhere('id', $request->search)
+                // Wrap in a sub-group so the OR doesn't bypass the global shop_id scope
+                $q->where(fn($sub) =>
+                    $sub->whereHas('customer', fn($c) => $c->where('name', 'like', "%{$request->search}%"))
+                        ->orWhere('id', $request->search)
+                )
             )
             ->when($request->status, fn($q) => $q->where('status', $request->status));
 
@@ -262,7 +265,8 @@ class SaleController extends Controller
 
     public function destroy(Sale $sale)
     {
-        if (auth()->user()->role !== 'admin') {
+        // Allow shop admin OR super_admin who has entered this shop
+        if (!auth()->user()->canManageShop()) {
             abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
         }
         DB::transaction(function () use ($sale) {

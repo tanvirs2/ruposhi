@@ -52,9 +52,9 @@ class SupplierPaymentController extends Controller
             'notes'          => $request->notes,
         ]);
 
-        // Decrement but never below 0
+        // Decrement supplier due — allows negative (credit/advance when overpaid)
         $supplier = Supplier::find($request->supplier_id);
-        $supplier->update(['due_amount' => max(0, $supplier->due_amount - $request->amount)]);
+        $supplier->update(['due_amount' => $supplier->due_amount - $request->amount]);
 
         return redirect()->route('supplier-payments.index')
             ->with('success', 'সরবরাহকারী পরিশোধ সম্পন্ন হয়েছে।');
@@ -62,7 +62,7 @@ class SupplierPaymentController extends Controller
 
     public function destroy(SupplierPayment $supplierPayment)
     {
-        if (auth()->user()->role !== 'admin') {
+        if (!auth()->user()->canManageShop()) {
             abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
         }
         Supplier::where('id', $supplierPayment->supplier_id)

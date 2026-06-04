@@ -39,7 +39,7 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
-        if (auth()->user()->role !== 'admin') {
+        if (!auth()->user()->canManageShop()) {
             abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
         }
         $category->delete();

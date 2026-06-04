@@ -78,7 +78,7 @@ class CustomerController extends Controller
 
     public function destroy(Customer $customer)
     {
-        if (auth()->user()->role !== 'admin') {
+        if (!auth()->user()->canManageShop()) {
             abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
         }
         $customer->delete();

@@ -237,7 +237,7 @@ class SupplierController extends Controller
 
     public function destroy(Supplier $supplier)
     {
-        if (auth()->user()->role !== 'admin') {
+        if (!auth()->user()->canManageShop()) {
             abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
         }
         $supplier->delete();

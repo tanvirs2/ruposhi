@@ -56,8 +56,8 @@ class CustomerPaymentController extends Controller
                 'previous_due'   => $previousDue,
             ]);
 
-            // Reduce customer's due — never below 0
-            $cust->update(['due_amount' => max(0, $previousDue - $request->amount)]);
+            // Reduce customer's due — allows negative (credit/advance when overpaid)
+            $cust->update(['due_amount' => $previousDue - $request->amount]);
         });
 
         return redirect()->route('customer-payments.show', $payment)->with('success', 'পরিশোধ সফলভাবে রেকর্ড হয়েছে।');
@@ -79,7 +79,7 @@ class CustomerPaymentController extends Controller
 
     public function destroy(CustomerPayment $customerPayment)
     {
-        if (auth()->user()->role !== 'admin') {
+        if (!auth()->user()->canManageShop()) {
             abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
         }
         DB::transaction(function () use ($customerPayment) {

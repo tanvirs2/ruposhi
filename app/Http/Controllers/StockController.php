@@ -129,7 +129,7 @@ class StockController extends Controller
 
     public function adjust(Request $request, Stock $stock)
     {
-        if (auth()->user()->role !== 'admin') {
+        if (!auth()->user()->canManageShop()) {
             abort(403, 'শুধুমাত্র অ্যাডমিন স্টক সমন্বয় করতে পারবেন।');
         }
         $request->validate([

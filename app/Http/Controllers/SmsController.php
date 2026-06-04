@@ -96,7 +96,7 @@ class SmsController extends Controller
 
     public function destroyLog(SmsLog $smsLog)
     {
-        if (auth()->user()->role !== 'admin') {
+        if (!auth()->user()->canManageShop()) {
             abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
         }
         $smsLog->delete();

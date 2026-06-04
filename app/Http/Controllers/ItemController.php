@@ -74,7 +74,7 @@ class ItemController extends Controller
 
     public function destroy(Item $item)
     {
-        if (auth()->user()->role !== 'admin') {
+        if (!auth()->user()->canManageShop()) {
             abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
         }
         $item->delete();

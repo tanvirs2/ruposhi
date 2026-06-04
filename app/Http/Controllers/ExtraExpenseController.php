@@ -85,7 +85,7 @@ class ExtraExpenseController extends Controller
 
     public function destroy(ExtraExpense $expense)
     {
-        if (auth()->user()->role !== 'admin') {
+        if (!auth()->user()->canManageShop()) {
             abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
         }
         $expense->delete();
