@@ -49,6 +49,10 @@ Route::middleware(['auth', 'root'])->prefix('root')->name('root.')->group(functi
     Route::resource('super-admins', \App\Http\Controllers\Root\SuperAdminController::class);
     Route::post('/super-admins/{user}/extend-license', [\App\Http\Controllers\Root\SuperAdminController::class, 'extendLicense'])->name('super-admins.extend-license');
     Route::resource('resellers', \App\Http\Controllers\Root\ResellerController::class);
+    // Reseller detail + payout tracking
+    Route::get('/resellers/{reseller}/show',               [\App\Http\Controllers\Root\ResellerPayoutController::class, 'show'])->name('resellers.show');
+    Route::post('/resellers/{reseller}/payouts',           [\App\Http\Controllers\Root\ResellerPayoutController::class, 'store'])->name('resellers.payouts.store');
+    Route::delete('/resellers/{reseller}/payouts/{payout}',[\App\Http\Controllers\Root\ResellerPayoutController::class, 'destroy'])->name('resellers.payouts.destroy');
     // Payment logs
     Route::get('/payments', [\App\Http\Controllers\Root\PaymentController::class, 'index'])->name('payments.index');
     Route::post('/payments', [\App\Http\Controllers\Root\PaymentController::class, 'store'])->name('payments.store');

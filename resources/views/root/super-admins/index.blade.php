@@ -1,18 +1,18 @@
 @extends('layouts.root')
-@section('title', 'সুপার অ্যাডমিন তালিকা')
-@section('page-title', 'সুপার অ্যাডমিন')
+@section('title', 'ক্লায়েন্ট তালিকা')
+@section('page-title', 'ক্লায়েন্ট')
 
 @section('content')
 <div class="rt-card">
     <div class="rt-card-title" style="justify-content:space-between">
-        <span><i class="fas fa-user-shield"></i> সকল সুপার অ্যাডমিন</span>
+        <span><i class="fas fa-briefcase"></i> সকল ক্লায়েন্ট <small style="font-size:.7rem;color:#64748b;font-weight:400;margin-left:4px">(ব্যবসার মালিক)</small></span>
         <a href="{{ route('root.super-admins.create') }}" class="rt-btn rt-btn-primary rt-btn-sm">
-            <i class="fas fa-plus"></i> নতুন যোগ করুন
+            <i class="fas fa-plus"></i> নতুন ক্লায়েন্ট
         </a>
     </div>
 
     @if($superAdmins->isEmpty())
-        <div class="rt-empty"><i class="fas fa-users"></i> কোনো সুপার অ্যাডমিন নেই।</div>
+        <div class="rt-empty"><i class="fas fa-briefcase"></i> কোনো ক্লায়েন্ট নেই।</div>
     @else
     <table class="rt-table">
         <thead>

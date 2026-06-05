@@ -45,6 +45,9 @@
                 </td>
                 <td>{{ $profile?->commission_rate ?? 0 }}%</td>
                 <td style="display:flex;gap:6px">
+                    <a href="{{ route('root.resellers.show', $r) }}" class="rt-btn rt-btn-ghost rt-btn-sm" title="কমিশন ট্র্যাকিং">
+                        <i class="fas fa-eye"></i>
+                    </a>
                     <a href="{{ route('root.resellers.edit', $r) }}" class="rt-btn rt-btn-ghost rt-btn-sm">
                         <i class="fas fa-pen"></i>
                     </a>

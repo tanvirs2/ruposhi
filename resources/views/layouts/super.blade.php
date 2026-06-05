@@ -129,8 +129,8 @@
         <div class="sa-brand">
             <div class="sa-brand-icon"><i class="fas fa-shield-halved"></i></div>
             <div>
-                <div class="sa-brand-name">Control Panel</div>
-                <div class="sa-brand-sub">সুপার অ্যাডমিন</div>
+                <div class="sa-brand-name">মালিক প্যানেল</div>
+                <div class="sa-brand-sub">ব্যবসায়ী নিয়ন্ত্রণ</div>
             </div>
         </div>
         <nav class="sa-nav">

@@ -1,10 +1,10 @@
 @extends('layouts.root')
-@section('title', 'নতুন সুপার অ্যাডমিন')
-@section('page-title', 'নতুন সুপার অ্যাডমিন যোগ করুন')
+@section('title', 'নতুন ক্লায়েন্ট')
+@section('page-title', 'নতুন ক্লায়েন্ট যোগ করুন')
 
 @section('content')
 <div class="rt-card" style="max-width:620px">
-    <div class="rt-card-title"><i class="fas fa-user-plus"></i> সুপার অ্যাডমিন তৈরি করুন</div>
+    <div class="rt-card-title"><i class="fas fa-briefcase"></i> নতুন ক্লায়েন্ট তৈরি করুন <small style="font-size:.72rem;color:#64748b;font-weight:400">(ব্যবসার মালিক)</small></div>
 
     @if($errors->any())
         <div class="rt-alert rt-alert-error">

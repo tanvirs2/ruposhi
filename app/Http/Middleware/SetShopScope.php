@@ -64,6 +64,17 @@ class SetShopScope
                 }
                 abort(403, 'আপনার অ্যাকাউন্টে কোনো শপ নির্ধারিত নেই। অ্যাডমিনের সাথে যোগাযোগ করুন।');
             }
+            // Admin/staff: check if their assigned shop is locked
+            else {
+                $shop = Shop::where('id', $user->shop_id)->first();
+                if ($shop && $shop->is_locked) {
+                    auth()->logout();
+                    $request->session()->invalidate();
+                    $request->session()->regenerateToken();
+                    return redirect()->route('login')
+                        ->with('error', "'{$shop->name}' শাখাটি বর্তমানে লক করা আছে। লাইসেন্স সমস্যার জন্য আপনার মালিকের সাথে যোগাযোগ করুন।");
+                }
+            }
         }
 
         return $next($request);

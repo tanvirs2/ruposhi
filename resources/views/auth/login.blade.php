@@ -117,11 +117,65 @@
         }
         .dev-panel-body {
             background: #fffbeb;
-            padding: 10px 10px;
-            display: flex; flex-direction: column; gap: 4px;
+            padding: 8px 8px;
+            display: flex; flex-direction: column; gap: 8px;
             max-height: calc(100vh - 100px);
             overflow-y: auto;
         }
+
+        /* Client card box */
+        .client-card {
+            border: 1.5px solid #e2c97e;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,.06);
+        }
+        .client-card-header {
+            background: linear-gradient(90deg,#1a1200,#2a1f00);
+            padding: 7px 12px;
+            display: flex; align-items: center; gap: 7px;
+            border-bottom: 1px solid #3d2e00;
+        }
+        .client-card-header .client-num {
+            font-size: .6rem; font-weight: 800; letter-spacing: .05em;
+            color: #f59e0b;
+        }
+        .client-card-header .client-name {
+            font-size: .72rem; font-weight: 700; color: #fde68a;
+            flex: 1;
+        }
+        .client-card-header .client-branch-count {
+            font-size: .58rem; color: #78716c;
+        }
+        .client-card-body {
+            display: flex; flex-direction: column; gap: 0;
+        }
+        /* Shop sub-header inside card */
+        .shop-header {
+            display: flex; align-items: center; gap: 5px;
+            padding: 5px 12px;
+            border-top: 1px solid #f0f0f0;
+        }
+        .shop-header.locked { background: #fff5f5; }
+        .shop-header.active { background: #f0fdf4; }
+        .shop-header .shop-name {
+            font-size: .67rem; font-weight: 700; flex: 1;
+        }
+        /* Indent cred-item inside client card */
+        .client-card .cred-item {
+            border-radius: 0;
+            border: none;
+            border-top: 1px solid #f5f5f4;
+            padding: 7px 12px 7px 16px;
+        }
+        .client-card .cred-item:hover { background: #fef9ee; }
+        .client-card .cred-item.owner-row {
+            background: #fffbeb;
+            border-top: none;
+            padding-left: 12px;
+        }
+        .client-card .cred-item.owner-row:hover { background: #fef3c7; }
 
         /* Section headings */
         .cred-section {
@@ -178,6 +232,34 @@
             display: flex; align-items: center; gap: 6px;
         }
 
+        /* Live stats bar */
+        .dev-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0;
+            background: #1e1b0e;
+            border-bottom: 2px solid #f59e0b;
+        }
+        .dev-stat {
+            padding: 8px 4px;
+            text-align: center;
+            border-right: 1px solid #2d2a1a;
+            cursor: default;
+        }
+        .dev-stat:last-child { border-right: none; }
+        .dev-stat-num {
+            font-size: 1.2rem; font-weight: 800;
+            line-height: 1;
+        }
+        .dev-stat-label {
+            font-size: 0.58rem; font-weight: 600; letter-spacing: .04em;
+            margin-top: 2px; opacity: .75;
+        }
+        .stat-shop   { color: #34d399; }
+        .stat-super  { color: #22d3ee; }
+        .stat-admin  { color: #86efac; }
+        .stat-staff  { color: #cbd5e1; }
+
         /* System toggle button — vertical pill on the right of login form */
         .system-toggle {
             display: flex;
@@ -233,11 +315,51 @@
             DEMO ACCOUNTS
             <span class="dev-tag">DEV ONLY</span>
         </div>
+
+        {{-- Live DB stats --}}
+        @php
+            // Load all clients (super_admins) with their shops and each shop's users
+            $clients = \App\Models\User::where('role','super_admin')
+                ->with([
+                    'myShops' => fn($q) => $q->select('id','name','is_locked','super_admin_id')->orderBy('id'),
+                    'myShops.users' => fn($q) => $q->whereIn('role',['admin','staff'])
+                        ->select('id','name','email','role','shop_id')
+                        ->orderByRaw("FIELD(role,'admin','staff')")->orderBy('name'),
+                ])
+                ->select('id','name','email')
+                ->orderBy('id')
+                ->get();
+
+            // Stats from loaded data only (matches what's visible in cards)
+            $statShops  = $clients->sum(fn($c) => $c->myShops->count());
+            $statSuper  = $clients->count();
+            $allShopUsers = $clients->flatMap(fn($c) => $c->myShops->flatMap(fn($s) => $s->users));
+            $statAdmin  = $allShopUsers->where('role','admin')->count();
+            $statStaff  = $allShopUsers->where('role','staff')->count();
+        @endphp
+        <div class="dev-stats">
+            <div class="dev-stat">
+                <div class="dev-stat-num stat-shop">{{ $statShops }}</div>
+                <div class="dev-stat-label stat-shop">🏪 শাখা</div>
+            </div>
+            <div class="dev-stat">
+                <div class="dev-stat-num stat-super">{{ $statSuper }}</div>
+                <div class="dev-stat-label stat-super">🏢 সুপার</div>
+            </div>
+            <div class="dev-stat">
+                <div class="dev-stat-num stat-admin">{{ $statAdmin }}</div>
+                <div class="dev-stat-label stat-admin">👔 অ্যাডমিন</div>
+            </div>
+            <div class="dev-stat">
+                <div class="dev-stat-num stat-staff">{{ $statStaff }}</div>
+                <div class="dev-stat-label stat-staff">👤 স্টাফ</div>
+            </div>
+        </div>
+
         <div class="dev-panel-body">
 
             {{-- Root + Reseller — hidden by default --}}
             <div class="system-section" id="systemSection">
-
                 <div class="cred-section">⚙ সিস্টেম রুট</div>
                 <div class="cred-item" onclick="fillCreds('root@system.com','password')">
                     <span class="cred-role role-root">Root</span>
@@ -247,83 +369,83 @@
                     </div>
                     <i class="fas fa-chevron-right cred-arrow"></i>
                 </div>
-
                 <div class="cred-section">🤝 রিসেলার</div>
-                <div class="cred-item" onclick="fillCreds('resell@a.com','123456')">
+                <div class="cred-item" onclick="fillCreds('resell@a.com','password')">
                     <span class="cred-role role-reseller">Reseller</span>
                     <div class="cred-info">
                         <div class="cred-email">resell@a.com</div>
-                        <div class="cred-meta">pass: <b>123456</b> &nbsp;·&nbsp; নুমান</div>
+                        <div class="cred-meta">pass: <b>password</b> &nbsp;·&nbsp; নুমান</div>
                     </div>
                     <i class="fas fa-chevron-right cred-arrow"></i>
                 </div>
-
             </div>
 
-            {{-- Super Admin --}}
-            <div class="cred-section">🏢 সুপার অ্যাডমিন (বিজনেস মালিক)</div>
-            <div class="cred-item" onclick="fillCreds('super@admin.com','password')">
-                <span class="cred-role role-super">Super Admin</span>
-                <div class="cred-info">
-                    <div class="cred-email">super@admin.com</div>
-                    <div class="cred-meta">pass: <b>password</b> &nbsp;·&nbsp; প্রধান + মিরপুর শাখা</div>
-                </div>
-                <i class="fas fa-chevron-right cred-arrow"></i>
-            </div>
+            {{-- CLIENT GROUPS — one card per super_admin --}}
+            @foreach($clients as $ci => $client)
+            <div class="client-card">
 
-            {{-- Shop Admins --}}
-            <div class="cred-section">🏪 শাখা অ্যাডমিন</div>
-            <div class="cred-item" onclick="fillCreds('admin@inventory.com','admin123')">
-                <span class="cred-role role-admin">Admin</span>
-                <div class="cred-info">
-                    <div class="cred-email">admin@inventory.com</div>
-                    <div class="cred-meta">pass: <b>admin123</b> &nbsp;·&nbsp; প্রধান শাখা</div>
+                {{-- Card header --}}
+                <div class="client-card-header">
+                    <i class="fas fa-building" style="color:#f59e0b;font-size:.7rem"></i>
+                    <span class="client-num">#{{ $ci+1 }}</span>
+                    <span class="client-name">{{ $client->name }}</span>
+                    <span class="client-branch-count">{{ $client->myShops->count() }} শাখা</span>
                 </div>
-                <i class="fas fa-chevron-right cred-arrow"></i>
-            </div>
-            <div class="cred-item" onclick="fillCreds('mirpur@shop.com','secret123')">
-                <span class="cred-role role-admin">Admin</span>
-                <div class="cred-info">
-                    <div class="cred-email">mirpur@shop.com</div>
-                    <div class="cred-meta">pass: <b>secret123</b> &nbsp;·&nbsp; মিরপুর শাখা</div>
-                </div>
-                <i class="fas fa-chevron-right cred-arrow"></i>
-            </div>
-            <div class="cred-item" onclick="fillCreds('uttara.admin@pos.test','password')">
-                <span class="cred-role role-admin">Admin</span>
-                <div class="cred-info">
-                    <div class="cred-email">uttara.admin@pos.test</div>
-                    <div class="cred-meta">pass: <b>password</b> &nbsp;·&nbsp; উত্তরা শাখা</div>
-                </div>
-                <i class="fas fa-chevron-right cred-arrow"></i>
-            </div>
-            <div class="cred-item" onclick="fillCreds('dhanmondi.admin@pos.test','password')">
-                <span class="cred-role role-admin">Admin</span>
-                <div class="cred-info">
-                    <div class="cred-email">dhanmondi.admin@pos.test</div>
-                    <div class="cred-meta">pass: <b>password</b> &nbsp;·&nbsp; ধানমন্ডি শাখা</div>
-                </div>
-                <i class="fas fa-chevron-right cred-arrow"></i>
-            </div>
 
-            {{-- Staff --}}
-            <div class="cred-section">👤 স্টাফ</div>
-            <div class="cred-item" onclick="fillCreds('hasan@inventory.com','hasan123')">
-                <span class="cred-role role-staff">Staff</span>
-                <div class="cred-info">
-                    <div class="cred-email">hasan@inventory.com</div>
-                    <div class="cred-meta">pass: <b>hasan123</b> &nbsp;·&nbsp; প্রধান শাখা</div>
+                <div class="client-card-body">
+
+                    {{-- Client (মালিক) login row --}}
+                    <div class="cred-item owner-row" onclick="fillCreds('{{ $client->email }}','password')">
+                        <span class="cred-role role-super" style="font-size:.58rem;min-width:54px;">মালিক</span>
+                        <div class="cred-info">
+                            <div class="cred-email">{{ $client->email }}</div>
+                            <div class="cred-meta">pass: <b>password</b></div>
+                        </div>
+                        <i class="fas fa-chevron-right cred-arrow"></i>
+                    </div>
+
+                    {{-- Each shop under this client --}}
+                    @foreach($client->myShops as $shop)
+
+                    {{-- Shop sub-header --}}
+                    <div class="shop-header {{ $shop->is_locked ? 'locked' : 'active' }}">
+                        <i class="fas fa-store" style="color:{{ $shop->is_locked ? '#ef4444' : '#16a34a' }};font-size:.62rem"></i>
+                        <span class="shop-name" style="color:{{ $shop->is_locked ? '#dc2626' : '#15803d' }}">
+                            {{ $shop->name }}
+                        </span>
+                        @if($shop->is_locked)
+                        <span style="font-size:.55rem;background:#fee2e2;color:#dc2626;border-radius:3px;padding:1px 6px;font-weight:700;">
+                            <i class="fas fa-lock"></i> LOCKED
+                        </span>
+                        @endif
+                    </div>
+
+                    {{-- Admin & staff rows --}}
+                    @forelse($shop->users as $u)
+                    <div class="cred-item" onclick="fillCreds('{{ $u->email }}','password')">
+                        <span class="cred-role {{ $u->role==='admin' ? 'role-admin' : 'role-staff' }}"
+                              style="font-size:.58rem;min-width:48px;">
+                            {{ $u->role==='admin' ? 'Admin' : 'Staff' }}
+                        </span>
+                        <div class="cred-info">
+                            <div class="cred-email">{{ $u->email }}</div>
+                            <div class="cred-meta">pass: <b>password</b> &nbsp;·&nbsp; {{ $u->name }}</div>
+                        </div>
+                        <i class="fas fa-chevron-right cred-arrow"></i>
+                    </div>
+                    @empty
+                    <div style="padding:6px 16px;font-size:.62rem;color:#a8a29e;font-style:italic;border-top:1px solid #f5f5f4;">
+                        কোনো staff/admin নেই
+                    </div>
+                    @endforelse
+
+                    @endforeach
+                    {{-- /shops --}}
+
                 </div>
-                <i class="fas fa-chevron-right cred-arrow"></i>
             </div>
-            <div class="cred-item" onclick="fillCreds('uttara.staff1@pos.test','password')">
-                <span class="cred-role role-staff">Staff</span>
-                <div class="cred-info">
-                    <div class="cred-email">uttara.staff1@pos.test</div>
-                    <div class="cred-meta">pass: <b>password</b> &nbsp;·&nbsp; উত্তরা শাখা</div>
-                </div>
-                <i class="fas fa-chevron-right cred-arrow"></i>
-            </div>
+            {{-- /client card --}}
+            @endforeach
 
         </div>
         <div class="dev-panel-footer">
@@ -342,6 +464,13 @@
 
         <h2>স্বাগতম!</h2>
         <p class="sub">আপনার অ্যাকাউন্টে লগইন করুন</p>
+
+        @if(session('error'))
+            <div class="error-msg">
+                <i class="fas fa-lock"></i>
+                {{ session('error') }}
+            </div>
+        @endif
 
         @if($errors->any())
             <div class="error-msg">

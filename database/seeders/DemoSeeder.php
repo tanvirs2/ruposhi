@@ -32,7 +32,7 @@ class DemoSeeder extends Seeder
             ['email' => 'resell@a.com'],
             [
                 'name'     => 'নুমান (রিসেলার)',
-                'password' => Hash::make('123456'),
+                'password' => Hash::make('password'),
                 'role'     => 'reseller',
                 'shop_id'  => null,
             ]
@@ -93,7 +93,7 @@ class DemoSeeder extends Seeder
             ['email' => 'admin@inventory.com'],
             [
                 'name'     => 'Admin',
-                'password' => Hash::make('admin123'),
+                'password' => Hash::make('password'),
                 'role'     => 'admin',
                 'shop_id'  => $shop1->id,
             ]
@@ -103,7 +103,7 @@ class DemoSeeder extends Seeder
             ['email' => 'mirpur@shop.com'],
             [
                 'name'     => 'মিরপুর অ্যাডমিন',
-                'password' => Hash::make('secret123'),
+                'password' => Hash::make('password'),
                 'role'     => 'admin',
                 'shop_id'  => $shop2->id,
             ]
@@ -134,7 +134,7 @@ class DemoSeeder extends Seeder
             ['email' => 'hasan@inventory.com'],
             [
                 'name'     => 'Hasan',
-                'password' => Hash::make('hasan123'),
+                'password' => Hash::make('password'),
                 'role'     => 'staff',
                 'shop_id'  => $shop1->id,
             ]
@@ -155,13 +155,13 @@ class DemoSeeder extends Seeder
             ['Email', 'Password', 'Role'],
             [
                 ['root@system.com',         'password',  'root'],
-                ['resell@a.com',             '123456',    'reseller'],
+                ['resell@a.com',             'password',  'reseller'],
                 ['super@admin.com',          'password',  'super_admin'],
-                ['admin@inventory.com',      'admin123',  'admin (প্রধান শাখা)'],
-                ['mirpur@shop.com',          'secret123', 'admin (মিরপুর শাখা)'],
+                ['admin@inventory.com',      'password',  'admin (প্রধান শাখা)'],
+                ['mirpur@shop.com',          'password',  'admin (মিরপুর শাখা)'],
                 ['uttara.admin@pos.test',    'password',  'admin (উত্তরা শাখা)'],
                 ['dhanmondi.admin@pos.test', 'password',  'admin (ধানমন্ডি শাখা)'],
-                ['hasan@inventory.com',      'hasan123',  'staff (প্রধান শাখা)'],
+                ['hasan@inventory.com',      'password',  'staff (প্রধান শাখা)'],
                 ['uttara.staff1@pos.test',   'password',  'staff (উত্তরা শাখা)'],
             ]
         );

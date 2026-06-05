@@ -1,6 +1,6 @@
 @extends('layouts.root')
 @section('title', 'সম্পাদনা — ' . $superAdmin->name)
-@section('page-title', 'সুপার অ্যাডমিন সম্পাদনা')
+@section('page-title', 'ক্লায়েন্ট সম্পাদনা')
 
 @section('content')
 <div class="rt-card" style="max-width:560px">

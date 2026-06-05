@@ -154,10 +154,10 @@
 
             <div class="rt-nav-section">ম্যানেজমেন্ট</div>
             <a href="{{ route('root.super-admins.index') }}" class="{{ str_starts_with($r, 'root.super-admins') ? 'active' : '' }}">
-                <i class="fas fa-user-shield"></i> সুপার অ্যাডমিন
+                <i class="fas fa-briefcase"></i> ক্লায়েন্ট
             </a>
             <a href="{{ route('root.super-admins.create') }}" class="{{ $r === 'root.super-admins.create' ? 'active' : '' }}">
-                <i class="fas fa-user-plus"></i> নতুন সুপার অ্যাডমিন
+                <i class="fas fa-plus"></i> নতুন ক্লায়েন্ট
             </a>
             <a href="{{ route('root.resellers.index') }}" class="{{ str_starts_with($r, 'root.resellers') ? 'active' : '' }}">
                 <i class="fas fa-handshake"></i> রিসেলার
