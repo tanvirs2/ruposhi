@@ -6,6 +6,17 @@
 
 @php $currentLic = $user->activeLicense(); @endphp
 
+@if(session('success'))
+<div style="background:#022c22;border:1px solid #166534;color:#6ee7b7;padding:12px 16px;border-radius:10px;margin-bottom:16px;font-size:.88rem">
+    <i class="fas fa-check-circle"></i> {{ session('success') }}
+</div>
+@endif
+@if(session('error'))
+<div style="background:#2d0a0a;border:1px solid #7f1d1d;color:#fca5a5;padding:12px 16px;border-radius:10px;margin-bottom:16px;font-size:.88rem">
+    <i class="fas fa-circle-xmark"></i> {{ session('error') }}
+</div>
+@endif
+
 {{-- ── Summary bar ──────────────────────────────────────────── --}}
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
     <div class="rt-stat" style="text-align:left;padding:14px 18px">
@@ -158,12 +169,6 @@
     {{-- Right: Extend license --}}
     <div class="rt-card">
         <div class="rt-card-title"><i class="fas fa-key"></i> লাইসেন্স নবায়ন</div>
-
-        @if(session('success'))
-            <div style="background:#022c22;border:1px solid #166534;color:#6ee7b7;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:.85rem">
-                <i class="fas fa-check-circle"></i> {{ session('success') }}
-            </div>
-        @endif
 
         @if($currentLic)
         <div style="background:#060d1a;border-radius:9px;padding:14px;margin-bottom:18px;font-size:.85rem">

@@ -34,8 +34,8 @@ class PaymentController extends Controller
             $query->whereDate('payment_date', '<=', $request->to);
         }
 
-        $payments   = $query->paginate(30)->withQueryString();
-        $totalAmount = $query->sum('amount');
+        $totalAmount = $query->sum('amount');          // compute BEFORE paginate
+        $payments    = $query->paginate(30)->withQueryString();
 
         $superAdmins = User::where('role', 'super_admin')->orderBy('name')->get();
 
