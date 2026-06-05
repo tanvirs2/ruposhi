@@ -37,8 +37,11 @@
                         {{ ['active'=>'সক্রিয়','warning'=>'সংকট','grace'=>'গ্রেস','expired'=>'শেষ'][$st] }}
                     </span>
                 </td>
-                <td>
-                    {{-- Extend license modal trigger --}}
+                <td style="display:flex;gap:6px">
+                    <a href="{{ route('reseller.clients.show', $c) }}"
+                       class="rt-btn rt-btn-ghost rt-btn-sm">
+                        <i class="fas fa-eye"></i> বিবরণ
+                    </a>
                     <button onclick="openExtend({{ $c->id }}, '{{ addslashes($c->name) }}')"
                             class="rt-btn rt-btn-ghost rt-btn-sm">
                         <i class="fas fa-key"></i> নবায়ন

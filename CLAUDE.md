@@ -129,7 +129,9 @@ Single `/login` for all roles. After auth, redirect by role:
 | `app/Traits/HasShopScope.php` | Applied to all tenant models |
 | `app/Http/Controllers/Root/SuperAdminController.php` | Root: CRUD for super_admins + license management |
 | `app/Http/Controllers/Root/ResellerController.php` | Root: CRUD for resellers |
-| `app/Http/Controllers/Reseller/ClientController.php` | Reseller: manage clients + extend licenses |
+| `app/Http/Controllers/Root/PaymentController.php` | Root: record/list/delete payment logs |
+| `app/Http/Controllers/Reseller/ClientController.php` | Reseller: manage clients + extend licenses + show page |
+| `app/Models/PaymentLog.php` | Payment records — user_id, license_id, reseller_id, amount, method, trxID |
 | `app/Http/Controllers/Super/ShopController.php` | Super admin: CRUD for own shops, enter/exit shop |
 | `app/Http/Controllers/Super/DashboardController.php` | Super admin dashboard — calls syncShopLocks() |
 | `app/Http/Controllers/Super/ReportController.php` | Super admin reports (scoped to own shops) |
@@ -472,6 +474,20 @@ Accessed via `\App\Models\StoreConfig::get('key', 'default')`:
 50. Fixed: `CustomerPaymentController::store()` had `max(0, due - paid)` cap — removed; allows negative credit
 51. Fixed: `SupplierPaymentController::store()` same `max(0,...)` bug — removed
 52. Fixed: `salesReport()` `grandNoItemDueReduction` used `min(paid, previous_due)` which broke when `previous_due` was negative; fixed with `max(0, previous_due)`
+
+### Session 6 — Owner-Side Features & Mobile Fixes
+53. Demo credentials panel on login page — left box, auto-fill on click; Root/Reseller hidden behind vertical pill toggle on right side of login form
+54. `DemoSeeder` — creates all demo accounts; safe to re-run (`updateOrCreate`)
+55. Sidebar logout button — full-width, separate from user card (root and shop layouts)
+56. Fixed: root/reseller hitting `/dashboard` → redirect to proper panel (was 403)
+57. Sales report: reordered sections — বাকী পরিশোধ moved before অতিরিক্ত খরচ
+58. Fixed: stock/index tfoot colspan misalignment (5→4); stock/low (4→3)
+59. Mobile fix: invoice phone numbers no longer overlap store name on small screens (≤480px)
+60. Mobile fix: sale create floating submit bar — full-width on mobile (was hardcoded 340px right-only)
+61. Mobile fix: `form-actions` flex-wrap so buttons wrap on small screens
+62. **Payment Log system** — `payment_logs` table; Root records/views payments per super_admin; Root `/root/payments` index with filters; Root super-admin show page has summary bar + payment form + history
+63. Reseller client show page (`/reseller/clients/{id}`) — client info, shop list, license history, payment history, inline renewal form
+64. Reseller dashboard: commission summary card — total payments, commission rate, calculated commission, recent 5 payments
 
 ---
 

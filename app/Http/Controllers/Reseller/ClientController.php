@@ -89,6 +89,27 @@ class ClientController extends Controller
             ->with('success', "ক্লায়েন্ট '{$user->name}' তৈরি হয়েছে।");
     }
 
+    public function show(User $user)
+    {
+        $resellerId = auth()->id();
+
+        // Ensure this client belongs to this reseller
+        abort_unless(
+            License::where('user_id', $user->id)->where('reseller_id', $resellerId)->exists(),
+            404
+        );
+
+        $licenses = $user->licenses()->where('reseller_id', $resellerId)->latest('expires_at')->get();
+        $payments = \App\Models\PaymentLog::with('recordedBy')
+            ->where('user_id', $user->id)
+            ->where('reseller_id', $resellerId)
+            ->latest('payment_date')->latest('id')
+            ->get();
+        $shops = \App\Models\Shop::where('super_admin_id', $user->id)->get();
+
+        return view('reseller.clients.show', compact('user', 'licenses', 'payments', 'shops'));
+    }
+
     public function extendLicense(Request $request, User $user)
     {
         $resellerId = auth()->id();

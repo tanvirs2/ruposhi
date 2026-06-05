@@ -39,8 +39,21 @@ class DashboardController extends Controller
             ->whereBetween('expires_at', [Carbon::now(), Carbon::now()->addDays(14)])
             ->get();
 
+        // Commission summary
+        $profile         = auth()->user()->resellerProfile;
+        $commissionRate  = $profile?->commission_rate ?? 0;
+        $totalPayments   = \App\Models\PaymentLog::where('reseller_id', $resellerId)->sum('amount');
+        $myCommission    = $totalPayments * ($commissionRate / 100);
+
+        // Recent payments (last 5)
+        $recentPayments  = \App\Models\PaymentLog::with('user')
+            ->where('reseller_id', $resellerId)
+            ->latest('payment_date')->latest('id')
+            ->limit(5)->get();
+
         return view('reseller.dashboard', compact(
-            'clients', 'total', 'active', 'warning', 'grace', 'expired', 'expiringSoon'
+            'clients', 'total', 'active', 'warning', 'grace', 'expired',
+            'expiringSoon', 'commissionRate', 'totalPayments', 'myCommission', 'recentPayments'
         ));
     }
 }
