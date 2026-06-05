@@ -177,6 +177,34 @@
             font-size: 0.68rem; color: #92400e;
             display: flex; align-items: center; gap: 6px;
         }
+
+        /* System toggle button */
+        .system-toggle {
+            display: flex; align-items: center; gap: 7px;
+            background: #fff7ed;
+            border: 1px dashed #fdba74;
+            border-radius: 7px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 0.68rem; font-weight: 700;
+            color: #c2410c;
+            letter-spacing: .04em;
+            transition: background .15s, border-color .15s;
+            width: 100%;
+            text-align: left;
+        }
+        .system-toggle:hover { background: #fed7aa; border-color: #fb923c; }
+        .system-toggle .toggle-icon { margin-left: auto; transition: transform .25s; }
+        .system-toggle.open .toggle-icon { transform: rotate(180deg); }
+
+        /* Hidden system section */
+        .system-section {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            overflow: hidden;
+        }
+        .system-section.open { display: flex; }
         /* ════ END DEV PANEL ════ */
 
         /* Responsive: stack on small screens */
@@ -201,26 +229,36 @@
         </div>
         <div class="dev-panel-body">
 
-            {{-- Root --}}
-            <div class="cred-section">⚙ সিস্টেম রুট</div>
-            <div class="cred-item" onclick="fillCreds('root@system.com','password')">
-                <span class="cred-role role-root">Root</span>
-                <div class="cred-info">
-                    <div class="cred-email">root@system.com</div>
-                    <div class="cred-meta">pass: <b>password</b> &nbsp;·&nbsp; সব কিছু নিয়ন্ত্রণ</div>
-                </div>
-                <i class="fas fa-chevron-right cred-arrow"></i>
-            </div>
+            {{-- System accounts toggle button --}}
+            <button class="system-toggle" id="systemToggle" onclick="toggleSystem()">
+                <i class="fas fa-shield-halved"></i>
+                সিস্টেম অ্যাকাউন্ট (Root & Reseller)
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </button>
 
-            {{-- Reseller --}}
-            <div class="cred-section">🤝 রিসেলার</div>
-            <div class="cred-item" onclick="fillCreds('resell@a.com','123456')">
-                <span class="cred-role role-reseller">Reseller</span>
-                <div class="cred-info">
-                    <div class="cred-email">resell@a.com</div>
-                    <div class="cred-meta">pass: <b>123456</b> &nbsp;·&nbsp; নুমান</div>
+            {{-- Root + Reseller — hidden by default --}}
+            <div class="system-section" id="systemSection">
+
+                <div class="cred-section">⚙ সিস্টেম রুট</div>
+                <div class="cred-item" onclick="fillCreds('root@system.com','password')">
+                    <span class="cred-role role-root">Root</span>
+                    <div class="cred-info">
+                        <div class="cred-email">root@system.com</div>
+                        <div class="cred-meta">pass: <b>password</b> &nbsp;·&nbsp; সব কিছু নিয়ন্ত্রণ</div>
+                    </div>
+                    <i class="fas fa-chevron-right cred-arrow"></i>
                 </div>
-                <i class="fas fa-chevron-right cred-arrow"></i>
+
+                <div class="cred-section">🤝 রিসেলার</div>
+                <div class="cred-item" onclick="fillCreds('resell@a.com','123456')">
+                    <span class="cred-role role-reseller">Reseller</span>
+                    <div class="cred-info">
+                        <div class="cred-email">resell@a.com</div>
+                        <div class="cred-meta">pass: <b>123456</b> &nbsp;·&nbsp; নুমান</div>
+                    </div>
+                    <i class="fas fa-chevron-right cred-arrow"></i>
+                </div>
+
             </div>
 
             {{-- Super Admin --}}
@@ -349,6 +387,12 @@ function togglePw() {
     const ic = document.getElementById('eyeIcon');
     if (pw.type === 'password') { pw.type = 'text'; ic.className = 'fas fa-eye-slash'; }
     else { pw.type = 'password'; ic.className = 'fas fa-eye'; }
+}
+function toggleSystem() {
+    const btn = document.getElementById('systemToggle');
+    const sec = document.getElementById('systemSection');
+    btn.classList.toggle('open');
+    sec.classList.toggle('open');
 }
 function fillCreds(email, password) {
     document.getElementById('email').value    = email;
