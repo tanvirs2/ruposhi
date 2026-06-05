@@ -238,9 +238,7 @@
 </div>
 
 {{-- Floating submit button ──────────────────────────────── --}}
-<div style="position:fixed;bottom:0;right:0;width:340px;padding:12px 16px;
-            background:var(--surface);border-top:1px solid var(--border);
-            box-shadow:0 -4px 16px rgba(0,0,0,.1);z-index:200">
+<div class="sale-submit-bar">
     <button type="submit" form="saleForm" class="btn btn-primary"
             style="width:100%;justify-content:center;padding:14px;font-size:1rem">
         <i class="fas fa-check-circle"></i> বিক্রয় সম্পন্ন করুন

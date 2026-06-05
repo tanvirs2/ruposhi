@@ -1246,7 +1246,7 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
 .form-group-field textarea:focus,
 .form-group-field select:focus,
 .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
-.form-actions { display: flex; align-items: center; gap: 12px; }
+.form-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .req { color: #ef4444; }
 
 /* ─── Focus-within label highlight ─────────────────────────── */
@@ -1346,6 +1346,25 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
     align-items: start;
 }
 .pos-right { position: sticky; top: calc(var(--topbar-h) + 16px); }
+
+/* Floating sale submit bar — right panel on desktop, full-width on mobile */
+.sale-submit-bar {
+    position: fixed;
+    bottom: 0; right: 0;
+    width: 360px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 16px rgba(0,0,0,.1);
+    z-index: 200;
+}
+@media (max-width: 900px) {
+    .sale-submit-bar {
+        width: 100%;
+        left: 0;
+        right: 0;
+    }
+}
 .suggestions-list { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
 .suggestion-item {
     display: flex; align-items: center; justify-content: space-between;

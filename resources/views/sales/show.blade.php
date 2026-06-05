@@ -379,5 +379,29 @@
 
     tfoot { page-break-inside: avoid; }
 }
+
+/* ══ Mobile view (screen only) ══════════════════════════════════ */
+@media screen and (max-width: 480px) {
+    .cash-memo {
+        padding: 12px 12px 12px;
+        font-size: .84rem;
+    }
+    /* Phone numbers: remove absolute, stack under store name */
+    .memo-header { padding-bottom: 6px; }
+    .memo-phones-right {
+        position: static;
+        text-align: center;
+        flex-direction: row;
+        justify-content: center;
+        gap: 14px;
+        margin-top: 4px;
+        font-size: .8rem;
+    }
+    .memo-store-name { font-size: 1.3rem; }
+    .memo-meta-row-top { flex-direction: column; gap: 0; }
+    .memo-table th, .memo-table tbody td { padding: 3px 4px; font-size: .78rem; }
+    .col-rate { width: 52px; }
+    .col-taka { width: 80px; }
+}
 </style>
 @endpush
