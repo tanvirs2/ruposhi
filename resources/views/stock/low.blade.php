@@ -137,7 +137,7 @@
             @if($stock->total() > 0)
             <tfoot>
                 <tr class="tfoot-summary">
-                    <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট স্টক</td>
+                    <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট স্টক</td>
                     <td class="tc" style="font-weight:800">{{ number_format($grandTotalSales, 0) }}</td>
                     <td class="tc" style="font-weight:800;color:#16a34a">{{ number_format($grandTodaySales, 0) }}</td>
                     <td class="tc" style="font-weight:800">{{ number_format($grandStockQty, 0) }}</td>

@@ -178,31 +178,37 @@
             display: flex; align-items: center; gap: 6px;
         }
 
-        /* System toggle button */
+        /* System toggle button — vertical pill on the right of login form */
         .system-toggle {
-            display: flex; align-items: center; gap: 7px;
-            background: #fff7ed;
-            border: 1px dashed #fdba74;
-            border-radius: 7px;
-            padding: 6px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: rgba(245,158,11,.15);
+            border: 2px dashed #f59e0b;
+            border-radius: 10px;
+            padding: 14px 8px;
             cursor: pointer;
-            font-size: 0.68rem; font-weight: 700;
-            color: #c2410c;
-            letter-spacing: .04em;
+            color: #92400e;
             transition: background .15s, border-color .15s;
-            width: 100%;
-            text-align: left;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: .06em;
+            align-self: center;
+            white-space: nowrap;
         }
-        .system-toggle:hover { background: #fed7aa; border-color: #fb923c; }
-        .system-toggle .toggle-icon { margin-left: auto; transition: transform .25s; }
-        .system-toggle.open .toggle-icon { transform: rotate(180deg); }
+        .system-toggle:hover { background: rgba(245,158,11,.28); border-color: #d97706; }
+        .system-toggle i { writing-mode: horizontal-tb; font-size: 0.85rem; }
+        .system-toggle.open { background: rgba(245,158,11,.3); border-style: solid; }
 
         /* Hidden system section */
         .system-section {
             display: none;
             flex-direction: column;
             gap: 4px;
-            overflow: hidden;
         }
         .system-section.open { display: flex; }
         /* ════ END DEV PANEL ════ */
@@ -228,13 +234,6 @@
             <span class="dev-tag">DEV ONLY</span>
         </div>
         <div class="dev-panel-body">
-
-            {{-- System accounts toggle button --}}
-            <button class="system-toggle" id="systemToggle" onclick="toggleSystem()">
-                <i class="fas fa-shield-halved"></i>
-                সিস্টেম অ্যাকাউন্ট (Root & Reseller)
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </button>
 
             {{-- Root + Reseller — hidden by default --}}
             <div class="system-section" id="systemSection">
@@ -377,7 +376,13 @@
     </div>
     {{-- ── /Login Card ── --}}
 
-
+    {{-- ⚠️ DEV ONLY — delete with dev-panel --}}
+    <button class="system-toggle" id="systemToggle" onclick="toggleSystem()">
+        <i class="fas fa-shield-halved"></i>
+        ROOT &amp; RESELLER
+        <i class="fas fa-lock" id="toggleLockIcon"></i>
+    </button>
+    {{-- /DEV ONLY --}}
 
 </div>
 
@@ -389,10 +394,12 @@ function togglePw() {
     else { pw.type = 'password'; ic.className = 'fas fa-eye'; }
 }
 function toggleSystem() {
-    const btn = document.getElementById('systemToggle');
-    const sec = document.getElementById('systemSection');
-    btn.classList.toggle('open');
-    sec.classList.toggle('open');
+    const btn  = document.getElementById('systemToggle');
+    const sec  = document.getElementById('systemSection');
+    const icon = document.getElementById('toggleLockIcon');
+    const isOpen = btn.classList.toggle('open');
+    sec.classList.toggle('open', isOpen);
+    icon.className = isOpen ? 'fas fa-lock-open' : 'fas fa-lock';
 }
 function fillCreds(email, password) {
     document.getElementById('email').value    = email;

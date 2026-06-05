@@ -255,6 +255,61 @@
     </div>
 </div>
 
+{{-- ── No-item Sales (paying off previous due via sale form, no products) ─── --}}
+@if($noItemSales->isNotEmpty())
+<div class="card" style="margin-top:18px">
+    <div class="card-header" style="padding:12px 16px;background:#fffbeb;border-bottom:1px solid #fde68a">
+        <h3 style="font-size:.95rem;color:#92400e;margin:0">
+            <i class="fas fa-hand-holding-dollar"></i>
+            বাকী পরিশোধ (পণ্য ছাড়া বিক্রয়) — পূর্বের বাকীর বিপরীতে
+        </h3>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table sale-detail-table">
+            <thead>
+                <tr>
+                    <th class="tc">চালান নং</th>
+                    <th>কাস্টমার</th>
+                    <th class="tc">তারিখ</th>
+                    <th class="tc">পরিশোধ মোড</th>
+                    <th class="tr">পরিশোধ (৳)</th>
+                    <th class="tc">ইউজার</th>
+                    <th class="tc">সময়</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($noItemSales as $s)
+                <tr>
+                    <td class="tc mono">
+                        <a href="{{ route('sales.show', $s->id) }}" class="link-primary">
+                            {{ str_pad($s->id, 6, '0', STR_PAD_LEFT) }}
+                        </a>
+                    </td>
+                    <td>{{ $s->customer?->name ?? '<span style="color:#94a3b8">ওয়াক-ইন</span>' }}</td>
+                    <td class="tc">{{ \Carbon\Carbon::parse($s->sale_date)->format('d/m/Y') }}</td>
+                    <td class="tc">{{ $s->payment_method ?: '—' }}</td>
+                    <td class="tr" style="color:#16a34a;font-weight:600">
+                        {{ number_format($s->paid_amount, 0) }}
+                    </td>
+                    <td class="tc" style="font-size:.78rem;color:#64748b">{{ $s->user?->name ?? '—' }}</td>
+                    <td class="tc" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                        {{ \Carbon\Carbon::parse($s->created_at)->format('h:i:s a') }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                    <td class="tr" style="color:#16a34a;font-weight:800">{{ number_format($noItemSales->sum('paid_amount'), 0) }}</td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+@endif
+
 {{-- ── Extra Cost Breakdown Table ──────────────────────────────── --}}
 @if($saleExtraCosts->isNotEmpty())
 <div class="card" style="margin-top:18px">
@@ -328,61 +383,6 @@
                 <tr class="tfoot-summary">
                     <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
                     <td class="tr" style="color:#7c3aed;font-weight:800">৳ {{ number_format($saleExtraCosts->sum('amount'), 0) }}</td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-</div>
-@endif
-
-{{-- ── No-item Sales (paying off previous due via sale form, no products) ─── --}}
-@if($noItemSales->isNotEmpty())
-<div class="card" style="margin-top:18px">
-    <div class="card-header" style="padding:12px 16px;background:#fffbeb;border-bottom:1px solid #fde68a">
-        <h3 style="font-size:.95rem;color:#92400e;margin:0">
-            <i class="fas fa-hand-holding-dollar"></i>
-            বাকী পরিশোধ (পণ্য ছাড়া বিক্রয়) — পূর্বের বাকীর বিপরীতে
-        </h3>
-    </div>
-    <div class="table-wrap">
-        <table class="data-table sale-detail-table">
-            <thead>
-                <tr>
-                    <th class="tc">চালান নং</th>
-                    <th>কাস্টমার</th>
-                    <th class="tc">তারিখ</th>
-                    <th class="tc">পরিশোধ মোড</th>
-                    <th class="tr">পরিশোধ (৳)</th>
-                    <th class="tc">ইউজার</th>
-                    <th class="tc">সময়</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($noItemSales as $s)
-                <tr>
-                    <td class="tc mono">
-                        <a href="{{ route('sales.show', $s->id) }}" class="link-primary">
-                            {{ str_pad($s->id, 6, '0', STR_PAD_LEFT) }}
-                        </a>
-                    </td>
-                    <td>{{ $s->customer?->name ?? '<span style="color:#94a3b8">ওয়াক-ইন</span>' }}</td>
-                    <td class="tc">{{ \Carbon\Carbon::parse($s->sale_date)->format('d/m/Y') }}</td>
-                    <td class="tc">{{ $s->payment_method ?: '—' }}</td>
-                    <td class="tr" style="color:#16a34a;font-weight:600">
-                        {{ number_format($s->paid_amount, 0) }}
-                    </td>
-                    <td class="tc" style="font-size:.78rem;color:#64748b">{{ $s->user?->name ?? '—' }}</td>
-                    <td class="tc" style="font-size:.78rem;color:#64748b;white-space:nowrap">
-                        {{ \Carbon\Carbon::parse($s->created_at)->format('h:i:s a') }}
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-            <tfoot>
-                <tr class="tfoot-summary">
-                    <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
-                    <td class="tr" style="color:#16a34a;font-weight:800">{{ number_format($noItemSales->sum('paid_amount'), 0) }}</td>
-                    <td colspan="2"></td>
                 </tr>
             </tfoot>
         </table>
