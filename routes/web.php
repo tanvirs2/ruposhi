@@ -26,6 +26,13 @@ use App\Http\Controllers\Super\DashboardController as SuperDashboard;
 use App\Http\Controllers\Super\ShopController;
 use App\Http\Controllers\Super\ReportController as SuperReportController;
 
+/* ── Error page preview (local dev only) ──────────────────── */
+if (app()->environment('local')) {
+    Route::get('/test-error/{code}', function ($code) {
+        return response()->view("errors.{$code}", [], (int) $code);
+    })->where('code', '404|403|500|419|503');
+}
+
 /* ── Auth ──────────────────────────────────────────────────── */
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
 Route::post('/login', [AuthController::class, 'login'])->middleware('guest');
