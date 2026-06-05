@@ -6,6 +6,38 @@
 
 @php $currentLic = $superAdmin->activeLicense(); @endphp
 
+{{-- ── Top summary bar ──────────────────────────────────────── --}}
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+    <div class="rt-stat" style="text-align:left;padding:14px 18px">
+        <div style="font-size:.75rem;color:#64748b;margin-bottom:4px">মোট পেমেন্ট</div>
+        <div style="font-size:1.3rem;font-weight:800;color:#86efac">
+            ৳ {{ number_format($payments->sum('amount'), 0) }}
+        </div>
+        <div style="font-size:.76rem;color:#475569;margin-top:2px">{{ $payments->count() }}টি লেনদেন</div>
+    </div>
+    <div class="rt-stat" style="text-align:left;padding:14px 18px">
+        <div style="font-size:.75rem;color:#64748b;margin-bottom:4px">সর্বশেষ পেমেন্ট</div>
+        <div style="font-size:.95rem;font-weight:700;color:#f1f5f9">
+            {{ $payments->first() ? $payments->first()->payment_date->format('d M Y') : '—' }}
+        </div>
+        <div style="font-size:.76rem;color:#475569;margin-top:2px">
+            {{ $payments->first() ? '৳ '.number_format($payments->first()->amount, 0) : 'কোনো পেমেন্ট নেই' }}
+        </div>
+    </div>
+    <div class="rt-stat" style="text-align:left;padding:14px 18px">
+        <div style="font-size:.75rem;color:#64748b;margin-bottom:4px">লাইসেন্স অবস্থা</div>
+        @if($currentLic)
+            @php $st = $currentLic->status; @endphp
+            <span class="rt-pill rt-pill-{{ $st }}" style="font-size:.88rem">
+                {{ ['active'=>'সক্রিয়','warning'=>'সংকট','grace'=>'গ্রেস','expired'=>'মেয়াদ শেষ'][$st] }}
+            </span>
+            <div style="font-size:.76rem;color:#475569;margin-top:6px">{{ $currentLic->expires_at->format('d M Y') }} পর্যন্ত</div>
+        @else
+            <span class="rt-pill rt-pill-expired">লাইসেন্স নেই</span>
+        @endif
+    </div>
+</div>
+
 <div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start">
 
     {{-- License history --}}
@@ -44,6 +76,9 @@
         </table>
         @endif
     </div>
+
+    {{-- Right column: License renewal + Payment record --}}
+    <div style="display:flex;flex-direction:column;gap:20px">
 
     {{-- Extend License Form --}}
     <div class="rt-card">
@@ -121,11 +156,122 @@
         </form>
     </div>
 
+    {{-- ── Record Payment Form ───────────────────────────────── --}}
+    <div class="rt-card">
+        <div class="rt-card-title"><i class="fas fa-money-bill-wave" style="color:#86efac"></i> পেমেন্ট রেকর্ড করুন</div>
+
+        @if(session('success'))
+            <div style="background:#052e16;border:1px solid #166534;color:#86efac;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:.85rem">
+                <i class="fas fa-check-circle"></i> {{ session('success') }}
+            </div>
+        @endif
+
+        <form method="POST" action="{{ route('root.payments.store') }}">
+            @csrf
+            <input type="hidden" name="user_id" value="{{ $superAdmin->id }}">
+            <input type="hidden" name="license_id" value="{{ $currentLic?->id }}">
+
+            <div class="rt-field">
+                <label class="rt-label">পরিমাণ (৳)</label>
+                <input class="rt-input" type="number" name="amount" min="1" step="0.01"
+                       placeholder="যেমন: 500" required>
+            </div>
+
+            <div class="rt-field">
+                <label class="rt-label">পেমেন্ট পদ্ধতি</label>
+                <select class="rt-select" name="payment_method" required>
+                    <option value="">— বেছে নিন —</option>
+                    @foreach(\App\Models\PaymentLog::paymentMethods() as $key => $label)
+                        <option value="{{ $key }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="rt-field">
+                <label class="rt-label">ট্রানজেকশন আইডি / রেফারেন্স</label>
+                <input class="rt-input" type="text" name="transaction_id"
+                       placeholder="যেমন: bKash TrxID (ঐচ্ছিক)">
+            </div>
+
+            <div class="rt-field">
+                <label class="rt-label">পেমেন্টের তারিখ</label>
+                <input class="rt-input" type="date" name="payment_date"
+                       value="{{ now()->toDateString() }}" required>
+            </div>
+
+            <div class="rt-field">
+                <label class="rt-label">নোট (ঐচ্ছিক)</label>
+                <textarea class="rt-textarea" name="notes" rows="2"
+                          placeholder="যেমন: মাসিক নবায়ন — জুন ২০২৬"></textarea>
+            </div>
+
+            <button type="submit" class="rt-btn rt-btn-primary" style="width:100%">
+                <i class="fas fa-check"></i> পেমেন্ট সেভ করুন
+            </button>
+        </form>
+    </div>
+
+    </div>{{-- end right column --}}
+
 </div>
+
+{{-- ── Payment History ──────────────────────────────────────── --}}
+@if($payments->count())
+<div class="rt-card" style="margin-top:20px">
+    <div class="rt-card-title" style="justify-content:space-between">
+        <span><i class="fas fa-receipt" style="color:#86efac"></i> পেমেন্ট ইতিহাস</span>
+        <span style="font-size:.82rem;color:#86efac;font-weight:700">
+            মোট: ৳ {{ number_format($payments->sum('amount'), 0) }}
+        </span>
+    </div>
+    <table class="rt-table">
+        <thead>
+            <tr>
+                <th>তারিখ</th>
+                <th>পরিমাণ</th>
+                <th>পদ্ধতি</th>
+                <th>ট্রানজেকশন আইডি</th>
+                <th>রেকর্ডকারী</th>
+                <th>নোট</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($payments as $p)
+            <tr>
+                <td style="font-size:.82rem;white-space:nowrap">{{ $p->payment_date->format('d M Y') }}</td>
+                <td style="font-weight:700;color:#86efac">৳ {{ number_format($p->amount, 0) }}</td>
+                <td>
+                    <span style="font-size:.8rem;background:#0f2640;color:#93c5fd;padding:2px 9px;border-radius:20px">
+                        {{ $p->method_label }}
+                    </span>
+                </td>
+                <td style="font-size:.8rem;color:#64748b">{{ $p->transaction_id ?? '—' }}</td>
+                <td style="font-size:.8rem;color:#94a3b8">{{ $p->recordedBy->name }}</td>
+                <td style="font-size:.8rem;color:#64748b;max-width:160px">{{ $p->notes ?? '—' }}</td>
+                <td>
+                    <form method="POST" action="{{ route('root.payments.destroy', $p) }}"
+                          onsubmit="return confirm('এই পেমেন্ট রেকর্ড মুছে ফেলবেন?')">
+                        @csrf @method('DELETE')
+                        <button type="submit" class="rt-btn rt-btn-ghost rt-btn-sm"
+                                style="color:#f87171;border-color:#7f1d1d">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>
+@endif
 
 <div style="margin-top:14px">
     <a href="{{ route('root.super-admins.index') }}" class="rt-btn rt-btn-ghost">
         <i class="fas fa-arrow-left"></i> তালিকায় ফিরুন
+    </a>
+    <a href="{{ route('root.payments.index') }}" class="rt-btn rt-btn-ghost" style="margin-left:8px">
+        <i class="fas fa-receipt"></i> সব পেমেন্ট দেখুন
     </a>
 </div>
 

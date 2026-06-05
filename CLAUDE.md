@@ -13,6 +13,7 @@
 - **`main`** — active branch (v2 multi-shop) — all development happens here
 - **`v2-multi-shop`** — older/stale branch, behind main
 - **⚠️ RULE:** Only commit locally. NEVER `git push` without explicit user request.
+- **⚠️ PUSH RULE (strict):** User must say "push" or "push now" explicitly. Do NOT push after finishing a task, do NOT ask "should I push?", do NOT push during autonomous loop. Wait. Always.
 
 ## Deploy Command (ALWAYS use this exact command)
 ```bash

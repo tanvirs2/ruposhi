@@ -165,6 +165,11 @@
             <a href="{{ route('root.resellers.create') }}" class="{{ $r === 'root.resellers.create' ? 'active' : '' }}">
                 <i class="fas fa-user-plus"></i> নতুন রিসেলার
             </a>
+
+            <div class="rt-nav-section">অর্থ</div>
+            <a href="{{ route('root.payments.index') }}" class="{{ str_starts_with($r, 'root.payments') ? 'active' : '' }}">
+                <i class="fas fa-receipt"></i> পেমেন্ট ইতিহাস
+            </a>
         </nav>
 
         <div class="rt-foot">

@@ -88,7 +88,11 @@ class SuperAdminController extends Controller
     {
         abort_unless($superAdmin->role === 'super_admin', 404);
         $licenses = $superAdmin->licenses()->latest('expires_at')->get();
-        return view('root.super-admins.show', compact('superAdmin', 'licenses'));
+        $payments = \App\Models\PaymentLog::with(['recordedBy'])
+            ->where('user_id', $superAdmin->id)
+            ->latest('payment_date')->latest('id')
+            ->get();
+        return view('root.super-admins.show', compact('superAdmin', 'licenses', 'payments'));
     }
 
     public function edit(User $superAdmin)

@@ -42,6 +42,10 @@ Route::middleware(['auth', 'root'])->prefix('root')->name('root.')->group(functi
     Route::resource('super-admins', \App\Http\Controllers\Root\SuperAdminController::class);
     Route::post('/super-admins/{user}/extend-license', [\App\Http\Controllers\Root\SuperAdminController::class, 'extendLicense'])->name('super-admins.extend-license');
     Route::resource('resellers', \App\Http\Controllers\Root\ResellerController::class);
+    // Payment logs
+    Route::get('/payments', [\App\Http\Controllers\Root\PaymentController::class, 'index'])->name('payments.index');
+    Route::post('/payments', [\App\Http\Controllers\Root\PaymentController::class, 'store'])->name('payments.store');
+    Route::delete('/payments/{payment}', [\App\Http\Controllers\Root\PaymentController::class, 'destroy'])->name('payments.destroy');
 });
 
 /* ── Reseller routes ───────────────────────────────────────── */
