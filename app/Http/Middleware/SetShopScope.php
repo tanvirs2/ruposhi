@@ -64,15 +64,33 @@ class SetShopScope
                 }
                 abort(403, 'আপনার অ্যাকাউন্টে কোনো শপ নির্ধারিত নেই। অ্যাডমিনের সাথে যোগাযোগ করুন।');
             }
-            // Admin/staff: check if their assigned shop is locked
+            // Admin/staff: check if their assigned shop is locked OR owner license expired
             else {
                 $shop = Shop::where('id', $user->shop_id)->first();
+
                 if ($shop && $shop->is_locked) {
                     auth()->logout();
                     $request->session()->invalidate();
                     $request->session()->regenerateToken();
                     return redirect()->route('login')
                         ->with('error', "'{$shop->name}' শাখাটি বর্তমানে লক করা আছে। লাইসেন্স সমস্যার জন্য আপনার মালিকের সাথে যোগাযোগ করুন।");
+                }
+
+                // Also check the shop owner's license — catches expiry before syncShopLocks() runs
+                if ($shop && $shop->super_admin_id) {
+                    $owner = \App\Models\User::find($shop->super_admin_id);
+                    if ($owner) {
+                        $license = $owner->activeLicense();
+                        if (!$license || $license->status === 'expired') {
+                            // Lock the shops now so future requests hit is_locked fast-path
+                            $owner->syncShopLocks();
+                            auth()->logout();
+                            $request->session()->invalidate();
+                            $request->session()->regenerateToken();
+                            return redirect()->route('login')
+                                ->with('error', "'{$shop->name}' শাখার সাবস্ক্রিপশন মেয়াদ শেষ হয়েছে। মালিকের সাথে যোগাযোগ করুন।");
+                        }
+                    }
                 }
             }
         }
