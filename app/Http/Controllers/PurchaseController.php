@@ -66,7 +66,7 @@ class PurchaseController extends Controller
             $itemsTotal    = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
             $extraCostRows = collect($request->extra_costs ?? [])
                 ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
-            $extraCost = $extraCostRows->sum('amount');
+            $extraCost = $extraCostRows->sum(fn($r) => (float) $r['amount']);
             $total     = $itemsTotal + $extraCost;
             $due       = $total - $request->paid_amount; // allows negative (credit/advance)
 
@@ -164,7 +164,7 @@ class PurchaseController extends Controller
             $itemsTotal    = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
             $extraCostRows = collect($request->extra_costs ?? [])
                 ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
-            $extraCost = $extraCostRows->sum('amount');
+            $extraCost = $extraCostRows->sum(fn($r) => (float) $r['amount']);
             $total     = $itemsTotal + $extraCost;
             $due       = $total - $request->paid_amount;
 

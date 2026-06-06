@@ -79,7 +79,7 @@ class SaleController extends Controller
             // Categorised extra costs — sum all rows
             $extraCostRows = collect($request->extra_costs ?? [])
                 ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
-            $extraCost = $extraCostRows->sum('amount');
+            $extraCost = $extraCostRows->sum(fn($r) => (float) $r['amount']);
 
             $net        = $total - $discount + $extraCost;
             $due        = max(0, $net - $request->paid_amount);
@@ -205,7 +205,7 @@ class SaleController extends Controller
 
             $extraCostRows = collect($request->extra_costs ?? [])
                 ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
-            $extraCost = $extraCostRows->sum('amount');
+            $extraCost = $extraCostRows->sum(fn($r) => (float) $r['amount']);
             $net       = $total - $discount + $extraCost;
             $due       = max(0, $net - $request->paid_amount);
 
