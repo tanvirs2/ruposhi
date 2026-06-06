@@ -142,10 +142,12 @@
 
             <div class="rt-field">
                 <label class="rt-label">কোথা থেকে বাড়াবেন?</label>
-                <select class="rt-select" name="from">
-                    <option value="expiry">বর্তমান মেয়াদ শেষের পর থেকে</option>
-                    <option value="today">আজ থেকে</option>
+                <select class="rt-select" name="from" onchange="updateFromHint(this)">
+                    <option value="expiry">বর্তমান মেয়াদ শেষের পর থেকে যোগ করুন</option>
+                    <option value="today">আজ থেকে যোগ করুন (মেয়াদ থাকলে বাড়বে)</option>
+                    <option value="override">আজ থেকে সরাসরি সেট করুন (override)</option>
                 </select>
+                <div id="fromHint" style="font-size:.72rem;margin-top:4px;color:#64748b"></div>
             </div>
 
             <div class="rt-field">
@@ -286,6 +288,17 @@ function toggleExtendType() {
     const type = document.querySelector('input[name="extend_type"]:checked').value;
     document.getElementById('planField').style.display = type === 'plan' ? 'block' : 'none';
     document.getElementById('daysField').style.display = type === 'days' ? 'block' : 'none';
+}
+
+function updateFromHint(sel) {
+    const hint = document.getElementById('fromHint');
+    const hints = {
+        'expiry':   '📅 বর্তমান মেয়াদের শেষ তারিখ থেকে দিন যোগ হবে। (নিরাপদ — মেয়াদ কমবে না)',
+        'today':    '📅 আজকের তারিখ থেকে যোগ হবে। তবে বর্তমান মেয়াদ বেশি থাকলে সেটাই base হবে।',
+        'override': '⚠️ বর্তমান মেয়াদ বাতিল করে আজ থেকে নতুন মেয়াদ শুরু হবে। (যেমন: ৫ দিন বাকি রাখতে হলে এটা বেছে নিন)'
+    };
+    hint.textContent = hints[sel.value] || '';
+    hint.style.color = sel.value === 'override' ? '#dc2626' : '#64748b';
 }
 </script>
 @endpush

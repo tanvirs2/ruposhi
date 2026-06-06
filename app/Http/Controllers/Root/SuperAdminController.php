@@ -143,7 +143,7 @@ class SuperAdminController extends Controller
             'extend_type' => 'required|in:days,plan',
             'days'        => 'required_if:extend_type,days|nullable|integer|min:1|max:3650',
             'plan'        => 'required_if:extend_type,plan|nullable|in:monthly,quarterly,yearly',
-            'from'        => 'required|in:expiry,today',
+            'from'        => 'required|in:expiry,today,override',
             'max_shops'   => 'nullable|integer|min:1',
         ]);
 
@@ -167,6 +167,9 @@ class SuperAdminController extends Controller
                 'extended_at'   => Carbon::now(),
                 'notes'         => $request->notes,
             ]);
+        } elseif ($request->from === 'override') {
+            // Directly set: today + N days (ignores current expiry completely)
+            $license->setFromToday($days, auth()->id());
         } elseif ($request->from === 'today') {
             $license->extendFromToday($days, auth()->id());
         } else {

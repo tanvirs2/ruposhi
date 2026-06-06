@@ -130,6 +130,22 @@ class License extends Model
     }
 
     /**
+     * Override: set expiry = today + N days regardless of current value.
+     * Use when you want to say "give this client exactly 5 days remaining".
+     */
+    public function setFromToday(int $days, int $extendedById): void
+    {
+        $newExpiry = Carbon::now()->addDays($days);
+
+        $this->update([
+            'expires_at'    => $newExpiry,
+            'grace_ends_at' => $newExpiry->copy()->addDays(7),
+            'extended_by'   => $extendedById,
+            'extended_at'   => Carbon::now(),
+        ]);
+    }
+
+    /**
      * Extend from current date (if already expired, reset from today).
      */
     public function extendFromToday(int $days, int $extendedById): void
