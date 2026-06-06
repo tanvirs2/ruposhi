@@ -192,4 +192,28 @@ class SuperAdminController extends Controller
         return redirect()->back()
             ->with('success', "{$user->name}-এর লাইসেন্স {$days} দিন বাড়ানো হয়েছে।");
     }
+
+    /* ── Force-expire a license immediately ─────────────────── */
+
+    public function expireLicense(User $user)
+    {
+        abort_unless($user->role === 'super_admin', 404);
+
+        $license = $user->activeLicense();
+
+        if (! $license) {
+            return redirect()->back()->with('error', 'এই client-এর কোনো সক্রিয় লাইসেন্স নেই।');
+        }
+
+        $license->update([
+            'expires_at'    => Carbon::now()->subMinute(),
+            'grace_ends_at' => Carbon::now()->subMinute(),
+        ]);
+
+        // Lock all their shops immediately
+        $user->refresh()->syncShopLocks();
+
+        return redirect()->back()
+            ->with('success', "{$user->name}-এর লাইসেন্স তাৎক্ষণিকভাবে মেয়াদ শেষ করা হয়েছে।");
+    }
 }

@@ -167,6 +167,26 @@
                 <i class="fas fa-rotate-right"></i> লাইসেন্স নবায়ন করুন
             </button>
         </form>
+
+        {{-- Force expire --}}
+        @if($currentLic && $currentLic->status !== 'expired')
+        <div style="margin-top:16px;padding-top:14px;border-top:1px dashed #ef4444">
+            <div style="font-size:.72rem;color:#dc2626;font-weight:600;margin-bottom:8px">
+                ⚠️ বিপজ্জনক এলাকা
+            </div>
+            <form method="POST"
+                  action="{{ route('root.super-admins.expire-license', $superAdmin) }}"
+                  onsubmit="return confirm('{{ $superAdmin->name }}-এর লাইসেন্স এখনই বাতিল করবেন? সব শাখা লক হয়ে যাবে!')">
+                @csrf
+                <button type="submit" class="rt-btn rt-btn-danger" style="width:100%">
+                    <i class="fas fa-ban"></i> এখনই লাইসেন্স বাতিল করুন
+                </button>
+            </form>
+            <div style="font-size:.68rem;color:#94a3b8;margin-top:6px;text-align:center">
+                সব শাখা তাৎক্ষণিক লক হবে। admin/staff লগআউট হবে।
+            </div>
+        </div>
+        @endif
     </div>
 
     {{-- ── Record Payment Form ───────────────────────────────── --}}

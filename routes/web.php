@@ -48,6 +48,7 @@ Route::middleware(['auth', 'root'])->prefix('root')->name('root.')->group(functi
     Route::get('/dashboard', [\App\Http\Controllers\Root\DashboardController::class, 'index'])->name('dashboard');
     Route::resource('super-admins', \App\Http\Controllers\Root\SuperAdminController::class);
     Route::post('/super-admins/{user}/extend-license', [\App\Http\Controllers\Root\SuperAdminController::class, 'extendLicense'])->name('super-admins.extend-license');
+    Route::post('/super-admins/{user}/expire-license',  [\App\Http\Controllers\Root\SuperAdminController::class, 'expireLicense'])->name('super-admins.expire-license');
     Route::resource('resellers', \App\Http\Controllers\Root\ResellerController::class);
     // Reseller detail + payout tracking
     Route::get('/resellers/{reseller}/show',               [\App\Http\Controllers\Root\ResellerPayoutController::class, 'show'])->name('resellers.show');
