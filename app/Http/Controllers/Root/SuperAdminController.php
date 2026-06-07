@@ -15,13 +15,13 @@ class SuperAdminController extends Controller
     public function index(\Illuminate\Http\Request $request)
     {
         $search = $request->input('q');
+        $status = $request->input('status'); // active | warning | grace | expired | none
 
         $superAdmins = User::where('role', 'super_admin')
             ->with(['licenses' => fn($q) => $q->latest('expires_at')->limit(1)])
             ->withCount('myShops')
             ->when($search, function ($q) use ($search) {
-                // Search by name, email, or SA-ID (e.g. "SA-3" or just "3")
-                $id = preg_replace('/[^0-9]/', '', $search); // extract digits
+                $id = preg_replace('/[^0-9]/', '', $search);
                 $q->where(function ($s) use ($search, $id) {
                     $s->where('name', 'like', "%{$search}%")
                       ->orWhere('email', 'like', "%{$search}%");
@@ -33,7 +33,25 @@ class SuperAdminController extends Controller
             ->latest()
             ->get();
 
-        return view('root.super-admins.index', compact('superAdmins', 'search'));
+        // Filter by license status (computed, so filter after fetch)
+        if ($status === 'none') {
+            $superAdmins = $superAdmins->filter(fn($u) => ! $u->activeLicense());
+        } elseif (in_array($status, ['active', 'warning', 'grace', 'expired'])) {
+            $superAdmins = $superAdmins->filter(fn($u) => optional($u->activeLicense())->status === $status);
+        }
+
+        // Count per status for tab badges
+        $all        = User::where('role', 'super_admin')->with(['licenses' => fn($q) => $q->latest('expires_at')->limit(1)])->get();
+        $counts = [
+            'all'     => $all->count(),
+            'expired' => $all->filter(fn($u) => optional($u->activeLicense())->status === 'expired'
+                                             || ! $u->activeLicense())->count(),
+            'grace'   => $all->filter(fn($u) => optional($u->activeLicense())->status === 'grace')->count(),
+            'warning' => $all->filter(fn($u) => optional($u->activeLicense())->status === 'warning')->count(),
+            'active'  => $all->filter(fn($u) => optional($u->activeLicense())->status === 'active')->count(),
+        ];
+
+        return view('root.super-admins.index', compact('superAdmins', 'search', 'status', 'counts'));
     }
 
     public function create()
