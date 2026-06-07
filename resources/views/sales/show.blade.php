@@ -4,9 +4,10 @@
 
 @section('content')
 @php
-    $totalQty   = $sale->items->sum('quantity');
-    $grandTotal = $sale->total_amount + $sale->previous_due;
-    $remaining  = $grandTotal - $sale->paid_amount;
+    $totalQty      = $sale->items->sum('quantity');
+    $itemsSubtotal = $sale->items->sum('subtotal');
+    $grandTotal    = $sale->total_amount + $sale->previous_due;
+    $remaining     = $grandTotal - $sale->paid_amount;
 @endphp
 
 {{-- Action buttons (no-print) --}}
@@ -119,9 +120,8 @@
         <tfoot>
             @if($sale->items->count() > 0)
             <tr class="tfoot-qty">
-                <td>মোট</td>
-                <td colspan="3"></td>
-                <td class="tr">{{ (int)$totalQty }}</td>
+                <td colspan="4" class="tfoot-label">মোট {{ (int)$totalQty }} বস্তা</td>
+                <td class="tr">{{ number_format($itemsSubtotal, 0) }} টাকা</td>
             </tr>
             @endif
 
@@ -303,7 +303,7 @@
 
 .memo-table tbody td {
     padding: 3px 6px;
-    border: 1px solid #ccc;
+    border: 1px solid #e0e0e0;
     vertical-align: middle;
 }
 .memo-table tbody tr:nth-child(even) { background: #fafafa; }
@@ -313,7 +313,7 @@
 /* ══ Tfoot ═══════════════════════════════════════════════════════ */
 .tfoot-qty td {
     padding: 4px 6px;
-    border: 1px solid #ccc;
+    border: 1px solid #e0e0e0;
     border-top: 2px solid #922b21;
     font-size: .84rem;
     font-weight: 700;
@@ -321,12 +321,12 @@
 }
 .tfoot-row td {
     padding: 3px 6px;
-    border: 1px solid #ccc;
+    border: 1px solid #e0e0e0;
     font-size: .85rem;
 }
 .tfoot-label  { font-weight: 600; }
 .tfoot-amount { font-weight: 600; white-space: nowrap; }
-.tfoot-grand-row td { border-top: 2px solid #555; border-bottom: 2px solid #555; }
+.tfoot-grand-row td { border-top: 1.5px solid #aaa; border-bottom: 1.5px solid #aaa; }
 .tfoot-grand  { font-weight: 800; font-size: .94rem; }
 .tfoot-balance-row td { background: #fff7ed; }
 .tfoot-remaining { font-weight: 800; font-size: .98rem; color: #b91c1c; }
@@ -335,47 +335,61 @@
 @media print {
     @page {
         size: A4 portrait;
-        margin: 10mm 12mm 12mm 12mm;
+        margin: 14mm 14mm 14mm 14mm;
     }
 
-    html, body {
+    /* ── Step 1: hide the entire page ── */
+    body * { visibility: hidden; }
+
+    /* ── Step 2: show ONLY the invoice ── */
+    #cashMemo,
+    #cashMemo * { visibility: visible; }
+
+    /* ── Step 3: pin invoice to top-left corner ── */
+    #cashMemo {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
+        max-width: 100% !important;
+        box-shadow: none !important;
+        font-size: .82rem !important;
+        font-family: 'Hind Siliguri', sans-serif !important;
+        color: #111 !important;
         background: #fff !important;
     }
 
-    .sidebar, .topbar, .no-print { display: none !important; }
-    .main-wrapper { margin-left: 0 !important; padding: 0 !important; }
-    .content      { padding: 0 !important; margin: 0 !important; }
+    /* ── Typography scale-down ── */
+    .memo-store-name   { font-size: 1.3rem !important; }
+    .memo-owner        { font-size: .76rem !important; }
+    .memo-tagline      { font-size: .72rem !important; }
+    .memo-address      { font-size: .70rem !important; }
+    .memo-phones-right { font-size: .74rem !important; line-height: 1.6 !important; }
+    .memo-title-label  { font-size: .70rem !important; }
 
-    .cash-memo {
-        border: none !important;
-        border-radius: 0 !important;
-        padding: 10px 14px 10px !important;
-        max-width: 100% !important;
-        width: 100% !important;
-        box-shadow: none !important;
-        font-size: .82rem !important;
-    }
+    .memo-meta         { font-size: .78rem !important; line-height: 1.55 !important; }
+    .memo-meta-row-top { font-size: .78rem !important; }
+    .memo-meta-key     { min-width: 80px !important; }
 
-    .memo-store-name  { font-size: 1.35rem !important; }
-    .memo-owner       { font-size: .76rem !important; }
-    .memo-tagline     { font-size: .72rem !important; }
-    .memo-address     { font-size: .70rem !important; }
-    .memo-phones-right{ font-size: .75rem !important; }
-    .memo-title-label { font-size: .70rem !important; }
+    /* ── Table ── */
+    .memo-table        { font-size: .78rem !important; }
+    .memo-table th     { padding: 3px 5px !important; }
+    .memo-table tbody td { padding: 3px 5px !important; border-color: #ddd !important; }
+    .memo-table tbody tr:nth-child(even) { background: #f8f8f8 !important; }
 
-    .memo-meta        { font-size: .78rem !important; line-height: 1.55 !important; }
-    .memo-meta-row-top{ font-size: .78rem !important; }
+    /* ── Tfoot ── */
+    .tfoot-qty td  { padding: 3px 5px !important; font-size: .78rem !important; border-color: #ddd !important; }
+    .tfoot-row td  { padding: 3px 5px !important; font-size: .78rem !important; border-color: #ddd !important; }
+    .tfoot-grand   { font-size: .86rem !important; }
+    .tfoot-remaining { font-size: .90rem !important; }
+    .tfoot-balance-row td { background: #fff7ed !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .tfoot-grand-row td { border-top: 1.5px solid #888 !important; border-bottom: 1.5px solid #888 !important; }
 
-    .memo-table       { font-size: .78rem !important; }
-    .memo-table th,
-    .memo-table tbody td { padding: 2px 4px !important; }
-
-    .tfoot-qty td,
-    .tfoot-row td     { padding: 2px 4px !important; font-size: .78rem !important; }
-    .tfoot-grand      { font-size: .84rem !important; }
-    .tfoot-remaining  { font-size: .88rem !important; }
+    /* ── Red header: force color print ── */
+    .memo-table thead tr { background: #c0392b !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .memo-table th        { border-color: #922b21 !important; }
 
     tfoot { page-break-inside: avoid; }
 }

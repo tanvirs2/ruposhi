@@ -3,7 +3,7 @@
 @section('page-title', 'রিসিভ বিবরণ')
 
 @section('content')
-<div class="invoice-card">
+<div class="invoice-card" id="purchaseInvoice">
     <div class="invoice-header">
         <div>
             <h2><i class="fas fa-truck-ramp-box" style="color:#0d9488;margin-right:8px"></i>রিসিভ #RCV-{{ str_pad($purchase->id,4,'0',STR_PAD_LEFT) }}</h2>
@@ -171,9 +171,31 @@
 @push('styles')
 <style>
 @media print {
-    .sidebar, .topbar, .no-print { display: none !important; }
-    .main-wrapper { margin-left: 0 !important; }
-    .invoice-card { box-shadow: none; border: none; }
+    @page {
+        size: A4 portrait;
+        margin: 14mm 14mm 14mm 14mm;
+    }
+
+    body * { visibility: hidden; }
+
+    #purchaseInvoice,
+    #purchaseInvoice * { visibility: visible; }
+
+    #purchaseInvoice {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+        box-shadow: none !important;
+        border: none !important;
+        font-size: .82rem !important;
+        background: #fff !important;
+    }
+
+    tfoot { page-break-inside: avoid; }
 }
 </style>
 @endpush
