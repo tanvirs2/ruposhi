@@ -27,7 +27,13 @@ class SupplierController extends Controller
 
     public function ledgerSelect()
     {
-        $suppliers = Supplier::orderBy('name')->get();
+        // Most recent transaction first (supplier payments are stored as
+        // purchases, so the latest purchase_date = latest activity).
+        // Suppliers with no transactions sink to the bottom (NULL last in DESC).
+        $suppliers = Supplier::withMax('purchases', 'purchase_date')
+            ->orderByDesc('purchases_max_purchase_date')
+            ->orderBy('name')
+            ->get();
         return view('suppliers.ledger-select', compact('suppliers'));
     }
 

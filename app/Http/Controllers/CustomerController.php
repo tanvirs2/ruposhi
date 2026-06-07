@@ -128,7 +128,14 @@ class CustomerController extends Controller
     // ── Customer Ledger Selector ─────────────────────────────────
     public function ledgerSelect()
     {
-        $customers = Customer::with('area')->orderBy('name')->get();
+        // Most recent transaction first (customer payments are stored as
+        // sales, so the latest sale_date = latest activity).
+        // Customers with no transactions sink to the bottom (NULL last in DESC).
+        $customers = Customer::with('area')
+            ->withMax('sales', 'sale_date')
+            ->orderByDesc('sales_max_sale_date')
+            ->orderBy('name')
+            ->get();
         $areas     = CustomerArea::orderBy('name')->get(['id', 'name']);
         return view('customers.ledger-select', compact('customers', 'areas'));
     }
