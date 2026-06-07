@@ -1205,7 +1205,7 @@ function showStockToast(msg, type) {
 @endif
 
 // ══════════════════════════════════════════════════════════════
-// SALE DRAFT — auto-save to localStorage, restore on reload
+// SALE DRAFT — auto-save to sessionStorage, restore on reload
 // ══════════════════════════════════════════════════════════════
 const DRAFT_KEY = 'sale_draft_{{ auth()->user()->shop_id }}_{{ auth()->id() }}';
 let _draftTimer  = null;
@@ -1244,11 +1244,11 @@ function saveDraft() {
         savedAt:       Date.now(),
     };
 
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch(_) {}
+    try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch(_) {}
 }
 
 function clearDraft() {
-    localStorage.removeItem(DRAFT_KEY);
+    sessionStorage.removeItem(DRAFT_KEY);
     _pendingDraft = null;
 }
 
@@ -1333,7 +1333,7 @@ function restoreDraftData() {
 (function checkDraft() {
     @if(request('customer_id')) return; @endif  // pre-selected customer — skip draft
     try {
-        const raw = localStorage.getItem(DRAFT_KEY);
+        const raw = sessionStorage.getItem(DRAFT_KEY);
         if (!raw) return;
         const draft = JSON.parse(raw);
         if (!draft || (!draft.cart?.length && !draft.customerId)) { clearDraft(); return; }

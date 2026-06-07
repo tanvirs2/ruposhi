@@ -707,7 +707,7 @@ document.getElementById('paidInput').addEventListener('input', function() {
 });
 
 // ══════════════════════════════════════════════════════════════
-// PURCHASE DRAFT — auto-save to localStorage, restore on reload
+// PURCHASE DRAFT — auto-save to sessionStorage, restore on reload
 // ══════════════════════════════════════════════════════════════
 const DRAFT_KEY = 'purchase_draft_{{ auth()->user()->shop_id }}_{{ auth()->id() }}';
 let _draftTimer  = null;
@@ -742,11 +742,11 @@ function saveDraft() {
         savedAt:       Date.now(),
     };
 
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch(_) {}
+    try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch(_) {}
 }
 
 function clearDraft() {
-    localStorage.removeItem(DRAFT_KEY);
+    sessionStorage.removeItem(DRAFT_KEY);
     _pendingDraft = null;
 }
 
@@ -815,7 +815,7 @@ function restoreDraftData() {
 // ── Check for existing draft on page load ─────────────────────
 (function checkDraft() {
     try {
-        const raw = localStorage.getItem(DRAFT_KEY);
+        const raw = sessionStorage.getItem(DRAFT_KEY);
         if (!raw) return;
         const draft = JSON.parse(raw);
         if (!draft || (!draft.cart?.length && !draft.supplierId)) { clearDraft(); return; }
