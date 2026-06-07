@@ -53,7 +53,23 @@ class CustomerController extends Controller
             'phone' => 'nullable|string|max:20',
         ]);
 
-        Customer::create($request->only('name', 'proprietor', 'phone', 'address', 'area_id'));
+        $customer = Customer::create($request->only('name', 'proprietor', 'phone', 'address', 'area_id'));
+
+        // AJAX (popup from sale form) — return the new customer as JSON
+        if ($request->expectsJson() || $request->ajax()) {
+            $customer->load('area:id,name');
+            return response()->json([
+                'success'  => true,
+                'customer' => [
+                    'id'         => $customer->id,
+                    'name'       => $customer->name,
+                    'proprietor' => $customer->proprietor,
+                    'phone'      => $customer->phone,
+                    'due_amount' => $customer->due_amount,
+                    'area'       => $customer->area ? ['id' => $customer->area->id, 'name' => $customer->area->name] : null,
+                ],
+            ]);
+        }
 
         return redirect()->route('customers.index')->with('success', 'কাস্টমার সফলভাবে যোগ করা হয়েছে।');
     }

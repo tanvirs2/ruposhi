@@ -88,8 +88,15 @@
             <div class="card-header"><h3><i class="fas fa-calculator"></i> বিক্রয় সারসংক্ষেপ</h3></div>
             <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
                 <div class="form-group-field">
-                    <label>কাস্টমার
-                        <button type="button" class="info-btn" data-info="কাস্টমার নির্বাচন না করলেও বিক্রয় সম্পন্ন করা যাবে। তবে কাস্টমার নির্বাচন করলে বাকির হিসাব সেই কাস্টমারের অ্যাকাউন্টে যোগ হবে।">i</button>
+                    <label style="display:flex;justify-content:space-between;align-items:center">
+                        <span>কাস্টমার
+                            <button type="button" class="info-btn" data-info="কাস্টমার নির্বাচন না করলেও বিক্রয় সম্পন্ন করা যাবে। তবে কাস্টমার নির্বাচন করলে বাকির হিসাব সেই কাস্টমারের অ্যাকাউন্টে যোগ হবে।">i</button>
+                        </span>
+                        <button type="button" onclick="openCustomerModal()"
+                            style="font-size:.76rem;font-weight:700;color:var(--accent);background:var(--accent-light);
+                                   border:1px solid var(--accent);border-radius:6px;padding:3px 10px;cursor:pointer">
+                            <i class="fas fa-plus"></i> নতুন কাস্টমার
+                        </button>
                     </label>
                     <input type="hidden" name="customer_id" id="customerIdInput">
                     <input type="text" id="customerSearch" placeholder="নাম লিখুন বা খুঁজুন..."
@@ -266,11 +273,99 @@
 </div>
 </form>
 
+{{-- ── নতুন কাস্টমার Popup Modal ───────────────────────────── --}}
+<div id="customerModal" class="cust-modal-overlay" style="display:none">
+    <div class="cust-modal">
+        <div class="cust-modal-head">
+            <h3><i class="fas fa-user-plus"></i> নতুন কাস্টমার যোগ করুন</h3>
+            <button type="button" onclick="closeCustomerModal()" class="cust-modal-close">&times;</button>
+        </div>
+        <div class="cust-modal-body">
+            <div id="custModalError" style="display:none;background:#fee2e2;color:#dc2626;padding:8px 12px;border-radius:6px;font-size:.84rem;margin-bottom:10px"></div>
+            <div class="form-group-field">
+                <label>প্রতিষ্ঠানের নাম <span class="req">*</span></label>
+                <input type="text" id="cmName" placeholder="মেসার্স মোল্লা স্টোর" autocomplete="off">
+            </div>
+            <div class="form-group-field">
+                <label>প্রোপ্রাইটরের নাম</label>
+                <input type="text" id="cmProprietor" placeholder="মোঃ হুমায়ন মোল্লা" autocomplete="off">
+            </div>
+            <div class="form-group-field">
+                <label>ফোন নম্বর</label>
+                <input type="text" id="cmPhone" inputmode="numeric" autocomplete="off">
+            </div>
+            <div class="form-group-field">
+                <label>এরিয়া</label>
+                <select id="cmArea" class="form-select">
+                    <option value="">এরিয়া নির্বাচন করুন</option>
+                    @foreach($areas as $area)
+                        <option value="{{ $area->id }}">{{ $area->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group-field">
+                <label>ঠিকানা</label>
+                <textarea id="cmAddress" rows="2"></textarea>
+            </div>
+        </div>
+        <div class="cust-modal-foot">
+            <button type="button" onclick="closeCustomerModal()" class="btn btn-ghost">বাতিল</button>
+            <button type="button" id="cmSaveBtn" onclick="saveNewCustomer()" class="btn btn-primary">
+                <i class="fas fa-save"></i> সংরক্ষণ ও নির্বাচন
+            </button>
+        </div>
+    </div>
+</div>
+
 @push('styles')
 <style>
 /* Cart table — compact rows */
 #itemsTable th { height: 32px; padding: 0 10px; font-size: .68rem; }
 #itemsTable td { height: 36px; padding: 0 10px; font-size: .85rem; }
+
+/* ── নতুন কাস্টমার Modal ───────────────────────────────── */
+.cust-modal-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(15, 23, 42, .55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    animation: custFade .15s ease;
+}
+@keyframes custFade { from { opacity: 0 } to { opacity: 1 } }
+.cust-modal {
+    background: var(--surface, #fff);
+    border-radius: 14px;
+    width: 100%; max-width: 460px;
+    max-height: 92vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    animation: custSlide .2s ease;
+}
+@keyframes custSlide { from { transform: translateY(14px); opacity: .6 } to { transform: translateY(0); opacity: 1 } }
+.cust-modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--border, #e2e8f0);
+}
+.cust-modal-head h3 { margin: 0; font-size: 1.02rem; color: var(--text-primary, #0f172a); }
+.cust-modal-close {
+    background: none; border: none; font-size: 1.6rem; line-height: 1;
+    color: #94a3b8; cursor: pointer; padding: 0 4px;
+}
+.cust-modal-close:hover { color: #dc2626; }
+.cust-modal-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+.cust-modal-body input, .cust-modal-body textarea, .cust-modal-body select {
+    width: 100%; padding: 9px 12px;
+    border: 1.5px solid var(--border, #e2e8f0); border-radius: 8px;
+    font-family: inherit; font-size: .9rem; outline: none;
+    background: var(--surface, #fff); color: var(--text-primary, #0f172a);
+}
+.cust-modal-body input:focus, .cust-modal-body textarea:focus, .cust-modal-body select:focus {
+    border-color: var(--accent);
+}
+.cust-modal-body label { font-size: .82rem; font-weight: 600; color: var(--text-secondary, #475569); margin-bottom: 4px; display: block; }
+.cust-modal-foot {
+    display: flex; gap: 10px; justify-content: flex-end;
+    padding: 14px 20px; border-top: 1px solid var(--border, #e2e8f0);
+}
 
 /* Profit column coloring */
 .profit-good  { color: #16a34a; font-weight: 600; }
@@ -1367,6 +1462,86 @@ document.getElementById('saleForm').requestSubmit = function() {
     clearDraft();
     _origReqSubmit();
 };
+
+// ── নতুন কাস্টমার Popup ───────────────────────────────────
+function openCustomerModal() {
+    document.getElementById('custModalError').style.display = 'none';
+    ['cmName','cmProprietor','cmPhone','cmAddress'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('cmArea').value = '';
+    document.getElementById('customerModal').style.display = 'flex';
+    // Pre-fill name from search box if user typed something
+    const typed = document.getElementById('customerSearch').value.trim();
+    if (typed) document.getElementById('cmName').value = typed;
+    setTimeout(() => document.getElementById('cmName').focus(), 50);
+    if (typeof attachBengaliConverter === 'function') {
+        attachBengaliConverter(document.getElementById('customerModal'));
+    }
+}
+function closeCustomerModal() {
+    document.getElementById('customerModal').style.display = 'none';
+}
+// Close on overlay click / Esc
+document.getElementById('customerModal').addEventListener('click', function(e) {
+    if (e.target === this) closeCustomerModal();
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('customerModal').style.display === 'flex') closeCustomerModal();
+});
+
+async function saveNewCustomer() {
+    const errBox = document.getElementById('custModalError');
+    const name   = document.getElementById('cmName').value.trim();
+    if (!name) {
+        errBox.textContent = 'প্রতিষ্ঠানের নাম আবশ্যক।';
+        errBox.style.display = 'block';
+        return;
+    }
+    const btn = document.getElementById('cmSaveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> সংরক্ষণ হচ্ছে...';
+    errBox.style.display = 'none';
+
+    const payload = {
+        name:       name,
+        proprietor: document.getElementById('cmProprietor').value.trim(),
+        phone:      toEnglishDigits(document.getElementById('cmPhone').value.trim()),
+        area_id:    document.getElementById('cmArea').value || '',
+        address:    document.getElementById('cmAddress').value.trim(),
+    };
+
+    try {
+        const res = await fetch("{{ route('customers.store') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            let msg = 'সংরক্ষণ ব্যর্থ হয়েছে।';
+            if (data.errors) msg = Object.values(data.errors).flat().join(' ');
+            throw new Error(msg);
+        }
+
+        const data = await res.json();
+        const c = data.customer;
+        // Add to in-memory list and select immediately
+        allCustomers.push(c);
+        closeCustomerModal();
+        selectCustomer(c.id);
+    } catch (err) {
+        errBox.textContent = err.message || 'সংরক্ষণ ব্যর্থ হয়েছে।';
+        errBox.style.display = 'block';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> সংরক্ষণ ও নির্বাচন';
+    }
+}
 </script>
 @endpush
 @endsection

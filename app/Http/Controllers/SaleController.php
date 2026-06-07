@@ -7,6 +7,7 @@ use App\Models\SaleItem;
 use App\Models\SaleExtraCost;
 use App\Models\SaleLog;
 use App\Models\Customer;
+use App\Models\CustomerArea;
 use App\Models\Item;
 use App\Models\Stock;
 use App\Models\ExtraCostCategory;
@@ -55,7 +56,8 @@ class SaleController extends Controller
                             ->orderBy('name')->get();
         $paymentMethods   = StoreConfigController::getGroupedPaymentMethods();
         $extraCategories  = ExtraCostCategory::orderBy('name')->pluck('name');
-        return view('sales.create', compact('customers', 'items', 'paymentMethods', 'extraCategories'));
+        $areas            = CustomerArea::orderBy('name')->get(['id', 'name']);
+        return view('sales.create', compact('customers', 'items', 'paymentMethods', 'extraCategories', 'areas'));
     }
 
     public function store(Request $request)
