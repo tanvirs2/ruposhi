@@ -282,6 +282,46 @@ function addItem(id) {
 }
 
 function removeItem(id) { cart=cart.filter(c=>c.id!==id); renderCart(); }
+
+// ── Change item inline (swap to a different item) ────────────
+function startChangeItem(idx) {
+    document.getElementById('item-search-box-' + idx).style.display = 'block';
+    document.getElementById('item-change-input-' + idx).focus();
+}
+function cancelChangeItem(idx) {
+    const box = document.getElementById('item-search-box-' + idx);
+    if (box) box.style.display = 'none';
+    const inp = document.getElementById('item-change-input-' + idx);
+    if (inp) inp.value = '';
+    const res = document.getElementById('item-change-results-' + idx);
+    if (res) res.innerHTML = '';
+}
+function searchForChange(idx, q) {
+    const resultsEl = document.getElementById('item-change-results-' + idx);
+    if (!q.trim()) { resultsEl.innerHTML = ''; return; }
+    const matches = allItems.filter(i => i.name.toLowerCase().includes(q.toLowerCase())).slice(0, 6);
+    resultsEl.innerHTML = matches.map(i => {
+        const avail = i.stock ? parseFloat(i.stock.quantity) : 0;
+        return `<div onclick="replaceItem(${idx}, ${i.id})" style="padding:7px 10px;cursor:pointer;font-size:.83rem;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center"
+            onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background=''">
+            <span>${i.name}</span>
+            <span style="font-size:.75rem;font-weight:700;color:#475569;margin-left:8px">স্টক: ${avail}</span>
+        </div>`;
+    }).join('') || '<div style="padding:8px 10px;color:#94a3b8;font-size:.82rem">পাওয়া যায়নি</div>';
+}
+function replaceItem(idx, newId) {
+    const newItem = allItems.find(i => i.id === newId);
+    if (!newItem) return;
+    const old = cart[idx];
+    cart[idx] = {
+        id: newItem.id, name: newItem.name,
+        price: 0, priceEntered: false,
+        lastPrice: parseFloat(newItem.purchase_price) || 0,
+        qty: old.qty,   // keep same received quantity
+        currentStock: newItem.stock ? parseFloat(newItem.stock.quantity) : 0,
+    };
+    renderCart();
+}
 function updateQty(id,val) { const item=cart.find(c=>c.id===id); if(item){item.qty=parseFloat(toEnglishDigits(val))||0;} updateRowTotal(id); updateSummary(); }
 function updatePrice(id,val) { const item=cart.find(c=>c.id===id); if(item){item.price=parseFloat(toEnglishDigits(val))||0;item.priceEntered=val.trim()!=='';} updateRowTotal(id); updateSummary(); }
 function useLastPrice(id) {
@@ -307,7 +347,23 @@ function renderCart() {
         const ns = c.currentStock+(c.qty||0);
         const hint = c.lastPrice>0 ? `<div style="font-size:.7rem;color:#94a3b8;margin-top:2px">আগের: ৳${c.lastPrice.toLocaleString()} <button type="button" onclick="useLastPrice(${c.id})" style="font-size:.68rem;color:var(--accent);background:none;border:none;cursor:pointer;padding:0 4px;font-weight:600;text-decoration:underline">ব্যবহার</button></div>` : '';
         return `<tr>
-            <td>${c.name}<input type="hidden" name="items[${idx}][id]" value="${c.id}"></td>
+            <td>
+                <div style="display:flex;align-items:flex-start;gap:6px">
+                    <div style="flex:1"><span>${c.name}</span></div>
+                    <button type="button" onclick="startChangeItem(${idx})" title="আইটেম পরিবর্তন"
+                        style="flex-shrink:0;padding:3px 7px;border-radius:5px;border:1px solid #cbd5e1;background:#f8fafc;color:#475569;font-size:.72rem;cursor:pointer">
+                        <i class="fas fa-retweet"></i>
+                    </button>
+                </div>
+                <input type="hidden" name="items[${idx}][id]" value="${c.id}">
+                <div id="item-search-box-${idx}" style="display:none;margin-top:6px">
+                    <input type="text" placeholder="নতুন আইটেম খুঁজুন..." autocomplete="off"
+                        id="item-change-input-${idx}" oninput="searchForChange(${idx}, this.value)"
+                        style="width:100%;padding:5px 8px;border:1.5px solid #3b82f6;border-radius:6px;font-size:.82rem">
+                    <div id="item-change-results-${idx}" style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);max-height:180px;overflow-y:auto;margin-top:2px"></div>
+                    <button type="button" onclick="cancelChangeItem(${idx})" style="margin-top:4px;font-size:.75rem;color:#64748b;background:none;border:none;cursor:pointer">✕ বাতিল</button>
+                </div>
+            </td>
             <td class="current-stock-cell">${c.currentStock} বস্তা</td>
             <td><input type="text" inputmode="decimal" name="items[${idx}][qty]" value="${c.qty}" style="width:75px" oninput="updateQty(${c.id},this.value)" class="inline-input"></td>
             <td><input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.priceEntered?c.price:''}" style="width:100px" oninput="updatePrice(${c.id},this.value)" class="inline-input">${hint}</td>
