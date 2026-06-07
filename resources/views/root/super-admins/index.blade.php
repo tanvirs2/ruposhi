@@ -98,7 +98,13 @@
                         SA-{{ $u->id }}
                     </span>
                 </td>
-                <td style="font-weight:600">{{ $u->name }}</td>
+                <td>
+                    <a href="{{ route('root.super-admins.show', $u) }}"
+                       style="font-weight:600;color:#f1f5f9;text-decoration:none"
+                       onmouseover="this.style.color='#93c5fd'" onmouseout="this.style.color='#f1f5f9'">
+                        {{ $u->name }}
+                    </a>
+                </td>
                 <td style="color:#64748b;font-size:.83rem">{{ $u->email }}</td>
                 <td style="font-size:.83rem">
                     <span class="rt-pill" style="background:#1e3a5f44;color:#93c5fd;border:1px solid #1e3a5f">
