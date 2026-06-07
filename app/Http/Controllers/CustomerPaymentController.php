@@ -70,8 +70,9 @@ class CustomerPaymentController extends Controller
                 'sale_date'      => $request->payment_date,
             ]);
 
-            // net effect: customer.due += (0 - amount) — same single deduction
-            $cust->update(['due_amount' => $previousDue - $request->amount]);
+            // net effect: customer.due -= amount. Atomic decrement avoids
+            // lost-update races; allows negative (credit) balance.
+            $cust->decrement('due_amount', $request->amount);
         });
 
         return redirect()->route('sales.show', $sale)->with('success', 'কাস্টমার পরিশোধ সম্পন্ন হয়েছে। বিক্রয় তালিকায় যোগ হয়েছে।');
