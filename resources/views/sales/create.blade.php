@@ -811,6 +811,7 @@ function addExtraCostRow() {
             <i class="fas fa-times"></i>
         </button>`;
     document.getElementById('extraCostRows').appendChild(row);
+    if (typeof wireBengaliInputs === 'function') wireBengaliInputs(row);
     row.querySelector('select').focus();
 }
 
@@ -898,6 +899,11 @@ let _stockConfirmPending  = false;
 let _lossConfirmPending   = false;
 let _excessConfirmPending = false;
 document.getElementById('saleForm').addEventListener('submit', function(e) {
+    // Safety net: convert any remaining Bengali digits in all numeric inputs
+    this.querySelectorAll('input[inputmode="decimal"], input[inputmode="numeric"], .extra-cost-amount').forEach(inp => {
+        if (/[০-৯]/.test(inp.value)) inp.value = toEnglishDigits(inp.value);
+    });
+
     // Ensure paid_amount is numeric (never empty)
     const paidEl     = document.getElementById('paidInput');
     if (paidEl.value.trim() === '') paidEl.value = '0';

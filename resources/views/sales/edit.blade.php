@@ -591,6 +591,7 @@ function addExtraCostRow(catName, amount) {
             <i class="fas fa-times"></i>
         </button>`;
     document.getElementById('extraCostRows').appendChild(row);
+    if (typeof wireBengaliInputs === 'function') wireBengaliInputs(row);
     if (catName === undefined) row.querySelector('select').focus();
     updateSummary();
 }
