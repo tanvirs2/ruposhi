@@ -87,6 +87,7 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     /* Customers */
+    Route::get('customers-search',            [CustomerController::class, 'search'])->name('customers.search');
     Route::resource('customers', CustomerController::class);
     Route::get('customers/{customer}/ledger', [CustomerController::class, 'ledger'])->name('customers.ledger');
     Route::get('customers-ledger',            [CustomerController::class, 'ledgerSelect'])->name('customers.ledger-select');

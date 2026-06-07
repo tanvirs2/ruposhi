@@ -46,6 +46,30 @@ class CustomerController extends Controller
         return view('customers.create', compact('areas'));
     }
 
+    /**
+     * Server-side autocomplete for POS dropdowns.
+     * Returns up to 15 shop-scoped matches (global scope handles shop_id).
+     * Keeps pages light — they no longer embed the whole customer table.
+     */
+    public function search(Request $request)
+    {
+        $q = trim((string) $request->get('q', ''));
+        if (mb_strlen($q) < 1) {
+            return response()->json([]);
+        }
+
+        $customers = Customer::with('area:id,name')
+            ->where(fn($sub) => $sub
+                ->where('name', 'like', "%{$q}%")
+                ->orWhere('proprietor', 'like', "%{$q}%")
+                ->orWhere('phone', 'like', "%{$q}%"))
+            ->orderBy('name')
+            ->limit(15)
+            ->get(['id', 'name', 'proprietor', 'phone', 'due_amount', 'area_id']);
+
+        return response()->json($customers);
+    }
+
     public function store(Request $request)
     {
         $request->validate([

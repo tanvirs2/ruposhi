@@ -47,17 +47,22 @@ class SaleController extends Controller
 
     public function create()
     {
-        // Select only columns needed by the JS dropdown — reduces payload significantly
-        $customers      = Customer::with('area:id,name')
-                            ->select('id','name','proprietor','phone','due_amount','area_id')
-                            ->orderBy('name')->get();
+        // Customers are loaded on demand via server-side search (customers.search)
+        // instead of embedding the whole table — keeps the page light at scale.
+        // Only the pre-selected customer (e.g. "নতুন বিক্রয়" from a ledger) is sent.
+        $preCustomer = request('customer_id')
+            ? Customer::with('area:id,name')
+                ->select('id','name','proprietor','phone','due_amount','area_id')
+                ->find(request('customer_id'))
+            : null;
+
         $items          = Item::with('stock:id,item_id,quantity')
                             ->select('id','name','sale_price','purchase_price')
                             ->orderBy('name')->get();
         $paymentMethods   = StoreConfigController::getGroupedPaymentMethods();
         $extraCategories  = ExtraCostCategory::orderBy('name')->pluck('name');
         $areas            = CustomerArea::orderBy('name')->get(['id', 'name']);
-        return view('sales.create', compact('customers', 'items', 'paymentMethods', 'extraCategories', 'areas'));
+        return view('sales.create', compact('preCustomer', 'items', 'paymentMethods', 'extraCategories', 'areas'));
     }
 
     public function store(Request $request)
@@ -161,15 +166,17 @@ class SaleController extends Controller
     public function edit(Sale $sale)
     {
         $sale->load('items.item', 'customer.area', 'extraCosts');
-        $customers       = Customer::with('area:id,name')
-                             ->select('id','name','proprietor','phone','due_amount','area_id')
-                             ->orderBy('name')->get();
+        // Server-side customer search — only seed the sale's existing customer
+        $preCustomer = $sale->customer
+            ? $sale->customer->only(['id','name','proprietor','phone','due_amount','area_id'])
+                + ['area' => $sale->customer->area ? ['id' => $sale->customer->area->id, 'name' => $sale->customer->area->name] : null]
+            : null;
         $items           = Item::with('stock:id,item_id,quantity')
                              ->select('id','name','sale_price','purchase_price')
                              ->orderBy('name')->get();
         $paymentMethods  = StoreConfigController::getGroupedPaymentMethods();
         $extraCategories = ExtraCostCategory::orderBy('name')->pluck('name');
-        return view('sales.edit', compact('sale', 'customers', 'items', 'paymentMethods', 'extraCategories'));
+        return view('sales.edit', compact('sale', 'preCustomer', 'items', 'paymentMethods', 'extraCategories'));
     }
 
     public function update(Request $request, Sale $sale)
