@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
+use App\Models\Purchase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\StoreConfigController;
 
 class SupplierPaymentController extends Controller
@@ -43,21 +45,33 @@ class SupplierPaymentController extends Controller
             'payment_method' => 'required|string',
         ]);
 
-        SupplierPayment::create([
-            'supplier_id'    => $request->supplier_id,
-            'user_id'        => auth()->id(),
-            'amount'         => $request->amount,
-            'payment_date'   => $request->payment_date,
-            'payment_method' => $request->payment_method,
-            'notes'          => $request->notes,
-        ]);
+        // A supplier payment with NO items is functionally identical to a
+        // no-item advance purchase. So we create a Purchase record here:
+        //  - shows in the মাল রিসিভ তালিকা (receive list) with অগ্রিম badge
+        //  - generates an invoice (purchases.show)
+        //  - reduces supplier due exactly once (due_amount = total(0) - paid)
+        $purchase = null;
+        DB::transaction(function () use ($request, &$purchase) {
+            $purchase = Purchase::create([
+                'supplier_id'    => $request->supplier_id,
+                'user_id'        => auth()->id(),
+                'total_amount'   => 0,
+                'discount'       => 0,
+                'extra_cost'     => 0,
+                'paid_amount'    => $request->amount,
+                'due_amount'     => 0 - $request->amount, // negative = advance/credit
+                'payment_method' => $request->payment_method,
+                'notes'          => $request->notes,
+                'purchase_date'  => $request->payment_date,
+            ]);
 
-        // Decrement supplier due — allows negative (credit/advance when overpaid)
-        $supplier = Supplier::find($request->supplier_id);
-        $supplier->update(['due_amount' => $supplier->due_amount - $request->amount]);
+            // net effect: supplier.due += (0 - paid) — same single deduction
+            $supplier = Supplier::find($request->supplier_id);
+            $supplier->update(['due_amount' => $supplier->due_amount - $request->amount]);
+        });
 
-        return redirect()->route('supplier-payments.index')
-            ->with('success', 'সরবরাহকারী পরিশোধ সম্পন্ন হয়েছে।');
+        return redirect()->route('purchases.show', $purchase)
+            ->with('success', 'সরবরাহকারীকে পরিশোধ সম্পন্ন হয়েছে। অগ্রিম রিসিভ হিসেবে যোগ হয়েছে।');
     }
 
     public function destroy(SupplierPayment $supplierPayment)
