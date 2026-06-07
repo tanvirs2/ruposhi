@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\CustomerPayment;
+use App\Models\Sale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -11,14 +12,18 @@ class CustomerPaymentController extends Controller
 {
     public function index(Request $request)
     {
-        $payments = CustomerPayment::with('customer', 'user')
+        // Customer payments are now stored as no-item sales (previous-due
+        // payments), so this list shows those no-item Sale records.
+        $base = Sale::with('customer', 'user')
+            ->doesntHave('items')
             ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
-            ->when($request->from, fn($q) => $q->whereDate('payment_date', '>=', $request->from))
-            ->when($request->to,   fn($q) => $q->whereDate('payment_date', '<=', $request->to))
-            ->latest('payment_date')->paginate(20);
+            ->when($request->from, fn($q) => $q->whereDate('sale_date', '>=', $request->from))
+            ->when($request->to,   fn($q) => $q->whereDate('sale_date', '<=', $request->to));
+
+        $totalPaid = (clone $base)->sum('paid_amount');
+        $payments  = $base->latest('sale_date')->latest('id')->paginate(20);
 
         $customers = Customer::orderBy('name')->get();
-        $totalPaid = $payments->sum('amount');
 
         return view('customer-payments.index', compact('payments', 'customers', 'totalPaid'));
     }
@@ -40,27 +45,36 @@ class CustomerPaymentController extends Controller
             'payment_method' => 'required|string',
         ]);
 
-        $payment = null;
-        DB::transaction(function () use ($request, &$payment) {
-            // Capture due before payment
+        // A customer payment with NO items is functionally identical to a
+        // no-item sale (paying off previous due). So we create a Sale record:
+        //  - shows in the বিক্রয় তালিকা (sales list)
+        //  - generates an invoice (sales.show)
+        //  - reduces customer due exactly once
+        $sale = null;
+        DB::transaction(function () use ($request, &$sale) {
             $cust        = Customer::find($request->customer_id);
             $previousDue = $cust->due_amount;
 
-            $payment = CustomerPayment::create([
+            $sale = Sale::create([
                 'customer_id'    => $request->customer_id,
                 'user_id'        => auth()->id(),
-                'amount'         => $request->amount,
-                'payment_date'   => $request->payment_date,
+                'total_amount'   => 0,
+                'discount'       => 0,
+                'extra_cost'     => 0,
+                'paid_amount'    => $request->amount,
+                'due_amount'     => 0,
+                'previous_due'   => $previousDue,
+                'status'         => 'completed',
                 'payment_method' => $request->payment_method,
                 'notes'          => $request->notes,
-                'previous_due'   => $previousDue,
+                'sale_date'      => $request->payment_date,
             ]);
 
-            // Reduce customer's due — allows negative (credit/advance when overpaid)
+            // net effect: customer.due += (0 - amount) — same single deduction
             $cust->update(['due_amount' => $previousDue - $request->amount]);
         });
 
-        return redirect()->route('customer-payments.show', $payment)->with('success', 'পরিশোধ সফলভাবে রেকর্ড হয়েছে।');
+        return redirect()->route('sales.show', $sale)->with('success', 'কাস্টমার পরিশোধ সম্পন্ন হয়েছে। বিক্রয় তালিকায় যোগ হয়েছে।');
     }
 
     public function show(CustomerPayment $customerPayment)

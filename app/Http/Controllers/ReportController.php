@@ -217,17 +217,20 @@ class ReportController extends Controller
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
 
-        $daily = CustomerPayment::with('customer')
-            ->whereBetween('payment_date', [$from, $to])
-            ->orderBy('payment_date')
+        // Customer payments are now stored as no-item sales
+        $daily = \App\Models\Sale::with('customer')
+            ->doesntHave('items')
+            ->whereBetween('sale_date', [$from, $to])
+            ->orderBy('sale_date')
             ->get()
-            ->groupBy(fn($p) => $p->payment_date->toDateString());
+            ->groupBy(fn($p) => $p->sale_date->toDateString());
 
-        $payments = CustomerPayment::with('customer', 'user')
-            ->whereBetween('payment_date', [$from, $to])
-            ->latest('payment_date')->get();
+        $payments = \App\Models\Sale::with('customer', 'user')
+            ->doesntHave('items')
+            ->whereBetween('sale_date', [$from, $to])
+            ->latest('sale_date')->get();
 
-        $grandTotal = $payments->sum('amount');
+        $grandTotal = $payments->sum('paid_amount');
 
         return view('reports.daily-payments', compact('daily', 'payments', 'grandTotal', 'from', 'to'));
     }
@@ -497,9 +500,11 @@ class ReportController extends Controller
     {
         $from     = $request->from ?? now()->toDateString();
         $to       = $request->to   ?? now()->toDateString();
-        $payments = CustomerPayment::with('customer')
-            ->whereBetween('payment_date', [$from, $to])
-            ->orderBy('payment_date')
+        // Customer payments are now stored as no-item sales
+        $payments = \App\Models\Sale::with('customer')
+            ->doesntHave('items')
+            ->whereBetween('sale_date', [$from, $to])
+            ->orderBy('sale_date')
             ->get();
 
         return $this->csvResponse(
@@ -508,10 +513,10 @@ class ReportController extends Controller
             function ($out) use ($payments) {
                 foreach ($payments as $p) {
                     fputcsv($out, [
-                        $p->payment_date->format('d/m/Y'),
+                        $p->sale_date->format('d/m/Y'),
                         $p->customer?->name ?? '—',
                         $p->customer?->phone ?? '—',
-                        number_format($p->amount, 2),
+                        number_format($p->paid_amount, 2),
                         $p->notes ?? '',
                     ]);
                 }

@@ -47,6 +47,7 @@
         <table class="data-table">
             <thead>
                 <tr>
+                    <th>ইনভয়েস</th>
                     <th>তারিখ</th>
                     <th>কাস্টমার</th>
                     <th>পরিমাণ</th>
@@ -59,26 +60,34 @@
             <tbody>
                 @forelse($payments as $p)
                 <tr>
-                    <td>{{ $p->payment_date->format('d M Y') }}</td>
                     <td>
-                        <a href="{{ route('customers.ledger', $p->customer) }}" class="link-primary">
-                            {{ $p->customer->name }}
+                        <a href="{{ route('sales.show', $p) }}" class="link-primary mono">
+                            #INV-{{ str_pad($p->id,4,'0',STR_PAD_LEFT) }}
                         </a>
                     </td>
-                    <td><strong style="color:#16a34a">৳ {{ number_format($p->amount, 0) }}</strong></td>
+                    <td>{{ $p->sale_date->format('d M Y') }}</td>
+                    <td>
+                        <a href="{{ route('customers.ledger', $p->customer) }}" class="link-primary">
+                            {{ $p->customer->name ?? '—' }}
+                        </a>
+                    </td>
+                    <td><strong style="color:#16a34a">৳ {{ number_format($p->paid_amount, 0) }}</strong></td>
                     <td><span class="badge badge-green">{{ $p->payment_method }}</span></td>
                     <td>{{ $p->notes ?? '—' }}</td>
-                    <td>{{ $p->user->name }}</td>
+                    <td>{{ $p->user->name ?? '—' }}</td>
                     <td>
-                        <form class="admin-only" method="POST" action="{{ route('customer-payments.destroy', $p) }}"
-                            onsubmit="return confirm('এই পরিশোধ মুছলে কাস্টমারের বাকী বাড়বে। নিশ্চিত?')">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button>
-                        </form>
+                        <div class="action-btns">
+                            <a href="{{ route('sales.show', $p) }}" class="btn-icon-sm" title="ইনভয়েস"><i class="fas fa-eye"></i></a>
+                            <form class="admin-only" method="POST" action="{{ route('sales.destroy', $p) }}"
+                                onsubmit="return confirm('এই পরিশোধ মুছলে কাস্টমারের বাকী বাড়বে। নিশ্চিত?')">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="7" class="empty-row">কোনো পরিশোধ পাওয়া যায়নি</td></tr>
+                <tr><td colspan="8" class="empty-row">কোনো পরিশোধ পাওয়া যায়নি</td></tr>
                 @endforelse
             </tbody>
         </table>
