@@ -41,30 +41,37 @@
     <div class="table-wrap">
         <table class="data-table">
             <thead>
-                <tr><th>#</th><th>সরবরাহকারী</th><th>পরিমাণ</th><th>তারিখ</th><th>পদ্ধতি</th><th>মন্তব্য</th><th>রেকর্ডকারী</th><th>অ্যাকশন</th></tr>
+                <tr><th>রিসিভ নং</th><th>সরবরাহকারী</th><th>পরিমাণ</th><th>তারিখ</th><th>পদ্ধতি</th><th>মন্তব্য</th><th>রেকর্ডকারী</th><th>অ্যাকশন</th></tr>
             </thead>
             <tbody>
                 @forelse($payments as $p)
                 <tr>
-                    <td class="mono">{{ $loop->iteration }}</td>
                     <td>
-                        <a href="{{ route('suppliers.ledger', $p->supplier) }}" class="link-primary">
-                            {{ $p->supplier->name }}
+                        <a href="{{ route('purchases.show', $p) }}" class="link-primary mono">
+                            #RCV-{{ str_pad($p->id,4,'0',STR_PAD_LEFT) }}
                         </a>
                     </td>
-                    <td><strong style="color:#16a34a">৳ {{ number_format($p->amount, 2) }}</strong></td>
-                    <td>{{ $p->payment_date->format('d/m/Y') }}</td>
+                    <td>
+                        <a href="{{ route('suppliers.ledger', $p->supplier) }}" class="link-primary">
+                            {{ $p->supplier->name ?? '—' }}
+                        </a>
+                    </td>
+                    <td><strong style="color:#16a34a">৳ {{ number_format($p->paid_amount, 2) }}</strong></td>
+                    <td>{{ $p->purchase_date->format('d/m/Y') }}</td>
                     <td><span class="badge badge-green">{{ $p->payment_method }}</span></td>
                     <td>{{ $p->notes ?? '—' }}</td>
-                    <td>{{ $p->user->name }}</td>
+                    <td>{{ $p->user->name ?? '—' }}</td>
                     <td>
-                        <form class="admin-only" method="POST" action="{{ route('supplier-payments.destroy', $p) }}"
-                              onsubmit="return confirm('এই পরিশোধ মুছে ফেলবেন? বকেয়া পুনরুদ্ধার হবে।')">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="btn-icon-sm btn-icon-danger" title="মুছুন">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </form>
+                        <div class="action-btns">
+                            <a href="{{ route('purchases.show', $p) }}" class="btn-icon-sm" title="ইনভয়েস"><i class="fas fa-eye"></i></a>
+                            <form class="admin-only" method="POST" action="{{ route('purchases.destroy', $p) }}"
+                                  onsubmit="return confirm('এই পরিশোধ মুছে ফেলবেন? বকেয়া পুনরুদ্ধার হবে।')">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn-icon-sm btn-icon-danger" title="মুছুন">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @empty

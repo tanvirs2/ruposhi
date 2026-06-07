@@ -48,7 +48,7 @@
     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
         <h3><i class="fas fa-calendar-day"></i> {{ \Carbon\Carbon::parse($date)->format('d F Y') }}</h3>
         <span style="font-weight:700;color:#16a34a;font-size:1rem">
-            মোট: ৳ {{ number_format($dayPayments->sum('amount'), 0) }}
+            মোট: ৳ {{ number_format($dayPayments->sum('paid_amount'), 0) }}
         </span>
     </div>
     <div class="table-wrap">
@@ -64,10 +64,10 @@
                             {{ $p->supplier->name }}
                         </a>
                     </td>
-                    <td><strong style="color:#16a34a">৳ {{ number_format($p->amount, 0) }}</strong></td>
+                    <td><strong style="color:#16a34a">৳ {{ number_format($p->paid_amount, 0) }}</strong></td>
                     <td><span class="badge badge-green">{{ $p->payment_method }}</span></td>
                     <td>{{ $p->notes ?? '—' }}</td>
-                    <td>{{ $p->user->name }}</td>
+                    <td>{{ $p->user->name ?? '—' }}</td>
                 </tr>
                 @endforeach
             </tbody>

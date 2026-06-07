@@ -13,14 +13,18 @@ class SupplierPaymentController extends Controller
 {
     public function index(Request $request)
     {
-        $payments = SupplierPayment::with(['supplier', 'user'])
+        // Supplier payments are now stored as no-item advance purchases,
+        // so this list shows those advance/no-item Purchase records.
+        $base = Purchase::with(['supplier', 'user'])
+            ->doesntHave('items')
             ->when($request->supplier_id, fn($q) => $q->where('supplier_id', $request->supplier_id))
-            ->when($request->from, fn($q) => $q->whereDate('payment_date', '>=', $request->from))
-            ->when($request->to,   fn($q) => $q->whereDate('payment_date', '<=', $request->to))
-            ->latest('payment_date')->paginate(20);
+            ->when($request->from, fn($q) => $q->whereDate('purchase_date', '>=', $request->from))
+            ->when($request->to,   fn($q) => $q->whereDate('purchase_date', '<=', $request->to));
 
-        $suppliers  = Supplier::orderBy('name')->get();
-        $totalPaid  = $payments->sum('amount');
+        $totalPaid = (clone $base)->sum('paid_amount');
+        $payments  = $base->latest('purchase_date')->latest('id')->paginate(20);
+
+        $suppliers = Supplier::orderBy('name')->get();
 
         return view('supplier-payments.index', compact('payments', 'suppliers', 'totalPaid'));
     }

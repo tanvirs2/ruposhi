@@ -238,13 +238,15 @@ class ReportController extends Controller
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
 
-        $daily = SupplierPayment::with(['supplier', 'user'])
-            ->whereBetween('payment_date', [$from, $to])
-            ->orderBy('payment_date')
+        // Supplier payments are now stored as no-item advance purchases
+        $daily = \App\Models\Purchase::with(['supplier', 'user'])
+            ->doesntHave('items')
+            ->whereBetween('purchase_date', [$from, $to])
+            ->orderBy('purchase_date')
             ->get()
-            ->groupBy(fn($p) => $p->payment_date->toDateString());
+            ->groupBy(fn($p) => $p->purchase_date->toDateString());
 
-        $grandTotal = $daily->flatten()->sum('amount');
+        $grandTotal = $daily->flatten()->sum('paid_amount');
 
         return view('reports.daily-supplier-payments', compact('daily', 'grandTotal', 'from', 'to'));
     }
@@ -522,9 +524,11 @@ class ReportController extends Controller
     {
         $from     = $request->from ?? now()->toDateString();
         $to       = $request->to   ?? now()->toDateString();
-        $payments = SupplierPayment::with('supplier')
-            ->whereBetween('payment_date', [$from, $to])
-            ->orderBy('payment_date')
+        // Supplier payments are now stored as no-item advance purchases
+        $payments = \App\Models\Purchase::with('supplier')
+            ->doesntHave('items')
+            ->whereBetween('purchase_date', [$from, $to])
+            ->orderBy('purchase_date')
             ->get();
 
         return $this->csvResponse(
@@ -533,10 +537,10 @@ class ReportController extends Controller
             function ($out) use ($payments) {
                 foreach ($payments as $p) {
                     fputcsv($out, [
-                        $p->payment_date->format('d/m/Y'),
+                        $p->purchase_date->format('d/m/Y'),
                         $p->supplier?->name ?? '—',
                         $p->supplier?->phone ?? '—',
-                        number_format($p->amount, 2),
+                        number_format($p->paid_amount, 2),
                         $p->notes ?? '',
                     ]);
                 }
