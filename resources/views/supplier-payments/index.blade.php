@@ -78,6 +78,15 @@
                 <tr><td colspan="8" class="empty-row">কোনো পরিশোধ পাওয়া যায়নি</td></tr>
                 @endforelse
             </tbody>
+            @if($payments->isNotEmpty())
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td colspan="2" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট (ফিল্টার)</td>
+                    <td style="font-weight:800;color:#16a34a">৳ {{ number_format($totalPaid, 2) }}</td>
+                    <td colspan="5"></td>
+                </tr>
+            </tfoot>
+            @endif
         </table>
     </div>
     <div class="pagination-wrap">{{ $payments->withQueryString()->links() }}</div>
