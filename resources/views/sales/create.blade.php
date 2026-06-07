@@ -5,6 +5,26 @@
 @section('content')
 <form method="POST" action="{{ route('sales.store') }}" id="saleForm">
 @csrf
+
+{{-- Draft restore banner --}}
+<div id="draftBanner" style="display:none;align-items:center;gap:12px;flex-wrap:wrap;
+     background:#fffbeb;border:1.5px solid #fbbf24;border-radius:10px;
+     padding:12px 18px;margin-bottom:16px;font-size:.88rem">
+    <i class="fas fa-clock-rotate-left" style="color:#d97706;font-size:1.1rem"></i>
+    <span id="draftBannerText" style="flex:1;color:#92400e;font-weight:600"></span>
+    <button type="button" onclick="restoreDraftData()"
+        style="padding:7px 16px;border-radius:7px;border:none;background:#d97706;
+               color:#fff;font-weight:700;cursor:pointer;font-size:.85rem;font-family:inherit">
+        <i class="fas fa-rotate-left"></i> পুনরুদ্ধার করুন
+    </button>
+    <button type="button" onclick="discardDraft()"
+        style="padding:7px 14px;border-radius:7px;border:1.5px solid #fbbf24;
+               background:transparent;color:#92400e;font-weight:600;cursor:pointer;
+               font-size:.85rem;font-family:inherit">
+        <i class="fas fa-trash"></i> বাতিল
+    </button>
+</div>
+
 <div class="pos-grid">
 
     {{-- Left: Items --}}
@@ -648,6 +668,7 @@ function emptyColspan() {
 }
 
 function renderCart() {
+    scheduleDraftSave();
     const itemsFoot = document.getElementById('itemsFoot');
     if (!cart.length) {
         itemsBody.innerHTML = `<tr><td colspan="${emptyColspan()}" class="empty-row">কোনো আইটেম যোগ করা হয়নি</td></tr>`;
@@ -1182,6 +1203,170 @@ function showStockToast(msg, type) {
     if (pre) selectCustomer(pre.id);
 })();
 @endif
+
+// ══════════════════════════════════════════════════════════════
+// SALE DRAFT — auto-save to localStorage, restore on reload
+// ══════════════════════════════════════════════════════════════
+const DRAFT_KEY = 'sale_draft_{{ auth()->user()->shop_id }}_{{ auth()->id() }}';
+let _draftTimer  = null;
+
+function scheduleDraftSave() {
+    clearTimeout(_draftTimer);
+    _draftTimer = setTimeout(saveDraft, 1500);
+}
+
+function saveDraft() {
+    // Don't save if form is completely empty
+    if (cart.length === 0 && !document.getElementById('customerIdInput').value) return;
+
+    // Collect extra cost rows
+    const extraCosts = [];
+    document.querySelectorAll('#extraCostRows > div').forEach(row => {
+        const cat = row.querySelector('select')?.value  || '';
+        const amt = row.querySelector('.extra-cost-amount')?.value || '0';
+        extraCosts.push({ category: cat, amount: amt });
+    });
+
+    const draft = {
+        cart,
+        customerId:    document.getElementById('customerIdInput').value,
+        customerName:  document.getElementById('customerSearch').value,
+        customerDue:   currentPrevDue,
+        prevDuePay:    document.getElementById('prevDuePayInput')?.value || '0',
+        discount:      document.getElementById('discountInput').value,
+        discountOpen:  document.getElementById('discountRow').style.display !== 'none',
+        extraCosts,
+        extraOpen:     document.getElementById('extraRow').style.display !== 'none',
+        paidAmount:    document.getElementById('paidInput').value,
+        paymentMethod: document.getElementById('paymentMethod').value,
+        notes:         document.querySelector('textarea[name="notes"]').value,
+        saleDate:      document.querySelector('input[name="sale_date"]').value,
+        savedAt:       Date.now(),
+    };
+
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch(_) {}
+}
+
+function clearDraft() {
+    localStorage.removeItem(DRAFT_KEY);
+    _pendingDraft = null;
+}
+
+function discardDraft() {
+    clearDraft();
+    document.getElementById('draftBanner').style.display = 'none';
+}
+
+let _pendingDraft = null;
+
+function restoreDraftData() {
+    const draft = _pendingDraft;
+    if (!draft) return;
+
+    clearDraft();
+    document.getElementById('draftBanner').style.display = 'none';
+
+    // Restore cart
+    cart = draft.cart || [];
+    renderCart();
+
+    // Restore customer
+    if (draft.customerId) {
+        const cust = allCustomers.find(c => String(c.id) === String(draft.customerId));
+        if (cust) {
+            selectCustomer(cust.id);
+            // After selectCustomer sets currentPrevDue, restore prevDuePay
+            setTimeout(() => {
+                const ppEl = document.getElementById('prevDuePayInput');
+                if (ppEl && draft.prevDuePay) {
+                    ppEl.value = draft.prevDuePay;
+                    onPrevDuePayChange();
+                }
+            }, 100);
+        } else {
+            // Customer might have been deleted — show name only
+            document.getElementById('customerSearch').value = draft.customerName || '';
+        }
+    }
+
+    // Restore date
+    if (draft.saleDate) {
+        document.querySelector('input[name="sale_date"]').value = draft.saleDate;
+    }
+
+    // Restore discount
+    if (draft.discountOpen) {
+        document.getElementById('discountRow').style.display = 'block';
+        document.getElementById('discountInput').value = draft.discount || '0';
+    }
+
+    // Restore extra costs
+    if (draft.extraOpen && draft.extraCosts?.length) {
+        document.getElementById('extraRow').style.display = 'block';
+        // Clear existing rows first
+        document.getElementById('extraCostRows').innerHTML = '';
+        extraCostRowCount = 0;
+        draft.extraCosts.forEach(ec => {
+            addExtraCostRow();
+            const rows = document.querySelectorAll('#extraCostRows > div');
+            const last = rows[rows.length - 1];
+            if (last) {
+                const sel = last.querySelector('select');
+                const inp = last.querySelector('.extra-cost-amount');
+                if (sel) sel.value = ec.category;
+                if (inp) inp.value = ec.amount;
+            }
+        });
+    }
+
+    // Restore paid + payment method + notes
+    document.getElementById('paidInput').value = draft.paidAmount || '0';
+    if (draft.paymentMethod) {
+        document.getElementById('paymentMethod').value = draft.paymentMethod;
+    }
+    document.querySelector('textarea[name="notes"]').value = draft.notes || '';
+
+    updateSummary();
+}
+
+// ── Check for existing draft on page load ─────────────────────
+(function checkDraft() {
+    @if(request('customer_id')) return; @endif  // pre-selected customer — skip draft
+    try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        if (!raw) return;
+        const draft = JSON.parse(raw);
+        if (!draft || (!draft.cart?.length && !draft.customerId)) { clearDraft(); return; }
+
+        _pendingDraft = draft;
+        const age     = Date.now() - (draft.savedAt || 0);
+        const minutes = Math.round(age / 60000);
+        const timeStr = minutes < 1 ? 'এইমাত্র' : minutes < 60
+            ? `${minutes} মিনিট আগে` : `${Math.round(minutes/60)} ঘণ্টা আগে`;
+        const itemCount = draft.cart?.length || 0;
+
+        document.getElementById('draftBannerText').textContent =
+            `${itemCount}টি আইটেমসহ অসমাপ্ত বিক্রয় পাওয়া গেছে (${timeStr} সংরক্ষিত) — পুনরুদ্ধার করবেন?`;
+        document.getElementById('draftBanner').style.display = 'flex';
+    } catch(_) {}
+})();
+
+// ── Save on any form input change ─────────────────────────────
+document.getElementById('saleForm').addEventListener('input',  scheduleDraftSave);
+document.getElementById('saleForm').addEventListener('change', scheduleDraftSave);
+
+// ── Clear draft on actual submission ─────────────────────────
+// Natural path: runs AFTER original validator (e.defaultPrevented already set)
+document.getElementById('saleForm').addEventListener('submit', function(e) {
+    if (!e.defaultPrevented) clearDraft();
+}, false);
+
+// Confirm-dialog paths use requestSubmit() — patch to clear before resubmit
+const _origReqSubmit = document.getElementById('saleForm').requestSubmit.bind(document.getElementById('saleForm'));
+document.getElementById('saleForm').requestSubmit = function() {
+    clearDraft();
+    _origReqSubmit();
+};
 </script>
 @endpush
 @endsection
