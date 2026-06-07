@@ -30,10 +30,20 @@ class CustomerPaymentController extends Controller
 
     public function create(Request $request)
     {
-        $customers      = Customer::orderBy('name')->get();
         $selectedId     = $request->customer_id;
+        // Server-side search — only seed the pre-selected customer (from ledger)
+        $preCustomer    = null;
+        if ($selectedId && $c = Customer::find($selectedId)) {
+            $preCustomer = [
+                'id'         => $c->id,
+                'name'       => $c->name,
+                'phone'      => $c->phone ?? '',
+                'proprietor' => $c->proprietor ?? '',
+                'due'        => floatval($c->due_amount),
+            ];
+        }
         $paymentMethods = StoreConfigController::getGroupedPaymentMethods();
-        return view('customer-payments.create', compact('customers', 'selectedId', 'paymentMethods'));
+        return view('customer-payments.create', compact('preCustomer', 'selectedId', 'paymentMethods'));
     }
 
     public function store(Request $request)

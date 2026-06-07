@@ -490,7 +490,13 @@ function makeFloatingDropdown(inputEl, dropEl) {
 }
 
 // ── Customer search ──────────────────────────────────────────
-const allCustomers    = @json($customers);
+// allCustomers is now a client-side CACHE, not the whole table.
+// It is seeded with the pre-selected customer (if any) and grows as the
+// user searches (server-side) or adds a customer via the popup.
+let allCustomers      = [];
+@if(!empty($preCustomer))
+allCustomers.push(@json($preCustomer));
+@endif
 const customerSearch  = document.getElementById('customerSearch');
 const customerIdInput = document.getElementById('customerIdInput');
 const customerSelected= document.getElementById('customerSelected');
@@ -501,8 +507,9 @@ const cDrop           = makeFloatingDropdown(customerSearch, customerDrop);
 let currentPrevDue = 0;
 let prevDuePay     = 0;   // how much of prev due customer will pay this time
 
+let _custSearchTimer = null;
 customerSearch.addEventListener('input', function() {
-    const q = this.value.trim().toLowerCase();
+    const q = this.value.trim();
     if (!q) {
         cDrop.hide();
         customerIdInput.value = '';
@@ -513,11 +520,26 @@ customerSearch.addEventListener('input', function() {
         document.getElementById('walkinWarning').style.display = 'none';
         return;
     }
-    const matches = allCustomers.filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        (c.proprietor && c.proprietor.toLowerCase().includes(q)) ||
-        (c.phone && c.phone.includes(q))
-    ).slice(0, 6);
+    cDrop.show(`<div class="suggestion-item" style="color:#94a3b8">খুঁজছি…</div>`);
+    clearTimeout(_custSearchTimer);
+    _custSearchTimer = setTimeout(() => fetchCustomers(q), 250);
+});
+
+async function fetchCustomers(q) {
+    try {
+        const res = await fetch(`{{ route('customers.search') }}?q=${encodeURIComponent(q)}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        });
+        const matches = await res.json();
+        // Cache results so selectCustomer()/draft/pre-select can find them
+        matches.forEach(c => { if (!allCustomers.find(x => x.id === c.id)) allCustomers.push(c); });
+        renderCustomerMatches(matches);
+    } catch (_) {
+        cDrop.show(`<div class="suggestion-item" style="color:#94a3b8">খুঁজতে সমস্যা হয়েছে</div>`);
+    }
+}
+
+function renderCustomerMatches(matches) {
     const html = matches.map(c => `
         <div class="suggestion-item" onclick="selectCustomer(${c.id})">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -537,7 +559,7 @@ customerSearch.addEventListener('input', function() {
         </div>
     `).join('') || `<div class="suggestion-item" style="color:#94a3b8">কোনো কাস্টমার পাওয়া যায়নি</div>`;
     cDrop.show(html);
-});
+}
 
 function selectCustomer(id) {
     const c = allCustomers.find(x => x.id === id);
@@ -1326,6 +1348,7 @@ function saveDraft() {
         cart,
         customerId:    document.getElementById('customerIdInput').value,
         customerName:  document.getElementById('customerSearch').value,
+        customerObj:   allCustomers.find(c => String(c.id) === document.getElementById('customerIdInput').value) || null,
         customerDue:   currentPrevDue,
         prevDuePay:    document.getElementById('prevDuePayInput')?.value || '0',
         discount:      document.getElementById('discountInput').value,
@@ -1367,6 +1390,11 @@ function restoreDraftData() {
 
     // Restore customer
     if (draft.customerId) {
+        // Seed the cache from the saved object (server-side search means the
+        // customer may not be loaded yet)
+        if (draft.customerObj && !allCustomers.find(c => String(c.id) === String(draft.customerId))) {
+            allCustomers.push(draft.customerObj);
+        }
         const cust = allCustomers.find(c => String(c.id) === String(draft.customerId));
         if (cust) {
             selectCustomer(cust.id);

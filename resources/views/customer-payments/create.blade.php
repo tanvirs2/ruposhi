@@ -106,19 +106,14 @@
 </style>
 @endpush
 
-@php
-$customersData = $customers->map(fn($c) => [
-    'id'         => $c->id,
-    'name'       => $c->name,
-    'phone'      => $c->phone ?? '',
-    'proprietor' => $c->proprietor ?? '',
-    'due'        => floatval($c->due_amount),
-]);
-@endphp
-
 @push('scripts')
 <script>
-const allCustomers = @json($customersData);
+// allCustomers is a client-side cache (server-side search), seeded with the
+// pre-selected customer (if arriving from a ledger).
+let allCustomers = [];
+@if(!empty($preCustomer))
+allCustomers.push(@json($preCustomer));
+@endif
 const searchEl      = document.getElementById('customerSearch');
 const hiddenId      = document.getElementById('customerIdInput');
 const dueBox        = document.getElementById('dueBox');
@@ -143,16 +138,36 @@ document.addEventListener('click', e => {
         dropEl.style.display = 'none';
 });
 
+let _custSearchTimer = null;
 searchEl.addEventListener('input', function() {
-    const q = this.value.trim().toLowerCase();
+    const q = this.value.trim();
     if (!q) { dropEl.style.display='none'; hiddenId.value=''; renderDue(null); return; }
+    dropEl.innerHTML = `<div class="suggestion-item" style="color:#94a3b8">খুঁজছি…</div>`;
+    positionDrop(); dropEl.style.display = 'block';
+    clearTimeout(_custSearchTimer);
+    _custSearchTimer = setTimeout(() => fetchCustomers(q), 250);
+});
 
-    const matches = allCustomers.filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        (c.proprietor && c.proprietor.toLowerCase().includes(q)) ||
-        c.phone.includes(q)
-    ).slice(0, 8);
+async function fetchCustomers(q) {
+    try {
+        const res = await fetch(`{{ route('customers.search') }}?q=${encodeURIComponent(q)}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        });
+        const raw = await res.json();
+        // Map endpoint shape (due_amount) → local shape (due)
+        const matches = raw.map(c => ({
+            id: c.id, name: c.name, phone: c.phone || '',
+            proprietor: c.proprietor || '', due: parseFloat(c.due_amount) || 0,
+        }));
+        matches.forEach(c => { if (!allCustomers.find(x => x.id === c.id)) allCustomers.push(c); });
+        renderCustomerMatches(matches);
+    } catch (_) {
+        dropEl.innerHTML = `<div class="suggestion-item" style="color:#94a3b8">খুঁজতে সমস্যা হয়েছে</div>`;
+        positionDrop(); dropEl.style.display = 'block';
+    }
+}
 
+function renderCustomerMatches(matches) {
     dropEl.innerHTML = matches.map(c => `
         <div class="suggestion-item" onclick="selectCustomer(${c.id})">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -170,7 +185,7 @@ searchEl.addEventListener('input', function() {
 
     positionDrop();
     dropEl.style.display = 'block';
-});
+}
 
 function selectCustomer(id) {
     const c = allCustomers.find(x => x.id === id);
