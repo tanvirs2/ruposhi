@@ -58,6 +58,9 @@ Route::middleware(['auth', 'root'])->prefix('root')->name('root.')->group(functi
     Route::get('/payments', [\App\Http\Controllers\Root\PaymentController::class, 'index'])->name('payments.index');
     Route::post('/payments', [\App\Http\Controllers\Root\PaymentController::class, 'store'])->name('payments.store');
     Route::delete('/payments/{payment}', [\App\Http\Controllers\Root\PaymentController::class, 'destroy'])->name('payments.destroy');
+    // System settings
+    Route::get('/settings',  [\App\Http\Controllers\Root\SystemConfigController::class, 'edit'])->name('settings.edit');
+    Route::put('/settings',  [\App\Http\Controllers\Root\SystemConfigController::class, 'update'])->name('settings.update');
 });
 
 /* ── Reseller routes ───────────────────────────────────────── */

@@ -6,6 +6,30 @@
 
 @php $currentLic = $superAdmin->activeLicense(); @endphp
 
+{{-- ── Software ID Banner (for CS agent) ───────────────────── --}}
+<div style="background:#0d1b2e;border:1px solid #1e3a5f;border-radius:12px;padding:14px 20px;margin-bottom:18px;display:flex;align-items:center;flex-wrap:wrap;gap:14px">
+    <div style="display:flex;align-items:center;gap:8px">
+        <i class="fas fa-id-badge" style="color:#818cf8;font-size:1.1rem"></i>
+        <span style="color:#64748b;font-size:.8rem">সফটওয়্যার আইডি</span>
+        <span style="background:#1e3a5f;color:#93c5fd;padding:4px 12px;border-radius:7px;font-size:.95rem;font-weight:800;font-family:monospace;letter-spacing:.5px">
+            SA-{{ $superAdmin->id }}
+        </span>
+    </div>
+    @if($currentLic)
+    <div style="display:flex;align-items:center;gap:8px">
+        <i class="fas fa-file-contract" style="color:#fbbf24;font-size:1rem"></i>
+        <span style="color:#64748b;font-size:.8rem">লাইসেন্স আইডি</span>
+        <span style="background:#1e3a5f44;color:#fde68a;padding:4px 12px;border-radius:7px;font-size:.95rem;font-weight:800;font-family:monospace">
+            #{{ $currentLic->id }}
+        </span>
+    </div>
+    @endif
+    <div style="margin-left:auto;font-size:.75rem;color:#475569">
+        <i class="fas fa-phone" style="color:#86efac"></i>
+        কাস্টমার এই ID গুলো বলবে
+    </div>
+</div>
+
 @if(session('success'))
 <div style="background:#052e16;border:1px solid #166534;color:#86efac;padding:12px 16px;border-radius:10px;margin-bottom:16px;font-size:.88rem">
     <i class="fas fa-check-circle"></i> {{ session('success') }}

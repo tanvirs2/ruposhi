@@ -170,6 +170,11 @@
             <a href="{{ route('root.payments.index') }}" class="{{ str_starts_with($r, 'root.payments') ? 'active' : '' }}">
                 <i class="fas fa-receipt"></i> পেমেন্ট ইতিহাস
             </a>
+
+            <div class="rt-nav-section">সিস্টেম</div>
+            <a href="{{ route('root.settings.edit') }}" class="{{ str_starts_with($r, 'root.settings') ? 'active' : '' }}">
+                <i class="fas fa-gear"></i> সেটিংস
+            </a>
         </nav>
 
         <div class="rt-foot">

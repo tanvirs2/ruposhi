@@ -12,15 +12,28 @@ use Illuminate\Support\Facades\Hash;
 
 class SuperAdminController extends Controller
 {
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
+        $search = $request->input('q');
+
         $superAdmins = User::where('role', 'super_admin')
             ->with(['licenses' => fn($q) => $q->latest('expires_at')->limit(1)])
             ->withCount('myShops')
+            ->when($search, function ($q) use ($search) {
+                // Search by name, email, or SA-ID (e.g. "SA-3" or just "3")
+                $id = preg_replace('/[^0-9]/', '', $search); // extract digits
+                $q->where(function ($s) use ($search, $id) {
+                    $s->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                    if ($id !== '') {
+                        $s->orWhere('id', (int) $id);
+                    }
+                });
+            })
             ->latest()
             ->get();
 
-        return view('root.super-admins.index', compact('superAdmins'));
+        return view('root.super-admins.index', compact('superAdmins', 'search'));
     }
 
     public function create()
