@@ -18,6 +18,10 @@ class SaleController extends Controller
 {
     public function index(Request $request)
     {
+        $today    = now()->toDateString();
+        $dateFrom = $request->date_from ?: null;
+        $dateTo   = $request->date_to   ?: null;
+
         $query = Sale::with(['customer', 'items.item'])
             ->when($request->search, fn($q) =>
                 // Wrap in a sub-group so the OR doesn't bypass the global shop_id scope
@@ -26,16 +30,18 @@ class SaleController extends Controller
                         ->orWhere('id', $request->search)
                 )
             )
-            ->when($request->status, fn($q) => $q->where('status', $request->status));
+            ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->when($dateFrom, fn($q) => $q->whereDate('sale_date', '>=', $dateFrom))
+            ->when($dateTo,   fn($q) => $q->whereDate('sale_date', '<=', $dateTo));
 
         // Totals across ALL filtered results (not just current page)
         $grandTotal = (clone $query)->sum('total_amount');
         $grandPaid  = (clone $query)->sum('paid_amount');
         $grandDue   = (clone $query)->sum('due_amount');
 
-        $sales = $query->latest()->paginate(15);
+        $sales = $query->latest('sale_date')->latest('id')->paginate(20);
 
-        return view('sales.index', compact('sales', 'grandTotal', 'grandPaid', 'grandDue'));
+        return view('sales.index', compact('sales', 'grandTotal', 'grandPaid', 'grandDue', 'dateFrom', 'dateTo'));
     }
 
     public function create()

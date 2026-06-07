@@ -11,7 +11,12 @@
             <div class="search-box"><i class="fas fa-search"></i>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="সরবরাহকারী বা নম্বর...">
             </div>
-            <button type="submit" class="btn btn-secondary">খুঁজুন</button>
+            <input type="date" name="date_from" class="form-select" value="{{ $dateFrom }}" title="শুরুর তারিখ" style="width:145px">
+            <input type="date" name="date_to"   class="form-select" value="{{ $dateTo }}"   title="শেষ তারিখ"  style="width:145px">
+            <button type="submit" class="btn btn-secondary">ফিল্টার</button>
+            @if($dateFrom || $dateTo || request('search'))
+                <a href="{{ route('purchases.index') }}" class="btn btn-outline" title="ক্লিয়ার করুন"><i class="fas fa-xmark"></i></a>
+            @endif
         </form>
     </div>
     <div class="table-wrap">

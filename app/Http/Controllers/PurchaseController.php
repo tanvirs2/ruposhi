@@ -17,6 +17,9 @@ class PurchaseController extends Controller
 {
     public function index(Request $request)
     {
+        $dateFrom = $request->date_from ?: null;
+        $dateTo   = $request->date_to   ?: null;
+
         $query = Purchase::with('supplier')
             ->when($request->search, fn($q) =>
                 // Wrap in a sub-group so the OR doesn't bypass the global shop_id scope
@@ -24,7 +27,9 @@ class PurchaseController extends Controller
                     $sub->whereHas('supplier', fn($s) => $s->where('name', 'like', "%{$request->search}%"))
                         ->orWhere('id', $request->search)
                 )
-            );
+            )
+            ->when($dateFrom, fn($q) => $q->whereDate('purchase_date', '>=', $dateFrom))
+            ->when($dateTo,   fn($q) => $q->whereDate('purchase_date', '<=', $dateTo));
 
         $grandTotal  = (clone $query)->sum('total_amount');
         $grandPaid   = (clone $query)->sum('paid_amount');
@@ -32,9 +37,9 @@ class PurchaseController extends Controller
         $totalCredit = abs((clone $query)->where('due_amount', '<', 0)->sum('due_amount'));
         $grandDue    = $grossDue - $totalCredit;
 
-        $purchases = $query->latest()->paginate(15);
+        $purchases = $query->latest('purchase_date')->latest('id')->paginate(20);
 
-        return view('purchases.index', compact('purchases', 'grandTotal', 'grandPaid', 'grandDue', 'grossDue', 'totalCredit'));
+        return view('purchases.index', compact('purchases', 'grandTotal', 'grandPaid', 'grandDue', 'grossDue', 'totalCredit', 'dateFrom', 'dateTo'));
     }
 
     public function create()
