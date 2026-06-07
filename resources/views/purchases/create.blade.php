@@ -151,9 +151,24 @@
                     <span>মোট মূল্য:</span>
                     <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
                         <span id="totalDisplay">৳ 0</span>
+                        <button type="button" id="discountToggleBtn" onclick="toggleDiscount()"
+                            class="cost-toggle-btn" style="background:#dcfce7;color:#15803d;border-color:#86efac"
+                            title="ছাড় যোগ করুন">+ ছাড়</button>
                         <button type="button" id="extraCostToggleBtn" onclick="toggleExtraCosts()"
                             class="cost-toggle-btn" title="অতিরিক্ত খরচ যোগ করুন">+ খরচ</button>
                     </span>
+                </div>
+                {{-- Discount row --}}
+                <div id="discountRow" style="display:none">
+                    <div style="border:1.5px solid #86efac;border-radius:8px;padding:10px 12px;background:#f0fdf4;display:flex;align-items:center;gap:10px">
+                        <label style="font-size:.82rem;font-weight:700;color:#15803d;white-space:nowrap">
+                            <i class="fas fa-tag"></i> ছাড় (৳)
+                        </label>
+                        <input type="text" inputmode="decimal" name="discount" id="discountInput"
+                               value="0" oninput="updateSummary()"
+                               style="flex:1;border:1.5px solid #86efac;border-radius:6px;padding:6px 10px;
+                                      font-size:.88rem;background:#fff;outline:none">
+                    </div>
                 </div>
                 {{-- Categorised extra costs --}}
                 <div id="extraRow" style="display:none">
@@ -585,7 +600,8 @@ function updateSummary() {
     const total    = cart.reduce((s, c) => s + c.qty * c.price, 0);
     const totalQty = cart.reduce((s, c) => s + (c.qty || 0), 0);
     const extra    = getExtraCostTotal();
-    const net      = total + extra;
+    const discount = parseFloat(toEnglishDigits(document.getElementById('discountInput')?.value || '0')) || 0;
+    const net      = total - discount + extra;
     const paid     = parseFloat(toEnglishDigits(document.getElementById('paidInput').value)) || 0;
     const rawDue = net - paid - supplierAdvance; // advance reduces due
     document.getElementById('totalDisplay').textContent    = '৳ ' + total.toLocaleString();
@@ -616,6 +632,18 @@ function getExtraCostTotal() {
         total += parseFloat(toEnglishDigits(inp.value)) || 0;
     });
     return total;
+}
+
+function toggleDiscount() {
+    const row = document.getElementById('discountRow');
+    const btn = document.getElementById('discountToggleBtn');
+    const open = row.style.display === 'none';
+    row.style.display = open ? 'block' : 'none';
+    btn.textContent = open ? '✕ ছাড়' : '+ ছাড়';
+    if (!open) {
+        document.getElementById('discountInput').value = '0';
+        updateSummary();
+    }
 }
 
 function toggleExtraCosts() {
@@ -667,7 +695,9 @@ function removeExtraCostRow(idx) {
 }
 
 function setFullPay() {
-    const net = cart.reduce((s, c) => s + c.qty * c.price, 0) + getExtraCostTotal();
+    const total    = cart.reduce((s, c) => s + c.qty * c.price, 0);
+    const discount = parseFloat(toEnglishDigits(document.getElementById('discountInput')?.value || '0')) || 0;
+    const net      = total - discount + getExtraCostTotal();
     document.getElementById('paidInput').value = net.toFixed(0);
     updateSummary();
 }
@@ -735,6 +765,8 @@ function saveDraft() {
         prevDuePay:    document.getElementById('prevDuePayInput')?.value || '0',
         extraCosts,
         extraOpen:     document.getElementById('extraRow').style.display !== 'none',
+        discount:      document.getElementById('discountInput')?.value || '0',
+        discountOpen:  document.getElementById('discountRow').style.display !== 'none',
         paidAmount:    document.getElementById('paidInput').value,
         paymentMethod: document.getElementById('paymentMethod').value,
         notes:         document.querySelector('textarea[name="notes"]').value,
@@ -801,6 +833,13 @@ function restoreDraftData() {
                 if (inp) inp.value = ec.amount;
             }
         });
+    }
+
+    // Restore discount
+    if (draft.discountOpen && parseFloat(draft.discount) > 0) {
+        document.getElementById('discountRow').style.display = 'block';
+        document.getElementById('discountInput').value = draft.discount || '0';
+        document.getElementById('discountToggleBtn').textContent = '✕ ছাড়';
     }
 
     // Restore paid + payment method + notes

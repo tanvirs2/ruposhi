@@ -68,14 +68,19 @@
             <span><strong>তারিখঃ</strong> {{ $sale->sale_date->format('Y-m-d') }} - {{ $sale->created_at->format('h:i:sa') }}</span>
         </div>
         @if($sale->customer)
-            <div class="memo-meta-line"><span class="memo-meta-key">প্রতিষ্ঠানঃ</span> {{ $sale->customer->name }}</div>
-            @if($sale->customer->proprietor)
-            <div class="memo-meta-line"><span class="memo-meta-key">প্রোপ্রাইটরঃ</span> {{ $sale->customer->proprietor }}</div>
-            @endif
-            <div class="memo-meta-line">
-                <span class="memo-meta-key">ঠিকানাঃ</span>
-                {{ $sale->customer->address ?? '' }}
-                @if($sale->customer->phone) &nbsp; {{ $sale->customer->phone }} @endif
+            <div class="memo-customer-row">
+                <div class="memo-customer-left">
+                    <div class="memo-meta-line"><span class="memo-meta-key">প্রতিষ্ঠানঃ</span> {{ $sale->customer->name }}</div>
+                    @if($sale->customer->proprietor)
+                    <div class="memo-meta-line"><span class="memo-meta-key">প্রোপ্রাইটরঃ</span> {{ $sale->customer->proprietor }}</div>
+                    @endif
+                    <div class="memo-meta-line"><span class="memo-meta-key">ঠিকানাঃ</span> {{ $sale->customer->address ?? '' }}</div>
+                </div>
+                @if($sale->customer->phone)
+                <div class="memo-customer-phone">
+                    <i class="fas fa-phone-alt" style="font-size:.7rem;margin-right:3px"></i>{{ $sale->customer->phone }}
+                </div>
+                @endif
             </div>
         @else
             <div class="memo-meta-line"><span class="memo-meta-key">প্রতিষ্ঠানঃ</span> ওয়াক-ইন কাস্টমার</div>
@@ -277,6 +282,21 @@
     font-weight: 700;
     display: inline-block;
     min-width: 94px;
+}
+.memo-customer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+.memo-customer-left { flex: 1; }
+.memo-customer-phone {
+    font-size: .84rem;
+    font-weight: 700;
+    color: #111;
+    text-align: right;
+    white-space: nowrap;
+    padding-top: 2px;
 }
 
 /* ══ Items table ═════════════════════════════════════════════════ */

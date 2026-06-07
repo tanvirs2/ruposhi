@@ -72,13 +72,15 @@ class PurchaseController extends Controller
             $extraCostRows = collect($request->extra_costs ?? [])
                 ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
             $extraCost = $extraCostRows->sum(fn($r) => (float) $r['amount']);
-            $total     = $itemsTotal + $extraCost;
+            $discount  = (float) ($request->discount ?? 0);
+            $total     = $itemsTotal - $discount + $extraCost;
             $due       = $total - $request->paid_amount; // allows negative (credit/advance)
 
             $purchase = Purchase::create([
                 'supplier_id'    => $request->supplier_id ?: null,
                 'user_id'        => auth()->id(),
                 'total_amount'   => $total,
+                'discount'       => $discount,
                 'extra_cost'     => $extraCost,
                 'paid_amount'    => $request->paid_amount,
                 'due_amount'     => $due,
@@ -170,12 +172,14 @@ class PurchaseController extends Controller
             $extraCostRows = collect($request->extra_costs ?? [])
                 ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
             $extraCost = $extraCostRows->sum(fn($r) => (float) $r['amount']);
-            $total     = $itemsTotal + $extraCost;
+            $discount  = (float) ($request->discount ?? 0);
+            $total     = $itemsTotal - $discount + $extraCost;
             $due       = $total - $request->paid_amount;
 
             $purchase->update([
                 'supplier_id'    => $request->supplier_id ?: null,
                 'total_amount'   => $total,
+                'discount'       => $discount,
                 'extra_cost'     => $extraCost,
                 'paid_amount'    => $request->paid_amount,
                 'due_amount'     => $due,

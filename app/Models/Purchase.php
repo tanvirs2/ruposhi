@@ -9,7 +9,7 @@ class Purchase extends Model
 {
     use HasShopScope;
 
-    protected $fillable = ['supplier_id', 'user_id', 'total_amount', 'extra_cost', 'paid_amount', 'due_amount', 'payment_method', 'notes', 'purchase_date'];
+    protected $fillable = ['supplier_id', 'user_id', 'total_amount', 'discount', 'extra_cost', 'paid_amount', 'due_amount', 'payment_method', 'notes', 'purchase_date'];
 
     protected $casts = ['purchase_date' => 'date'];
 

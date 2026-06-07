@@ -41,7 +41,10 @@
                         </a>
                     </td>
                     <td>{{ $purchase->supplier?->name ?? '—' }}</td>
-                    <td>{{ $purchase->purchase_date->format('d M Y') }}</td>
+                    <td>
+                        {{ $purchase->purchase_date->format('d M Y') }}
+                        <br><small style="color:#94a3b8;font-size:.75rem">{{ $purchase->created_at->format('h:i a') }}</small>
+                    </td>
                     <td>৳ {{ number_format($purchase->total_amount,0) }}</td>
                     <td>৳ {{ number_format($purchase->paid_amount,0) }}</td>
                     <td>

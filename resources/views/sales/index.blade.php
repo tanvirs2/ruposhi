@@ -11,7 +11,7 @@
             <div class="search-box"><i class="fas fa-search"></i>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="কাস্টমার বা ইনভয়েস নম্বর...">
             </div>
-            <select name="status" class="form-select">
+            <select name="status" class="form-select" style="width:auto;min-width:130px">
                 <option value="">সব স্ট্যাটাস</option>
                 <option value="completed" @selected(request('status')=='completed')>সম্পন্ন</option>
                 <option value="pending"   @selected(request('status')=='pending')>মুলতুবি</option>
@@ -66,7 +66,10 @@
                             @endif
                         @endif
                     </td>
-                    <td>{{ $sale->sale_date->format('d M Y') }}</td>
+                    <td>
+                        {{ $sale->sale_date->format('d M Y') }}
+                        <br><small style="color:#94a3b8;font-size:.75rem">{{ $sale->created_at->format('h:i a') }}</small>
+                    </td>
                     <td>৳ {{ number_format($sale->total_amount,2) }}</td>
                     <td style="color:#16a34a">৳ {{ number_format($sale->paid_amount,2) }}</td>
                     <td>{{ $sale->due_amount > 0 ? '৳ '.number_format($sale->due_amount,2) : '—' }}</td>
