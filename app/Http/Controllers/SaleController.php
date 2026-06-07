@@ -135,9 +135,9 @@ class SaleController extends Controller
 
             if ($request->customer_id) {
                 $customer = Customer::find($request->customer_id);
-                // Net effect: customer.due += (net - paid)
-                // Allows negative (credit balance when overpaid)
-                $customer->update(['due_amount' => $customer->due_amount + $net - $request->paid_amount]);
+                // Net effect: customer.due += (net - paid). Atomic increment
+                // avoids lost-update races; allows negative (credit balance).
+                $customer->increment('due_amount', $net - $request->paid_amount);
             }
         });
 
@@ -200,8 +200,7 @@ class SaleController extends Controller
             // Reverse: customer.due -= (old_net - old_paid) i.e. += (old_paid - old_net)
             if ($sale->customer_id) {
                 $oldCustomer = Customer::find($sale->customer_id);
-                $oldCustomer->due_amount += $sale->paid_amount - $sale->total_amount;
-                $oldCustomer->save();
+                $oldCustomer->increment('due_amount', $sale->paid_amount - $sale->total_amount);
             }
 
             // ── 3. Delete old sale items ────────────────────────────
@@ -264,7 +263,7 @@ class SaleController extends Controller
             // ── 8. Apply new customer due effect ────────────────────
             if ($request->customer_id) {
                 $customer = Customer::find($request->customer_id);
-                $customer->update(['due_amount' => $customer->due_amount + $net - $request->paid_amount]);
+                $customer->increment('due_amount', $net - $request->paid_amount);
             }
         });
 
@@ -288,7 +287,7 @@ class SaleController extends Controller
             // Reverse customer due effect: undo (net - paid) that was applied on create
             if ($sale->customer_id) {
                 $customer = Customer::find($sale->customer_id);
-                $customer->update(['due_amount' => $customer->due_amount - ($sale->total_amount - $sale->paid_amount)]);
+                $customer->decrement('due_amount', $sale->total_amount - $sale->paid_amount);
             }
             $sale->delete();
         });

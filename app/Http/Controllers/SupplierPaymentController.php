@@ -69,9 +69,10 @@ class SupplierPaymentController extends Controller
                 'purchase_date'  => $request->payment_date,
             ]);
 
-            // net effect: supplier.due += (0 - paid) — same single deduction
+            // net effect: supplier.due -= amount. Atomic decrement avoids
+            // lost-update races; allows negative (credit) balance.
             $supplier = Supplier::find($request->supplier_id);
-            $supplier->update(['due_amount' => $supplier->due_amount - $request->amount]);
+            $supplier->decrement('due_amount', $request->amount);
         });
 
         return redirect()->route('purchases.show', $purchase)

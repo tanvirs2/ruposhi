@@ -120,8 +120,9 @@ class PurchaseController extends Controller
 
             if ($request->supplier_id) {
                 $supplier = Supplier::find($request->supplier_id);
-                // net effect: supplier.due += (total - paid) — allows negative credit
-                $supplier->update(['due_amount' => $supplier->due_amount + $total - $request->paid_amount]);
+                // net effect: supplier.due += (total - paid). Atomic increment
+                // avoids lost-update races; allows negative credit.
+                $supplier->increment('due_amount', $total - $request->paid_amount);
             }
         });
 
@@ -161,7 +162,7 @@ class PurchaseController extends Controller
             if ($purchase->supplier_id) {
                 $supplier = Supplier::find($purchase->supplier_id);
                 // Reverse: undo (total - paid) that was applied on store
-                $supplier->update(['due_amount' => $supplier->due_amount - ($purchase->total_amount - $purchase->paid_amount)]);
+                $supplier->decrement('due_amount', $purchase->total_amount - $purchase->paid_amount);
             }
 
             // 2. Delete old items
@@ -215,7 +216,7 @@ class PurchaseController extends Controller
             // 5. Re-apply supplier due (allows negative credit)
             if ($request->supplier_id) {
                 $supplier = Supplier::find($request->supplier_id);
-                $supplier->update(['due_amount' => $supplier->due_amount + $total - $request->paid_amount]);
+                $supplier->increment('due_amount', $total - $request->paid_amount);
             }
         });
 
@@ -243,7 +244,7 @@ class PurchaseController extends Controller
             if ($purchase->supplier_id) {
                 $supplier = Supplier::find($purchase->supplier_id);
                 // Reverse: undo (total - paid) applied on store
-                $supplier->update(['due_amount' => $supplier->due_amount - ($purchase->total_amount - $purchase->paid_amount)]);
+                $supplier->decrement('due_amount', $purchase->total_amount - $purchase->paid_amount);
             }
             $purchase->delete();
         });
