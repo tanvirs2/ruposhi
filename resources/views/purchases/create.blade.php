@@ -357,7 +357,9 @@ supplierSearch.addEventListener('input', function() {
     const q = this.value.trim().toLowerCase();
     if (!q) { sDrop.hide(); supplierIdInput.value = ''; supplierSelected.style.display='none'; return; }
     const matches = allSuppliers.filter(s =>
-        s.name.toLowerCase().includes(q) || (s.phone && s.phone.includes(q))
+        s.name.toLowerCase().includes(q) ||
+        (s.proprietor && s.proprietor.toLowerCase().includes(q)) ||
+        (s.phone && s.phone.includes(q))
     ).slice(0, 6);
     const html = matches.map(s => `
         <div class="suggestion-item" onclick="selectSupplier(${s.id})">
@@ -369,6 +371,7 @@ supplierSearch.addEventListener('input', function() {
                     ? `<span style="font-size:.78rem;font-weight:700;color:#1d4ed8;background:#eff6ff;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">অগ্রিম: ৳${Math.abs(parseFloat(s.due_amount)).toLocaleString()}</span>`
                     : `<span style="font-size:.78rem;font-weight:700;color:#16a34a;background:#dcfce7;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">বকেয়ামুক্ত ✓</span>`}
             </div>
+            ${s.proprietor ? `<span style="font-size:.78rem;color:#64748b;display:block">প্রোঃ ${s.proprietor}</span>` : ''}
             <span style="font-size:.76rem;color:#94a3b8;display:block;margin-top:2px">
                 ${s.phone ? '📞 '+s.phone : ''}${s.address ? ' · '+s.address : ''}
             </span>
@@ -385,6 +388,9 @@ function selectSupplier(id) {
     supplierSearch.value  = s.name;
 
     let html = `<div style="font-weight:700;color:#0d9488;font-size:.9rem">✓ ${s.name}</div>`;
+    if (s.proprietor) {
+        html += `<div style="font-size:.8rem;color:#475569;margin-top:1px">প্রোঃ ${s.proprietor}</div>`;
+    }
     if (s.phone) {
         html += `<div style="font-size:.78rem;color:#94a3b8;margin-top:1px">📞 ${s.phone}</div>`;
     }

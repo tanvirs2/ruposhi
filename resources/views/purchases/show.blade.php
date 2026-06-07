@@ -16,6 +16,9 @@
 
     <div class="invoice-meta">
         <div><strong>সরবরাহকারী:</strong> {{ $purchase->supplier?->name ?? '—' }}</div>
+        @if($purchase->supplier?->proprietor)
+        <div><strong>প্রোপ্রাইটর:</strong> {{ $purchase->supplier->proprietor }}</div>
+        @endif
         <div><strong>ফোন:</strong> {{ $purchase->supplier?->phone ?? '—' }}</div>
         <div><strong>ঠিকানা:</strong> {{ $purchase->supplier?->address ?? '—' }}</div>
         <div><strong>রেকর্ডকারী:</strong> {{ $purchase->user->name }}</div>

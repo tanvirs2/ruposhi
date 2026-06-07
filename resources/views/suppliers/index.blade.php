@@ -32,7 +32,12 @@
                 @forelse($suppliers as $supplier)
                 <tr>
                     <td class="mono">{{ $loop->iteration }}</td>
-                    <td><strong>{{ $supplier->name }}</strong></td>
+                    <td>
+                        <strong>{{ $supplier->name }}</strong>
+                        @if($supplier->proprietor)
+                            <div style="font-size:.78rem;color:#64748b">{{ $supplier->proprietor }}</div>
+                        @endif
+                    </td>
                     <td>{{ $supplier->phone ?? '—' }}</td>
                     <td>{{ $supplier->address ? \Str::limit($supplier->address, 30) : '—' }}</td>
                     <td>

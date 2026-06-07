@@ -48,7 +48,7 @@ class SaleController extends Controller
     {
         // Select only columns needed by the JS dropdown — reduces payload significantly
         $customers      = Customer::with('area:id,name')
-                            ->select('id','name','phone','due_amount','area_id')
+                            ->select('id','name','proprietor','phone','due_amount','area_id')
                             ->orderBy('name')->get();
         $items          = Item::with('stock:id,item_id,quantity')
                             ->select('id','name','sale_price','purchase_price')
@@ -160,7 +160,7 @@ class SaleController extends Controller
     {
         $sale->load('items.item', 'customer.area', 'extraCosts');
         $customers       = Customer::with('area:id,name')
-                             ->select('id','name','phone','due_amount','area_id')
+                             ->select('id','name','proprietor','phone','due_amount','area_id')
                              ->orderBy('name')->get();
         $items           = Item::with('stock:id,item_id,quantity')
                              ->select('id','name','sale_price','purchase_price')

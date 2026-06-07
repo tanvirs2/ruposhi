@@ -12,6 +12,10 @@
                 <input type="text" name="name" value="{{ old('name', $supplier->name) }}" required>
             </div>
             <div class="form-group-field">
+                <label>প্রোপ্রাইটর (মালিকের নাম)</label>
+                <input type="text" name="proprietor" value="{{ old('proprietor', $supplier->proprietor) }}" placeholder="মোঃ হুমায়ন মোল্লা">
+            </div>
+            <div class="form-group-field">
                 <label>ফোন নম্বর</label>
                 <input type="text" name="phone" value="{{ old('phone', $supplier->phone) }}">
             </div>

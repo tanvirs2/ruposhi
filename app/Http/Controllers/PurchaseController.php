@@ -44,7 +44,7 @@ class PurchaseController extends Controller
 
     public function create()
     {
-        $suppliers      = Supplier::select('id','name','phone','address','due_amount')
+        $suppliers      = Supplier::select('id','name','proprietor','phone','address','due_amount')
                             ->orderBy('name')->get();
         $items          = Item::with('stock:id,item_id,quantity')
                             ->select('id','name','purchase_price')
@@ -131,7 +131,7 @@ class PurchaseController extends Controller
     public function edit(Purchase $purchase)
     {
         $purchase->load('items.item', 'supplier', 'user', 'extraCosts');
-        $suppliers      = Supplier::select('id','name','phone','address','due_amount')
+        $suppliers      = Supplier::select('id','name','proprietor','phone','address','due_amount')
                             ->orderBy('name')->get();
         $items          = Item::with('stock:id,item_id,quantity')
                             ->select('id','name','purchase_price')

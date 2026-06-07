@@ -219,7 +219,7 @@ class SupplierController extends Controller
     public function store(Request $request)
     {
         $request->validate(['name' => 'required|string|max:255']);
-        Supplier::create($request->only('name', 'phone', 'email', 'address'));
+        Supplier::create($request->only('name', 'proprietor', 'phone', 'email', 'address'));
         return redirect()->route('suppliers.index')->with('success', 'সরবরাহকারী সফলভাবে যোগ করা হয়েছে।');
     }
 
@@ -231,7 +231,7 @@ class SupplierController extends Controller
     public function update(Request $request, Supplier $supplier)
     {
         $request->validate(['name' => 'required|string|max:255']);
-        $supplier->update($request->only('name', 'phone', 'email', 'address'));
+        $supplier->update($request->only('name', 'proprietor', 'phone', 'email', 'address'));
         return redirect()->route('suppliers.index')->with('success', 'সরবরাহকারী সফলভাবে আপডেট করা হয়েছে।');
     }
 
