@@ -85,7 +85,14 @@
             <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
 
                 <div class="form-group-field">
-                    <label>সরবরাহকারী <span class="req">*</span></label>
+                    <label style="display:flex;justify-content:space-between;align-items:center">
+                        <span>সরবরাহকারী <span class="req">*</span></span>
+                        <button type="button" onclick="openSupplierModal()"
+                            style="font-size:.76rem;font-weight:700;color:var(--accent);background:var(--accent-light);
+                                   border:1px solid var(--accent);border-radius:6px;padding:3px 10px;cursor:pointer">
+                            <i class="fas fa-plus"></i> নতুন সরবরাহকারী
+                        </button>
+                    </label>
                     <input type="hidden" name="supplier_id" id="supplierIdInput">
                     <input type="text" id="supplierSearch" placeholder="নাম বা ফোন দিয়ে খুঁজুন..."
                         autocomplete="off" style="width:100%" required>
@@ -253,6 +260,77 @@
     </div>
 </div>
 </form>
+
+{{-- ── নতুন সরবরাহকারী Popup Modal ─────────────────────────── --}}
+<div id="supplierModal" class="cust-modal-overlay" style="display:none">
+    <div class="cust-modal">
+        <div class="cust-modal-head">
+            <h3><i class="fas fa-truck"></i> নতুন সরবরাহকারী যোগ করুন</h3>
+            <button type="button" onclick="closeSupplierModal()" class="cust-modal-close">&times;</button>
+        </div>
+        <div class="cust-modal-body">
+            <div id="supModalError" style="display:none;background:#fee2e2;color:#dc2626;padding:8px 12px;border-radius:6px;font-size:.84rem;margin-bottom:10px"></div>
+            <div class="form-group-field">
+                <label>নাম <span class="req">*</span></label>
+                <input type="text" id="smName" placeholder="ঢাকা ট্রেডিং কোং" autocomplete="off">
+            </div>
+            <div class="form-group-field">
+                <label>প্রোপ্রাইটর (মালিকের নাম)</label>
+                <input type="text" id="smProprietor" placeholder="মোঃ হুমায়ন মোল্লা" autocomplete="off">
+            </div>
+            <div class="form-group-field">
+                <label>ফোন নম্বর</label>
+                <input type="text" id="smPhone" inputmode="numeric" autocomplete="off">
+            </div>
+            <div class="form-group-field">
+                <label>ঠিকানা</label>
+                <textarea id="smAddress" rows="2"></textarea>
+            </div>
+        </div>
+        <div class="cust-modal-foot">
+            <button type="button" onclick="closeSupplierModal()" class="btn btn-ghost">বাতিল</button>
+            <button type="button" id="smSaveBtn" onclick="saveNewSupplier()" class="btn btn-primary">
+                <i class="fas fa-save"></i> সংরক্ষণ ও নির্বাচন
+            </button>
+        </div>
+    </div>
+</div>
+
+@push('styles')
+<style>
+/* ── নতুন সরবরাহকারী Modal ─────────────────────────────── */
+.cust-modal-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(15, 23, 42, .55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px; animation: custFade .15s ease;
+}
+@keyframes custFade { from { opacity: 0 } to { opacity: 1 } }
+.cust-modal {
+    background: var(--surface, #fff); border-radius: 14px;
+    width: 100%; max-width: 460px; max-height: 92vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3); animation: custSlide .2s ease;
+}
+@keyframes custSlide { from { transform: translateY(14px); opacity: .6 } to { transform: translateY(0); opacity: 1 } }
+.cust-modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--border, #e2e8f0);
+}
+.cust-modal-head h3 { margin: 0; font-size: 1.02rem; color: var(--text-primary, #0f172a); }
+.cust-modal-close { background: none; border: none; font-size: 1.6rem; line-height: 1; color: #94a3b8; cursor: pointer; padding: 0 4px; }
+.cust-modal-close:hover { color: #dc2626; }
+.cust-modal-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+.cust-modal-body input, .cust-modal-body textarea {
+    width: 100%; padding: 9px 12px;
+    border: 1.5px solid var(--border, #e2e8f0); border-radius: 8px;
+    font-family: inherit; font-size: .9rem; outline: none;
+    background: var(--surface, #fff); color: var(--text-primary, #0f172a);
+}
+.cust-modal-body input:focus, .cust-modal-body textarea:focus { border-color: var(--accent); }
+.cust-modal-body label { font-size: .82rem; font-weight: 600; color: var(--text-secondary, #475569); margin-bottom: 4px; display: block; }
+.cust-modal-foot { display: flex; gap: 10px; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--border, #e2e8f0); }
+</style>
+@endpush
 
 @push('styles')
 <style>
@@ -886,6 +964,81 @@ document.getElementById('receiveForm').addEventListener('change', scheduleDraftS
 document.getElementById('receiveForm').addEventListener('submit', function(e) {
     if (!e.defaultPrevented) clearDraft();
 }, false);
+
+// ── নতুন সরবরাহকারী Popup ─────────────────────────────────
+function openSupplierModal() {
+    document.getElementById('supModalError').style.display = 'none';
+    ['smName','smProprietor','smPhone','smAddress'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('supplierModal').style.display = 'flex';
+    const typed = document.getElementById('supplierSearch').value.trim();
+    if (typed) document.getElementById('smName').value = typed;
+    setTimeout(() => document.getElementById('smName').focus(), 50);
+    if (typeof attachBengaliConverter === 'function') {
+        attachBengaliConverter(document.getElementById('supplierModal'));
+    }
+}
+function closeSupplierModal() {
+    document.getElementById('supplierModal').style.display = 'none';
+}
+document.getElementById('supplierModal').addEventListener('click', function(e) {
+    if (e.target === this) closeSupplierModal();
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('supplierModal').style.display === 'flex') closeSupplierModal();
+});
+
+async function saveNewSupplier() {
+    const errBox = document.getElementById('supModalError');
+    const name   = document.getElementById('smName').value.trim();
+    if (!name) {
+        errBox.textContent = 'সরবরাহকারীর নাম আবশ্যক।';
+        errBox.style.display = 'block';
+        return;
+    }
+    const btn = document.getElementById('smSaveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> সংরক্ষণ হচ্ছে...';
+    errBox.style.display = 'none';
+
+    const payload = {
+        name:       name,
+        proprietor: document.getElementById('smProprietor').value.trim(),
+        phone:      toEnglishDigits(document.getElementById('smPhone').value.trim()),
+        address:    document.getElementById('smAddress').value.trim(),
+    };
+
+    try {
+        const res = await fetch("{{ route('suppliers.store') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            let msg = 'সংরক্ষণ ব্যর্থ হয়েছে।';
+            if (data.errors) msg = Object.values(data.errors).flat().join(' ');
+            throw new Error(msg);
+        }
+
+        const data = await res.json();
+        const s = data.supplier;
+        allSuppliers.push(s);
+        closeSupplierModal();
+        selectSupplier(s.id);
+    } catch (err) {
+        errBox.textContent = err.message || 'সংরক্ষণ ব্যর্থ হয়েছে।';
+        errBox.style.display = 'block';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> সংরক্ষণ ও নির্বাচন';
+    }
+}
 </script>
 @endpush
 @endsection

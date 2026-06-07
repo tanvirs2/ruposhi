@@ -219,7 +219,23 @@ class SupplierController extends Controller
     public function store(Request $request)
     {
         $request->validate(['name' => 'required|string|max:255']);
-        Supplier::create($request->only('name', 'proprietor', 'phone', 'email', 'address'));
+        $supplier = Supplier::create($request->only('name', 'proprietor', 'phone', 'email', 'address'));
+
+        // AJAX (popup from receive form) — return the new supplier as JSON
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success'  => true,
+                'supplier' => [
+                    'id'         => $supplier->id,
+                    'name'       => $supplier->name,
+                    'proprietor' => $supplier->proprietor,
+                    'phone'      => $supplier->phone,
+                    'address'    => $supplier->address,
+                    'due_amount' => $supplier->due_amount,
+                ],
+            ]);
+        }
+
         return redirect()->route('suppliers.index')->with('success', 'সরবরাহকারী সফলভাবে যোগ করা হয়েছে।');
     }
 
