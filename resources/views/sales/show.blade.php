@@ -188,6 +188,46 @@
     </div>
     @endif
 
+    {{-- ── FOOTER (like old system) ─────────────────────────────── --}}
+    <div class="memo-footer">
+
+        {{-- N.B. note --}}
+        <div class="memo-footer-note">বিঃ দ্রঃ ক্রটিপূর্ণ মাল ফেরৎযোগ্য।</div>
+
+        {{-- Store name repeated, big & bold --}}
+        <div class="memo-footer-name">{{ $store['name'] }}</div>
+
+        {{-- Tear-off cut line --}}
+        <div class="memo-cut-line"><span>✂ ছিঁড়ে নিন</span></div>
+
+        {{-- Blank counterfoil stub (handwritten) --}}
+        <div class="memo-stub">
+            <div class="memo-stub-challan"><strong>চালান নং -</strong> {{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</div>
+            <table class="memo-stub-table">
+                <thead>
+                    <tr>
+                        <th class="stub-qty">পরিমাণ</th>
+                        <th class="stub-desc">আইটেম বিবরণ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td></td><td></td></tr>
+                    <tr><td></td><td></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        {{-- Our credit line --}}
+        <div class="memo-credit">
+            @php
+                $swName  = \App\Models\SystemConfig::get('software_name', 'Ruposhi POS');
+                $swPhone = \App\Models\SystemConfig::get('support_phone');
+            @endphp
+            Developed by {{ $swName }}@if($swPhone) &nbsp;•&nbsp; যোগাযোগঃ {{ $swPhone }}@endif
+        </div>
+
+    </div>{{-- /.memo-footer --}}
+
 </div>{{-- /.cash-memo --}}
 @endsection
 
@@ -196,6 +236,9 @@
 /* ══ Wrapper ════════════════════════════════════════════════════ */
 .cash-memo {
     max-width: 700px;
+    min-height: 1040px;          /* ~A4 height — fills the page on screen */
+    display: flex;
+    flex-direction: column;
     background: #fff;
     border: none;
     border-radius: 0;
@@ -351,6 +394,72 @@
 .tfoot-balance-row td { background: #fff7ed; }
 .tfoot-remaining { font-weight: 800; font-size: .98rem; color: #b91c1c; }
 
+/* ══ Footer (old-system style) ═══════════════════════════════════ */
+.memo-footer { margin-top: auto; padding-top: 12px; text-align: center; }  /* pinned to bottom */
+.memo-footer-note {
+    font-size: .76rem;
+    font-style: italic;
+    color: #333;
+    margin-bottom: 1px;
+}
+.memo-footer-name {
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #111;
+    line-height: 1.15;
+    letter-spacing: .01em;
+}
+
+/* Tear-off cut line */
+.memo-cut-line {
+    position: relative;
+    text-align: center;
+    border-top: 1.5px dashed #888;
+    margin: 8px 0 5px;
+}
+.memo-cut-line span {
+    position: relative;
+    top: -9px;
+    background: #fff;
+    padding: 0 8px;
+    font-size: .66rem;
+    color: #888;
+    letter-spacing: .04em;
+}
+
+/* Blank counterfoil stub */
+.memo-stub { text-align: left; }
+.memo-stub-challan { font-size: .76rem; margin-bottom: 3px; }
+.memo-stub-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .8rem;
+}
+.memo-stub-table th {
+    padding: 2px 8px;
+    font-weight: 700;
+    text-align: center;
+    border: 1px solid #bbb;
+    color: #333;
+}
+.memo-stub-table td {
+    height: 20px;
+    border: 1px solid #ccc;
+    border-style: dotted;
+}
+.stub-qty  { width: 90px; }
+.stub-desc { }
+
+/* Our credit line */
+.memo-credit {
+    margin-top: 5px;
+    text-align: center;
+    font-size: .68rem;
+    color: #888;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 3px;
+}
+
 /* ══ Print ════════════════════════════════════════════════════════ */
 @media print {
     @page {
@@ -371,6 +480,9 @@
         top: 0 !important;
         left: 0 !important;
         width: 100% !important;
+        min-height: 268mm !important;   /* fill A4 printable area (297 − 14×2 margins) */
+        display: flex !important;
+        flex-direction: column !important;
         margin: 0 !important;
         padding: 0 !important;
         max-width: 100% !important;
@@ -412,6 +524,18 @@
     .memo-table th        { border-color: #334155 !important; }
 
     tfoot { page-break-inside: avoid; }
+
+    /* ── Footer ── */
+    .memo-footer       { margin-top: auto !important; padding-top: 10px !important; page-break-inside: avoid; }
+    .memo-footer-note  { font-size: .7rem !important; margin-bottom: 0 !important; }
+    .memo-footer-name  { font-size: 1rem !important; }
+    .memo-cut-line     { margin: 7px 0 4px !important; border-top-color: #999 !important; }
+    .memo-cut-line span { font-size: .6rem !important; }
+    .memo-stub-challan { font-size: .7rem !important; margin-bottom: 2px !important; }
+    .memo-stub-table   { font-size: .72rem !important; }
+    .memo-stub-table th { padding: 2px 6px !important; border-color: #999 !important; }
+    .memo-stub-table td { height: 18px !important; border-color: #aaa !important; }
+    .memo-credit       { font-size: .62rem !important; border-top-color: #ddd !important; margin-top: 4px !important; padding-top: 2px !important; }
 }
 
 /* ══ Mobile view (screen only) ══════════════════════════════════ */

@@ -442,16 +442,19 @@ supplierSearch.addEventListener('input', function() {
     const html = matches.map(s => `
         <div class="suggestion-item" onclick="selectSupplier(${s.id})">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-                <strong style="font-size:.92rem">${s.name}</strong>
+                <span>
+                    ${s.proprietor
+                        ? `<strong style="font-size:.92rem">${s.proprietor}</strong><span style="font-size:.78rem;color:#64748b;margin-left:6px">${s.name}</span>`
+                        : `<strong style="font-size:.92rem">${s.name}</strong>`}
+                </span>
                 ${parseFloat(s.due_amount) > 0
                     ? `<span style="font-size:.78rem;font-weight:700;color:#dc2626;background:#fee2e2;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">বকেয়া: ৳${parseFloat(s.due_amount).toLocaleString()}</span>`
                     : parseFloat(s.due_amount) < 0
                     ? `<span style="font-size:.78rem;font-weight:700;color:#1d4ed8;background:#eff6ff;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">অগ্রিম: ৳${Math.abs(parseFloat(s.due_amount)).toLocaleString()}</span>`
                     : `<span style="font-size:.78rem;font-weight:700;color:#16a34a;background:#dcfce7;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">বকেয়ামুক্ত ✓</span>`}
             </div>
-            ${s.proprietor ? `<span style="font-size:.78rem;color:#64748b;display:block">প্রোঃ ${s.proprietor}</span>` : ''}
             <span style="font-size:.76rem;color:#94a3b8;display:block;margin-top:2px">
-                ${s.phone ? '📞 '+s.phone : ''}${s.address ? ' · '+s.address : ''}
+                ${s.phone ? `📞 ${s.phone}` : ''}${s.phone && s.address ? ' &nbsp;·&nbsp; ' : ''}${s.address ? `📍 ${s.address}` : ''}
             </span>
         </div>
     `).join('') || `<div class="suggestion-item" style="color:#94a3b8">কোনো সরবরাহকারী পাওয়া যায়নি</div>`;

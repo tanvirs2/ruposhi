@@ -235,8 +235,30 @@ const sDrop           = makeFloatingDropdown(supplierSearch, supplierDrop);
 supplierSearch.addEventListener('input', function() {
     const q = this.value.trim().toLowerCase();
     if (!q) { sDrop.hide(); supplierIdInput.value=''; supplierSelected.style.display='none'; return; }
-    const matches = allSuppliers.filter(s => s.name.toLowerCase().includes(q)||(s.phone&&s.phone.includes(q))).slice(0,6);
-    sDrop.show(matches.map(s => `<div class="suggestion-item" onclick="selectSupplier(${s.id})"><strong>${s.name}</strong>${s.phone?`<div style="font-size:.76rem;color:#94a3b8">📞 ${s.phone}</div>`:''}</div>`).join('')||'<div class="suggestion-item" style="color:#94a3b8">পাওয়া যায়নি</div>');
+    const matches = allSuppliers.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        (s.proprietor && s.proprietor.toLowerCase().includes(q)) ||
+        (s.phone && s.phone.includes(q))
+    ).slice(0,6);
+    sDrop.show(matches.map(s => `
+        <div class="suggestion-item" onclick="selectSupplier(${s.id})">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                <span>
+                    ${s.proprietor
+                        ? `<strong style="font-size:.92rem">${s.proprietor}</strong><span style="font-size:.78rem;color:#64748b;margin-left:6px">${s.name}</span>`
+                        : `<strong style="font-size:.92rem">${s.name}</strong>`}
+                </span>
+                ${parseFloat(s.due_amount) > 0
+                    ? `<span style="font-size:.78rem;font-weight:700;color:#dc2626;background:#fee2e2;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">বকেয়া: ৳${parseFloat(s.due_amount).toLocaleString()}</span>`
+                    : parseFloat(s.due_amount) < 0
+                    ? `<span style="font-size:.78rem;font-weight:700;color:#1d4ed8;background:#eff6ff;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">অগ্রিম: ৳${Math.abs(parseFloat(s.due_amount)).toLocaleString()}</span>`
+                    : `<span style="font-size:.78rem;font-weight:700;color:#16a34a;background:#dcfce7;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">বকেয়ামুক্ত ✓</span>`}
+            </div>
+            <span style="font-size:.76rem;color:#94a3b8;display:block;margin-top:2px">
+                ${s.phone ? `📞 ${s.phone}` : ''}${s.phone && s.address ? ' &nbsp;·&nbsp; ' : ''}${s.address ? `📍 ${s.address}` : ''}
+            </span>
+        </div>
+    `).join('')||'<div class="suggestion-item" style="color:#94a3b8">পাওয়া যায়নি</div>');
 });
 
 function selectSupplier(id) {
