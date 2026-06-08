@@ -468,7 +468,17 @@ function setFullPay() {
 document.getElementById('paidInput').addEventListener('input', updateSummary);
 
 document.getElementById('receiveForm').addEventListener('submit',function(e){
-    if(!cart.length){e.preventDefault();alert('কমপক্ষে একটি আইটেম যোগ করুন।');}
+    // Convert any remaining Bengali digits in numeric inputs
+    this.querySelectorAll('input[inputmode="decimal"], input[inputmode="numeric"]').forEach(inp => {
+        if (/[০-৯]/.test(inp.value)) inp.value = toEnglishDigits(inp.value);
+    });
+    // Supplier is required; items are OPTIONAL — a no-item receive is a pure
+    // advance payment to the supplier (same as the create form & supplier payment).
+    if (!supplierIdInput.value) {
+        e.preventDefault();
+        alert('সরবরাহকারী নির্বাচন করুন।');
+        supplierSearch.focus();
+    }
 });
 
 // ── Init from existing purchase ──────────────────────────────
