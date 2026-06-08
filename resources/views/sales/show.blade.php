@@ -306,13 +306,13 @@
     font-size: .86rem;
 }
 .memo-table thead tr {
-    background: #c0392b;
+    background: #475569;
     color: #fff;
 }
 .memo-table th {
     padding: 5px 6px;
     font-weight: 700;
-    border: 1px solid #922b21;
+    border: 1px solid #334155;
     text-align: center;
 }
 .col-bosta { width: 50px; }
@@ -334,7 +334,7 @@
 .tfoot-qty td {
     padding: 4px 6px;
     border: 1px solid #e0e0e0;
-    border-top: 2px solid #922b21;
+    border-top: 2px solid #334155;
     font-size: .84rem;
     font-weight: 700;
     background: #fff;
@@ -408,8 +408,8 @@
     .tfoot-grand-row td { border-top: 1.5px solid #888 !important; border-bottom: 1.5px solid #888 !important; }
 
     /* ── Red header: force color print ── */
-    .memo-table thead tr { background: #c0392b !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .memo-table th        { border-color: #922b21 !important; }
+    .memo-table thead tr { background: #475569 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .memo-table th        { border-color: #334155 !important; }
 
     tfoot { page-break-inside: avoid; }
 }
