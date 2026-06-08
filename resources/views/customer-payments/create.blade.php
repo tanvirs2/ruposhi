@@ -172,8 +172,9 @@ function renderCustomerMatches(matches) {
         <div class="suggestion-item" onclick="selectCustomer(${c.id})">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
                 <span>
-                    <strong style="font-size:.92rem">${c.name}</strong>
-                    ${c.proprietor ? `<span style="font-size:.76rem;color:#64748b;margin-left:5px">প্রোঃ ${c.proprietor}</span>` : ''}
+                    ${c.proprietor
+                        ? `<strong style="font-size:.92rem">${c.proprietor}</strong><span style="font-size:.76rem;color:#64748b;margin-left:5px">${c.name}</span>`
+                        : `<strong style="font-size:.92rem">${c.name}</strong>`}
                 </span>
                 ${c.due > 0
                     ? `<span style="font-size:.78rem;font-weight:700;color:#dc2626;background:#fee2e2;padding:2px 8px;border-radius:20px;white-space:nowrap">বাকী: ৳${c.due.toLocaleString()}</span>`
