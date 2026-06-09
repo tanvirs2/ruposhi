@@ -16,6 +16,7 @@
                 <label>শেষ তারিখ</label>
                 <input type="date" name="to" value="{{ $to }}">
             </div>
+            @include('partials.date-range-buttons')
             <div class="form-group-field">
                 <label>কাস্টমার</label>
                 <select name="customer_id" class="form-select" style="min-width:180px">

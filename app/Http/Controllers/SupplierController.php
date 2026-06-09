@@ -110,6 +110,22 @@ class SupplierController extends Controller
                     'link'        => route('purchases.show', $p),
                 ]);
             }
+            // Discount row (credit — reduces what we owe supplier)
+            if (($p->discount ?? 0) > 0) {
+                $rows->push((object)[
+                    'date'        => $p->purchase_date,
+                    'sort_key'    => $baseKey . '_d',
+                    'type'        => 'discount',
+                    'label'       => 'ছাড়',
+                    'ref'         => '#PUR-' . str_pad($p->id, 4, '0', STR_PAD_LEFT),
+                    'qty'         => 0,
+                    'rate'        => 0,
+                    'debit'       => 0,
+                    'credit'      => $p->discount,
+                    'purchase_id' => $p->id,
+                    'link'        => route('purchases.show', $p),
+                ]);
+            }
             // Credit row for amount paid with this purchase
             if ($p->paid_amount > 0) {
                 $rows->push((object)[

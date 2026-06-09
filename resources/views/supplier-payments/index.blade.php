@@ -32,6 +32,7 @@
             <div class="form-group-field">
                 <input type="date" name="to" value="{{ request('to') }}" class="form-select">
             </div>
+            @include('partials.date-range-buttons')
             <button type="submit" class="btn btn-secondary">ফিল্টার</button>
             @if(request()->hasAny(['supplier_id','from','to']))
                 <a href="{{ route('supplier-payments.index') }}" class="btn btn-ghost">পরিষ্কার</a>

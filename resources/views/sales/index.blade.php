@@ -19,6 +19,7 @@
             </select>
             <input type="date" name="date_from" class="form-select" value="{{ $dateFrom }}" title="শুরুর তারিখ" style="width:145px">
             <input type="date" name="date_to"   class="form-select" value="{{ $dateTo }}"   title="শেষ তারিখ"  style="width:145px">
+            @include('partials.date-range-buttons', ['fromName'=>'date_from','toName'=>'date_to','formClass'=>'#salesFilterForm'])
             <button type="submit" class="btn btn-secondary">ফিল্টার</button>
             @if($dateFrom || $dateTo || request('search') || request('status'))
                 <a href="{{ route('sales.index') }}" class="btn btn-outline" title="ক্লিয়ার করুন"><i class="fas fa-xmark"></i></a>

@@ -636,6 +636,40 @@ document.addEventListener('click', function(e) {
 
 @stack('scripts')
 
+<script>
+/* ── Global date-range quick-filter helper ─────────────────────
+   Usage: drRange(fromInputName, toInputName, formSelector, type)
+   type: 'this_month' | 'last_month' | 'this_year' | 'all'
+──────────────────────────────────────────────────────────────── */
+function drRange(fromName, toName, formSel, type) {
+    const today = new Date();
+    let from, to;
+    if (type === 'this_month') {
+        from = new Date(today.getFullYear(), today.getMonth(), 1);
+        to   = today;
+    } else if (type === 'last_month') {
+        from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        to   = new Date(today.getFullYear(), today.getMonth(), 0);
+    } else if (type === 'this_year') {
+        from = new Date(today.getFullYear(), 0, 1);
+        to   = today;
+    } else {
+        from = new Date('2000-01-01');
+        to   = today;
+    }
+    // Local date — avoids UTC timezone shift for UTC+6
+    const fmt = d => {
+        const y   = d.getFullYear();
+        const m   = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
+    document.querySelector(`input[name="${fromName}"]`).value = fmt(from);
+    document.querySelector(`input[name="${toName}"]`).value   = fmt(to);
+    document.querySelector(formSel).submit();
+}
+</script>
+
 {{-- ══ Multimedia Popup Player ══════════════════════════════ --}}
 @php
     $mmEnabled  = \App\Models\StoreConfig::get('multimedia_enabled', '0') === '1';

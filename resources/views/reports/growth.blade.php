@@ -61,6 +61,7 @@
             <input type="date" name="date_from" value="{{ $dateFrom }}" class="form-input" style="height:36px;width:150px">
             <span style="color:#94a3b8">—</span>
             <input type="date" name="date_to" value="{{ $dateTo }}" class="form-input" style="height:36px;width:150px">
+            @include('partials.date-range-buttons', ['fromName'=>'date_from','toName'=>'date_to','formClass'=>'.growth-filter-form'])
             <button type="submit" class="btn btn-primary" style="height:36px">খুঁজুন</button>
         </div>
         @endif

@@ -56,7 +56,7 @@
                         {{ $purchase->items->sum('quantity') }} বস্তা
                     </td>
                     <td></td>
-                    <td style="font-weight:700;padding:10px 12px">৳ {{ number_format($purchase->total_amount,0) }}</td>
+                    <td style="font-weight:700;padding:10px 12px">৳ {{ number_format($purchase->items->sum('subtotal'),0) }}</td>
                 </tr>
             </tfoot>
         </table>

@@ -14,6 +14,7 @@
                 <label>শেষ</label>
                 <input type="date" name="to" value="{{ $to }}">
             </div>
+            @include('partials.date-range-buttons')
             <button type="submit" class="btn btn-primary" style="align-self:flex-end">রিপোর্ট দেখুন</button>
             <div style="align-self:flex-end;display:flex;gap:8px;margin-left:auto">
                 <a href="{{ route('reports.export.daily-payments', ['from'=>$from,'to'=>$to]) }}"

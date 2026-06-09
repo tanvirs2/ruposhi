@@ -53,6 +53,7 @@
             </select>
             <input type="date" name="from" value="{{ request('from') }}" title="শুরুর তারিখ">
             <input type="date" name="to"   value="{{ request('to') }}"   title="শেষ তারিখ">
+            @include('partials.date-range-buttons')
             <button type="submit" class="btn btn-secondary">ফিল্টার</button>
             @if(request()->hasAny(['search','type','category','from','to']))
                 <a href="{{ route('expenses.index') }}" class="btn btn-ghost">রিসেট</a>

@@ -27,6 +27,7 @@
                 <label>শেষ</label>
                 <input type="date" name="to" value="{{ request('to') }}">
             </div>
+            @include('partials.date-range-buttons')
             <button type="submit" class="btn btn-secondary" style="align-self:flex-end">ফিল্টার</button>
         </form>
     </div>
