@@ -104,9 +104,8 @@ class PurchaseController extends Controller
                     ['quantity' => 0, 'min_quantity' => 5]
                 );
                 $stock->increment('quantity', $row['qty']);
-
-                // Update the item's purchase_price to the latest received price
-                Item::where('id', $row['id'])->update(['purchase_price' => $row['price']]);
+                // Note: items.purchase_price is NOT updated here — it is the master default
+                // price set from the items page. Per-receive prices live in purchase_items only.
             }
 
             // Save categorised extra costs
@@ -200,7 +199,7 @@ class PurchaseController extends Controller
                 ]);
                 $stock = Stock::firstOrCreate(['item_id' => $row['id']], ['quantity' => 0, 'min_quantity' => 5]);
                 $stock->increment('quantity', $row['qty']);
-                Item::where('id', $row['id'])->update(['purchase_price' => $row['price']]);
+                // Note: items.purchase_price is NOT updated here — master price stays as-is.
             }
 
             // 4b. Replace extra costs

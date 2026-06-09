@@ -64,7 +64,7 @@ class SupplierController extends Controller
             foreach ($p->items as $pi) {
                 $rows->push((object)[
                     'date'        => $p->purchase_date,
-                    'sort_key'    => $baseKey . '_i' . sprintf('%04d', $iIdx),
+                    'sort_key'    => $baseKey . '_1i' . sprintf('%04d', $iIdx),
                     'type'        => 'item',
                     'label'       => $pi->item->name ?? 'অজানা আইটেম',
                     'ref'         => '#PUR-' . str_pad($p->id, 4, '0', STR_PAD_LEFT),
@@ -82,7 +82,7 @@ class SupplierController extends Controller
                 foreach ($p->extraCosts as $ecIdx => $ec) {
                     $rows->push((object)[
                         'date'        => $p->purchase_date,
-                        'sort_key'    => $baseKey . '_e' . sprintf('%04d', $ecIdx),
+                        'sort_key'    => $baseKey . '_2e' . sprintf('%04d', $ecIdx),
                         'type'        => 'extra_cost',
                         'label'       => $ec->category_name,
                         'ref'         => '#PUR-' . str_pad($p->id, 4, '0', STR_PAD_LEFT),
@@ -98,7 +98,7 @@ class SupplierController extends Controller
                 // Legacy fallback: old record without extraCosts rows
                 $rows->push((object)[
                     'date'        => $p->purchase_date,
-                    'sort_key'    => $baseKey . '_e',
+                    'sort_key'    => $baseKey . '_2e',
                     'type'        => 'extra_cost',
                     'label'       => 'অতিরিক্ত খরচ',
                     'ref'         => '#PUR-' . str_pad($p->id, 4, '0', STR_PAD_LEFT),
@@ -114,7 +114,7 @@ class SupplierController extends Controller
             if (($p->discount ?? 0) > 0) {
                 $rows->push((object)[
                     'date'        => $p->purchase_date,
-                    'sort_key'    => $baseKey . '_d',
+                    'sort_key'    => $baseKey . '_3d',
                     'type'        => 'discount',
                     'label'       => 'ছাড়',
                     'ref'         => '#PUR-' . str_pad($p->id, 4, '0', STR_PAD_LEFT),
@@ -130,7 +130,7 @@ class SupplierController extends Controller
             if ($p->paid_amount > 0) {
                 $rows->push((object)[
                     'date'        => $p->purchase_date,
-                    'sort_key'    => $baseKey . '_p',
+                    'sort_key'    => $baseKey . '_4p',
                     'type'        => 'purchase_payment',
                     'label'       => $p->payment_method ?? 'নগদ',
                     'ref'         => '#PUR-' . str_pad($p->id, 4, '0', STR_PAD_LEFT),
