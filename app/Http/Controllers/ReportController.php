@@ -379,11 +379,12 @@ class ReportController extends Controller
             ->get()
             ->groupBy(fn($p) => $p->purchase_date->toDateString());
 
-        $grandTotal = $daily->flatten()->sum('total_amount');
-        $grandPaid  = $daily->flatten()->sum('paid_amount');
-        $grandDue   = $daily->flatten()->sum('due_amount');
+        $grandTotal   = $daily->flatten()->sum('total_amount');
+        $grandPaid    = $daily->flatten()->sum('paid_amount');
+        $grandDeposit = $daily->flatten()->sum('deposit_amount');
+        $grandDue     = $daily->flatten()->sum('due_amount');
 
-        return view('reports.daily-receive', compact('daily', 'grandTotal', 'grandPaid', 'grandDue', 'from', 'to'));
+        return view('reports.daily-receive', compact('daily', 'grandTotal', 'grandPaid', 'grandDeposit', 'grandDue', 'from', 'to'));
     }
 
     // ── কাস্টমার বাকী রিপোর্ট ─────────────────────────────────
@@ -590,7 +591,7 @@ class ReportController extends Controller
 
         return $this->csvResponse(
             "রিসিভ-রিপোর্ট_{$from}_{$to}",
-            ['তারিখ', 'রিসিভ #', 'সরবরাহকারী', 'পণ্য', 'মোট (৳)', 'পরিশোধ (৳)', 'বাকী (৳)'],
+            ['তারিখ', 'রিসিভ #', 'সরবরাহকারী', 'পণ্য', 'মোট (৳)', 'পরিশোধ (৳)', 'জমা (৳)', 'বাকী (৳)'],
             function ($out) use ($items) {
                 foreach ($items as $p) {
                     $products = $p->items->map(fn($i) => $i->item->name . ' ×' . $i->quantity)->join(', ');
@@ -601,6 +602,7 @@ class ReportController extends Controller
                         $products,
                         number_format($p->total_amount, 2),
                         number_format($p->paid_amount,  2),
+                        number_format($p->deposit_amount ?? 0, 2),
                         number_format($p->due_amount,   2),
                     ]);
                 }

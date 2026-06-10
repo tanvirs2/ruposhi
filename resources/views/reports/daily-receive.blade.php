@@ -41,6 +41,9 @@
         <div class="stat-body">
             <span class="stat-label">মোট পরিশোধ</span>
             <span class="stat-value">৳ {{ number_format($grandPaid, 0) }}</span>
+            @if($grandDeposit > 0)
+                <span style="font-size:.78rem;font-weight:600;color:#1d4ed8">+ জমা ৳ {{ number_format($grandDeposit, 0) }}</span>
+            @endif
         </div>
     </div>
     <div class="stat-card" style="border-left:4px solid #ef4444">
@@ -75,6 +78,7 @@
                 <col style="width:200px">   {{-- আইটেম --}}
                 <col style="width:110px">   {{-- মোট --}}
                 <col style="width:110px">   {{-- পরিশোধ --}}
+                <col style="width:100px">   {{-- জমা --}}
                 <col style="width:110px">   {{-- বাকী --}}
                 <col style="width:110px">   {{-- রেকর্ডকারী --}}
                 <col style="width:60px">    {{-- অ্যাকশন --}}
@@ -86,6 +90,7 @@
                     <th>আইটেম</th>
                     <th style="text-align:right">মোট</th>
                     <th style="text-align:right">পরিশোধ</th>
+                    <th style="text-align:right">জমা</th>
                     <th style="text-align:right">বাকী</th>
                     <th>রেকর্ডকারী</th>
                     <th></th>
@@ -108,6 +113,13 @@
                     <td style="text-align:right;font-weight:600">৳ {{ number_format($p->total_amount, 2) }}</td>
                     <td style="text-align:right;color:#16a34a">৳ {{ number_format($p->paid_amount, 2) }}</td>
                     <td style="text-align:right">
+                        @if(($p->deposit_amount ?? 0) > 0)
+                            <span style="color:#1d4ed8;font-weight:600">৳ {{ number_format($p->deposit_amount, 2) }}</span>
+                        @else
+                            <span style="color:#cbd5e1">—</span>
+                        @endif
+                    </td>
+                    <td style="text-align:right">
                         @if($p->due_amount > 0)
                             <span style="color:#dc2626;font-weight:600">৳ {{ number_format($p->due_amount, 2) }}</span>
                         @else
@@ -128,6 +140,7 @@
                     <td colspan="3" style="text-align:right;padding-right:16px">দিনের সর্বমোট</td>
                     <td style="text-align:right">৳ {{ number_format($dayPurchases->sum('total_amount'), 2) }}</td>
                     <td style="text-align:right;color:#16a34a">৳ {{ number_format($dayPurchases->sum('paid_amount'), 2) }}</td>
+                    <td style="text-align:right;color:#1d4ed8">৳ {{ number_format($dayPurchases->sum('deposit_amount'), 2) }}</td>
                     <td style="text-align:right;color:#dc2626">৳ {{ number_format($dayPurchases->sum('due_amount'), 2) }}</td>
                     <td colspan="2"></td>
                 </tr>
