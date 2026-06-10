@@ -27,17 +27,17 @@ class BanglaFonts
         'noto_sans_bengali' => [
             'label'  => 'Noto Sans Bengali',
             'family' => "'Noto Sans Bengali', sans-serif",
-            'google' => 'Noto+Sans+Bengali:wght@300;400;500;600;700',
+            'google' => null, // self-hosted: public/fonts/noto-sans-bengali-*.woff2
         ],
         'tiro_bangla' => [
             'label'  => 'Tiro Bangla',
             'family' => "'Tiro Bangla', serif",
-            'google' => 'Tiro+Bangla',
+            'google' => null, // self-hosted: public/fonts/tiro-bangla-*.woff2
         ],
         'baloo_da_2' => [
             'label'  => 'Baloo Da 2',
             'family' => "'Baloo Da 2', sans-serif",
-            'google' => 'Baloo+Da+2:wght@400;500;600;700',
+            'google' => null, // self-hosted: public/fonts/baloo-da-2-*.woff2
         ],
     ];
 
