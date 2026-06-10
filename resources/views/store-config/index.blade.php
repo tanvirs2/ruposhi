@@ -539,8 +539,33 @@ function switchTab(name, btn) {
 }
 
 // Live font preview — applies instantly page-wide; persists only on save
+// Font definitions for dynamic loading
+const fontGoogleMap = @json(
+    collect(\App\Support\BanglaFonts::FONTS)->map(fn($f) => $f['google'])->toArray()
+);
+const fontKalpurush = {{ \App\Support\BanglaFonts::needsKalpurush(array_keys(\App\Support\BanglaFonts::FONTS)) ? 'true' : 'false' }};
+
 function previewFont(radio) {
-    document.documentElement.style.setProperty('--bn-font', radio.dataset.family);
+    const key    = radio.value;
+    const family = radio.dataset.family;
+    const google = fontGoogleMap[key];
+
+    // Dynamically load the font if not already loaded
+    if (google) {
+        const id  = 'font-preview-' + key;
+        if (!document.getElementById(id)) {
+            const link = document.createElement('link');
+            link.id   = id;
+            link.rel  = 'stylesheet';
+            link.href = 'https://fonts.googleapis.com/css2?family=' + google + '&display=swap';
+            document.head.appendChild(link);
+        }
+    }
+
+    // Apply after a brief moment to let the font start loading
+    setTimeout(() => {
+        document.documentElement.style.setProperty('--bn-font', family);
+    }, google ? 100 : 0);
 }
 
 const payAddUrl    = '{{ route("store-config.payment-method.add") }}';
