@@ -53,24 +53,7 @@
                     <label>ঠিকানা</label>
                     <textarea name="store_address" rows="2" placeholder="কাচারী রোড, টঙ্গী বাজার, গাজীপুর">{{ $config['store_address'] ?? '' }}</textarea>
                 </div>
-                <div class="form-group-field form-full">
-                    <label>বাংলা ফন্ট
-                        <button type="button" class="info-btn" data-info="পুরো সিস্টেম ও ইনভয়েসে এই ফন্ট ব্যবহার হবে। নিচে ক্লিক করলে সাথে সাথে প্রিভিউ দেখা যাবে — সংরক্ষণ করলে স্থায়ী হবে।">i</button>
-                    </label>
-                    @php $currentFont = \App\Support\BanglaFonts::currentKey(); @endphp
-                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
-                        @foreach(\App\Support\BanglaFonts::FONTS as $fKey => $f)
-                        <label class="font-option" style="font-family:{{ $f['family'] }}">
-                            <input type="radio" name="app_font" value="{{ $fKey }}"
-                                   data-family="{{ $f['family'] }}"
-                                   {{ $currentFont === $fKey ? 'checked' : '' }}
-                                   onchange="previewFont(this)">
-                            <span style="font-weight:700;font-size:.95rem">{{ $f['label'] }}</span>
-                            <span style="font-size:.85rem;color:#64748b">চাল বিক্রয় ১২,৩৪৫ টাকা</span>
-                        </label>
-                        @endforeach
-                    </div>
-                </div>
+
             </div>
 
             {{-- Preview --}}
@@ -255,27 +238,7 @@
 </div>
 
 @push('styles')
-{{-- Load all selectable fonts so each option previews in its own face --}}
-@include('partials.font-loader', ['keys' => \App\Support\BanglaFonts::keys()])
 <style>
-/* ── Font options ─────────────────────────────────── */
-.font-option {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 12px 14px;
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    cursor: pointer;
-    transition: border-color .15s, background .15s;
-}
-.font-option:hover { border-color: var(--accent); }
-.font-option:has(input:checked) {
-    border-color: var(--accent);
-    background: var(--accent-light);
-}
-.font-option input { display: none; }
-
 /* ── Tabs ─────────────────────────────────────────── */
 .config-tabs {
     display: flex;
@@ -536,36 +499,6 @@ function switchTab(name, btn) {
     document.querySelectorAll('.config-tab').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + name).style.display = 'block';
     btn.classList.add('active');
-}
-
-// Live font preview — applies instantly page-wide; persists only on save
-// Font definitions for dynamic loading
-const fontGoogleMap = @json(
-    collect(\App\Support\BanglaFonts::FONTS)->map(fn($f) => $f['google'])->toArray()
-);
-const fontKalpurush = {{ \App\Support\BanglaFonts::needsKalpurush(array_keys(\App\Support\BanglaFonts::FONTS)) ? 'true' : 'false' }};
-
-function previewFont(radio) {
-    const key    = radio.value;
-    const family = radio.dataset.family;
-    const google = fontGoogleMap[key];
-
-    // Dynamically load the font if not already loaded
-    if (google) {
-        const id  = 'font-preview-' + key;
-        if (!document.getElementById(id)) {
-            const link = document.createElement('link');
-            link.id   = id;
-            link.rel  = 'stylesheet';
-            link.href = 'https://fonts.googleapis.com/css2?family=' + google + '&display=swap';
-            document.head.appendChild(link);
-        }
-    }
-
-    // Apply after a brief moment to let the font start loading
-    setTimeout(() => {
-        document.documentElement.style.setProperty('--bn-font', family);
-    }, google ? 100 : 0);
 }
 
 const payAddUrl    = '{{ route("store-config.payment-method.add") }}';

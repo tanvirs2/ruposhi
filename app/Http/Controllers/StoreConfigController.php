@@ -108,7 +108,6 @@ class StoreConfigController extends Controller
             'store_email'   => 'nullable|email',
             'store_address' => 'nullable|string',
             'currency'      => 'nullable|string|max:10',
-            'app_font'      => 'nullable|in:' . implode(',', \App\Support\BanglaFonts::keys()),
         ]);
 
         foreach ($request->except(['_token', '_method']) as $key => $value) {

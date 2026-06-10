@@ -23,6 +23,7 @@ class PurchaseController extends Controller
         $dateTo   = $request->date_to   ?: null;
 
         $query = Purchase::with('supplier', 'items.item')
+            ->has('items')
             ->when($request->search, fn($q) =>
                 // Wrap in a sub-group so the OR doesn't bypass the global shop_id scope
                 $q->where(fn($sub) =>
@@ -79,14 +80,21 @@ class PurchaseController extends Controller
             $extraCost = $extraCostRows->sum(fn($r) => (float) $r['amount']);
             $deposit   = $depositRows->sum(fn($r) => (float) $r['amount']);
             $total     = $itemsTotal + $extraCost;
-            $due       = $total - $request->paid_amount - $deposit; // allows negative (credit/advance)
+
+            // If items exist and paid > (total - deposit), split overpayment into
+            // a separate no-item advance purchase so it appears in পরিশোধ তালিকা.
+            $hasItems    = !empty($request->items);
+            $netCost     = $total - $deposit;
+            $overpaid    = $hasItems ? max(0.0, (float) $request->paid_amount - $netCost) : 0.0;
+            $effectivePaid = (float) $request->paid_amount - $overpaid;
+            $due           = $total - $effectivePaid - $deposit; // 0 when overpaid, positive when underpaid
 
             $purchase = Purchase::create([
                 'supplier_id'    => $request->supplier_id ?: null,
                 'user_id'        => auth()->id(),
                 'total_amount'   => $total,
                 'extra_cost'     => $extraCost,
-                'paid_amount'    => $request->paid_amount,
+                'paid_amount'    => $effectivePaid,
                 'deposit_amount' => $deposit,
                 'due_amount'     => $due,
                 'payment_method' => $request->payment_method ?? 'নগদ',
@@ -129,9 +137,26 @@ class PurchaseController extends Controller
                 ]);
             }
 
+            // Supplier due uses the full original paid amount (effectivePaid + overpaid)
             if ($request->supplier_id) {
                 $supplier = Supplier::find($request->supplier_id);
-                $supplier->increment('due_amount', $total - $request->paid_amount - $deposit);
+                $supplier->increment('due_amount', $total - (float) $request->paid_amount - $deposit);
+            }
+
+            // Create the overpayment as a standalone advance in পরিশোধ তালিকা
+            if ($overpaid > 0 && $request->supplier_id) {
+                Purchase::create([
+                    'supplier_id'    => $request->supplier_id,
+                    'user_id'        => auth()->id(),
+                    'total_amount'   => 0,
+                    'extra_cost'     => 0,
+                    'paid_amount'    => $overpaid,
+                    'deposit_amount' => 0,
+                    'due_amount'     => -$overpaid,
+                    'payment_method' => $request->payment_method ?? 'নগদ',
+                    'notes'          => '__advance_for:' . $purchase->id,
+                    'purchase_date'  => $request->purchase_date,
+                ]);
             }
         });
 
@@ -169,9 +194,23 @@ class PurchaseController extends Controller
             foreach ($purchase->items as $pi) {
                 Stock::where('item_id', $pi->item_id)->decrement('quantity', $pi->quantity);
             }
+
+            // Find any linked overpayment advance created when this purchase was saved
+            $linkedAdvance = Purchase::where('notes', '__advance_for:' . $purchase->id)
+                ->doesntHave('items')
+                ->first();
+
             if ($purchase->supplier_id) {
                 $supplier = Supplier::find($purchase->supplier_id);
+                // Reverse main purchase supplier effect
                 $supplier->decrement('due_amount', $purchase->total_amount - $purchase->paid_amount - $purchase->deposit_amount);
+                // Also reverse linked advance supplier effect (0 - advance.paid - 0 = -overpaid → reversing adds overpaid)
+                if ($linkedAdvance) {
+                    $supplier->decrement('due_amount', $linkedAdvance->total_amount - $linkedAdvance->paid_amount - $linkedAdvance->deposit_amount);
+                }
+            }
+            if ($linkedAdvance) {
+                $linkedAdvance->delete();
             }
 
             // 2. Delete old items
@@ -186,13 +225,18 @@ class PurchaseController extends Controller
             $extraCost = $extraCostRows->sum(fn($r) => (float) $r['amount']);
             $deposit   = $depositRows->sum(fn($r) => (float) $r['amount']);
             $total     = $itemsTotal + $extraCost;
-            $due       = $total - $request->paid_amount - $deposit;
+
+            $hasItems      = !empty($request->items);
+            $netCost       = $total - $deposit;
+            $overpaid      = $hasItems ? max(0.0, (float) $request->paid_amount - $netCost) : 0.0;
+            $effectivePaid = (float) $request->paid_amount - $overpaid;
+            $due           = $total - $effectivePaid - $deposit;
 
             $purchase->update([
                 'supplier_id'    => $request->supplier_id ?: null,
                 'total_amount'   => $total,
                 'extra_cost'     => $extraCost,
-                'paid_amount'    => $request->paid_amount,
+                'paid_amount'    => $effectivePaid,
                 'deposit_amount' => $deposit,
                 'due_amount'     => $due,
                 'payment_method' => $request->payment_method ?? 'নগদ',
@@ -233,10 +277,26 @@ class PurchaseController extends Controller
                 ]);
             }
 
-            // 5. Re-apply supplier due (allows negative credit)
+            // 5. Re-apply supplier due using full original paid amount
             if ($request->supplier_id) {
                 $supplier = Supplier::find($request->supplier_id);
-                $supplier->increment('due_amount', $total - $request->paid_amount - $deposit);
+                $supplier->increment('due_amount', $total - (float) $request->paid_amount - $deposit);
+            }
+
+            // 6. Re-create advance record if still overpaid
+            if ($overpaid > 0 && $request->supplier_id) {
+                Purchase::create([
+                    'supplier_id'    => $request->supplier_id,
+                    'user_id'        => auth()->id(),
+                    'total_amount'   => 0,
+                    'extra_cost'     => 0,
+                    'paid_amount'    => $overpaid,
+                    'deposit_amount' => 0,
+                    'due_amount'     => -$overpaid,
+                    'payment_method' => $request->payment_method ?? 'নগদ',
+                    'notes'          => '__advance_for:' . $purchase->id,
+                    'purchase_date'  => $request->purchase_date,
+                ]);
             }
         });
 
@@ -260,10 +320,22 @@ class PurchaseController extends Controller
             foreach ($purchase->items as $pi) {
                 Stock::where('item_id', $pi->item_id)->decrement('quantity', $pi->quantity);
             }
-            // Reverse supplier due_amount effect
+
+            $linkedAdvance = Purchase::where('notes', '__advance_for:' . $purchase->id)
+                ->doesntHave('items')
+                ->first();
+
+            // Reverse supplier due_amount effect (main + linked advance)
             if ($purchase->supplier_id) {
                 $supplier = Supplier::find($purchase->supplier_id);
                 $supplier->decrement('due_amount', $purchase->total_amount - $purchase->paid_amount - $purchase->deposit_amount);
+                if ($linkedAdvance) {
+                    $supplier->decrement('due_amount', $linkedAdvance->total_amount - $linkedAdvance->paid_amount - $linkedAdvance->deposit_amount);
+                }
+            }
+
+            if ($linkedAdvance) {
+                $linkedAdvance->delete();
             }
             $purchase->delete();
         });
