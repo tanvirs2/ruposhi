@@ -613,7 +613,8 @@ a { text-decoration: none; color: inherit; }
 .content {
     flex: 1;
     padding: 28px 28px 40px;
-    max-width: 1400px;
+    width: 100%;
+    min-width: 0;
 }
 
 /* ─── Stats Grid ────────────────────────────────────────────── */
