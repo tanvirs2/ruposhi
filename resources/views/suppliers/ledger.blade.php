@@ -171,15 +171,13 @@
                     $isPay       = $row->type === 'payment' || $row->type === 'purchase_payment';
                     $isDeposit   = $row->type === 'deposit';
                     $isExtraCost = $row->type === 'extra_cost';
-                    $isDiscount  = $row->type === 'discount';
                     $isNewGroup  = $row->purchase_id && $row->purchase_id !== $prevPurchaseId;
                     if ($row->purchase_id) $prevPurchaseId = $row->purchase_id;
                     elseif ($row->type === 'payment') $prevPurchaseId = null;
                     $rowClass = $isPay      ? 'sl-payment-row'
                               : ($isDeposit   ? 'sl-deposit-row'
                               : ($isExtraCost ? 'sl-extracost-row'
-                              : ($isDiscount  ? 'sl-discount-row'
-                              : 'sl-item-row')));
+                              : 'sl-item-row'));
                 @endphp
                 <tr class="{{ $rowClass }} {{ $isNewGroup ? 'sl-new-group' : '' }}">
 
@@ -199,14 +197,6 @@
                             <span class="sl-extracost-label">
                                 <i class="fas fa-plus-circle" style="font-size:.72rem;margin-right:3px"></i>
                                 {{ $row->label }}
-                            </span>
-                            @if($row->link)
-                                <a href="{{ $row->link }}" class="sl-ref-link">{{ $row->ref }}</a>
-                            @endif
-                        @elseif($isDiscount)
-                            <span class="sl-discount-label">
-                                <i class="fas fa-scissors" style="font-size:.72rem;margin-right:3px"></i>
-                                ছাড়
                             </span>
                             @if($row->link)
                                 <a href="{{ $row->link }}" class="sl-ref-link">{{ $row->ref }}</a>
@@ -355,10 +345,8 @@
 .sl-item-row     { background: var(--card-bg); }
 .sl-extracost-row { background: #fdf4ff; }
 .sl-laborcost-row { background: #fff1f2; }
-.sl-discount-row  { background: #f0fdf4; }
 .sl-extracost-label { color: #7e22ce; font-weight: 600; font-size: .88rem; }
 .sl-laborcost-label { color: #be123c; font-weight: 600; font-size: .88rem; }
-.sl-discount-label  { color: #15803d; font-weight: 600; font-size: .88rem; }
 .sl-deposit-label   { color: #1d4ed8; font-weight: 600; font-size: .88rem; }
 
 .sl-debit  { color: #dc2626; font-weight: 700; }

@@ -77,16 +77,14 @@ class PurchaseController extends Controller
             $depositRows   = collect($request->deposit_rows ?? [])
                 ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
             $extraCost = $extraCostRows->sum(fn($r) => (float) $r['amount']);
-            $discount  = (float) ($request->discount ?? 0);
             $deposit   = $depositRows->sum(fn($r) => (float) $r['amount']);
-            $total     = $itemsTotal - $discount + $extraCost;
+            $total     = $itemsTotal + $extraCost;
             $due       = $total - $request->paid_amount - $deposit; // allows negative (credit/advance)
 
             $purchase = Purchase::create([
                 'supplier_id'    => $request->supplier_id ?: null,
                 'user_id'        => auth()->id(),
                 'total_amount'   => $total,
-                'discount'       => $discount,
                 'extra_cost'     => $extraCost,
                 'paid_amount'    => $request->paid_amount,
                 'deposit_amount' => $deposit,
@@ -186,15 +184,13 @@ class PurchaseController extends Controller
             $depositRows   = collect($request->deposit_rows ?? [])
                 ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
             $extraCost = $extraCostRows->sum(fn($r) => (float) $r['amount']);
-            $discount  = (float) ($request->discount ?? 0);
             $deposit   = $depositRows->sum(fn($r) => (float) $r['amount']);
-            $total     = $itemsTotal - $discount + $extraCost;
+            $total     = $itemsTotal + $extraCost;
             $due       = $total - $request->paid_amount - $deposit;
 
             $purchase->update([
                 'supplier_id'    => $request->supplier_id ?: null,
                 'total_amount'   => $total,
-                'discount'       => $discount,
                 'extra_cost'     => $extraCost,
                 'paid_amount'    => $request->paid_amount,
                 'deposit_amount' => $deposit,

@@ -73,16 +73,12 @@
 
     <div class="invoice-totals">
         @php
-            $discount    = $purchase->discount ?? 0;
             $rawTotal    = $purchase->items->sum('subtotal');
             $previousDue = $purchase->supplier ? ($purchase->supplier->due_amount - $purchase->due_amount) : 0;
             $supplierNet = $purchase->supplier ? $purchase->supplier->due_amount : 0;
         @endphp
-        @if(($purchase->extra_cost ?? 0) > 0 || $discount > 0)
+        @if(($purchase->extra_cost ?? 0) > 0)
         <div class="inv-row"><span>আইটেম মূল্য:</span><span>৳ {{ number_format($rawTotal,0) }}</span></div>
-        @endif
-        @if($discount > 0)
-        <div class="inv-row" style="color:#15803d"><span>ছাড়:</span><span>− ৳ {{ number_format($discount,0) }}</span></div>
         @endif
         @foreach($purchase->extraCosts as $ec)
         <div class="inv-row"><span>{{ $ec->category_name }}:</span><span>+ ৳ {{ number_format($ec->amount,0) }}</span></div>

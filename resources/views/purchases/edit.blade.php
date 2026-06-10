@@ -83,10 +83,6 @@
                     <span>মোট মূল্য:</span>
                     <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
                         <span id="totalDisplay">৳ 0</span>
-                        <button type="button" id="discountToggleBtn" onclick="toggleDiscount()"
-                            class="cost-toggle-btn {{ ($purchase->discount??0) > 0 ? 'active' : '' }}"
-                            style="background:#dcfce7;color:#15803d;border-color:#86efac">
-                            {{ ($purchase->discount??0) > 0 ? '✕ ছাড়' : '+ ছাড়' }}</button>
                         <button type="button" id="extraCostToggleBtn" onclick="toggleExtraCosts()"
                             class="cost-toggle-btn {{ $purchase->extraCosts->isNotEmpty() ? 'active' : '' }}">
                             {{ $purchase->extraCosts->isNotEmpty() ? '✕ খরচ' : '+ খরচ' }}</button>
@@ -95,18 +91,6 @@
                             style="background:#eff6ff;color:#1d4ed8;border-color:#93c5fd">
                             {{ $purchase->deposits->isNotEmpty() ? '✕ জমা' : '+ জমা' }}</button>
                     </span>
-                </div>
-                {{-- Discount row --}}
-                <div id="discountRow" style="{{ ($purchase->discount??0) > 0 ? '' : 'display:none' }}">
-                    <div style="border:1.5px solid #86efac;border-radius:8px;padding:10px 12px;background:#f0fdf4;display:flex;align-items:center;gap:10px">
-                        <label style="font-size:.82rem;font-weight:700;color:#15803d;white-space:nowrap">
-                            <i class="fas fa-tag"></i> ছাড় (৳)
-                        </label>
-                        <input type="text" inputmode="decimal" name="discount" id="discountInput"
-                               value="{{ $purchase->discount ?? 0 }}" oninput="updateSummary()"
-                               style="flex:1;border:1.5px solid #86efac;border-radius:6px;padding:6px 10px;
-                                      font-size:.88rem;background:#fff;outline:none">
-                    </div>
                 </div>
                 {{-- Categorised extra costs --}}
                 <div id="extraRow" style="{{ $purchase->extraCosts->isNotEmpty() ? '' : 'display:none' }}">
@@ -539,21 +523,11 @@ function removeExtraCostRow(idx) {
     updateSummary();
 }
 
-function toggleDiscount() {
-    const row = document.getElementById('discountRow');
-    const btn = document.getElementById('discountToggleBtn');
-    const open = row.style.display === 'none';
-    row.style.display = open ? 'block' : 'none';
-    btn.textContent = open ? '✕ ছাড়' : '+ ছাড়';
-    if (!open) { document.getElementById('discountInput').value = '0'; updateSummary(); }
-}
-
 function updateSummary() {
     const total    = cart.reduce((s,c)=>s+c.qty*c.price,0);
     const totalQty = cart.reduce((s,c)=>s+(c.qty||0),0);
     const extra    = getExtraCostTotal();
-    const discount = parseFloat(toEnglishDigits(document.getElementById('discountInput')?.value||'0'))||0;
-    const net      = total - discount + extra;
+    const net      = total + extra;
     const paid     = parseFloat(toEnglishDigits(document.getElementById('paidInput').value))||0;
     const deposit  = getDepositTotal();
     const rawDue   = net - paid - deposit;
@@ -572,8 +546,7 @@ function updateSummary() {
 
 function setFullPay() {
     const total    = cart.reduce((s,c)=>s+c.qty*c.price,0);
-    const discount = parseFloat(toEnglishDigits(document.getElementById('discountInput')?.value||'0'))||0;
-    const net      = total - discount + getExtraCostTotal() - getDepositTotal();
+    const net      = total + getExtraCostTotal() - getDepositTotal();
     document.getElementById('paidInput').value = Math.max(0, net).toFixed(0);
     updateSummary();
 }
