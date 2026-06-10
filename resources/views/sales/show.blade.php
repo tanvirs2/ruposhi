@@ -179,6 +179,12 @@
         </tfoot>
     </table>
 
+    @if(\App\Support\BanglaWords::taka($sale->paid_amount) !== '')
+    <div style="margin-top:6px;font-size:.85rem;color:#333">
+        <strong>কথায় (পরিশোধ):</strong> {{ \App\Support\BanglaWords::taka($sale->paid_amount) }} মাত্র
+    </div>
+    @endif
+
     @if($sale->notes)
     <div style="margin-top:6px;font-size:.8rem;color:#555">মন্তব্যঃ {{ $sale->notes }}</div>
     @endif

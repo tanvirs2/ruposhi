@@ -36,6 +36,7 @@
                         সম্পূর্ণ
                     </button>
                 </div>
+                <div id="amountWords" style="display:none;margin-top:4px;font-size:.78rem;font-weight:600;color:var(--accent)"></div>
             </div>
 
             <div class="form-group-field">
@@ -231,6 +232,8 @@ function setFullPay() {
 const pre = allCustomers.find(c => c.id == {{ $selectedId }});
 if (pre) { searchEl.value = pre.name; selectCustomer(pre.id); }
 @endif
+
+document.addEventListener('DOMContentLoaded', () => bnWatchTakaWords('amountInput', 'amountWords'));
 </script>
 @endpush
 @endsection

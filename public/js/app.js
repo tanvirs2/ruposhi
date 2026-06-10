@@ -543,3 +543,60 @@ document.head.appendChild(style);
     window.addEventListener('scroll', hidePopover, true);
     window.addEventListener('resize', hidePopover);
 })();
+
+/* ── Amount in Bengali words (টাকার অংক কথায়) ─────────────────── */
+const bnOnesWords = [
+    'শূন্য','এক','দুই','তিন','চার','পাঁচ','ছয়','সাত','আট','নয়',
+    'দশ','এগারো','বারো','তেরো','চৌদ্দ','পনেরো','ষোল','সতেরো','আঠারো','উনিশ',
+    'বিশ','একুশ','বাইশ','তেইশ','চব্বিশ','পঁচিশ','ছাব্বিশ','সাতাশ','আটাশ','ঊনত্রিশ',
+    'ত্রিশ','একত্রিশ','বত্রিশ','তেত্রিশ','চৌত্রিশ','পঁয়ত্রিশ','ছত্রিশ','সাঁইত্রিশ','আটত্রিশ','ঊনচল্লিশ',
+    'চল্লিশ','একচল্লিশ','বিয়াল্লিশ','তেতাল্লিশ','চুয়াল্লিশ','পঁয়তাল্লিশ','ছেচল্লিশ','সাতচল্লিশ','আটচল্লিশ','ঊনপঞ্চাশ',
+    'পঞ্চাশ','একান্ন','বাহান্ন','তিপ্পান্ন','চুয়ান্ন','পঞ্চান্ন','ছাপ্পান্ন','সাতান্ন','আটান্ন','ঊনষাট',
+    'ষাট','একষট্টি','বাষট্টি','তেষট্টি','চৌষট্টি','পঁয়ষট্টি','ছেষট্টি','সাতষট্টি','আটষট্টি','ঊনসত্তর',
+    'সত্তর','একাত্তর','বাহাত্তর','তিয়াত্তর','চুয়াত্তর','পঁচাত্তর','ছিয়াত্তর','সাতাত্তর','আটাত্তর','ঊনআশি',
+    'আশি','একাশি','বিরাশি','তিরাশি','চুরাশি','পঁচাশি','ছিয়াশি','সাতাশি','আটাশি','ঊননব্বই',
+    'নব্বই','একানব্বই','বিরানব্বই','তিরানব্বই','চুরানব্বই','পঁচানব্বই','ছিয়ানব্বই','সাতানব্বই','আটানব্বই','নিরানব্বই',
+];
+
+function bnNumWords(n) {
+    n = Math.floor(n);
+    if (n === 0) return 'শূন্য';
+    const parts = [];
+    if (n >= 10000000) { parts.push(bnNumWords(Math.floor(n / 10000000)) + ' কোটি'); n %= 10000000; }
+    if (n >= 100000)   { parts.push(bnOnesWords[Math.floor(n / 100000)] + ' লক্ষ');   n %= 100000; }
+    if (n >= 1000)     { parts.push(bnOnesWords[Math.floor(n / 1000)] + ' হাজার');    n %= 1000; }
+    if (n >= 100)      { parts.push(bnOnesWords[Math.floor(n / 100)] + ' শত');        n %= 100; }
+    if (n > 0)         parts.push(bnOnesWords[n]);
+    return parts.join(' ');
+}
+
+function bnTakaWords(v) {
+    v = parseFloat(toEnglishDigits(String(v == null ? '' : v))) || 0;
+    if (v <= 0) return '';
+    const tk = Math.floor(v);
+    const ps = Math.round((v - tk) * 100);
+    let s = tk > 0 ? bnNumWords(tk) + ' টাকা' : '';
+    if (ps > 0) s += (s ? ' ' : '') + bnNumWords(ps) + ' পয়সা';
+    return s;
+}
+
+// Polling watcher — also catches programmatic value changes (e.g. "সম্পূর্ণ" button)
+function bnWatchTakaWords(inputId, targetId) {
+    const el = document.getElementById(inputId);
+    const t  = document.getElementById(targetId);
+    if (!el || !t) return;
+    let last = null;
+    const update = () => {
+        if (el.value === last) return;
+        last = el.value;
+        const w = bnTakaWords(el.value);
+        t.textContent = w;
+        t.style.display = w ? '' : 'none';
+    };
+    update();
+    setInterval(update, 300);
+}
+
+window.bnNumWords      = bnNumWords;
+window.bnTakaWords     = bnTakaWords;
+window.bnWatchTakaWords = bnWatchTakaWords;

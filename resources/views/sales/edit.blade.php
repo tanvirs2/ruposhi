@@ -174,6 +174,7 @@
                             সম্পূর্ণ
                         </button>
                     </div>
+                    <div id="paidWords" style="display:none;margin-top:4px;font-size:.78rem;font-weight:600;color:var(--accent)"></div>
                     <div id="walkinWarning" style="display:none;margin-top:6px;padding:8px 12px;
                         background:#fee2e2;border:1px solid #fecaca;border-radius:8px;
                         font-size:.82rem;color:#991b1b;font-weight:600">
@@ -874,6 +875,8 @@ function showStockToast(msg, type) {
     }
     @endif
 })();
+
+document.addEventListener('DOMContentLoaded', () => bnWatchTakaWords('paidInput', 'paidWords'));
 </script>
 @endpush
 @endsection

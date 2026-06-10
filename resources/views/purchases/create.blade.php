@@ -213,6 +213,7 @@
                             সম্পূর্ণ
                         </button>
                     </div>
+                    <div id="paidWords" style="display:none;margin-top:4px;font-size:.78rem;font-weight:600;color:var(--accent)"></div>
                 </div>
                 <div class="summary-row" style="color:#ef4444"><span>বকেয়া:</span><span id="dueDisplay">৳ 0</span></div>
 
@@ -1042,6 +1043,8 @@ async function saveNewSupplier() {
         btn.innerHTML = '<i class="fas fa-save"></i> সংরক্ষণ ও নির্বাচন';
     }
 }
+
+document.addEventListener('DOMContentLoaded', () => bnWatchTakaWords('paidInput', 'paidWords'));
 </script>
 @endpush
 @endsection

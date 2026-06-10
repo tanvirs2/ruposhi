@@ -139,6 +139,7 @@
                             সম্পূর্ণ
                         </button>
                     </div>
+                    <div id="paidWords" style="display:none;margin-top:4px;font-size:.78rem;font-weight:600;color:var(--accent)"></div>
                 </div>
                 <div class="summary-row" style="color:#ef4444"><span>বকেয়া:</span><span id="dueDisplay">৳ 0</span></div>
 
@@ -519,6 +520,8 @@ document.getElementById('receiveForm').addEventListener('submit',function(e){
     addExtraCostRow('{{ $ec->category_name }}', {{ $ec->amount }});
     @endforeach
 })();
+
+document.addEventListener('DOMContentLoaded', () => bnWatchTakaWords('paidInput', 'paidWords'));
 </script>
 @endpush
 @endsection

@@ -150,6 +150,11 @@
             </span>
         </div>
         @endif
+        @if(\App\Support\BanglaWords::taka($purchase->paid_amount) !== '')
+        <div style="margin-top:6px;font-size:.85rem;color:#333">
+            <strong>কথায় (পরিশোধ):</strong> {{ \App\Support\BanglaWords::taka($purchase->paid_amount) }} মাত্র
+        </div>
+        @endif
     </div>
 
     @if($purchase->notes)

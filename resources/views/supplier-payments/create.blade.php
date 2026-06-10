@@ -56,6 +56,7 @@
                         সম্পূর্ণ
                     </button>
                 </div>
+                <div id="amountWords" style="display:none;margin-top:4px;font-size:.78rem;font-weight:600;color:var(--accent)"></div>
             </div>
 
             <div class="form-group-field">
@@ -227,6 +228,8 @@ function setFullPay() {
         amountEl.focus();
     }
 }
+
+document.addEventListener('DOMContentLoaded', () => bnWatchTakaWords('amountField', 'amountWords'));
 </script>
 @endpush
 @endsection
