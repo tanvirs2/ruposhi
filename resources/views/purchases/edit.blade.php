@@ -90,10 +90,10 @@
                         <button type="button" id="extraCostToggleBtn" onclick="toggleExtraCosts()"
                             class="cost-toggle-btn {{ $purchase->extraCosts->isNotEmpty() ? 'active' : '' }}">
                             {{ $purchase->extraCosts->isNotEmpty() ? '✕ খরচ' : '+ খরচ' }}</button>
-                        <button type="button" id="depositToggleBtn" onclick="toggleDeposit()"
-                            class="cost-toggle-btn {{ ($purchase->deposit_amount??0) > 0 ? 'active' : '' }}"
+                        <button type="button" id="depositToggleBtn" onclick="toggleDeposits()"
+                            class="cost-toggle-btn {{ $purchase->deposits->isNotEmpty() ? 'active' : '' }}"
                             style="background:#eff6ff;color:#1d4ed8;border-color:#93c5fd">
-                            {{ ($purchase->deposit_amount??0) > 0 ? '✕ জমা' : '+ জমা' }}</button>
+                            {{ $purchase->deposits->isNotEmpty() ? '✕ জমা' : '+ জমা' }}</button>
                     </span>
                 </div>
                 {{-- Discount row --}}
@@ -129,16 +129,25 @@
                         </button>
                     </div>
                 </div>
-                {{-- Deposit row --}}
-                <div id="depositRow" style="{{ ($purchase->deposit_amount??0) > 0 ? '' : 'display:none' }}">
-                    <div style="border:1.5px solid #93c5fd;border-radius:8px;padding:10px 12px;background:#eff6ff;display:flex;align-items:center;gap:10px">
-                        <label style="font-size:.82rem;font-weight:700;color:#1d4ed8;white-space:nowrap">
-                            <i class="fas fa-piggy-bank"></i> জমা (৳)
-                        </label>
-                        <input type="text" inputmode="decimal" name="deposit_amount" id="depositInput"
-                               value="{{ $purchase->deposit_amount ?? 0 }}" oninput="updateSummary()"
-                               style="flex:1;border:1.5px solid #93c5fd;border-radius:6px;padding:6px 10px;
-                                      font-size:.88rem;background:#fff;outline:none">
+                {{-- Categorised deposits --}}
+                <div id="depositRow" style="{{ $purchase->deposits->isNotEmpty() ? '' : 'display:none' }}">
+                    <div style="border:1.5px solid #93c5fd;border-radius:8px;padding:12px 12px 8px;background:#eff6ff">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                            <span style="font-size:.82rem;font-weight:700;color:#1d4ed8">
+                                <i class="fas fa-piggy-bank"></i> জমা
+                            </span>
+                            <a href="{{ route('deposit-categories.index') }}" target="_blank"
+                               style="font-size:.72rem;color:#1d4ed8;text-decoration:none">
+                                <i class="fas fa-gear"></i> ক্যাটাগরি
+                            </a>
+                        </div>
+                        <div id="depositRows"></div>
+                        <button type="button" onclick="addDepositRow()"
+                            style="margin-top:6px;width:100%;padding:7px;border:1.5px dashed #93c5fd;
+                                   border-radius:6px;background:transparent;color:#1d4ed8;
+                                   font-size:.8rem;font-weight:600;cursor:pointer">
+                            <i class="fas fa-plus"></i> আরেকটি জমা যোগ করুন
+                        </button>
                     </div>
                 </div>
                 <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0</span></div>
@@ -432,16 +441,59 @@ function getExtraCostTotal() {
     return total;
 }
 
-function toggleDeposit() {
+// ── Categorised deposits ──────────────────────────────────────
+const depositCategories = @json($depositCategories);
+let depositRowCount = 0;
+
+function getDepositTotal() {
+    let total = 0;
+    document.querySelectorAll('.deposit-amount').forEach(inp => {
+        total += parseFloat(toEnglishDigits(inp.value)) || 0;
+    });
+    return total;
+}
+
+function toggleDeposits() {
     const row = document.getElementById('depositRow');
     const btn = document.getElementById('depositToggleBtn');
     const open = row.style.display === 'none';
     row.style.display = open ? 'block' : 'none';
     btn.textContent = open ? '✕ জমা' : '+ জমা';
-    if (!open) {
-        document.getElementById('depositInput').value = '0';
-        updateSummary();
-    }
+    btn.classList.toggle('active', open);
+    if (open && document.getElementById('depositRows').children.length === 0) addDepositRow();
+    if (!open) { document.getElementById('depositRows').innerHTML = ''; depositRowCount = 0; updateSummary(); }
+}
+
+function addDepositRow(catName, amount) {
+    const idx  = depositRowCount++;
+    const opts = depositCategories.map(c =>
+        `<option value="${c}" ${c === catName ? 'selected' : ''}>${c}</option>`
+    ).join('');
+    const row = document.createElement('div');
+    row.id = `dpr-${idx}`;
+    row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px';
+    row.innerHTML = `
+        <select name="deposit_rows[${idx}][category]" class="deposit-cat form-select"
+            style="flex:1;padding:6px 8px;font-size:.82rem;min-width:0" onchange="updateSummary()">
+            <option value="">-- ক্যাটাগরি --</option>
+            ${opts}
+        </select>
+        <input type="text" inputmode="decimal" name="deposit_rows[${idx}][amount]"
+            placeholder="৳ পরিমাণ" value="${amount || ''}" class="deposit-amount"
+            style="width:90px;padding:6px 8px;border:1.5px solid #93c5fd;border-radius:6px;font-size:.82rem"
+            oninput="updateSummary()">
+        <button type="button" onclick="removeDepositRow(${idx})"
+            style="padding:5px 8px;border:none;background:#fee2e2;color:#dc2626;border-radius:6px;cursor:pointer;flex-shrink:0">
+            <i class="fas fa-times"></i>
+        </button>`;
+    document.getElementById('depositRows').appendChild(row);
+    if (typeof attachBengaliConverter === 'function') attachBengaliConverter(row);
+}
+
+function removeDepositRow(idx) {
+    const el = document.getElementById(`dpr-${idx}`);
+    if (el) el.remove();
+    updateSummary();
 }
 
 function toggleExtraCosts() {
@@ -503,7 +555,7 @@ function updateSummary() {
     const discount = parseFloat(toEnglishDigits(document.getElementById('discountInput')?.value||'0'))||0;
     const net      = total - discount + extra;
     const paid     = parseFloat(toEnglishDigits(document.getElementById('paidInput').value))||0;
-    const deposit  = parseFloat(toEnglishDigits(document.getElementById('depositInput')?.value||'0'))||0;
+    const deposit  = getDepositTotal();
     const rawDue   = net - paid - deposit;
     document.getElementById('totalDisplay').textContent    = '৳ '+total.toLocaleString();
     document.getElementById('totalQtyDisplay').textContent = totalQty+' বস্তা';
@@ -521,8 +573,8 @@ function updateSummary() {
 function setFullPay() {
     const total    = cart.reduce((s,c)=>s+c.qty*c.price,0);
     const discount = parseFloat(toEnglishDigits(document.getElementById('discountInput')?.value||'0'))||0;
-    const net      = total - discount + getExtraCostTotal();
-    document.getElementById('paidInput').value = net.toFixed(0);
+    const net      = total - discount + getExtraCostTotal() - getDepositTotal();
+    document.getElementById('paidInput').value = Math.max(0, net).toFixed(0);
     updateSummary();
 }
 document.getElementById('paidInput').addEventListener('input', updateSummary);
@@ -556,6 +608,14 @@ document.getElementById('receiveForm').addEventListener('submit',function(e){
     @foreach($purchase->extraCosts as $ec)
     addExtraCostRow('{{ $ec->category_name }}', {{ $ec->amount }});
     @endforeach
+
+    // Pre-populate existing deposits
+    @if($purchase->deposits->isNotEmpty())
+    document.getElementById('depositRow').style.display = 'block';
+    @foreach($purchase->deposits as $dep)
+    addDepositRow('{{ $dep->category_name }}', {{ $dep->amount }});
+    @endforeach
+    @endif
 })();
 
 document.addEventListener('DOMContentLoaded', () => bnWatchTakaWords('paidInput', 'paidWords'));

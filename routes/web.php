@@ -19,6 +19,7 @@ use App\Http\Controllers\StoreConfigController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ExtraCostCategoryController;
+use App\Http\Controllers\DepositCategoryController;
 use App\Http\Controllers\SmsController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\UserController;
@@ -176,6 +177,11 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
         Route::post('/extra-cost-categories',                  [ExtraCostCategoryController::class, 'store'])->name('extra-cost-categories.store');
         Route::put('/extra-cost-categories/{extraCostCategory}',    [ExtraCostCategoryController::class, 'update'])->name('extra-cost-categories.update');
         Route::delete('/extra-cost-categories/{extraCostCategory}', [ExtraCostCategoryController::class, 'destroy'])->name('extra-cost-categories.destroy');
+
+        Route::get('/deposit-categories',                      [DepositCategoryController::class, 'index'])->name('deposit-categories.index');
+        Route::post('/deposit-categories',                     [DepositCategoryController::class, 'store'])->name('deposit-categories.store');
+        Route::put('/deposit-categories/{depositCategory}',    [DepositCategoryController::class, 'update'])->name('deposit-categories.update');
+        Route::delete('/deposit-categories/{depositCategory}', [DepositCategoryController::class, 'destroy'])->name('deposit-categories.destroy');
     });
 
     /* Shop staff/user management — shop admin only */

@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\PurchaseExtraCost;
+use App\Models\PurchaseDeposit;
 use App\Models\ExtraCostCategory;
+use App\Models\DepositCategory;
 use App\Models\Supplier;
 use App\Models\Item;
 use App\Models\Stock;
@@ -49,9 +51,10 @@ class PurchaseController extends Controller
         $items          = Item::with('stock:id,item_id,quantity')
                             ->select('id','name','purchase_price')
                             ->orderBy('name')->get();
-        $paymentMethods  = StoreConfigController::getGroupedPaymentMethods();
-        $extraCategories = ExtraCostCategory::orderBy('name')->pluck('name');
-        return view('purchases.create', compact('suppliers', 'items', 'paymentMethods', 'extraCategories'));
+        $paymentMethods    = StoreConfigController::getGroupedPaymentMethods();
+        $extraCategories   = ExtraCostCategory::orderBy('name')->pluck('name');
+        $depositCategories = DepositCategory::orderBy('name')->pluck('name');
+        return view('purchases.create', compact('suppliers', 'items', 'paymentMethods', 'extraCategories', 'depositCategories'));
     }
 
     public function store(Request $request)
@@ -71,9 +74,11 @@ class PurchaseController extends Controller
             $itemsTotal    = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
             $extraCostRows = collect($request->extra_costs ?? [])
                 ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
+            $depositRows   = collect($request->deposit_rows ?? [])
+                ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
             $extraCost = $extraCostRows->sum(fn($r) => (float) $r['amount']);
             $discount  = (float) ($request->discount ?? 0);
-            $deposit   = (float) ($request->deposit_amount ?? 0);
+            $deposit   = $depositRows->sum(fn($r) => (float) $r['amount']);
             $total     = $itemsTotal - $discount + $extraCost;
             $due       = $total - $request->paid_amount - $deposit; // allows negative (credit/advance)
 
@@ -106,13 +111,20 @@ class PurchaseController extends Controller
                     ['quantity' => 0, 'min_quantity' => 5]
                 );
                 $stock->increment('quantity', $row['qty']);
-                // Note: items.purchase_price is NOT updated here — it is the master default
-                // price set from the items page. Per-receive prices live in purchase_items only.
             }
 
             // Save categorised extra costs
             foreach ($extraCostRows as $row) {
                 PurchaseExtraCost::create([
+                    'purchase_id'   => $purchase->id,
+                    'category_name' => $row['category'],
+                    'amount'        => $row['amount'],
+                ]);
+            }
+
+            // Save categorised deposits
+            foreach ($depositRows as $row) {
+                PurchaseDeposit::create([
                     'purchase_id'   => $purchase->id,
                     'category_name' => $row['category'],
                     'amount'        => $row['amount'],
@@ -130,15 +142,16 @@ class PurchaseController extends Controller
 
     public function edit(Purchase $purchase)
     {
-        $purchase->load('items.item', 'supplier', 'user', 'extraCosts');
-        $suppliers      = Supplier::select('id','name','proprietor','phone','address','due_amount')
-                            ->orderBy('name')->get();
-        $items          = Item::with('stock:id,item_id,quantity')
-                            ->select('id','name','purchase_price')
-                            ->orderBy('name')->get();
-        $paymentMethods  = StoreConfigController::getGroupedPaymentMethods();
-        $extraCategories = ExtraCostCategory::orderBy('name')->pluck('name');
-        return view('purchases.edit', compact('purchase', 'suppliers', 'items', 'paymentMethods', 'extraCategories'));
+        $purchase->load('items.item', 'supplier', 'user', 'extraCosts', 'deposits');
+        $suppliers         = Supplier::select('id','name','proprietor','phone','address','due_amount')
+                                ->orderBy('name')->get();
+        $items             = Item::with('stock:id,item_id,quantity')
+                                ->select('id','name','purchase_price')
+                                ->orderBy('name')->get();
+        $paymentMethods    = StoreConfigController::getGroupedPaymentMethods();
+        $extraCategories   = ExtraCostCategory::orderBy('name')->pluck('name');
+        $depositCategories = DepositCategory::orderBy('name')->pluck('name');
+        return view('purchases.edit', compact('purchase', 'suppliers', 'items', 'paymentMethods', 'extraCategories', 'depositCategories'));
     }
 
     public function update(Request $request, Purchase $purchase)
@@ -170,9 +183,11 @@ class PurchaseController extends Controller
             $itemsTotal    = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
             $extraCostRows = collect($request->extra_costs ?? [])
                 ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
+            $depositRows   = collect($request->deposit_rows ?? [])
+                ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
             $extraCost = $extraCostRows->sum(fn($r) => (float) $r['amount']);
             $discount  = (float) ($request->discount ?? 0);
-            $deposit   = (float) ($request->deposit_amount ?? 0);
+            $deposit   = $depositRows->sum(fn($r) => (float) $r['amount']);
             $total     = $itemsTotal - $discount + $extraCost;
             $due       = $total - $request->paid_amount - $deposit;
 
@@ -189,7 +204,7 @@ class PurchaseController extends Controller
                 'purchase_date'  => $request->purchase_date,
             ]);
 
-            // 4. Re-add items, stock & price
+            // 4. Re-add items & stock
             foreach ($request->items ?? [] as $row) {
                 PurchaseItem::create([
                     'purchase_id' => $purchase->id,
@@ -200,13 +215,22 @@ class PurchaseController extends Controller
                 ]);
                 $stock = Stock::firstOrCreate(['item_id' => $row['id']], ['quantity' => 0, 'min_quantity' => 5]);
                 $stock->increment('quantity', $row['qty']);
-                // Note: items.purchase_price is NOT updated here — master price stays as-is.
             }
 
             // 4b. Replace extra costs
             $purchase->extraCosts()->delete();
             foreach ($extraCostRows as $row) {
                 PurchaseExtraCost::create([
+                    'purchase_id'   => $purchase->id,
+                    'category_name' => $row['category'],
+                    'amount'        => $row['amount'],
+                ]);
+            }
+
+            // 4c. Replace deposits
+            $purchase->deposits()->delete();
+            foreach ($depositRows as $row) {
+                PurchaseDeposit::create([
                     'purchase_id'   => $purchase->id,
                     'category_name' => $row['category'],
                     'amount'        => $row['amount'],
@@ -225,7 +249,7 @@ class PurchaseController extends Controller
 
     public function show(Purchase $purchase)
     {
-        $purchase->load('items.item', 'supplier', 'user', 'extraCosts');
+        $purchase->load('items.item', 'supplier', 'user', 'extraCosts', 'deposits');
         return view('purchases.show', compact('purchase'));
     }
 

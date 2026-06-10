@@ -163,7 +163,7 @@
                             title="ছাড় যোগ করুন">+ ছাড়</button>
                         <button type="button" id="extraCostToggleBtn" onclick="toggleExtraCosts()"
                             class="cost-toggle-btn" title="অতিরিক্ত খরচ যোগ করুন">+ খরচ</button>
-                        <button type="button" id="depositToggleBtn" onclick="toggleDeposit()"
+                        <button type="button" id="depositToggleBtn" onclick="toggleDeposits()"
                             class="cost-toggle-btn" style="background:#eff6ff;color:#1d4ed8;border-color:#93c5fd"
                             title="জমা যোগ করুন">+ জমা</button>
                     </span>
@@ -201,16 +201,25 @@
                         </button>
                     </div>
                 </div>
-                {{-- Deposit row --}}
+                {{-- Categorised deposits --}}
                 <div id="depositRow" style="display:none">
-                    <div style="border:1.5px solid #93c5fd;border-radius:8px;padding:10px 12px;background:#eff6ff;display:flex;align-items:center;gap:10px">
-                        <label style="font-size:.82rem;font-weight:700;color:#1d4ed8;white-space:nowrap">
-                            <i class="fas fa-piggy-bank"></i> জমা (৳)
-                        </label>
-                        <input type="text" inputmode="decimal" name="deposit_amount" id="depositInput"
-                               value="0" oninput="updateSummary()"
-                               style="flex:1;border:1.5px solid #93c5fd;border-radius:6px;padding:6px 10px;
-                                      font-size:.88rem;background:#fff;outline:none">
+                    <div style="border:1.5px solid #93c5fd;border-radius:8px;padding:12px 12px 8px;background:#eff6ff">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                            <span style="font-size:.82rem;font-weight:700;color:#1d4ed8">
+                                <i class="fas fa-piggy-bank"></i> জমা
+                            </span>
+                            <a href="{{ route('deposit-categories.index') }}" target="_blank"
+                               style="font-size:.72rem;color:#1d4ed8;text-decoration:none">
+                                <i class="fas fa-gear"></i> ক্যাটাগরি
+                            </a>
+                        </div>
+                        <div id="depositRows"></div>
+                        <button type="button" onclick="addDepositRow()"
+                            style="margin-top:6px;width:100%;padding:7px;border:1.5px dashed #93c5fd;
+                                   border-radius:6px;background:transparent;color:#1d4ed8;
+                                   font-size:.8rem;font-weight:600;cursor:pointer">
+                            <i class="fas fa-plus"></i> আরেকটি জমা যোগ করুন
+                        </button>
                     </div>
                 </div>
                 <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0</span></div>
@@ -706,7 +715,7 @@ function updateSummary() {
     const discount = parseFloat(toEnglishDigits(document.getElementById('discountInput')?.value || '0')) || 0;
     const net      = total - discount + extra;
     const paid     = parseFloat(toEnglishDigits(document.getElementById('paidInput').value)) || 0;
-    const deposit  = parseFloat(toEnglishDigits(document.getElementById('depositInput')?.value || '0')) || 0;
+    const deposit  = getDepositTotal();
     const rawDue = net - paid - deposit - supplierAdvance; // advance reduces due
     document.getElementById('totalDisplay').textContent    = '৳ ' + total.toLocaleString();
     document.getElementById('totalQtyDisplay').textContent = totalQty + ' বস্তা';
@@ -738,6 +747,18 @@ function getExtraCostTotal() {
     return total;
 }
 
+// ── Categorised deposits ──────────────────────────────────────
+const depositCategories = @json($depositCategories);
+let depositRowCount = 0;
+
+function getDepositTotal() {
+    let total = 0;
+    document.querySelectorAll('.deposit-amount').forEach(inp => {
+        total += parseFloat(toEnglishDigits(inp.value)) || 0;
+    });
+    return total;
+}
+
 function toggleDiscount() {
     const row = document.getElementById('discountRow');
     const btn = document.getElementById('discountToggleBtn');
@@ -750,16 +771,52 @@ function toggleDiscount() {
     }
 }
 
-function toggleDeposit() {
+function toggleDeposits() {
     const row = document.getElementById('depositRow');
     const btn = document.getElementById('depositToggleBtn');
     const open = row.style.display === 'none';
     row.style.display = open ? 'block' : 'none';
     btn.textContent = open ? '✕ জমা' : '+ জমা';
+    btn.classList.toggle('active', open);
+    if (open && document.getElementById('depositRows').children.length === 0) {
+        addDepositRow();
+    }
     if (!open) {
-        document.getElementById('depositInput').value = '0';
+        document.getElementById('depositRows').innerHTML = '';
+        depositRowCount = 0;
         updateSummary();
     }
+}
+
+function addDepositRow() {
+    const idx  = depositRowCount++;
+    const opts = depositCategories.map(c => `<option value="${c}">${c}</option>`).join('');
+    const row  = document.createElement('div');
+    row.id = `dpr-${idx}`;
+    row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px';
+    row.innerHTML = `
+        <select name="deposit_rows[${idx}][category]" class="deposit-cat form-select"
+            style="flex:1;padding:6px 8px;font-size:.82rem;min-width:0" onchange="updateSummary()">
+            <option value="">-- ক্যাটাগরি --</option>
+            ${opts}
+        </select>
+        <input type="text" inputmode="decimal" name="deposit_rows[${idx}][amount]"
+            placeholder="৳ পরিমাণ" value="" class="deposit-amount"
+            style="width:90px;padding:6px 8px;border:1.5px solid #93c5fd;border-radius:6px;font-size:.82rem"
+            oninput="updateSummary()">
+        <button type="button" onclick="removeDepositRow(${idx})"
+            style="padding:5px 8px;border:none;background:#fee2e2;color:#dc2626;border-radius:6px;cursor:pointer;flex-shrink:0">
+            <i class="fas fa-times"></i>
+        </button>`;
+    document.getElementById('depositRows').appendChild(row);
+    if (typeof attachBengaliConverter === 'function') attachBengaliConverter(row);
+    row.querySelector('select').focus();
+}
+
+function removeDepositRow(idx) {
+    const el = document.getElementById(`dpr-${idx}`);
+    if (el) el.remove();
+    updateSummary();
 }
 
 function toggleExtraCosts() {
@@ -813,8 +870,8 @@ function removeExtraCostRow(idx) {
 function setFullPay() {
     const total    = cart.reduce((s, c) => s + c.qty * c.price, 0);
     const discount = parseFloat(toEnglishDigits(document.getElementById('discountInput')?.value || '0')) || 0;
-    const net      = total - discount + getExtraCostTotal();
-    document.getElementById('paidInput').value = net.toFixed(0);
+    const net      = total - discount + getExtraCostTotal() - getDepositTotal();
+    document.getElementById('paidInput').value = Math.max(0, net).toFixed(0);
     updateSummary();
 }
 
@@ -874,6 +931,13 @@ function saveDraft() {
         extraCosts.push({ category: cat, amount: amt });
     });
 
+    const deposits = [];
+    document.querySelectorAll('#depositRows > div').forEach(row => {
+        const cat = row.querySelector('select')?.value  || '';
+        const amt = row.querySelector('.deposit-amount')?.value || '0';
+        deposits.push({ category: cat, amount: amt });
+    });
+
     const draft = {
         cart,
         supplierId:    document.getElementById('supplierIdInput').value,
@@ -881,6 +945,8 @@ function saveDraft() {
         prevDuePay:    document.getElementById('prevDuePayInput')?.value || '0',
         extraCosts,
         extraOpen:     document.getElementById('extraRow').style.display !== 'none',
+        deposits,
+        depositOpen:   document.getElementById('depositRow').style.display !== 'none',
         discount:      document.getElementById('discountInput')?.value || '0',
         discountOpen:  document.getElementById('discountRow').style.display !== 'none',
         paidAmount:    document.getElementById('paidInput').value,
@@ -947,6 +1013,24 @@ function restoreDraftData() {
                 const inp = last.querySelector('.extra-cost-amount');
                 if (sel) sel.value = ec.category;
                 if (inp) inp.value = ec.amount;
+            }
+        });
+    }
+
+    // Restore deposits
+    if (draft.depositOpen && draft.deposits?.length) {
+        document.getElementById('depositRow').style.display = 'block';
+        document.getElementById('depositRows').innerHTML = '';
+        depositRowCount = 0;
+        draft.deposits.forEach(d => {
+            addDepositRow();
+            const rows = document.querySelectorAll('#depositRows > div');
+            const last = rows[rows.length - 1];
+            if (last) {
+                const sel = last.querySelector('select');
+                const inp = last.querySelector('.deposit-amount');
+                if (sel) sel.value = d.category;
+                if (inp) inp.value = d.amount;
             }
         });
     }

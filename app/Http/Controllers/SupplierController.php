@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Models\Purchase;
+use App\Models\PurchaseDeposit;
 use Illuminate\Http\Request;
 
 class SupplierController extends Controller
@@ -42,15 +43,17 @@ class SupplierController extends Controller
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
 
-        // Opening balance: purchases before $from minus paid and payments
-        $openingDebit           = $supplier->purchases()->where('purchase_date', '<', $from)->sum('total_amount');
-        $openingPaidOnPurchases = $supplier->purchases()->where('purchase_date', '<', $from)->sum('paid_amount');
-        $openingCredit          = $supplier->payments()->where('payment_date',  '<', $from)->sum('amount');
-        $openingBalance         = $openingDebit - $openingPaidOnPurchases - $openingCredit;
+        // Opening balance: purchases before $from minus paid, deposits and payments
+        $openingPurchaseIds        = $supplier->purchases()->where('purchase_date', '<', $from)->pluck('id');
+        $openingDebit              = $supplier->purchases()->where('purchase_date', '<', $from)->sum('total_amount');
+        $openingPaidOnPurchases    = $supplier->purchases()->where('purchase_date', '<', $from)->sum('paid_amount');
+        $openingDepositOnPurchases = PurchaseDeposit::whereIn('purchase_id', $openingPurchaseIds)->sum('amount');
+        $openingCredit             = $supplier->payments()->where('payment_date', '<', $from)->sum('amount');
+        $openingBalance            = $openingDebit - $openingPaidOnPurchases - $openingDepositOnPurchases - $openingCredit;
 
         // Purchases in range — expand to item-level rows
         $purchases = $supplier->purchases()
-            ->with('items.item', 'extraCosts')
+            ->with('items.item', 'extraCosts', 'deposits')
             ->whereBetween('purchase_date', [$from, $to])
             ->orderBy('purchase_date')
             ->orderBy('created_at')
@@ -126,18 +129,18 @@ class SupplierController extends Controller
                     'link'        => route('purchases.show', $p),
                 ]);
             }
-            // Deposit row (জমা — additional payment)
-            if (($p->deposit_amount ?? 0) > 0) {
+            // Deposit rows (জমা — per category)
+            foreach ($p->deposits as $dIdx => $dep) {
                 $rows->push((object)[
                     'date'        => $p->purchase_date,
-                    'sort_key'    => $baseKey . '_4d',
+                    'sort_key'    => $baseKey . '_4d' . sprintf('%04d', $dIdx),
                     'type'        => 'deposit',
-                    'label'       => 'জমা',
+                    'label'       => $dep->category_name,
                     'ref'         => '#PUR-' . str_pad($p->id, 4, '0', STR_PAD_LEFT),
                     'qty'         => 0,
                     'rate'        => 0,
                     'debit'       => 0,
-                    'credit'      => $p->deposit_amount,
+                    'credit'      => $dep->amount,
                     'purchase_id' => $p->id,
                     'link'        => null,
                 ]);
@@ -194,10 +197,12 @@ class SupplierController extends Controller
         $receiptCount = $purchases->count();
 
         // Real total due (all time) — auto-fix stale due_amount (allows negative for credit/advance)
+        $allPurchaseIds  = Purchase::where('supplier_id', $supplier->id)->pluck('id');
         $allTimePurchases = Purchase::where('supplier_id', $supplier->id)->sum('total_amount');
         $allTimePaid      = Purchase::where('supplier_id', $supplier->id)->sum('paid_amount');
+        $allTimeDeposits  = PurchaseDeposit::whereIn('purchase_id', $allPurchaseIds)->sum('amount');
         $allTimePayments  = SupplierPayment::where('supplier_id', $supplier->id)->sum('amount');
-        $realTotalDue     = $allTimePurchases - $allTimePaid - $allTimePayments; // NO max(0) — allows credit
+        $realTotalDue     = $allTimePurchases - $allTimePaid - $allTimeDeposits - $allTimePayments; // NO max(0) — allows credit
         if ($supplier->due_amount != $realTotalDue) {
             $supplier->update(['due_amount' => $realTotalDue]);
         }

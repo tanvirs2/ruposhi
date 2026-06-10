@@ -291,6 +291,10 @@
                 <span class="nav-icon"><i class="fas fa-coins"></i></span>
                 <span class="nav-label">খরচের ক্যাটাগরি</span>
             </a>
+            <a href="{{ route('deposit-categories.index') }}" class="nav-item {{ $_seg==='deposit-categories' ? 'active' : '' }}">
+                <span class="nav-icon"><i class="fas fa-piggy-bank"></i></span>
+                <span class="nav-label">জমার ক্যাটাগরি</span>
+            </a>
             @endif
             <a href="{{ route('sms.index') }}" class="nav-item {{ $_seg==='sms' ? 'active' : '' }}">
                 <span class="nav-icon"><i class="fas fa-comment-sms"></i></span>
