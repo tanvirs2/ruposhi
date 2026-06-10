@@ -212,11 +212,13 @@
                                 <a href="{{ $row->link }}" class="sl-ref-link">{{ $row->ref }}</a>
                             @endif
                         @elseif($isDeposit)
-                            <span style="font-size:.82rem;font-weight:600;color:#1d4ed8">
+                            <span class="sl-deposit-label">
                                 <i class="fas fa-piggy-bank" style="font-size:.72rem;margin-right:3px"></i>
-                                জমা
+                                {{ $row->label }}
                             </span>
-                            @if($row->ref)
+                            @if($row->link)
+                                <a href="{{ $row->link }}" class="sl-ref-link" title="রিসিভ দেখুন">{{ $row->ref }}</a>
+                            @elseif($row->ref)
                                 <span class="sl-ref-tag">{{ $row->ref }}</span>
                             @endif
                         @else
@@ -357,6 +359,7 @@
 .sl-extracost-label { color: #7e22ce; font-weight: 600; font-size: .88rem; }
 .sl-laborcost-label { color: #be123c; font-weight: 600; font-size: .88rem; }
 .sl-discount-label  { color: #15803d; font-weight: 600; font-size: .88rem; }
+.sl-deposit-label   { color: #1d4ed8; font-weight: 600; font-size: .88rem; }
 
 .sl-debit  { color: #dc2626; font-weight: 700; }
 .sl-credit { color: #16a34a; font-weight: 700; }

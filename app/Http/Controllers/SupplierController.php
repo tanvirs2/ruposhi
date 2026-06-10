@@ -142,7 +142,7 @@ class SupplierController extends Controller
                     'debit'       => 0,
                     'credit'      => $dep->amount,
                     'purchase_id' => $p->id,
-                    'link'        => null,
+                    'link'        => route('purchases.show', $p),
                 ]);
             }
             // Credit row for amount paid with this purchase
