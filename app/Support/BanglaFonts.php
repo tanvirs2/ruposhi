@@ -17,7 +17,7 @@ class BanglaFonts
         'hind_siliguri' => [
             'label'  => 'Hind Siliguri',
             'family' => "'Hind Siliguri', sans-serif",
-            'google' => 'Hind+Siliguri:wght@300;400;500;600;700',
+            'google' => null, // self-hosted: public/fonts/hind-siliguri-*.woff2
         ],
         'kalpurush' => [
             'label'  => 'কালপুরুষ (Kalpurush)',
