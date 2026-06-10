@@ -90,6 +90,10 @@
                         <button type="button" id="extraCostToggleBtn" onclick="toggleExtraCosts()"
                             class="cost-toggle-btn {{ $purchase->extraCosts->isNotEmpty() ? 'active' : '' }}">
                             {{ $purchase->extraCosts->isNotEmpty() ? '✕ খরচ' : '+ খরচ' }}</button>
+                        <button type="button" id="depositToggleBtn" onclick="toggleDeposit()"
+                            class="cost-toggle-btn {{ ($purchase->deposit_amount??0) > 0 ? 'active' : '' }}"
+                            style="background:#eff6ff;color:#1d4ed8;border-color:#93c5fd">
+                            {{ ($purchase->deposit_amount??0) > 0 ? '✕ জমা' : '+ জমা' }}</button>
                     </span>
                 </div>
                 {{-- Discount row --}}
@@ -123,6 +127,18 @@
                                    font-size:.8rem;font-weight:600;cursor:pointer">
                             <i class="fas fa-plus"></i> আরেকটি খরচ যোগ করুন
                         </button>
+                    </div>
+                </div>
+                {{-- Deposit row --}}
+                <div id="depositRow" style="{{ ($purchase->deposit_amount??0) > 0 ? '' : 'display:none' }}">
+                    <div style="border:1.5px solid #93c5fd;border-radius:8px;padding:10px 12px;background:#eff6ff;display:flex;align-items:center;gap:10px">
+                        <label style="font-size:.82rem;font-weight:700;color:#1d4ed8;white-space:nowrap">
+                            <i class="fas fa-piggy-bank"></i> জমা (৳)
+                        </label>
+                        <input type="text" inputmode="decimal" name="deposit_amount" id="depositInput"
+                               value="{{ $purchase->deposit_amount ?? 0 }}" oninput="updateSummary()"
+                               style="flex:1;border:1.5px solid #93c5fd;border-radius:6px;padding:6px 10px;
+                                      font-size:.88rem;background:#fff;outline:none">
                     </div>
                 </div>
                 <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0</span></div>
@@ -416,6 +432,18 @@ function getExtraCostTotal() {
     return total;
 }
 
+function toggleDeposit() {
+    const row = document.getElementById('depositRow');
+    const btn = document.getElementById('depositToggleBtn');
+    const open = row.style.display === 'none';
+    row.style.display = open ? 'block' : 'none';
+    btn.textContent = open ? '✕ জমা' : '+ জমা';
+    if (!open) {
+        document.getElementById('depositInput').value = '0';
+        updateSummary();
+    }
+}
+
 function toggleExtraCosts() {
     const row = document.getElementById('extraRow');
     const btn = document.getElementById('extraCostToggleBtn');
@@ -475,10 +503,19 @@ function updateSummary() {
     const discount = parseFloat(toEnglishDigits(document.getElementById('discountInput')?.value||'0'))||0;
     const net      = total - discount + extra;
     const paid     = parseFloat(toEnglishDigits(document.getElementById('paidInput').value))||0;
+    const deposit  = parseFloat(toEnglishDigits(document.getElementById('depositInput')?.value||'0'))||0;
+    const rawDue   = net - paid - deposit;
     document.getElementById('totalDisplay').textContent    = '৳ '+total.toLocaleString();
     document.getElementById('totalQtyDisplay').textContent = totalQty+' বস্তা';
     document.getElementById('netDisplay').textContent      = '৳ '+net.toLocaleString();
-    document.getElementById('dueDisplay').textContent      = '৳ '+Math.max(0,net-paid).toLocaleString();
+    const dueEl = document.getElementById('dueDisplay');
+    if (rawDue <= 0) {
+        dueEl.textContent = rawDue < 0 ? '— (অগ্রিম ৳'+Math.abs(rawDue).toLocaleString()+' বাকি)' : '৳ 0';
+        dueEl.style.color = '#16a34a';
+    } else {
+        dueEl.textContent = '৳ '+rawDue.toLocaleString();
+        dueEl.style.color = '#ef4444';
+    }
 }
 
 function setFullPay() {

@@ -100,6 +100,12 @@
             </span>
             <span style="color:#16a34a">৳ {{ number_format($purchase->paid_amount,0) }}</span>
         </div>
+        @if(($purchase->deposit_amount ?? 0) > 0)
+        <div class="inv-row" style="color:#1d4ed8">
+            <span><i class="fas fa-piggy-bank" style="font-size:.75rem"></i> জমা:</span>
+            <span>৳ {{ number_format($purchase->deposit_amount,0) }}</span>
+        </div>
+        @endif
         @php $hasItems = $purchase->items->count() > 0; @endphp
         @if($purchase->due_amount > 0)
             {{-- Unpaid balance --}}

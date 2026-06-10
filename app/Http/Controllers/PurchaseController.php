@@ -73,8 +73,9 @@ class PurchaseController extends Controller
                 ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
             $extraCost = $extraCostRows->sum(fn($r) => (float) $r['amount']);
             $discount  = (float) ($request->discount ?? 0);
+            $deposit   = (float) ($request->deposit_amount ?? 0);
             $total     = $itemsTotal - $discount + $extraCost;
-            $due       = $total - $request->paid_amount; // allows negative (credit/advance)
+            $due       = $total - $request->paid_amount - $deposit; // allows negative (credit/advance)
 
             $purchase = Purchase::create([
                 'supplier_id'    => $request->supplier_id ?: null,
@@ -83,6 +84,7 @@ class PurchaseController extends Controller
                 'discount'       => $discount,
                 'extra_cost'     => $extraCost,
                 'paid_amount'    => $request->paid_amount,
+                'deposit_amount' => $deposit,
                 'due_amount'     => $due,
                 'payment_method' => $request->payment_method ?? 'নগদ',
                 'notes'          => $request->notes,
@@ -119,9 +121,7 @@ class PurchaseController extends Controller
 
             if ($request->supplier_id) {
                 $supplier = Supplier::find($request->supplier_id);
-                // net effect: supplier.due += (total - paid). Atomic increment
-                // avoids lost-update races; allows negative credit.
-                $supplier->increment('due_amount', $total - $request->paid_amount);
+                $supplier->increment('due_amount', $total - $request->paid_amount - $deposit);
             }
         });
 
@@ -160,8 +160,7 @@ class PurchaseController extends Controller
             }
             if ($purchase->supplier_id) {
                 $supplier = Supplier::find($purchase->supplier_id);
-                // Reverse: undo (total - paid) that was applied on store
-                $supplier->decrement('due_amount', $purchase->total_amount - $purchase->paid_amount);
+                $supplier->decrement('due_amount', $purchase->total_amount - $purchase->paid_amount - $purchase->deposit_amount);
             }
 
             // 2. Delete old items
@@ -173,8 +172,9 @@ class PurchaseController extends Controller
                 ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0);
             $extraCost = $extraCostRows->sum(fn($r) => (float) $r['amount']);
             $discount  = (float) ($request->discount ?? 0);
+            $deposit   = (float) ($request->deposit_amount ?? 0);
             $total     = $itemsTotal - $discount + $extraCost;
-            $due       = $total - $request->paid_amount;
+            $due       = $total - $request->paid_amount - $deposit;
 
             $purchase->update([
                 'supplier_id'    => $request->supplier_id ?: null,
@@ -182,6 +182,7 @@ class PurchaseController extends Controller
                 'discount'       => $discount,
                 'extra_cost'     => $extraCost,
                 'paid_amount'    => $request->paid_amount,
+                'deposit_amount' => $deposit,
                 'due_amount'     => $due,
                 'payment_method' => $request->payment_method ?? 'নগদ',
                 'notes'          => $request->notes,
@@ -215,7 +216,7 @@ class PurchaseController extends Controller
             // 5. Re-apply supplier due (allows negative credit)
             if ($request->supplier_id) {
                 $supplier = Supplier::find($request->supplier_id);
-                $supplier->increment('due_amount', $total - $request->paid_amount);
+                $supplier->increment('due_amount', $total - $request->paid_amount - $deposit);
             }
         });
 
@@ -242,8 +243,7 @@ class PurchaseController extends Controller
             // Reverse supplier due_amount effect
             if ($purchase->supplier_id) {
                 $supplier = Supplier::find($purchase->supplier_id);
-                // Reverse: undo (total - paid) applied on store
-                $supplier->decrement('due_amount', $purchase->total_amount - $purchase->paid_amount);
+                $supplier->decrement('due_amount', $purchase->total_amount - $purchase->paid_amount - $purchase->deposit_amount);
             }
             $purchase->delete();
         });

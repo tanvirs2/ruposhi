@@ -169,15 +169,17 @@
                 @php
                     $isItem      = $row->type === 'item';
                     $isPay       = $row->type === 'payment' || $row->type === 'purchase_payment';
+                    $isDeposit   = $row->type === 'deposit';
                     $isExtraCost = $row->type === 'extra_cost';
                     $isDiscount  = $row->type === 'discount';
                     $isNewGroup  = $row->purchase_id && $row->purchase_id !== $prevPurchaseId;
                     if ($row->purchase_id) $prevPurchaseId = $row->purchase_id;
                     elseif ($row->type === 'payment') $prevPurchaseId = null;
                     $rowClass = $isPay      ? 'sl-payment-row'
+                              : ($isDeposit   ? 'sl-deposit-row'
                               : ($isExtraCost ? 'sl-extracost-row'
                               : ($isDiscount  ? 'sl-discount-row'
-                              : 'sl-item-row'));
+                              : 'sl-item-row')));
                 @endphp
                 <tr class="{{ $rowClass }} {{ $isNewGroup ? 'sl-new-group' : '' }}">
 
@@ -208,6 +210,14 @@
                             </span>
                             @if($row->link)
                                 <a href="{{ $row->link }}" class="sl-ref-link">{{ $row->ref }}</a>
+                            @endif
+                        @elseif($isDeposit)
+                            <span style="font-size:.82rem;font-weight:600;color:#1d4ed8">
+                                <i class="fas fa-piggy-bank" style="font-size:.72rem;margin-right:3px"></i>
+                                জমা
+                            </span>
+                            @if($row->ref)
+                                <span class="sl-ref-tag">{{ $row->ref }}</span>
                             @endif
                         @else
                             <span class="sl-pay-label">
@@ -339,6 +349,7 @@
 
 .sl-opening-row { background: #f8fafc; }
 .sl-payment-row  { background: #f0fdf4; }
+.sl-deposit-row  { background: #eff6ff; }
 .sl-item-row     { background: var(--card-bg); }
 .sl-extracost-row { background: #fdf4ff; }
 .sl-laborcost-row { background: #fff1f2; }
