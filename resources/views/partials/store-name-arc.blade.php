@@ -24,11 +24,10 @@
     </defs>
     <text font-size="{{ $size }}"
           font-weight="900"
-          font-family="'Hind Siliguri', sans-serif"
           fill="{{ $color }}"
           stroke="{{ $color }}"
           stroke-width="0.5"
-          style="paint-order:stroke fill">
+          style="paint-order:stroke fill;font-family:var(--bn-font, 'Hind Siliguri'), sans-serif">
         <textPath href="#{{ $arcId }}" startOffset="50%" text-anchor="middle">
             {{ $name }}
         </textPath>

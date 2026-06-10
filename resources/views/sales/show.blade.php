@@ -249,7 +249,7 @@
     border: none;
     border-radius: 0;
     padding: 18px 22px 16px;
-    font-family: 'Hind Siliguri', sans-serif;
+    font-family: var(--bn-font, 'Hind Siliguri'), sans-serif;
     color: #111;
     font-size: .88rem;
     line-height: 1.45;
@@ -494,7 +494,7 @@
         max-width: 100% !important;
         box-shadow: none !important;
         font-size: .82rem !important;
-        font-family: 'Hind Siliguri', sans-serif !important;
+        font-family: var(--bn-font, 'Hind Siliguri'), sans-serif !important;
         color: #111 !important;
         background: #fff !important;
     }

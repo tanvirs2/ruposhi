@@ -95,7 +95,7 @@ html[data-theme="dark"] .inline-input {
 }
 
 body {
-    font-family: 'Hind Siliguri', 'Inter', system-ui, sans-serif;
+    font-family: var(--bn-font, 'Hind Siliguri'), 'Inter', system-ui, sans-serif;
     background: var(--bg);
     color: var(--text-primary);
     display: flex;

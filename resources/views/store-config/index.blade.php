@@ -53,10 +53,28 @@
                     <label>ঠিকানা</label>
                     <textarea name="store_address" rows="2" placeholder="কাচারী রোড, টঙ্গী বাজার, গাজীপুর">{{ $config['store_address'] ?? '' }}</textarea>
                 </div>
+                <div class="form-group-field form-full">
+                    <label>বাংলা ফন্ট
+                        <button type="button" class="info-btn" data-info="পুরো সিস্টেম ও ইনভয়েসে এই ফন্ট ব্যবহার হবে। নিচে ক্লিক করলে সাথে সাথে প্রিভিউ দেখা যাবে — সংরক্ষণ করলে স্থায়ী হবে।">i</button>
+                    </label>
+                    @php $currentFont = \App\Support\BanglaFonts::currentKey(); @endphp
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+                        @foreach(\App\Support\BanglaFonts::FONTS as $fKey => $f)
+                        <label class="font-option" style="font-family:{{ $f['family'] }}">
+                            <input type="radio" name="app_font" value="{{ $fKey }}"
+                                   data-family="{{ $f['family'] }}"
+                                   {{ $currentFont === $fKey ? 'checked' : '' }}
+                                   onchange="previewFont(this)">
+                            <span style="font-weight:700;font-size:.95rem">{{ $f['label'] }}</span>
+                            <span style="font-size:.85rem;color:#64748b">চাল বিক্রয় ১২,৩৪৫ টাকা</span>
+                        </label>
+                        @endforeach
+                    </div>
+                </div>
             </div>
 
             {{-- Preview --}}
-            <div style="margin:20px 0;padding:16px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;text-align:center;font-family:'Hind Siliguri',sans-serif">
+            <div style="margin:20px 0;padding:16px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;text-align:center;font-family:var(--bn-font, 'Hind Siliguri'),sans-serif">
                 <div style="font-size:.75rem;color:#94a3b8;margin-bottom:2px">ক্যাশ মেমো</div>
                 @include('partials.store-name-arc', ['name' => $config['store_name'] ?? 'আমার দোকান', 'size' => 30])
                 @if(!empty($config['store_owner']))<div style="font-size:.85rem">প্রোঃ {{ $config['store_owner'] }}</div>@endif
@@ -237,7 +255,27 @@
 </div>
 
 @push('styles')
+{{-- Load all selectable fonts so each option previews in its own face --}}
+@include('partials.font-loader', ['keys' => \App\Support\BanglaFonts::keys()])
 <style>
+/* ── Font options ─────────────────────────────────── */
+.font-option {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+.font-option:hover { border-color: var(--accent); }
+.font-option:has(input:checked) {
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
+.font-option input { display: none; }
+
 /* ── Tabs ─────────────────────────────────────────── */
 .config-tabs {
     display: flex;
@@ -498,6 +536,11 @@ function switchTab(name, btn) {
     document.querySelectorAll('.config-tab').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + name).style.display = 'block';
     btn.classList.add('active');
+}
+
+// Live font preview — applies instantly page-wide; persists only on save
+function previewFont(radio) {
+    document.documentElement.style.setProperty('--bn-font', radio.dataset.family);
 }
 
 const payAddUrl    = '{{ route("store-config.payment-method.add") }}';

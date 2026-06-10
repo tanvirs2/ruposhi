@@ -7,9 +7,10 @@
     <title>@yield('title', 'ড্যাশবোর্ড') — Inventory</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    @include('partials.font-loader')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
+    <style>:root { --bn-font: {{ \App\Support\BanglaFonts::current()['family'] }}; }</style>
     <script src="https://js.pusher.com/8.2.0/pusher.min.js" defer></script>
     @stack('styles')
 </head>

@@ -145,7 +145,7 @@
     border: 1px solid #ccc;
     border-radius: 6px;
     padding: 24px 28px 20px;
-    font-family: 'Hind Siliguri', sans-serif;
+    font-family: var(--bn-font, 'Hind Siliguri'), sans-serif;
     color: #111;
     font-size: .9rem;
 }
