@@ -68,6 +68,7 @@
                             <form class="admin-only" method="POST" action="{{ route('purchases.destroy', $p) }}"
                                   onsubmit="return confirm('এই পরিশোধ মুছে ফেলবেন? বকেয়া পুনরুদ্ধার হবে।')">
                                 @csrf @method('DELETE')
+                                <input type="hidden" name="redirect_to" value="supplier-payments">
                                 <button type="submit" class="btn-icon-sm btn-icon-danger" title="মুছুন">
                                     <i class="fas fa-trash"></i>
                                 </button>

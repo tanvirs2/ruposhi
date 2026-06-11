@@ -309,12 +309,14 @@ class PurchaseController extends Controller
         return view('purchases.show', compact('purchase'));
     }
 
-    public function destroy(Purchase $purchase)
+    public function destroy(Request $request, Purchase $purchase)
     {
         // Allow shop admin OR super_admin who has entered this shop
         if (!auth()->user()->canManageShop()) {
             abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
         }
+        // No-item rows are advance payments (shown in the supplier-payment list)
+        $hadItems = $purchase->items()->exists();
         DB::transaction(function () use ($purchase) {
             // Restore stock
             foreach ($purchase->items as $pi) {
@@ -340,6 +342,14 @@ class PurchaseController extends Controller
             $purchase->delete();
         });
 
-        return redirect()->route('purchases.index')->with('success', 'রিসিভ মুছে ফেলা হয়েছে। স্টক কমানো হয়েছে।');
+        $msg = $hadItems
+            ? 'রিসিভ মুছে ফেলা হয়েছে। স্টক কমানো হয়েছে।'
+            : 'পরিশোধ মুছে ফেলা হয়েছে। সরবরাহকারীর বকেয়া পুনরুদ্ধার হয়েছে।';
+
+        // Return to the list the delete was triggered from
+        if ($request->input('redirect_to') === 'supplier-payments') {
+            return redirect()->route('supplier-payments.index')->with('success', $msg);
+        }
+        return redirect()->route('purchases.index')->with('success', $msg);
     }
 }

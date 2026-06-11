@@ -73,85 +73,142 @@
 
     <div class="invoice-totals">
         @php
-            $rawTotal    = $purchase->items->sum('subtotal');
-            $previousDue = $purchase->supplier ? ($purchase->supplier->due_amount - $purchase->due_amount) : 0;
-            $supplierNet = $purchase->supplier ? $purchase->supplier->due_amount : 0;
+            $rawTotal        = $purchase->items->sum('subtotal');
+            $extraCostVal    = $purchase->extra_cost ?? 0;
+            $hasItems        = $purchase->items->count() > 0;
+            $hasDeposits     = $purchase->deposits->isNotEmpty();
+            $hasExtraCosts   = $purchase->extraCosts->isNotEmpty()
+                               || ($purchase->extraCosts->isEmpty() && $extraCostVal > 0);
+            $supplierNet     = $purchase->supplier ? $purchase->supplier->due_amount : null;
+            $previousDue     = $purchase->supplier
+                               ? ($purchase->supplier->due_amount - $purchase->due_amount)
+                               : 0;
+            $hasPreviousDue  = $purchase->supplier && $previousDue != 0;
+            $totalObligation = $purchase->total_amount + $previousDue;
+            $afterPayment    = $totalObligation - $purchase->paid_amount;
+            $showBreakdown   = $hasExtraCosts || $hasPreviousDue;
         @endphp
-        @if(($purchase->extra_cost ?? 0) > 0)
-        <div class="inv-row"><span>আইটেম মূল্য:</span><span>৳ {{ number_format($rawTotal,0) }}</span></div>
-        @endif
-        @foreach($purchase->extraCosts as $ec)
-        <div class="inv-row"><span>{{ $ec->category_name }}:</span><span>+ ৳ {{ number_format($ec->amount,0) }}</span></div>
-        @endforeach
-        @if($purchase->extraCosts->isEmpty() && ($purchase->extra_cost ?? 0) > 0)
-        {{-- Legacy: old record with single extra_cost --}}
-        <div class="inv-row"><span>অতিরিক্ত খরচ:</span><span>+ ৳ {{ number_format($purchase->extra_cost,0) }}</span></div>
-        @endif
-        <div class="inv-row inv-total"><span>মোট মূল্য:</span><span>৳ {{ number_format($purchase->total_amount,0) }}</span></div>
-        <div class="inv-row">
-            <span>পরিশোধ:
-                @if($purchase->payment_method)
-                    <span style="font-size:.78rem;font-weight:500;color:#64748b;margin-left:6px">({{ $purchase->payment_method }})</span>
-                @endif
-            </span>
-            <span style="color:#16a34a">৳ {{ number_format($purchase->paid_amount,0) }}</span>
-        </div>
-        @foreach($purchase->deposits as $dep)
-        <div class="inv-row" style="color:#1d4ed8">
-            <span><i class="fas fa-piggy-bank" style="font-size:.75rem"></i> জমা ({{ $dep->category_name }}):</span>
-            <span>৳ {{ number_format($dep->amount,0) }}</span>
-        </div>
-        @endforeach
-        @php $hasItems = $purchase->items->count() > 0; @endphp
-        @if($purchase->due_amount > 0)
-            {{-- Unpaid balance --}}
-            <div class="inv-row" style="color:#ef4444;font-weight:600"><span>বকেয়া:</span><span>৳ {{ number_format($purchase->due_amount,0) }}</span></div>
-        @elseif($purchase->due_amount == 0)
-            {{-- Exact payment --}}
-            <div class="inv-row" style="color:#16a34a"><span>বকেয়া:</span><span>সম্পূর্ণ পরিশোধিত ✓</span></div>
-        @else
-            {{-- Overpaid (due < 0) --}}
-            @if($hasItems)
-                <div class="inv-row" style="color:#16a34a"><span>বকেয়া:</span><span>সম্পূর্ণ পরিশোধিত ✓</span></div>
-                <div class="inv-row" style="color:#1d4ed8;font-weight:600">
-                    <span>অতিরিক্ত পরিশোধ:</span>
-                    <span>৳ {{ number_format(abs($purchase->due_amount),0) }}</span>
-                </div>
+
+        @if($hasItems)
+            {{-- Item subtotal line — only shown when there's more to add below --}}
+            @if($showBreakdown)
+            <div class="inv-row"><span>আইটেম মূল্য:</span><span>৳ {{ number_format($rawTotal,0) }}</span></div>
+            @endif
+
+            {{-- Extra cost lines --}}
+            @foreach($purchase->extraCosts as $ec)
+            <div class="inv-row">
+                <span>{{ $ec->category_name }}:</span>
+                <span style="color:#7c3aed">+ ৳ {{ number_format($ec->amount,0) }}</span>
+            </div>
+            @endforeach
+            @if($purchase->extraCosts->isEmpty() && $extraCostVal > 0)
+            <div class="inv-row">
+                <span>অতিরিক্ত খরচ:</span>
+                <span style="color:#7c3aed">+ ৳ {{ number_format($extraCostVal,0) }}</span>
+            </div>
+            @endif
+
+            @if($hasPreviousDue)
+            {{-- Previous supplier balance folded into the chain --}}
+            <div class="inv-row" style="font-weight:600;color:{{ $previousDue > 0 ? '#ef4444' : '#1d4ed8' }}">
+                <span>পূর্বের বাকী:</span>
+                <span>
+                    @if($previousDue > 0)+ ৳ {{ number_format($previousDue,0) }}
+                    @else− অগ্রিম ৳ {{ number_format(abs($previousDue),0) }}
+                    @endif
+                </span>
+            </div>
+            {{-- Separator → total obligation --}}
+            <div style="border-top:1px dashed #cbd5e1;margin:8px 0 4px"></div>
+            <div class="inv-row inv-total"><span>সর্বমোট প্রদেয়:</span><span>৳ {{ number_format($totalObligation,0) }}</span></div>
             @else
-                {{-- No-item purchase: pure advance --}}
-                <div class="inv-row" style="color:#1d4ed8;font-weight:600">
-                    <span>অগ্রিম পরিশোধ:</span>
-                    <span>৳ {{ number_format(abs($purchase->due_amount),0) }}</span>
+            {{-- No previous due: show মোট মূল্য (with optional divider after extras) --}}
+            @if($showBreakdown)<div style="border-top:1px solid #e2e8f0;margin:4px 0"></div>@endif
+            <div class="inv-row inv-total"><span>মোট মূল্য:</span><span>৳ {{ number_format($purchase->total_amount,0) }}</span></div>
+            @endif
+
+            {{-- Payment --}}
+            <div class="inv-row" style="color:#16a34a">
+                <span>পরিশোধ
+                    @if($purchase->payment_method)
+                    <span style="font-size:.78rem;font-weight:500;color:#64748b;margin-left:6px">({{ $purchase->payment_method }})</span>
+                    @endif
+                </span>
+                <span>− ৳ {{ number_format($purchase->paid_amount,0) }}</span>
+            </div>
+
+            {{-- Deposits --}}
+            @if($hasDeposits)
+                @if($hasPreviousDue)
+                {{-- Show intermediate balance before deposits --}}
+                <div style="border-top:1px dashed #cbd5e1;margin:8px 0 4px"></div>
+                <div class="inv-row" style="color:#475569">
+                    <span>অবশিষ্ট দায়:</span>
+                    <span>৳ {{ number_format($afterPayment,0) }}</span>
                 </div>
+                @endif
+                @foreach($purchase->deposits as $dep)
+                <div class="inv-row" style="color:#1d4ed8">
+                    <span><i class="fas fa-piggy-bank" style="font-size:.75rem"></i> জমা ({{ $dep->category_name }}):</span>
+                    <span>− ৳ {{ number_format($dep->amount,0) }}</span>
+                </div>
+                @endforeach
+            @endif
+
+            {{-- Final result --}}
+            @if($hasPreviousDue)
+            {{-- Full ledger: end with supplier net total --}}
+            <div style="border-top:2px solid #94a3b8;margin:8px 0 4px"></div>
+            @else
+            {{-- No previous due: show per-purchase বকেয়া status --}}
+            @if($purchase->due_amount > 0)
+            <div class="inv-row" style="color:#ef4444;font-weight:600"><span>বকেয়া:</span><span>৳ {{ number_format($purchase->due_amount,0) }}</span></div>
+            @elseif($purchase->due_amount == 0)
+            <div class="inv-row" style="color:#16a34a"><span>বকেয়া:</span><span>সম্পূর্ণ পরিশোধিত ✓</span></div>
+            @else
+            <div class="inv-row" style="color:#16a34a"><span>বকেয়া:</span><span>সম্পূর্ণ পরিশোধিত ✓</span></div>
+            <div class="inv-row" style="color:#1d4ed8;font-weight:600">
+                <span>অতিরিক্ত পরিশোধ:</span>
+                <span>৳ {{ number_format(abs($purchase->due_amount),0) }}</span>
+            </div>
+            @endif
+            @endif
+
+            {{-- Supplier net total (always shown when supplier exists) --}}
+            @if($purchase->supplier)
+            <div class="inv-row" style="font-weight:700;font-size:1rem;background:{{ $supplierNet > 0 ? '#fef2f2' : ($supplierNet < 0 ? '#eff6ff' : '#f0fdf4') }};padding:10px 12px;border-radius:6px;margin-top:{{ $hasPreviousDue ? '0' : '6px' }}">
+                <span>সরবরাহকারীর মোট {{ $supplierNet > 0 ? 'বকেয়া' : ($supplierNet < 0 ? 'অগ্রিম' : 'হিসাব') }}:</span>
+                <span style="color:{{ $supplierNet > 0 ? '#dc2626' : ($supplierNet < 0 ? '#1d4ed8' : '#16a34a') }}">
+                    @if($supplierNet == 0) পরিষ্কার ✓
+                    @else ৳ {{ number_format(abs($supplierNet),0) }}
+                    @endif
+                </span>
+            </div>
+            @endif
+
+        @else
+            {{-- ── ADVANCE PAYMENT (no items) ── --}}
+            <div class="inv-row" style="color:#16a34a;font-weight:600">
+                <span>অগ্রিম পরিশোধ
+                    @if($purchase->payment_method)
+                    <span style="font-size:.78rem;font-weight:500;color:#64748b;margin-left:6px">({{ $purchase->payment_method }})</span>
+                    @endif
+                </span>
+                <span>৳ {{ number_format($purchase->paid_amount,0) }}</span>
+            </div>
+            @if($purchase->supplier)
+            <div class="inv-row" style="font-weight:700;font-size:1rem;background:{{ $supplierNet > 0 ? '#fef2f2' : ($supplierNet < 0 ? '#eff6ff' : '#f0fdf4') }};padding:10px 12px;border-radius:6px;margin-top:6px">
+                <span>সরবরাহকারীর মোট {{ $supplierNet > 0 ? 'বকেয়া' : ($supplierNet < 0 ? 'অগ্রিম' : 'হিসাব') }}:</span>
+                <span style="color:{{ $supplierNet > 0 ? '#dc2626' : ($supplierNet < 0 ? '#1d4ed8' : '#16a34a') }}">
+                    @if($supplierNet == 0) পরিষ্কার ✓
+                    @else ৳ {{ number_format(abs($supplierNet),0) }}
+                    @endif
+                </span>
+            </div>
             @endif
         @endif
-        {{-- Previous balance + supplier net total --}}
-        @if($purchase->supplier && $previousDue != 0)
-        <div class="inv-row" style="color:#64748b;border-top:1px dashed #e2e8f0;padding-top:8px;margin-top:4px">
-            <span>পূর্বের বাকী:</span>
-            <span style="color:{{ $previousDue > 0 ? '#ef4444' : '#1d4ed8' }};font-weight:600">
-                @if($previousDue > 0)
-                    ৳ {{ number_format($previousDue, 0) }}
-                @else
-                    অগ্রিম ৳ {{ number_format(abs($previousDue), 0) }}
-                @endif
-            </span>
-        </div>
-        @endif
-        @if($purchase->supplier)
-        <div class="inv-row" style="font-weight:700;font-size:1rem;background:{{ $supplierNet > 0 ? '#fef2f2' : ($supplierNet < 0 ? '#eff6ff' : '#f0fdf4') }};padding:10px 12px;border-radius:6px;margin-top:6px">
-            <span>সরবরাহকারীর মোট {{ $supplierNet > 0 ? 'বকেয়া' : ($supplierNet < 0 ? 'অগ্রিম' : 'হিসাব') }}:</span>
-            <span style="color:{{ $supplierNet > 0 ? '#dc2626' : ($supplierNet < 0 ? '#1d4ed8' : '#16a34a') }}">
-                @if($supplierNet == 0)
-                    পরিষ্কার ✓
-                @elseif($supplierNet < 0)
-                    ৳ {{ number_format(abs($supplierNet), 0) }}
-                @else
-                    ৳ {{ number_format($supplierNet, 0) }}
-                @endif
-            </span>
-        </div>
-        @endif
+
         @if(\App\Support\BanglaWords::taka($purchase->paid_amount) !== '')
         <div style="margin-top:6px;font-size:.85rem;color:#333">
             <strong>কথায় (পরিশোধ):</strong> {{ \App\Support\BanglaWords::taka($purchase->paid_amount) }} মাত্র

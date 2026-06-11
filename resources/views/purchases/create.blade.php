@@ -56,7 +56,9 @@
                                 <button type="button" class="info-btn" data-info="প্রতি বস্তার ক্রয় মূল্য লিখুন। এই মূল্য আইটেমের ক্রয়মূল্য আপডেট করবে এবং ভবিষ্যতে লাভ হিসাবে ব্যবহার হবে।">i</button>
                             </th>
                             <th>নতুন স্টক</th>
-                            <th>মোট</th>
+                            <th>রিসিভ মূল্য
+                                <button type="button" class="info-btn" data-info="শুধু এই রিসিভে পাওয়া পরিমাণের মূল্য (পরিমাণ × ক্রয় মূল্য) — মোট স্টকের মূল্য নয়।">i</button>
+                            </th>
                             <th></th>
                         </tr>
                     </thead>
@@ -207,7 +209,16 @@
                         </button>
                     </div>
                 </div>
-                <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0</span></div>
+                {{-- Visible adjustment chain so নেট প্রদেয় reconciles with what সম্পূর্ণ fills --}}
+                <div class="summary-row" id="extraSummaryRow" style="display:none">
+                    <span>অতিরিক্ত খরচ <span style="font-size:.78rem;color:#94a3b8">(যোগ হবে)</span></span>
+                    <span id="extraSummaryAmt" style="color:#7c3aed;font-weight:600">+ ৳ 0</span>
+                </div>
+                <div class="summary-row" id="depositSummaryRow" style="display:none">
+                    <span>জমা <span style="font-size:.78rem;color:#94a3b8">(বাদ যাবে)</span></span>
+                    <span id="depositSummaryAmt" style="color:#1d4ed8;font-weight:600">− ৳ 0</span>
+                </div>
+                <div class="summary-row summary-total"><span>নেট প্রদেয়:</span><span id="netDisplay">৳ 0</span></div>
 
                 <div class="form-group-field">
                     <label>পরিশোধ (৳) <span class="req">*</span>
@@ -224,7 +235,7 @@
                     </div>
                     <div id="paidWords" style="display:none;margin-top:4px;font-size:.78rem;font-weight:600;color:var(--accent)"></div>
                 </div>
-                <div class="summary-row" style="color:#ef4444"><span>বকেয়া:</span><span id="dueDisplay">৳ 0</span></div>
+                <div class="summary-row" style="color:#ef4444"><span>এই রিসিভে বাকী:</span><span id="dueDisplay">৳ 0</span></div>
 
                 {{-- Advance payment warning (no items, paid > 0) --}}
                 <div id="advancePayWarning" style="display:none;padding:10px 14px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;gap:8px;align-items:flex-start">
@@ -260,6 +271,21 @@
                 <div class="form-group-field">
                     <label>মন্তব্য</label>
                     <textarea name="notes" rows="2" placeholder="চালান নম্বর বা অন্য তথ্য..."></textarea>
+                </div>
+
+                {{-- Post-transaction supplier balance — directly above the CTA --}}
+                <div id="txnSummary" style="display:none;border:1.5px solid var(--border);border-radius:10px;
+                     padding:8px 12px;background:var(--bg)">
+                    <div style="display:flex;justify-content:space-between;align-items:center;
+                                font-size:.8rem;color:var(--text-secondary);margin-bottom:5px">
+                        <span><i class="fas fa-money-bill-wave" style="margin-right:4px"></i> আজ মোট দিচ্ছি</span>
+                        <span id="txnPaid" style="font-weight:800;color:#16a34a">৳ 0</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;
+                                border-top:1px dashed var(--border);padding-top:6px">
+                        <span style="font-size:.84rem;font-weight:700;color:var(--text-primary)">লেনদেনের পর সরবরাহকারীকে সর্বমোট বাকী</span>
+                        <span id="txnDueAfter" style="font-size:1.2rem;font-weight:800;color:#dc2626">৳ 0</span>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:14px">
@@ -400,6 +426,17 @@
 }
 .cost-toggle-btn:hover { color:var(--accent); border-color:var(--accent); }
 .cost-toggle-btn.active { color:#ef4444; border-color:#fca5a5; border-style:solid; }
+
+/* ৳ flat-amount adornment for খরচ / জমা inputs (all flat টাকা, never %) */
+.taka-input-wrap { position: relative; display: block; }
+.taka-input-wrap::before {
+    content: '৳';
+    position: absolute; left: 9px; top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8; font-weight: 700; font-size: .82rem;
+    pointer-events: none; z-index: 1;
+}
+.taka-input-wrap > input { padding-left: 20px !important; }
 </style>
 @endpush
 
@@ -440,10 +477,12 @@ const sDrop           = makeFloatingDropdown(supplierSearch, supplierDrop);
 const prevAdvanceRow  = document.getElementById('prevAdvanceRow');
 const prevAdvanceDisp = document.getElementById('prevAdvanceDisplay');
 let supplierAdvance   = 0; // credit balance (positive = supplier has advance)
+let supplierPrevDue   = 0; // signed previous balance (>0 = we owe, <0 = advance)
 
 supplierSearch.addEventListener('input', function() {
     const q = this.value.trim().toLowerCase();
-    if (!q) { sDrop.hide(); supplierIdInput.value = ''; supplierSelected.style.display='none'; return; }
+    if (!q) { sDrop.hide(); supplierIdInput.value = ''; supplierSelected.style.display='none';
+              supplierPrevDue = 0; supplierAdvance = 0; prevAdvanceRow.style.display='none'; updateSummary(); return; }
     const matches = allSuppliers.filter(s =>
         s.name.toLowerCase().includes(q) ||
         (s.proprietor && s.proprietor.toLowerCase().includes(q)) ||
@@ -490,6 +529,7 @@ function selectSupplier(id) {
     }
 
     const due = parseFloat(s.due_amount) || 0;
+    supplierPrevDue = due;
     if (due > 0) {
         html += `<div style="margin-top:6px;padding:8px 12px;background:#fee2e2;border:1px solid #fecaca;
                              border-radius:8px;display:flex;justify-content:space-between;align-items:center">
@@ -697,21 +737,61 @@ function updateSummary() {
     const total    = cart.reduce((s, c) => s + c.qty * c.price, 0);
     const totalQty = cart.reduce((s, c) => s + (c.qty || 0), 0);
     const extra    = getExtraCostTotal();
-    const net      = total + extra;
-    const paid     = parseFloat(toEnglishDigits(document.getElementById('paidInput').value)) || 0;
     const deposit  = getDepositTotal();
-    const rawDue = net - paid - deposit - supplierAdvance; // advance reduces due
+    const net        = total + extra;          // gross: items + extra cost
+    const netPayable = net - deposit;          // what you actually pay for THIS receive
+    const paid     = parseFloat(toEnglishDigits(document.getElementById('paidInput').value)) || 0;
+    const thisDue  = Math.max(0, netPayable - paid); // this receipt's own unpaid portion (overall balance shown in the card below)
+
     document.getElementById('totalDisplay').textContent    = '৳ ' + total.toLocaleString();
     document.getElementById('totalQtyDisplay').textContent = totalQty + ' বস্তা';
-    document.getElementById('netDisplay').textContent      = '৳ ' + net.toLocaleString();
+
+    // Visible খরচ(+) / জমা(−) chain so নেট প্রদেয় reconciles
+    const exRow = document.getElementById('extraSummaryRow');
+    if (exRow) {
+        exRow.style.display = extra > 0 ? 'flex' : 'none';
+        if (extra > 0) document.getElementById('extraSummaryAmt').textContent = '+ ৳ ' + extra.toLocaleString();
+    }
+    const dpRow = document.getElementById('depositSummaryRow');
+    if (dpRow) {
+        dpRow.style.display = deposit > 0 ? 'flex' : 'none';
+        if (deposit > 0) document.getElementById('depositSummaryAmt').textContent = '− ৳ ' + deposit.toLocaleString();
+    }
+
+    document.getElementById('netDisplay').textContent = '৳ ' + netPayable.toLocaleString();
+
     const dueEl = document.getElementById('dueDisplay');
-    if (rawDue <= 0) {
-        dueEl.textContent = rawDue < 0 ? '— (অগ্রিম ৳' + Math.abs(rawDue).toLocaleString() + ' বাকি)' : '৳ 0';
+    if (thisDue <= 0) {
+        dueEl.textContent = '৳ 0';
         dueEl.style.color = '#16a34a';
     } else {
-        dueEl.textContent = '৳ ' + rawDue.toLocaleString();
+        dueEl.textContent = '৳ ' + thisDue.toLocaleString();
         dueEl.style.color = '#ef4444';
     }
+
+    // ── Post-transaction supplier balance above the CTA ───────
+    // result = previous_supplier_balance + net_payable − paid
+    const txn = document.getElementById('txnSummary');
+    if (txn) {
+        const active = cart.length || paid > 0 || supplierPrevDue !== 0;
+        txn.style.display = active ? 'block' : 'none';
+        if (active) {
+            document.getElementById('txnPaid').textContent = '৳ ' + paid.toLocaleString();
+            const resultBal = supplierPrevDue + netPayable - paid;
+            const after = document.getElementById('txnDueAfter');
+            if (resultBal > 0.5) {
+                after.textContent = '৳ ' + resultBal.toLocaleString();
+                after.style.color = '#dc2626';      // red — we still owe supplier
+            } else if (resultBal < -0.5) {
+                after.textContent = 'অগ্রিম ৳ ' + Math.abs(resultBal).toLocaleString();
+                after.style.color = '#1d4ed8';      // blue — we have credit
+            } else {
+                after.textContent = '৳ 0';
+                after.style.color = '#16a34a';      // green — settled
+            }
+        }
+    }
+
     // Keep tfoot in sync on every change
     const footQty   = document.getElementById('footQty');
     const footTotal = document.getElementById('footTotal');
@@ -772,10 +852,12 @@ function addDepositRow() {
             <option value="">-- ক্যাটাগরি --</option>
             ${opts}
         </select>
-        <input type="text" inputmode="decimal" name="deposit_rows[${idx}][amount]"
-            placeholder="৳ পরিমাণ" value="" class="deposit-amount"
-            style="width:90px;padding:6px 8px;border:1.5px solid #93c5fd;border-radius:6px;font-size:.82rem"
-            oninput="updateSummary()">
+        <span class="taka-input-wrap" style="width:96px;flex-shrink:0">
+            <input type="text" inputmode="decimal" name="deposit_rows[${idx}][amount]"
+                placeholder="পরিমাণ" value="" class="deposit-amount"
+                style="width:100%;padding:6px 8px;border:1.5px solid #93c5fd;border-radius:6px;font-size:.82rem"
+                oninput="updateSummary()">
+        </span>
         <button type="button" onclick="removeDepositRow(${idx})"
             style="padding:5px 8px;border:none;background:#fee2e2;color:#dc2626;border-radius:6px;cursor:pointer;flex-shrink:0">
             <i class="fas fa-times"></i>
@@ -820,10 +902,12 @@ function addExtraCostRow() {
             <option value="">-- ক্যাটাগরি --</option>
             ${opts}
         </select>
-        <input type="text" inputmode="decimal" name="extra_costs[${idx}][amount]"
-            placeholder="৳ পরিমাণ" value="" class="extra-cost-amount"
-            style="width:90px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem"
-            oninput="updateSummary()">
+        <span class="taka-input-wrap" style="width:96px;flex-shrink:0">
+            <input type="text" inputmode="decimal" name="extra_costs[${idx}][amount]"
+                placeholder="পরিমাণ" value="" class="extra-cost-amount"
+                style="width:100%;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem"
+                oninput="updateSummary()">
+        </span>
         <button type="button" onclick="removeExtraCostRow(${idx})"
             style="padding:5px 8px;border:none;background:#fee2e2;color:#dc2626;border-radius:6px;cursor:pointer;flex-shrink:0">
             <i class="fas fa-times"></i>
@@ -840,9 +924,11 @@ function removeExtraCostRow(idx) {
 }
 
 function setFullPay() {
-    const total    = cart.reduce((s, c) => s + c.qty * c.price, 0);
-    const net      = total + getExtraCostTotal() - getDepositTotal();
-    document.getElementById('paidInput').value = Math.max(0, net).toFixed(0);
+    // সম্পূর্ণ = শুধু এই রিসিভের নেট প্রদেয় (পুরনো বাকী আলাদা "নতুন পরিশোধ" ফর্ম থেকে দিন)।
+    // এতে রিসিভ থেকে কোনো অতিরিক্ত-পরিশোধ split তৈরি হয় না।
+    const total      = cart.reduce((s, c) => s + c.qty * c.price, 0);
+    const netPayable = total + getExtraCostTotal() - getDepositTotal();
+    document.getElementById('paidInput').value = Math.max(0, netPayable).toFixed(0);
     updateSummary();
 }
 
@@ -879,6 +965,23 @@ document.getElementById('paidInput').addEventListener('input', function() {
     updateSummary();
     checkAdvanceWarning();
 });
+
+// ── Block non-numeric input on every decimal field ───────────
+// Keeps only digits + a single decimal point (Bengali numerals → English).
+// Capture phase so the value is cleaned before updateSummary/updateQty read it.
+function sanitizeDecimalInput(el) {
+    if (!el || el.tagName !== 'INPUT' || el.getAttribute('inputmode') !== 'decimal') return;
+    let v = toEnglishDigits(el.value).replace(/[^0-9.]/g, '');
+    const dot = v.indexOf('.');
+    if (dot !== -1) v = v.slice(0, dot + 1) + v.slice(dot + 1).replace(/\./g, '');
+    if (v !== el.value) {
+        el.value = v;
+        el.setCustomValidity('');
+    }
+}
+document.getElementById('receiveForm').addEventListener('input', function(e) {
+    sanitizeDecimalInput(e.target);
+}, true);
 
 // ══════════════════════════════════════════════════════════════
 // PURCHASE DRAFT — auto-save to sessionStorage, restore on reload

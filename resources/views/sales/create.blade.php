@@ -116,28 +116,12 @@
                 </div>
                 <hr style="border:none;border-top:1px solid var(--border)">
 
-                {{-- Previous due row — shown when customer has due --}}
-                <div id="prevDueRow" style="display:none;flex-direction:column;gap:10px;padding:12px 14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px">
-                    {{-- Total due label --}}
-                    <div style="display:flex;justify-content:space-between;align-items:center">
-                        <span style="font-size:.83rem;font-weight:600;color:#92400e">
-                            <i class="fas fa-clock-rotate-left"></i> পূর্বের বাকী
-                        </span>
-                        <span style="font-size:1rem;font-weight:800;color:#b45309" id="prevDueDisplay">৳ 0</span>
-                    </div>
-                    {{-- Partial payment input --}}
-                    <div style="display:flex;align-items:center;gap:8px">
-                        <span style="font-size:.8rem;font-weight:600;color:#92400e;white-space:nowrap">এখন দেবেন (৳):</span>
-                        <input type="text" inputmode="decimal" id="prevDuePayInput" value="0" placeholder="0"
-                            oninput="onPrevDuePayChange()"
-                            style="flex:1;padding:7px 10px;border:1.5px solid #fbbf24;border-radius:6px;
-                                   font-size:.92rem;font-weight:700;color:#92400e;background:#fff;min-width:0">
-                        <button type="button" onclick="setFullPrevDuePay()"
-                            style="padding:7px 13px;border-radius:6px;border:none;background:#b45309;
-                                   color:#fff;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
-                            সম্পূর্ণ
-                        </button>
-                    </div>
+                {{-- Previous due — read-only; collected via the single payment field below --}}
+                <div id="prevDueRow" style="display:none;justify-content:space-between;align-items:center;padding:10px 14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px">
+                    <span style="font-size:.83rem;font-weight:600;color:#92400e">
+                        <i class="fas fa-clock-rotate-left"></i> পূর্বের বাকী
+                    </span>
+                    <span style="font-size:1rem;font-weight:800;color:#b45309" id="prevDueDisplay">৳ 0</span>
                 </div>
 
                 <div class="summary-row">
@@ -152,10 +136,12 @@
                 </div>
                 <div id="discountRow" style="display:none">
                     <div class="form-group-field" style="margin-bottom:0">
-                        <label>ছাড় (৳)
-                            <button type="button" class="info-btn" data-info="সম্পূর্ণ বিলের উপর ছাড় দিন। যেমন ৳৫০ লিখলে মোট থেকে ৫০ টাকা বাদ যাবে।">i</button>
+                        <label>ছাড় <span style="font-weight:400;color:#94a3b8">(টাকায়, শতাংশে নয়)</span>
+                            <button type="button" class="info-btn" data-info="সম্পূর্ণ বিলের উপর ছাড় দিন। মানটি টাকায় (ফ্ল্যাট), শতাংশে নয়। যেমন ৫০ লিখলে মোট থেকে ৫০ টাকা বাদ যাবে।">i</button>
                         </label>
-                        <input type="text" inputmode="decimal" name="discount" id="discountInput" value="0">
+                        <span class="taka-input-wrap">
+                            <input type="text" inputmode="decimal" name="discount" id="discountInput" value="0">
+                        </span>
                     </div>
                 </div>
                 {{-- Categorised extra costs --}}
@@ -180,36 +166,54 @@
                     </div>
                 </div>
                 <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0.00</span></div>
-                <div class="form-group-field">
-                    <label>পরিশোধ (৳)
-                        <button type="button" class="info-btn" data-info="কাস্টমার এখন কত টাকা পরিশোধ করেছেন। বাকি টাকা স্বয়ংক্রিয়ভাবে কাস্টমারের বাকী হিসাবে রেকর্ড হবে। সম্পূর্ণ পরিশোধ হলে মোট পরিমাণ লিখুন।">i</button>
+
+                {{-- Total to collect today = this sale + outstanding previous due --}}
+                <div class="summary-row" id="collectRow" style="display:none;font-weight:700">
+                    <span>আজ মোট নিতে হবে:</span><span id="collectDisplay" style="color:#b45309">৳ 0.00</span>
+                </div>
+
+                {{-- Single money-in field — system auto-splits between this sale & old due --}}
+                <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:12px 14px">
+                    <label style="display:block;font-size:.85rem;font-weight:700;color:#1d4ed8;margin-bottom:7px">
+                        <i class="fas fa-hand-holding-dollar"></i> আজ গ্রাহক দিচ্ছেন (৳)
+                        <button type="button" class="info-btn" data-info="গ্রাহক আজ মোট যত টাকা দিচ্ছেন তা এখানে লিখুন। সিস্টেম স্বয়ংক্রিয়ভাবে এই বিক্রয় ও পুরনো বাকীর মধ্যে ভাগ করে দেবে — আগে এই বিক্রয়, তারপর পুরনো বাকী।">i</button>
                     </label>
                     <div style="display:flex;gap:8px">
-                        <input type="text" inputmode="decimal" name="paid_amount" id="paidInput" value="0" style="flex:1">
+                        <input type="text" inputmode="decimal" name="paid_amount" id="paidInput" value="0"
+                            style="flex:1;font-size:1.05rem;font-weight:700">
                         <button type="button" onclick="setFullPay()" title="সম্পূর্ণ পরিশোধ"
-                            style="padding:0 12px;border-radius:var(--radius-sm);border:1.5px solid var(--accent);
-                                   background:var(--accent-light);color:var(--accent);font-size:.78rem;
+                            style="padding:0 14px;border-radius:var(--radius-sm);border:none;
+                                   background:#1d4ed8;color:#fff;font-size:.82rem;
                                    font-weight:700;cursor:pointer;white-space:nowrap">
-                            সম্পূর্ণ
+                            পুরোটা
                         </button>
                     </div>
-                    <div id="paidWords" style="display:none;margin-top:4px;font-size:.78rem;font-weight:600;color:var(--accent)"></div>
-                    {{-- Walk-in warning --}}
-                    <div id="walkinWarning" style="display:none;margin-top:6px;padding:8px 12px;
-                        background:#fee2e2;border:1px solid #fecaca;border-radius:8px;
-                        font-size:.82rem;color:#991b1b;font-weight:600">
-                        <i class="fas fa-circle-exclamation"></i>
-                        কাস্টমার ছাড়া বিক্রয়ে সম্পূর্ণ পরিশোধ আবশ্যক!
+                    <div id="paidWords" style="display:none;margin-top:5px;font-size:.78rem;font-weight:600;color:#1d4ed8"></div>
+
+                    {{-- Auto-split breakdown (read-only) --}}
+                    <div id="payBreakdown" style="display:none;margin-top:9px;font-size:.8rem;color:#1e40af;font-weight:600">
+                        <span id="breakSale"></span><span id="breakOld"></span>
                     </div>
-                    {{-- Extra payment warning (no items + customer has 0 due) --}}
-                    <div id="extraPayWarning" style="display:none;margin-top:6px;padding:8px 12px;
-                        background:#fef9c3;border:1px solid #fde68a;border-radius:8px;
-                        font-size:.82rem;color:#92400e;font-weight:600">
-                        <i class="fas fa-triangle-exclamation"></i>
-                        এই কাস্টমারের কোনো বাকী নেই — অতিরিক্ত পরিশোধ রিপোর্টে বাকীর হিসাবে প্রভাব ফেলবে না।
-                    </div>
+                    {{-- Resulting customer balance --}}
+                    <div id="resultRow" style="display:none;margin-top:6px;font-size:.83rem;font-weight:700"></div>
                 </div>
-                <div class="summary-row" style="color:#ef4444"><span>বকেয়া:</span><span id="dueDisplay">৳ 0.00</span></div>
+
+                {{-- Walk-in warning --}}
+                <div id="walkinWarning" style="display:none;margin-top:2px;padding:8px 12px;
+                    background:#fee2e2;border:1px solid #fecaca;border-radius:8px;
+                    font-size:.82rem;color:#991b1b;font-weight:600">
+                    <i class="fas fa-circle-exclamation"></i>
+                    কাস্টমার ছাড়া বিক্রয়ে সম্পূর্ণ পরিশোধ আবশ্যক!
+                </div>
+                {{-- Extra payment warning (no items + customer has 0 due) --}}
+                <div id="extraPayWarning" style="display:none;margin-top:2px;padding:8px 12px;
+                    background:#fef9c3;border:1px solid #fde68a;border-radius:8px;
+                    font-size:.82rem;color:#92400e;font-weight:600">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    এই কাস্টমারের কোনো বাকী নেই — অতিরিক্ত পরিশোধ রিপোর্টে বাকীর হিসাবে প্রভাব ফেলবে না।
+                </div>
+                {{-- This sale's own outstanding (kept for clarity) --}}
+                <div class="summary-row" id="saleDueRow" style="color:#ef4444"><span>এই বিক্রয়ে বাকী:</span><span id="dueDisplay">৳ 0.00</span></div>
 
                 {{-- Payment Method (DB-driven) --}}
                 <div class="form-group-field">
@@ -258,8 +262,8 @@
                     <label>মন্তব্য</label>
                     <textarea name="notes" rows="2"></textarea>
                 </div>
-                {{-- spacer so content doesn't hide behind the fixed button --}}
-                <div style="height:60px"></div>
+                {{-- spacer so content doesn't hide behind the fixed submit bar (height synced in JS) --}}
+                <div id="submitBarSpacer" style="height:150px"></div>
             </div>
         </div>
     </div>
@@ -267,6 +271,20 @@
 
 {{-- Floating submit button ──────────────────────────────── --}}
 <div class="sale-submit-bar">
+    {{-- Post-transaction summary — always visible directly above the CTA --}}
+    <div id="txnSummary" style="display:none;border:1.5px solid var(--border);border-radius:10px;
+         padding:8px 12px;margin-bottom:10px;background:var(--bg)">
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    font-size:.8rem;color:var(--text-secondary);margin-bottom:5px">
+            <span><i class="fas fa-wallet" style="margin-right:4px"></i> আজ মোট জমা</span>
+            <span id="txnCollected" style="font-weight:800;color:#16a34a">৳ 0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    border-top:1px dashed var(--border);padding-top:6px">
+            <span style="font-size:.84rem;font-weight:700;color:var(--text-primary)">লেনদেনের পর সর্বমোট বাকী</span>
+            <span id="txnDueAfter" style="font-size:1.2rem;font-weight:800;color:#dc2626">৳ 0</span>
+        </div>
+    </div>
     <button type="submit" form="saleForm" class="btn btn-primary"
             style="width:100%;justify-content:center;padding:14px;font-size:1rem">
         <i class="fas fa-check-circle"></i> বিক্রয় সম্পন্ন করুন
@@ -446,6 +464,17 @@
     color:#94a3b8;
     margin-top:1px;
 }
+
+/* ৳ flat-amount adornment for ছাড় / খরচ inputs */
+.taka-input-wrap { position: relative; display: block; }
+.taka-input-wrap::before {
+    content: '৳';
+    position: absolute; left: 10px; top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8; font-weight: 700; font-size: .88rem;
+    pointer-events: none; z-index: 1;
+}
+.taka-input-wrap > input { padding-left: 22px !important; }
 </style>
 @endpush
 
@@ -894,6 +923,75 @@ function updateSummary() {
         else if (marginPct >= 0) { badge.textContent = '↓ কম লাভ';      badge.className = 'margin-badge poor'; }
         else                     { badge.textContent = '✗ লোকসান';       badge.className = 'margin-badge poor'; }
     }
+
+    // ── Payment split: one input → this sale first, then old due ──
+    const owed      = Math.max(0, currentPrevDue);     // outstanding old due (ignore advance)
+    const toCollect = net + owed;                       // amount to clear everything
+    const toSale    = Math.min(paid, net);
+    const toOld     = Math.max(0, paid - net);
+    const resultBal = currentPrevDue + net - paid;      // customer balance after this sale
+
+    const collectRow = document.getElementById('collectRow');
+    if (collectRow) {
+        collectRow.style.display = owed > 0 ? 'flex' : 'none';
+        if (owed > 0) document.getElementById('collectDisplay').textContent = '৳ ' + toCollect.toFixed(0);
+    }
+
+    const bd = document.getElementById('payBreakdown');
+    if (bd) {
+        if (paid > 0 && (cart.length || owed > 0)) {
+            bd.style.display = 'block';
+            document.getElementById('breakSale').textContent = `এই বিক্রয়ে ৳ ${toSale.toFixed(0)}`;
+            document.getElementById('breakOld').textContent  = toOld > 0 ? `  •  পুরনো বাকীতে ৳ ${toOld.toFixed(0)}` : '';
+        } else {
+            bd.style.display = 'none';
+        }
+    }
+
+    const rr = document.getElementById('resultRow');
+    if (rr) {
+        if (cart.length || owed > 0 || paid > 0) {
+            rr.style.display = 'block';
+            if (Math.abs(resultBal) < 0.005) {
+                rr.innerHTML = `<span style="color:#15803d">✓ সম্পূর্ণ পরিশোধিত — কোনো বাকী থাকবে না</span>`;
+            } else if (resultBal > 0) {
+                rr.innerHTML = `<span style="color:#dc2626">বাকী থাকবে: ৳ ${resultBal.toFixed(0)}</span>`;
+            } else {
+                rr.innerHTML = `<span style="color:#1d4ed8">অগ্রিম জমা থাকবে: ৳ ${Math.abs(resultBal).toFixed(0)}</span>`;
+            }
+        } else {
+            rr.style.display = 'none';
+        }
+    }
+
+    // Hide the standalone "এই বিক্রয়ে বাকী" row when there's nothing to show
+    const saleDueRow = document.getElementById('saleDueRow');
+    if (saleDueRow) saleDueRow.style.display = (cart.length && due > 0) ? 'flex' : 'none';
+
+    // ── Post-transaction summary above the submit CTA ─────────
+    // total_due_after = (previous_due + net) − total_collected
+    // where total_collected = the single "আজ গ্রাহক দিচ্ছেন" amount (paid)
+    const txn = document.getElementById('txnSummary');
+    if (txn) {
+        const active = cart.length || owed > 0 || paid > 0;
+        txn.style.display = active ? 'block' : 'none';
+        if (active) {
+            document.getElementById('txnCollected').textContent = '৳ ' + paid.toFixed(0);
+            const after = document.getElementById('txnDueAfter');
+            if (resultBal > 0.005) {
+                after.textContent = '৳ ' + resultBal.toFixed(0);
+                after.style.color = '#dc2626';      // red — still owes
+            } else if (resultBal < -0.005) {
+                after.textContent = 'অগ্রিম ৳ ' + Math.abs(resultBal).toFixed(0);
+                after.style.color = '#1d4ed8';      // blue — credit balance
+            } else {
+                after.textContent = '৳ 0';
+                after.style.color = '#16a34a';      // green — fully settled
+            }
+        }
+    }
+
+    syncSubmitBarSpacer();
 }
 
 // ── Categorised extra costs ──────────────────────────────────
@@ -941,11 +1039,13 @@ function addExtraCostRow() {
             <option value="">-- ক্যাটাগরি --</option>
             ${opts}
         </select>
-        <input type="text" inputmode="decimal" name="extra_costs[${idx}][amount]"
-            placeholder="৳ পরিমাণ" value=""
-            class="extra-cost-amount"
-            style="width:90px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem"
-            oninput="updateSummary()">
+        <span class="taka-input-wrap" style="width:96px;flex-shrink:0">
+            <input type="text" inputmode="decimal" name="extra_costs[${idx}][amount]"
+                placeholder="পরিমাণ" value=""
+                class="extra-cost-amount"
+                style="width:100%;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem"
+                oninput="updateSummary()">
+        </span>
         <button type="button" onclick="removeExtraCostRow(${idx})"
             style="padding:5px 8px;border:none;background:#fee2e2;color:#dc2626;border-radius:6px;cursor:pointer;flex-shrink:0">
             <i class="fas fa-times"></i>
@@ -984,6 +1084,20 @@ function toggleDiscount() { toggleField('discount'); }
 document.getElementById('discountInput').addEventListener('input', updateSummary);
 document.getElementById('paidInput').addEventListener('input', function() { updateSummary(); checkExtraPayWarning(); });
 
+// ── Block non-numeric input on every decimal field ───────────
+// Keeps only digits + a single decimal point (Bengali numerals → English).
+// Capture phase so the value is cleaned before updateSummary/updateQty read it.
+function sanitizeDecimalInput(el) {
+    if (!el || el.tagName !== 'INPUT' || el.getAttribute('inputmode') !== 'decimal') return;
+    let v = toEnglishDigits(el.value).replace(/[^0-9.]/g, '');
+    const dot = v.indexOf('.');
+    if (dot !== -1) v = v.slice(0, dot + 1) + v.slice(dot + 1).replace(/\./g, '');
+    if (v !== el.value) el.value = v;
+}
+document.getElementById('saleForm').addEventListener('input', function(e) {
+    sanitizeDecimalInput(e.target);
+}, true);
+
 // Ensure paid_amount always has a numeric value before submit
 document.getElementById('paidInput').addEventListener('blur', function() {
     if (this.value.trim() === '') this.value = '0';
@@ -998,7 +1112,9 @@ function getNet() {
 }
 
 function setFullPay() {
-    document.getElementById('paidInput').value = (getNet() + prevDuePay).toFixed(0);
+    // Clear this sale AND any outstanding old due (ignore advance/credit balance)
+    const owed = Math.max(0, currentPrevDue);
+    document.getElementById('paidInput').value = (getNet() + owed).toFixed(0);
     updateSummary();
 }
 
@@ -1572,6 +1688,15 @@ async function saveNewCustomer() {
         btn.innerHTML = '<i class="fas fa-save"></i> সংরক্ষণ ও নির্বাচন';
     }
 }
+
+// Keep the bottom spacer tall enough that মন্তব্য never hides behind the fixed submit bar
+function syncSubmitBarSpacer() {
+    const bar = document.querySelector('.sale-submit-bar');
+    const sp  = document.getElementById('submitBarSpacer');
+    if (bar && sp) sp.style.height = (bar.offsetHeight + 24) + 'px';
+}
+window.addEventListener('resize', syncSubmitBarSpacer);
+document.addEventListener('DOMContentLoaded', syncSubmitBarSpacer);
 
 document.addEventListener('DOMContentLoaded', () => bnWatchTakaWords('paidInput', 'paidWords'));
 </script>
