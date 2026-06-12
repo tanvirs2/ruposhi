@@ -9,7 +9,7 @@ class Category extends Model
 {
     use HasShopScope;
 
-    protected $fillable = ['name', 'description'];
+    protected $fillable = ['name', 'description', 'created_by'];
 
     public function items()
     {

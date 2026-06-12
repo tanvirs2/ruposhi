@@ -9,7 +9,7 @@ class Employee extends Model
 {
     use HasShopScope;
 
-    protected $fillable = ['name', 'phone', 'email', 'position', 'salary', 'join_date', 'address', 'status'];
+    protected $fillable = ['name', 'phone', 'email', 'position', 'salary', 'join_date', 'address', 'status', 'created_by'];
 
     protected $casts = ['join_date' => 'date'];
 }

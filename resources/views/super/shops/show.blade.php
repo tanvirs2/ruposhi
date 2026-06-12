@@ -67,15 +67,20 @@
 
     {{-- Users --}}
     <div class="sa-card">
-        <h2 style="font-size:1rem;font-weight:700;margin:0 0 16px;color:#f1f5f9">
-            <i class="fas fa-users" style="color:#3b82f6"></i> ব্যবহারকারী ({{ $shop->users->count() }})
-        </h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <h2 style="font-size:1rem;font-weight:700;margin:0;color:#f1f5f9">
+                <i class="fas fa-users" style="color:#3b82f6"></i> ব্যবহারকারী ({{ $shop->users->count() }})
+            </h2>
+            <button type="button" onclick="showCreateUserModal()" class="sa-btn sa-btn-primary sa-btn-sm">
+                <i class="fas fa-user-plus"></i> নতুন যোগ করুন
+            </button>
+        </div>
         @if($shop->users->isEmpty())
             <div style="color:#64748b;font-size:.86rem;padding:10px 0">কোনো ব্যবহারকারী নেই</div>
         @else
         <table class="sa-table">
             <thead>
-                <tr><th>নাম / ইমেইল</th><th>রোল</th><th>পাসওয়ার্ড রিসেট</th></tr>
+                <tr><th>নাম / ইমেইল</th><th>রোল</th><th>অ্যাকশন</th></tr>
             </thead>
             <tbody>
                 @foreach($shop->users as $u)
@@ -91,18 +96,65 @@
                             {{ $u->role==='admin' ? 'অ্যাডমিন' : 'স্টাফ' }}
                         </span>
                     </td>
-                    <td>
+                    <td style="display:flex;gap:6px">
                         <button type="button"
                                 onclick="showResetModal({{ $u->id }}, '{{ addslashes($u->name) }}')"
-                                class="sa-btn sa-btn-ghost sa-btn-sm">
-                            <i class="fas fa-key"></i> রিসেট
+                                class="sa-btn sa-btn-ghost sa-btn-sm" title="পাসওয়ার্ড রিসেট">
+                            <i class="fas fa-key"></i>
                         </button>
+                        <form method="POST"
+                              action="{{ route('super.shops.users.destroy', [$shop, $u]) }}"
+                              onsubmit="return confirm('{{ addslashes($u->name) }} মুছে ফেলবেন?')">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="sa-btn sa-btn-sm" style="background:#7f1d1d;color:#fca5a5" title="মুছুন">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
         @endif
+    </div>
+</div>
+
+{{-- Create User Modal --}}
+<div id="createUserModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;
+                                  align-items:center;justify-content:center">
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:16px;
+                padding:28px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+        <h3 style="margin:0 0 20px;font-size:1.05rem;font-weight:700;color:#f1f5f9">
+            <i class="fas fa-user-plus" style="color:#3b82f6"></i> নতুন ব্যবহারকারী যোগ করুন
+        </h3>
+        <form method="POST" action="{{ route('super.shops.users.store', $shop) }}">
+            @csrf
+            <div class="sa-field" style="margin-bottom:14px">
+                <label class="sa-label">নাম <span style="color:#ef4444">*</span></label>
+                <input type="text" name="name" class="sa-input" placeholder="পূর্ণ নাম" required autocomplete="off">
+            </div>
+            <div class="sa-field" style="margin-bottom:14px">
+                <label class="sa-label">ইমেইল <span style="color:#ef4444">*</span></label>
+                <input type="email" name="email" class="sa-input" placeholder="email@example.com" required autocomplete="off">
+            </div>
+            <div class="sa-field" style="margin-bottom:14px">
+                <label class="sa-label">পাসওয়ার্ড <span style="color:#ef4444">*</span></label>
+                <input type="text" name="password" class="sa-input" placeholder="কমপক্ষে ৬ অক্ষর" minlength="6" required autocomplete="off">
+            </div>
+            <div class="sa-field" style="margin-bottom:20px">
+                <label class="sa-label">রোল <span style="color:#ef4444">*</span></label>
+                <select name="role" class="sa-input" required>
+                    <option value="staff">স্টাফ</option>
+                    <option value="admin">অ্যাডমিন</option>
+                </select>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button type="button" onclick="closeCreateUserModal()" class="sa-btn sa-btn-ghost">বাতিল</button>
+                <button type="submit" class="sa-btn sa-btn-primary">
+                    <i class="fas fa-save"></i> যোগ করুন
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -140,6 +192,17 @@
 
 @push('scripts')
 <script>
+function showCreateUserModal() {
+    const modal = document.getElementById('createUserModal');
+    modal.style.display = 'flex';
+}
+function closeCreateUserModal() {
+    document.getElementById('createUserModal').style.display = 'none';
+}
+document.getElementById('createUserModal').addEventListener('click', function(e) {
+    if (e.target === this) closeCreateUserModal();
+});
+
 function showResetModal(userId, userName) {
     document.getElementById('resetModalSubtitle').textContent = userName + ' এর পাসওয়ার্ড পরিবর্তন করুন';
     document.getElementById('resetForm').action = '/super/users/' + userId + '/reset-password';

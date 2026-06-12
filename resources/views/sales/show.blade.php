@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', 'ক্যাশ মেমো')
 @section('page-title', 'ক্যাশ মেমো')
+@section('no-print-header', '1')
 
 @section('content')
 @php

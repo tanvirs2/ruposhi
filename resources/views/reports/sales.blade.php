@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', 'বিক্রয় রিপোর্ট')
 @section('page-title', 'দৈনিক বিক্রয় রিপোর্ট')
+@section('no-print-header', '1')
 
 @section('content')
 
@@ -129,20 +130,36 @@
     @endif
 </div>
 
-{{-- Per-item detail table (old-system style) ───────────────── --}}
+@php
+    [$namedItems, $walkinItems] = $saleItems->partition(fn($r) => $r->customer_name !== null);
+    // Per-sale aggregates (paid/due/extra/disc are repeated per item — take unique sales)
+    $namedUniqSales  = $namedItems->unique('sale_id');
+    $walkinUniqSales = $walkinItems->unique('sale_id');
+    $namedPaid  = $namedUniqSales->sum('paid_amount');
+    $namedDue   = $namedUniqSales->sum('due_amount');
+    $namedExtra = $namedUniqSales->sum('extra_cost');
+    $namedDisc  = $namedUniqSales->sum('discount');
+    $walkinPaid  = $walkinUniqSales->sum('paid_amount');
+    $walkinDue   = $walkinUniqSales->sum('due_amount');
+    $walkinExtra = $walkinUniqSales->sum('extra_cost');
+    $walkinDisc  = $walkinUniqSales->sum('discount');
+@endphp
+
+{{-- Per-item detail table — named customers ────────────────── --}}
 <div class="card">
     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
         <h3><i class="fas fa-table-list"></i>
             তারিখ : {{ \Carbon\Carbon::parse($from)->format('d/m/Y') }}
             @if($from !== $to) — {{ \Carbon\Carbon::parse($to)->format('d/m/Y') }} @endif
         </h3>
-        <span style="font-size:.8rem;color:#94a3b8">{{ $saleItems->count() }} টি আইটেম</span>
+        <span style="font-size:.8rem;color:#94a3b8">{{ $namedItems->count() }} টি আইটেম</span>
     </div>
     <div class="table-wrap">
         <table class="data-table sale-detail-table">
             <thead>
                 <tr>
                     <th class="tc">চালান নং</th>
+                    <th class="tc col-hide-tablet">তারিখ</th>
                     <th>কাস্টমার নাম</th>
                     <th>আইটেম নাম</th>
                     <th class="tc">পরিমাণ</th>
@@ -161,15 +178,13 @@
                 @php
                     $running = 0; $lastSaleId = null;
                     $totalQty = 0; $totalKgSum = 0;
-                    $shownSaleIds = [];
                 @endphp
-                @forelse($saleItems as $row)
+                @forelse($namedItems as $row)
                 @php
                     $running += $row->amount;
                     $isNewSale = ($row->sale_id !== $lastSaleId);
                     $lastSaleId = $row->sale_id;
-                    $showCosts = $isNewSale; // show extra/labor/discount only once per sale
-                    // Extract KG from item name (50kg, 25kg, ৫০কেজি, etc.)
+                    $showCosts = $isNewSale;
                     preg_match('/(৫০|২৫|50|25)\s*(কেজি|kg)/ui', $row->item_name, $m);
                     $kgPer = isset($m[1]) ? (int) str_replace(['৫০','২৫'],['50','25'], $m[1]) : null;
                     $totalKg = $kgPer ? (int)$row->qty * $kgPer : null;
@@ -182,31 +197,22 @@
                             {{ str_pad($row->sale_id, 6, '0', STR_PAD_LEFT) }}
                         </a>
                     </td>
-                    <td>
-                        @if($row->customer_name)
-                            {{ $row->customer_name }}
-                        @else
-                            <span style="color:#94a3b8">ওয়াক-ইন</span>
-                        @endif
+                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                        @if($isNewSale) {{ \Carbon\Carbon::parse($row->date)->format('d/m/Y') }} @else — @endif
                     </td>
+                    <td>{{ $row->customer_name }}</td>
                     <td>{{ $row->item_name }}</td>
                     <td class="tc">{{ (int)$row->qty }}</td>
                     <td class="tc col-hide-tablet">{{ $totalKg ?? '—' }}</td>
                     <td class="tr col-hide-tablet">{{ number_format($row->rate, 0) }}</td>
                     <td class="tr" style="font-weight:600">{{ number_format($running, 0) }}</td>
-                    {{-- ছাড় --}}
                     <td class="tr col-hide-tablet" style="color:#15803d;font-size:.8rem">
-                        @if($showCosts && ($row->discount ?? 0) > 0)
-                            − {{ number_format($row->discount, 0) }}
-                        @else —
-                        @endif
+                        @if($showCosts && ($row->discount ?? 0) > 0) − {{ number_format($row->discount, 0) }}
+                        @else — @endif
                     </td>
-                    {{-- অতিরিক্ত খরচ --}}
                     <td class="tr col-hide-tablet" style="color:#7c3aed;font-size:.8rem">
-                        @if($showCosts && ($row->extra_cost ?? 0) > 0)
-                            + {{ number_format($row->extra_cost, 0) }}
-                        @else —
-                        @endif
+                        @if($showCosts && ($row->extra_cost ?? 0) > 0) + {{ number_format($row->extra_cost, 0) }}
+                        @else — @endif
                     </td>
                     <td class="tr" style="color:#16a34a">
                         @if($isNewSale) {{ number_format($row->paid_amount, 0) }} @else — @endif
@@ -215,11 +221,9 @@
                         @if($isNewSale)
                             @if($row->due_amount > 0)
                                 <span style="color:#dc2626;font-weight:600">{{ number_format($row->due_amount, 0) }}</span>
-                            @else
-                                <span style="color:#16a34a">—</span>
+                            @else <span style="color:#16a34a">—</span>
                             @endif
-                        @else —
-                        @endif
+                        @else — @endif
                     </td>
                     <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b">{{ $row->user_name ?? '—' }}</td>
                     <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
@@ -227,27 +231,25 @@
                     </td>
                 </tr>
                 @empty
-                <tr>
-                    <td colspan="13" class="empty-row">এই সময়কালে কোনো বিক্রয় নেই</td>
-                </tr>
+                <tr><td colspan="14" class="empty-row">এই সময়কালে কোনো নামযুক্ত কাস্টমারের বিক্রয় নেই</td></tr>
                 @endforelse
             </tbody>
-            @if($saleItems->isNotEmpty())
+            @if($namedItems->isNotEmpty())
             <tfoot>
                 <tr class="tfoot-summary">
-                    <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                    <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
                     <td class="tc" style="font-weight:800">{{ $totalQty }}</td>
                     <td class="tc col-hide-tablet" style="font-weight:800">{{ $totalKgSum ?: '—' }}</td>
                     <td></td>
-                    <td class="tr" style="font-weight:800">{{ number_format($saleItems->sum('amount'), 0) }}</td>
+                    <td class="tr" style="font-weight:800">{{ number_format($namedItems->sum('amount'), 0) }}</td>
                     <td class="tr col-hide-tablet" style="color:#15803d;font-weight:700">
-                        {{ $grandDiscount > 0 ? '− '.number_format($grandDiscount, 0) : '—' }}
+                        {{ $namedDisc > 0 ? '− '.number_format($namedDisc, 0) : '—' }}
                     </td>
                     <td class="tr col-hide-tablet" style="color:#7c3aed;font-weight:700">
-                        {{ $grandExtraCost > 0 ? '+ '.number_format($grandExtraCost, 0) : '—' }}
+                        {{ $namedExtra > 0 ? '+ '.number_format($namedExtra, 0) : '—' }}
                     </td>
-                    <td class="tr" style="color:#16a34a;font-weight:700">{{ number_format($grandItemPaid, 0) }}</td>
-                    <td class="tr" style="color:#dc2626;font-weight:700">{{ number_format($grandDue, 0) }}</td>
+                    <td class="tr" style="color:#16a34a;font-weight:700">{{ number_format($namedPaid, 0) }}</td>
+                    <td class="tr" style="color:#dc2626;font-weight:700">{{ number_format($namedDue, 0) }}</td>
                     <td colspan="2"></td>
                 </tr>
             </tfoot>
@@ -255,6 +257,113 @@
         </table>
     </div>
 </div>
+
+{{-- ── ওয়াক-ইন বিক্রয় ────────────────────────────────────────── --}}
+@if($walkinItems->isNotEmpty())
+<div class="card" style="margin-top:18px">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,#f0fdfa,#ccfbf1);border-bottom:1px solid #99f6e4">
+        <h3 style="font-size:.95rem;color:#0f766e;margin:0">
+            <i class="fas fa-person-walking"></i> ওয়াক-ইন বিক্রয়
+        </h3>
+        <span style="font-size:.8rem;color:#0f766e">{{ $walkinItems->count() }} টি আইটেম</span>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table sale-detail-table">
+            <thead>
+                <tr>
+                    <th class="tc">চালান নং</th>
+                    <th class="tc col-hide-tablet">তারিখ</th>
+                    <th>আইটেম নাম</th>
+                    <th class="tc">পরিমাণ</th>
+                    <th class="tc col-hide-tablet">পরিমাণ কেজি</th>
+                    <th class="tr col-hide-tablet">বিক্রয় মূল্য</th>
+                    <th class="tr">মোট মূল্য</th>
+                    <th class="tr col-hide-tablet" style="color:#15803d">ছাড়</th>
+                    <th class="tr col-hide-tablet" style="color:#7c3aed">অতি. খরচ</th>
+                    <th class="tr">জমা</th>
+                    <th class="tr">বাকী</th>
+                    <th class="tc col-hide-tablet">ইউজার</th>
+                    <th class="tc col-hide-tablet">সময়</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php
+                    $wRunning = 0; $wLastSaleId = null;
+                    $wTotalQty = 0; $wTotalKgSum = 0;
+                @endphp
+                @foreach($walkinItems as $row)
+                @php
+                    $wRunning += $row->amount;
+                    $wIsNew = ($row->sale_id !== $wLastSaleId);
+                    $wLastSaleId = $row->sale_id;
+                    preg_match('/(৫০|২৫|50|25)\s*(কেজি|kg)/ui', $row->item_name, $m);
+                    $wKgPer = isset($m[1]) ? (int) str_replace(['৫০','২৫'],['50','25'], $m[1]) : null;
+                    $wTotalKg = $wKgPer ? (int)$row->qty * $wKgPer : null;
+                    $wTotalQty += (int)$row->qty;
+                    if ($wTotalKg) $wTotalKgSum += $wTotalKg;
+                @endphp
+                <tr class="{{ $wIsNew ? 'new-sale-row' : '' }}">
+                    <td class="tc mono">
+                        <a href="{{ route('sales.show', $row->sale_id) }}" class="link-primary">
+                            {{ str_pad($row->sale_id, 6, '0', STR_PAD_LEFT) }}
+                        </a>
+                    </td>
+                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                        @if($wIsNew) {{ \Carbon\Carbon::parse($row->date)->format('d/m/Y') }} @else — @endif
+                    </td>
+                    <td>{{ $row->item_name }}</td>
+                    <td class="tc">{{ (int)$row->qty }}</td>
+                    <td class="tc col-hide-tablet">{{ $wTotalKg ?? '—' }}</td>
+                    <td class="tr col-hide-tablet">{{ number_format($row->rate, 0) }}</td>
+                    <td class="tr" style="font-weight:600">{{ number_format($wRunning, 0) }}</td>
+                    <td class="tr col-hide-tablet" style="color:#15803d;font-size:.8rem">
+                        @if($wIsNew && ($row->discount ?? 0) > 0) − {{ number_format($row->discount, 0) }}
+                        @else — @endif
+                    </td>
+                    <td class="tr col-hide-tablet" style="color:#7c3aed;font-size:.8rem">
+                        @if($wIsNew && ($row->extra_cost ?? 0) > 0) + {{ number_format($row->extra_cost, 0) }}
+                        @else — @endif
+                    </td>
+                    <td class="tr" style="color:#16a34a">
+                        @if($wIsNew) {{ number_format($row->paid_amount, 0) }} @else — @endif
+                    </td>
+                    <td class="tr">
+                        @if($wIsNew)
+                            @if($row->due_amount > 0)
+                                <span style="color:#dc2626;font-weight:600">{{ number_format($row->due_amount, 0) }}</span>
+                            @else <span style="color:#16a34a">—</span>
+                            @endif
+                        @else — @endif
+                    </td>
+                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b">{{ $row->user_name ?? '—' }}</td>
+                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                        {{ \Carbon\Carbon::parse($row->sale_time)->format('h:i:s a') }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                    <td class="tc" style="font-weight:800">{{ $wTotalQty }}</td>
+                    <td class="tc col-hide-tablet" style="font-weight:800">{{ $wTotalKgSum ?: '—' }}</td>
+                    <td></td>
+                    <td class="tr" style="font-weight:800">{{ number_format($walkinItems->sum('amount'), 0) }}</td>
+                    <td class="tr col-hide-tablet" style="color:#15803d;font-weight:700">
+                        {{ $walkinDisc > 0 ? '− '.number_format($walkinDisc, 0) : '—' }}
+                    </td>
+                    <td class="tr col-hide-tablet" style="color:#7c3aed;font-weight:700">
+                        {{ $walkinExtra > 0 ? '+ '.number_format($walkinExtra, 0) : '—' }}
+                    </td>
+                    <td class="tr" style="color:#16a34a;font-weight:700">{{ number_format($walkinPaid, 0) }}</td>
+                    <td class="tr" style="color:#dc2626;font-weight:700">{{ number_format($walkinDue, 0) }}</td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+@endif
 
 {{-- ── No-item Sales (paying off previous due via sale form, no products) ─── --}}
 @if($noItemSales->isNotEmpty())

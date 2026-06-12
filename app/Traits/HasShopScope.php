@@ -21,6 +21,10 @@ trait HasShopScope
             if (auth()->check() && auth()->user()->shop_id) {
                 $model->shop_id = $model->shop_id ?? auth()->user()->shop_id;
             }
+            if (auth()->check() && isset($model->getAttributes()['created_by']) === false
+                && in_array('created_by', $model->getFillable())) {
+                $model->created_by = $model->created_by ?? auth()->id();
+            }
         });
     }
 }

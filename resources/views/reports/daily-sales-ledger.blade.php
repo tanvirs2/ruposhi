@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', 'দৈনিক বিক্রয় লেজার রিপোর্ট')
 @section('page-title', 'দৈনিক বিক্রয় লেজার রিপোর্ট')
+@section('no-print-header', '1')
 
 @section('content')
 

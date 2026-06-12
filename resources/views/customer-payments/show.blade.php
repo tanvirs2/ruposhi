@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', 'পরিশোধ রশিদ')
 @section('page-title', 'পরিশোধ রশিদ')
+@section('no-print-header', '1')
 
 @section('content')
 @php

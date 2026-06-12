@@ -365,9 +365,6 @@
                 <a href="{{ route('sales.create') }}" class="btn-quick btn-quick-sale" title="নতুন বিক্রয় (Alt+S)">
                     <i class="fas fa-plus"></i><span>নতুন বিক্রয়</span>
                 </a>
-                <a href="{{ route('purchases.create') }}" class="btn-quick btn-quick-purchase" title="মাল রিসিভ (Alt+P)">
-                    <i class="fas fa-truck-ramp-box"></i><span>মাল রিসিভ</span>
-                </a>
             </div>
 
             <div class="topbar-divider"></div>
@@ -547,6 +544,19 @@
             </div>
         @endif
 
+        {{-- Print-only header: store name, report title, print date (topbar is hidden on paper).
+             Invoices have their own arc header, so they set @section('no-print-header') to skip this. --}}
+        @hasSection('no-print-header')
+        @else
+        <div class="print-only app-print-header">
+            <div class="app-print-header-store">{{ \App\Models\StoreConfig::get('store_name', auth()->user()->shop->name ?? 'রিপোর্ট') }}</div>
+            <div class="app-print-header-row">
+                <span class="app-print-header-title">@yield('page-title', 'রিপোর্ট')</span>
+                <span class="app-print-header-date">প্রিন্ট: {{ now()->format('d/m/Y h:i A') }}</span>
+            </div>
+        </div>
+        @endif
+
         @yield('content')
     </main>
 </div>
@@ -673,6 +683,65 @@ function drRange(fromName, toName, formSel, type) {
     document.querySelector(`input[name="${toName}"]`).value   = fmt(to);
     document.querySelector(formSel).submit();
 }
+</script>
+
+<script>
+// ── Compact table toggle — auto-inject on every card that has a table ──
+// A separate inner div (tbl-y-scroll) handles overflow-y so that
+// position:sticky works on thead + tfoot (dual overflow on same element breaks sticky).
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.card').forEach(function (card) {
+        const header = card.querySelector('.card-header');
+        const wrap   = card.querySelector('.table-wrap');
+        if (!header || !wrap) return;
+        const table = wrap.querySelector('table');
+        if (!table) return;
+
+        // Wrap table in inner scroll container.
+        // When compact: wrap.overflow=visible so it's not a scroll container,
+        // letting position:sticky anchor correctly to inner (the real scroller).
+        const inner = document.createElement('div');
+        inner.className = 'tbl-y-scroll';
+        wrap.insertBefore(inner, table);
+        inner.appendChild(table);
+
+        const COMPACT_MAX = 340; // keep in sync with .tbl-y-scroll.tbl-compact max-height
+
+        // Only apply compact behaviour to tables that actually overflow.
+        // Small tables that already fit stay normal — no scroll, no button.
+        if (table.offsetHeight <= COMPACT_MAX) return;
+
+        function setCompact(compact) {
+            if (compact) {
+                inner.classList.add('tbl-compact');
+                wrap.style.overflow = 'visible';
+            } else {
+                inner.classList.remove('tbl-compact');
+                wrap.style.overflow = '';
+            }
+        }
+
+        // Start compact
+        setCompact(true);
+
+        const btn = document.createElement('button');
+        btn.type      = 'button';
+        btn.className = 'tbl-toggle-btn no-print';
+        btn.title     = 'প্রসারিত করুন';
+        btn.innerHTML = '<i class="fas fa-expand-alt"></i>';
+
+        btn.addEventListener('click', function () {
+            const nowCompact = !inner.classList.contains('tbl-compact');
+            setCompact(nowCompact);
+            btn.querySelector('i').className = nowCompact
+                ? 'fas fa-expand-alt'
+                : 'fas fa-compress-alt';
+            btn.title = nowCompact ? 'প্রসারিত করুন' : 'সংকুচিত করুন';
+        });
+
+        header.appendChild(btn);
+    });
+});
 </script>
 
 {{-- ══ Multimedia Popup Player ══════════════════════════════ --}}

@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', 'লাভ-লোকসান রিপোর্ট')
 @section('page-title', 'লাভ-লোকসান হিসাব')
+@section('no-print-header', '1')
 
 @section('content')
 

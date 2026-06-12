@@ -9,7 +9,7 @@ class Supplier extends Model
 {
     use HasShopScope;
 
-    protected $fillable = ['name', 'proprietor', 'phone', 'email', 'address', 'due_amount'];
+    protected $fillable = ['name', 'proprietor', 'phone', 'email', 'address', 'due_amount', 'created_by'];
 
     public function purchases()
     {

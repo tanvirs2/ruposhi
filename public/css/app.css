@@ -836,6 +836,54 @@ a { text-decoration: none; color: inherit; }
 /* ─── Table ─────────────────────────────────────────────────── */
 .table-wrap { overflow-x: auto; }
 
+/* ── Compact table toggle ──────────────────────────────────── */
+/* .tbl-y-scroll handles BOTH axes in compact mode.
+   .table-wrap is forced to overflow:visible so it does NOT become
+   a scroll container — otherwise CSS sticky anchors to .table-wrap
+   instead of .tbl-y-scroll and breaks. */
+.tbl-y-scroll.tbl-compact {
+    max-height: 340px;
+    overflow: auto;
+}
+/* .data-table has overflow:hidden (for rounded corners) which would make
+   the TABLE the sticky container and break sticky thead/tfoot. Force it
+   visible in compact mode so sticky anchors to .tbl-y-scroll instead. */
+.tbl-y-scroll.tbl-compact > table { overflow: visible !important; }
+.tbl-y-scroll.tbl-compact thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--surface-2);
+    box-shadow: 0 1px 0 var(--border);
+}
+.tbl-y-scroll.tbl-compact tfoot tr {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+}
+.tbl-y-scroll.tbl-compact tfoot td {
+    background: var(--surface-2);
+    box-shadow: 0 -1px 0 var(--border);
+}
+/* The expand/compress button injected into card-header */
+.tbl-toggle-btn {
+    flex-shrink: 0;
+    margin-left: 8px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .8rem;
+    transition: background .15s, color .15s;
+}
+.tbl-toggle-btn:hover { background: var(--surface-2); color: var(--accent); }
+
 .data-table {
     width: 100%;
     border-collapse: collapse;
@@ -1506,19 +1554,88 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
 
 /* ─── Print styles for report pages ────────────────────────── */
 @media print {
+    /* ── Page setup — tight margins, more rows per sheet ── */
+    @page { margin: 8mm 10mm; size: A4 portrait; }
+
     .sidebar, .topbar, .quick-actions, .ui-controls, .ctrl-btn,
     .btn-export, .btn-export-print, .card-filter, .filter-form,
-    .shortcuts-overlay, .confirm-modal, .no-print,
+    .shortcuts-overlay, .confirm-modal, .no-print, .pagination-wrap,
+    .action-btns, .btn-icon-sm, .col-hide-print, .btn, .fab,
+    .floating-submit, .form-actions, .alert,
     #globalSearch, .topbar-time { display: none !important; }
+
     .main-wrapper { margin-left: 0 !important; }
-    .content { padding: 0 !important; }
-    body { background: #fff !important; }
-    .card { box-shadow: none !important; border: 1px solid #e2e8f0 !important; }
-    .stat-card { break-inside: avoid; }
+    .content { padding: 0 !important; background: #fff !important; }
+    body { background: #fff !important; font-size: 11px !important; }
+
+    /* Print colours faithfully (badges, coloured totals) */
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+    /* ── Cards — strip chrome, no wasted padding ── */
+    .card { box-shadow: none !important; border: none !important;
+            margin: 0 0 6px !important; background: #fff !important; }
+    .card-body, .card-header { padding: 0 !important; }
+
+    /* ── Compact tables — the main space win ── */
+    .data-table { font-size: 10px !important; }
+    .data-table th {
+        height: auto !important; padding: 3px 6px !important;
+        font-size: 8.5px !important; letter-spacing: 0 !important;
+        background: #f1f5f9 !important; color: #000 !important;
+        border: 0.5px solid #cbd5e1 !important;
+    }
+    .data-table td {
+        height: auto !important; padding: 2px 6px !important;
+        max-width: none !important; line-height: 1.25 !important;
+        border: 0.5px solid #cbd5e1 !important;
+    }
+    .tfoot-summary td { background: #f1f5f9 !important; }
+
+    /* ── Stats — one compact strip, not big cards ── */
+    .stats-grid, .sales-stats-grid {
+        display: flex !important; flex-wrap: wrap !important; gap: 6px !important;
+        margin-bottom: 8px !important;
+    }
+    .stat-card {
+        break-inside: avoid; flex: 1 1 auto !important;
+        padding: 5px 10px !important; box-shadow: none !important;
+        border: 0.5px solid #cbd5e1 !important; min-width: 0 !important;
+    }
+    .stat-card .stat-icon { display: none !important; }
+    .stat-label { font-size: 8px !important; }
+    .stat-value { font-size: 12px !important; }
+
+    /* ── Headings — smaller, no large gaps ── */
+    h1 { font-size: 15px !important; margin: 0 0 6px !important; }
+    h2, h3 { font-size: 12px !important; margin: 8px 0 4px !important; }
+
+    /* ── Pagination of long tables ── */
     table { page-break-inside: auto; }
     tr { page-break-inside: avoid; page-break-after: auto; }
     thead { display: table-header-group; }
+    tfoot { display: table-row-group; }
+
+    /* Helper: show an element only on paper */
+    .print-only { display: block !important; }
+
+    /* Generic print header — store name + report title + date.
+       Pages with their own header set @section('no-print-header'). */
+    .app-print-header {
+        border-bottom: 1.5px solid #000 !important;
+        padding-bottom: 5px !important; margin-bottom: 8px !important;
+    }
+    .app-print-header-store {
+        font-size: 16px !important; font-weight: 800 !important;
+        text-align: center !important; color: #000 !important;
+    }
+    .app-print-header-row {
+        display: flex !important; justify-content: space-between !important;
+        align-items: baseline !important; margin-top: 3px !important;
+    }
+    .app-print-header-title { font-size: 12px !important; font-weight: 700 !important; color: #000 !important; }
+    .app-print-header-date  { font-size: 10px !important; color: #333 !important; }
 }
+.print-only { display: none; }
 
 /* ─── Notification Bell ────────────────────────────────────── */
 .notif-wrap {

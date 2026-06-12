@@ -7,6 +7,46 @@
 <form method="POST" action="{{ route('purchases.store') }}" id="receiveForm">
 @csrf
 
+{{-- Receive identity bar --}}
+@php
+    $todayReceives    = \App\Models\Purchase::whereDate('purchase_date', today())->has('items')->count();
+    $todayReceiveAmt  = \App\Models\Purchase::whereDate('purchase_date', today())->has('items')->sum('total_amount');
+    $monthReceives    = \App\Models\Purchase::whereMonth('purchase_date', today()->month)
+                            ->whereYear('purchase_date', today()->year)->has('items')->count();
+    $supplierDueSum   = \App\Models\Supplier::where('due_amount', '>', 0)->sum('due_amount');
+    $lowStockCount    = \App\Models\Stock::where('quantity', '<=', 5)->where('quantity', '>=', 0)->count();
+@endphp
+<div style="background:linear-gradient(90deg,#fef3c7,#fde68a);
+            border:1.5px solid #fbbf24;
+            border-radius:10px;padding:11px 20px;margin-bottom:16px;
+            display:flex;align-items:center;gap:16px;color:#92400e;flex-wrap:wrap">
+    <i class="fas fa-truck-ramp-box" style="font-size:1.3rem;flex-shrink:0"></i>
+    <span style="font-weight:800;font-size:1rem;letter-spacing:.3px;flex-shrink:0">মাল রিসিভ</span>
+
+    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+        <div style="background:rgba(180,83,9,.1);border-radius:8px;padding:5px 14px;text-align:center">
+            <div style="font-weight:800;font-size:.95rem;line-height:1.2;color:#78350f">{{ $todayReceives }}</div>
+            <div style="color:#b45309;font-size:.7rem">আজকের রিসিভ</div>
+        </div>
+        <div style="background:rgba(180,83,9,.1);border-radius:8px;padding:5px 14px;text-align:center">
+            <div style="font-weight:800;font-size:.95rem;line-height:1.2;color:#78350f">৳ {{ number_format($todayReceiveAmt, 0) }}</div>
+            <div style="color:#b45309;font-size:.7rem">আজকের মোট মূল্য</div>
+        </div>
+        <div style="background:rgba(180,83,9,.1);border-radius:8px;padding:5px 14px;text-align:center">
+            <div style="font-weight:800;font-size:.95rem;line-height:1.2;color:#78350f">{{ $monthReceives }}</div>
+            <div style="color:#b45309;font-size:.7rem">এই মাসে রিসিভ</div>
+        </div>
+        <div style="background:rgba(180,83,9,.1);border-radius:8px;padding:5px 14px;text-align:center">
+            <div style="font-weight:800;font-size:.95rem;line-height:1.2;color:#78350f">৳ {{ number_format($supplierDueSum, 0) }}</div>
+            <div style="color:#b45309;font-size:.7rem">সরবরাহকারী বকেয়া</div>
+        </div>
+        <div style="background:rgba(180,83,9,.1);border-radius:8px;padding:5px 14px;text-align:center">
+            <div style="font-weight:800;font-size:.95rem;line-height:1.2;color:#78350f">{{ $lowStockCount }}</div>
+            <div style="color:#b45309;font-size:.7rem">কম স্টক আইটেম</div>
+        </div>
+    </div>
+</div>
+
 {{-- Draft restore banner --}}
 <div id="draftBanner" style="display:none;align-items:center;gap:12px;flex-wrap:wrap;
      background:#fffbeb;border:1.5px solid #fbbf24;border-radius:10px;
@@ -25,6 +65,7 @@
         <i class="fas fa-trash"></i> বাতিল
     </button>
 </div>
+
 
 <div class="pos-grid">
 
@@ -78,6 +119,7 @@
                 </table>
             </div>
         </div>
+
     </div>
 
     {{-- Right: Summary --}}
@@ -334,6 +376,9 @@
 
 @push('styles')
 <style>
+/* Amber tint — instantly distinguishes মাল রিসিভ from বিক্রয় */
+.content { background: #fffbeb !important; }
+
 /* ── নতুন সরবরাহকারী Modal ─────────────────────────────── */
 .cust-modal-overlay {
     position: fixed; inset: 0; z-index: 9999;

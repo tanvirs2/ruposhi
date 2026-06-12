@@ -1,6 +1,7 @@
 ﻿@extends('layouts.app')
 @section('title', 'রিসিভ বিবরণ')
 @section('page-title', 'রিসিভ বিবরণ')
+@section('no-print-header', '1')
 
 @section('content')
 <div class="invoice-card" id="purchaseInvoice">

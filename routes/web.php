@@ -79,6 +79,8 @@ Route::middleware(['auth', 'super_admin', 'check.subscription'])->prefix('super'
     Route::post('/exit-shop',          [ShopController::class, 'exitShop'])->name('shops.exit');
     Route::get('/reports', [SuperReportController::class, 'index'])->name('reports');
     Route::post('/users/{user}/reset-password', [ShopController::class, 'resetPassword'])->name('users.reset-password');
+    Route::post('/shops/{shop}/users',           [ShopController::class, 'storeUser'])->name('shops.users.store');
+    Route::delete('/shops/{shop}/users/{user}',  [ShopController::class, 'destroyUser'])->name('shops.users.destroy');
 });
 
 /* ── Protected (shop users) ────────────────────────────────── */

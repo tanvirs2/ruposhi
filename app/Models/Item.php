@@ -9,7 +9,7 @@ class Item extends Model
 {
     use HasShopScope;
 
-    protected $fillable = ['name', 'code', 'category_id', 'purchase_price', 'sale_price', 'unit'];
+    protected $fillable = ['name', 'code', 'category_id', 'purchase_price', 'sale_price', 'unit', 'created_by'];
 
     public function category()
     {

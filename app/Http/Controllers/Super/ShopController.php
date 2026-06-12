@@ -7,6 +7,7 @@ use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class ShopController extends Controller
 {
@@ -137,6 +138,52 @@ class ShopController extends Controller
         $shop->delete();
         return redirect()->route('super.shops.index')
                          ->with('success', 'শাখা মুছে ফেলা হয়েছে।');
+    }
+
+    /**
+     * Create a new staff/admin user directly for one of this super_admin's shops.
+     */
+    public function storeUser(Request $request, Shop $shop)
+    {
+        abort_unless($shop->super_admin_id === auth()->id(), 403);
+
+        $data = $request->validate([
+            'name'     => 'required|string|max:100',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|min:6',
+            'role'     => ['required', Rule::in(['admin', 'staff'])],
+        ]);
+
+        User::create([
+            'name'     => $data['name'],
+            'email'    => $data['email'],
+            'password' => Hash::make($data['password']),
+            'role'     => $data['role'],
+            'shop_id'  => $shop->id,
+        ]);
+
+        return redirect()->route('super.shops.show', $shop)
+            ->with('success', "'{$data['name']}' যোগ হয়েছে।");
+    }
+
+    /**
+     * Delete a user from one of this super_admin's shops.
+     */
+    public function destroyUser(Shop $shop, User $user)
+    {
+        abort_unless($shop->super_admin_id === auth()->id(), 403);
+        abort_unless($user->shop_id === $shop->id, 403);
+
+        $adminCount = User::where('shop_id', $shop->id)->where('role', 'admin')->count();
+        if ($user->role === 'admin' && $adminCount <= 1) {
+            return back()->with('error', 'শপের শেষ অ্যাডমিনকে মোছা যাবে না।');
+        }
+
+        $userName = $user->name;
+        $user->delete();
+
+        return redirect()->route('super.shops.show', $shop)
+            ->with('success', "'{$userName}' মুছে ফেলা হয়েছে।");
     }
 
     /**

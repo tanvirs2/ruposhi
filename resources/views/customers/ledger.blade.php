@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', 'কাস্টমার লেজার — '.$customer->name)
 @section('page-title', 'কাস্টমার লেজার রিপোর্ট')
+@section('no-print-header', '1')
 
 @section('content')
 

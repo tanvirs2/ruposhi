@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', 'সরবরাহকারী লেজার — '.$supplier->name)
 @section('page-title', 'সরবরাহকারী লেজার রিপোর্ট')
+@section('no-print-header', '1')
 
 @section('content')
 
