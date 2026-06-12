@@ -42,7 +42,7 @@
     <div class="table-wrap">
         <table class="data-table">
             <thead>
-                <tr><th>রিসিভ নং</th><th>সরবরাহকারী</th><th>পরিমাণ</th><th>তারিখ</th><th>পদ্ধতি</th><th>মন্তব্য</th><th>রেকর্ডকারী</th><th>অ্যাকশন</th></tr>
+                <tr><th>রিসিভ নং</th><th>সরবরাহকারী</th><th>ধরন</th><th>পরিমাণ</th><th>তারিখ</th><th>পদ্ধতি</th><th>মন্তব্য</th><th>রেকর্ডকারী</th><th>অ্যাকশন</th></tr>
             </thead>
             <tbody>
                 @forelse($payments as $p)
@@ -53,9 +53,17 @@
                         </a>
                     </td>
                     <td>
-                        <a href="{{ route('suppliers.ledger', $p->supplier) }}" class="link-primary">
-                            {{ $p->supplier->name ?? '—' }}
-                        </a>
+                        @if($p->supplier)
+                        <a href="{{ route('suppliers.ledger', $p->supplier) }}" class="link-primary">{{ $p->supplier->name }}</a>
+                        @else —
+                        @endif
+                    </td>
+                    <td>
+                        @if($p->items_count > 0)
+                            <span class="badge" style="background:#ccfbf1;color:#0f766e">মাল রিসিভ</span>
+                        @else
+                            <span class="badge" style="background:#eff6ff;color:#1d4ed8">অগ্রিম</span>
+                        @endif
                     </td>
                     <td><strong style="color:#16a34a">৳ {{ number_format($p->paid_amount, 2) }}</strong></td>
                     <td>{{ $p->purchase_date->format('d/m/Y') }}</td>
@@ -65,6 +73,7 @@
                     <td>
                         <div class="action-btns">
                             <a href="{{ route('purchases.show', $p) }}" class="btn-icon-sm" title="ইনভয়েস"><i class="fas fa-eye"></i></a>
+                            @if($p->items_count === 0)
                             <form class="admin-only" method="POST" action="{{ route('purchases.destroy', $p) }}"
                                   onsubmit="return confirm('এই পরিশোধ মুছে ফেলবেন? বকেয়া পুনরুদ্ধার হবে।')">
                                 @csrf @method('DELETE')
@@ -73,17 +82,18 @@
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </form>
+                            @endif
                         </div>
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="8" class="empty-row">কোনো পরিশোধ পাওয়া যায়নি</td></tr>
+                <tr><td colspan="9" class="empty-row">কোনো পরিশোধ পাওয়া যায়নি</td></tr>
                 @endforelse
             </tbody>
             @if($payments->isNotEmpty())
             <tfoot>
                 <tr class="tfoot-summary">
-                    <td colspan="2" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট (ফিল্টার)</td>
+                    <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট (ফিল্টার)</td>
                     <td style="font-weight:800;color:#16a34a">৳ {{ number_format($totalPaid, 2) }}</td>
                     <td colspan="5"></td>
                 </tr>
