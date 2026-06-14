@@ -189,8 +189,8 @@
 
 @push('scripts')
 <script>
-const allSuppliers = @json($suppliers);
-let selectedId = null;
+var allSuppliers = @json($suppliers);
+var selectedId = null;
 
 function filterSuppliers() {
     const q = document.getElementById('supplierSearch').value.toLowerCase().trim();

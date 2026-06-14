@@ -699,7 +699,7 @@ function useTemplate2(text) {
 }
 
 // ── Recipient tab switch ────────────────────────────────────────
-let currentRecipTab = 'customers';
+var currentRecipTab = 'customers';
 function switchRecipTab(tab) {
     currentRecipTab = tab;
     document.getElementById('listCustomers').style.display = tab === 'customers' ? 'block' : 'none';

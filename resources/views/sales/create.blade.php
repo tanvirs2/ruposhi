@@ -1,6 +1,7 @@
 ﻿@extends('layouts.app')
 @section('title', 'নতুন বিক্রয়')
 @section('page-title', 'নতুন বিক্রয়')
+@push('styles')<meta name="turbo-cache-control" content="no-cache">@endpush
 
 @section('content')
 <form method="POST" action="{{ route('sales.store') }}" id="saleForm">
@@ -178,13 +179,13 @@
                         <i class="fas fa-hand-holding-dollar"></i> আজ গ্রাহক দিচ্ছেন (৳)
                         <button type="button" class="info-btn" data-info="গ্রাহক আজ মোট যত টাকা দিচ্ছেন তা এখানে লিখুন। সিস্টেম স্বয়ংক্রিয়ভাবে এই বিক্রয় ও পুরনো বাকীর মধ্যে ভাগ করে দেবে — আগে এই বিক্রয়, তারপর পুরনো বাকী।">i</button>
                     </label>
-                    <div style="display:flex;gap:8px">
+                    <div style="display:flex;gap:8px;align-items:stretch">
                         <input type="text" inputmode="decimal" name="paid_amount" id="paidInput" value="0"
-                            style="flex:1;font-size:1.05rem;font-weight:700">
+                            style="flex:1;font-size:1.05rem;font-weight:700;min-width:0">
                         <button type="button" onclick="setFullPay()" title="সম্পূর্ণ পরিশোধ"
-                            style="padding:0 14px;border-radius:var(--radius-sm);border:none;
+                            style="flex-shrink:0;padding:0 14px;border-radius:var(--radius-sm);border:none;
                                    background:#1d4ed8;color:#fff;font-size:.82rem;
-                                   font-weight:700;cursor:pointer;white-space:nowrap">
+                                   font-weight:700;cursor:pointer;white-space:nowrap;height:auto">
                             পুরোটা
                         </button>
                     </div>
@@ -523,21 +524,21 @@ function makeFloatingDropdown(inputEl, dropEl) {
 // allCustomers is now a client-side CACHE, not the whole table.
 // It is seeded with the pre-selected customer (if any) and grows as the
 // user searches (server-side) or adds a customer via the popup.
-let allCustomers      = [];
+var allCustomers      = [];
 @if(!empty($preCustomer))
 allCustomers.push(@json($preCustomer));
 @endif
-const customerSearch  = document.getElementById('customerSearch');
-const customerIdInput = document.getElementById('customerIdInput');
-const customerSelected= document.getElementById('customerSelected');
-const prevDueRow      = document.getElementById('prevDueRow');
-const prevDueDisplay  = document.getElementById('prevDueDisplay');
-const customerDrop    = document.createElement('div');
-const cDrop           = makeFloatingDropdown(customerSearch, customerDrop);
-let currentPrevDue = 0;
-let prevDuePay     = 0;   // how much of prev due customer will pay this time
+var customerSearch  = document.getElementById('customerSearch');
+var customerIdInput = document.getElementById('customerIdInput');
+var customerSelected= document.getElementById('customerSelected');
+var prevDueRow      = document.getElementById('prevDueRow');
+var prevDueDisplay  = document.getElementById('prevDueDisplay');
+var customerDrop    = document.createElement('div');
+var cDrop           = makeFloatingDropdown(customerSearch, customerDrop);
+var currentPrevDue = 0;
+var prevDuePay     = 0;   // how much of prev due customer will pay this time
 
-let _custSearchTimer = null;
+var _custSearchTimer = null;
 customerSearch.addEventListener('input', function() {
     const q = this.value.trim();
     if (!q) {
@@ -652,13 +653,13 @@ function selectCustomer(id) {
 }
 
 // ── Items ────────────────────────────────────────────────────
-const allItems = @json($items);
-let cart = [];
+var allItems = @json($items);
+var cart = [];
 
-const itemSearch    = document.getElementById('itemSearch');
-const suggestions   = document.getElementById('itemSuggestions');
-const itemsBody     = document.getElementById('itemsBody');
-const profitPanel   = document.getElementById('profitPanel');
+var itemSearch    = document.getElementById('itemSearch');
+var suggestions   = document.getElementById('itemSuggestions');
+var itemsBody     = document.getElementById('itemsBody');
+var profitPanel   = document.getElementById('profitPanel');
 
 itemSearch.addEventListener('input', function() {
     const q = this.value.toLowerCase().trim();
@@ -799,7 +800,7 @@ function profitClass(profit, cost) {
     return 'profit-poor';
 }
 
-let profitVisible = false;
+var profitVisible = false;
 
 function toggleProfitCols() {
     profitVisible = !profitVisible;
@@ -995,8 +996,8 @@ function updateSummary() {
 }
 
 // ── Categorised extra costs ──────────────────────────────────
-const extraCategories = @json($extraCategories);
-let extraCostRowCount = 0;
+var extraCategories = @json($extraCategories);
+var extraCostRowCount = 0;
 
 function getExtraCostTotal() {
     let total = 0;
@@ -1035,7 +1036,7 @@ function addExtraCostRow() {
     row.innerHTML = `
         <select name="extra_costs[${idx}][category]" class="extra-cost-cat form-select"
             style="flex:1;padding:6px 8px;font-size:.82rem;min-width:0"
-            onchange="updateSummary()">
+            onchange="this.style.borderColor='';updateSummary()">
             <option value="">-- ক্যাটাগরি --</option>
             ${opts}
         </select>
@@ -1061,7 +1062,7 @@ function removeExtraCostRow(idx) {
     updateSummary();
 }
 
-const fieldMap = {
+var fieldMap = {
     discount: { row: 'discountRow', btn: 'discountToggleBtn', inp: 'discountInput', labelOn: '✕ ছাড়', labelOff: '+ ছাড়' },
 };
 
@@ -1151,9 +1152,9 @@ function checkExtraPayWarning() {
     warn.style.display = (!hasItems && hasCustomer && currentPrevDue === 0 && paid > 0) ? 'block' : 'none';
 }
 
-let _stockConfirmPending  = false;
-let _lossConfirmPending   = false;
-let _excessConfirmPending = false;
+var _stockConfirmPending  = false;
+var _lossConfirmPending   = false;
+var _excessConfirmPending = false;
 document.getElementById('saleForm').addEventListener('submit', function(e) {
     // Safety net: convert any remaining Bengali digits in all numeric inputs
     this.querySelectorAll('input[inputmode="decimal"], input[inputmode="numeric"], .extra-cost-amount').forEach(inp => {
@@ -1170,6 +1171,22 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
     const net        = cart.reduce((s, c) => s + c.qty * c.price, 0)
                        - (parseFloat(toEnglishDigits(document.getElementById('discountInput').value)) || 0)
                        + getExtraCostTotal();
+
+    // Extra cost rows: category required when amount is entered
+    let extraCatMissing = false;
+    document.querySelectorAll('#extraCostRows > div').forEach(function(row) {
+        const cat = row.querySelector('.extra-cost-cat');
+        const amt = row.querySelector('.extra-cost-amount');
+        if (amt && parseFloat(toEnglishDigits(amt.value)) > 0 && cat && !cat.value) {
+            extraCatMissing = true;
+            cat.style.borderColor = '#dc2626';
+        }
+    });
+    if (extraCatMissing) {
+        e.preventDefault();
+        showStockToast('অতিরিক্ত খরচের ক্যাটাগরি নির্বাচন করুন!', 'error');
+        return;
+    }
 
     // No items: require customer + paid amount
     if (!hasItems) {
@@ -1442,8 +1459,8 @@ function showStockToast(msg, type) {
 // ══════════════════════════════════════════════════════════════
 // SALE DRAFT — auto-save to sessionStorage, restore on reload
 // ══════════════════════════════════════════════════════════════
-const DRAFT_KEY = 'sale_draft_{{ auth()->user()->shop_id }}_{{ auth()->id() }}';
-let _draftTimer  = null;
+var DRAFT_KEY = 'sale_draft_{{ auth()->user()->shop_id }}_{{ auth()->id() }}';
+var _draftTimer  = null;
 
 function scheduleDraftSave() {
     clearTimeout(_draftTimer);
@@ -1493,7 +1510,7 @@ function discardDraft() {
     document.getElementById('draftBanner').style.display = 'none';
 }
 
-let _pendingDraft = null;
+var _pendingDraft = null;
 
 function restoreDraftData() {
     const draft = _pendingDraft;
@@ -1603,7 +1620,7 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
 }, false);
 
 // Confirm-dialog paths use requestSubmit() — patch to clear before resubmit
-const _origReqSubmit = document.getElementById('saleForm').requestSubmit.bind(document.getElementById('saleForm'));
+var _origReqSubmit = document.getElementById('saleForm').requestSubmit.bind(document.getElementById('saleForm'));
 document.getElementById('saleForm').requestSubmit = function() {
     clearDraft();
     _origReqSubmit();
@@ -1696,9 +1713,9 @@ function syncSubmitBarSpacer() {
     if (bar && sp) sp.style.height = (bar.offsetHeight + 24) + 'px';
 }
 window.addEventListener('resize', syncSubmitBarSpacer);
-document.addEventListener('DOMContentLoaded', syncSubmitBarSpacer);
+document.addEventListener('turbo:load', syncSubmitBarSpacer);
 
-document.addEventListener('DOMContentLoaded', () => bnWatchTakaWords('paidInput', 'paidWords'));
+document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'));
 </script>
 @endpush
 @endsection

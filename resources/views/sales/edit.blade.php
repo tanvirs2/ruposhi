@@ -285,7 +285,7 @@ $existingItems = $sale->items->map(fn($si) => [
     // add back the sold qty so stock shows correctly
 ]);
 @endphp
-const existingCartData = @json($existingItems);
+var existingCartData = @json($existingItems);
 
 // ── Floating dropdown helper ─────────────────────────────────
 function makeFloatingDropdown(inputEl, dropEl) {
@@ -309,21 +309,21 @@ function makeFloatingDropdown(inputEl, dropEl) {
 
 // ── Customer search ──────────────────────────────────────────
 // allCustomers is a client-side cache, seeded with this sale's customer.
-let allCustomers      = [];
+var allCustomers      = [];
 @if(!empty($preCustomer))
 allCustomers.push(@json($preCustomer));
 @endif
-const customerSearch  = document.getElementById('customerSearch');
-const customerIdInput = document.getElementById('customerIdInput');
-const customerSelected= document.getElementById('customerSelected');
-const prevDueRow      = document.getElementById('prevDueRow');
-const prevDueDisplay  = document.getElementById('prevDueDisplay');
-const customerDrop    = document.createElement('div');
-const cDrop           = makeFloatingDropdown(customerSearch, customerDrop);
-let currentPrevDue = 0;
-let prevDuePay     = 0;
+var customerSearch  = document.getElementById('customerSearch');
+var customerIdInput = document.getElementById('customerIdInput');
+var customerSelected= document.getElementById('customerSelected');
+var prevDueRow      = document.getElementById('prevDueRow');
+var prevDueDisplay  = document.getElementById('prevDueDisplay');
+var customerDrop    = document.createElement('div');
+var cDrop           = makeFloatingDropdown(customerSearch, customerDrop);
+var currentPrevDue = 0;
+var prevDuePay     = 0;
 
-let _custSearchTimer = null;
+var _custSearchTimer = null;
 customerSearch.addEventListener('input', function() {
     const q = this.value.trim();
     if (!q) {
@@ -414,13 +414,13 @@ function selectCustomer(id) {
 }
 
 // ── Items ────────────────────────────────────────────────────
-const allItems   = @json($items);
-let cart         = [];
+var allItems   = @json($items);
+var cart         = [];
 
-const itemSearch  = document.getElementById('itemSearch');
-const suggestions = document.getElementById('itemSuggestions');
-const itemsBody   = document.getElementById('itemsBody');
-const profitPanel = document.getElementById('profitPanel');
+var itemSearch  = document.getElementById('itemSearch');
+var suggestions = document.getElementById('itemSuggestions');
+var itemsBody   = document.getElementById('itemsBody');
+var profitPanel = document.getElementById('profitPanel');
 
 itemSearch.addEventListener('input', function() {
     const q = this.value.toLowerCase().trim();
@@ -494,7 +494,7 @@ function profitClass(profit, cost) {
     return pct >= 8 ? 'profit-good' : pct >= 4 ? 'profit-med' : 'profit-poor';
 }
 
-let profitVisible = false;
+var profitVisible = false;
 function toggleProfitCols() {
     profitVisible = !profitVisible;
     document.querySelectorAll('.col-secret').forEach(el => { el.style.display = profitVisible ? '' : 'none'; });
@@ -559,8 +559,8 @@ function renderCart() {
 }
 
 // ── Categorised extra costs ──────────────────────────────────
-const extraCategories = @json($extraCategories);
-let extraCostRowCount = 0;
+var extraCategories = @json($extraCategories);
+var extraCostRowCount = 0;
 
 function getExtraCostTotal() {
     let total = 0;
@@ -623,7 +623,7 @@ function removeExtraCostRow(idx) {
     updateSummary();
 }
 
-const fieldMap = {
+var fieldMap = {
     discount: { row: 'discountRow', btn: 'discountToggleBtn', inp: 'discountInput', labelOn: '✕ ছাড়', labelOff: '+ ছাড়' },
 };
 
@@ -755,7 +755,7 @@ function replaceItem(idx, newId) {
 }
 
 // ── Submit validation ────────────────────────────────────────
-let _stockConfirmPending = false;
+var _stockConfirmPending = false;
 document.getElementById('saleForm').addEventListener('submit', function(e) {
     const paidEl      = document.getElementById('paidInput');
     if (paidEl.value.trim() === '') paidEl.value = '0';
@@ -876,7 +876,7 @@ function showStockToast(msg, type) {
     @endif
 })();
 
-document.addEventListener('DOMContentLoaded', () => bnWatchTakaWords('paidInput', 'paidWords'));
+document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'));
 </script>
 @endpush
 @endsection

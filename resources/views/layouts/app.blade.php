@@ -12,12 +12,21 @@
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
     <style>:root { --bn-font: 'Hind Siliguri', sans-serif; }</style>
     <script src="https://js.pusher.com/8.2.0/pusher.min.js" defer></script>
+    {{-- Turbo Drive — SPA-like navigation without full page reloads --}}
+    <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8/dist/turbo.es2017-umd.js"></script>
+    <script>
+    // Pass CSRF token on every Turbo fetch so Laravel doesn't reject non-GET requests
+    document.addEventListener('turbo:before-fetch-request', function(e) {
+        e.detail.fetchOptions.headers['X-CSRF-TOKEN'] =
+            document.querySelector('meta[name=csrf-token]').content;
+    });
+    </script>
     @stack('styles')
 </head>
 <body class="role-{{ auth()->user()->role }}">
 
 <!-- Sidebar -->
-<aside class="sidebar" id="sidebar">
+<aside class="sidebar" id="sidebar" data-turbo-permanent>
     <div class="sidebar-header">
         <div class="brand">
             <div class="brand-icon"><i class="fas fa-boxes-stacked"></i></div>
@@ -378,6 +387,54 @@
 
             <div class="topbar-divider"></div>
 
+            {{-- Phonetic Bengali toggle + help --}}
+            <div class="ui-controls" style="position:relative">
+                <button class="ctrl-btn" id="phoneticBtn" onclick="togglePhonetic()" title="বাংলা ফোনেটিক টাইপিং চালু/বন্ধ (Alt+B)" style="font-family:'Hind Siliguri',sans-serif;font-weight:700;font-size:.95rem">ক</button>
+                <button class="ctrl-btn" onclick="togglePhoneticHelp(event)" title="কিভাবে লিখবেন?" style="font-size:.7rem;padding:0 6px">?</button>
+                {{-- Cheat sheet panel --}}
+                <div id="phoneticHelpPanel" style="display:none;position:absolute;top:calc(100% + 10px);right:0;
+                    width:340px;background:var(--surface);border:1.5px solid var(--border);
+                    border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:9999;padding:14px 16px">
+                    <div style="font-weight:700;font-size:.88rem;margin-bottom:10px;color:var(--text-primary)">
+                        <i class="fas fa-keyboard" style="color:var(--accent);margin-right:6px"></i>কিভাবে বাংলা লিখবেন
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;font-size:.8rem">
+                        <thead>
+                            <tr style="color:var(--text-secondary);font-size:.72rem;text-transform:uppercase">
+                                <th style="padding:3px 6px;text-align:left">টাইপ করুন</th>
+                                <th style="padding:3px 6px;text-align:left">বাংলা</th>
+                                <th style="padding:3px 6px;text-align:left">টাইপ করুন</th>
+                                <th style="padding:3px 6px;text-align:left">বাংলা</th>
+                            </tr>
+                        </thead>
+                        <tbody style="color:var(--text-primary)">
+                            @foreach([
+                                ['a','আ','k','ক'],['i','ই','kh','খ'],['I','ঈ','g','গ'],
+                                ['u','উ','gh','ঘ'],['U','ঊ','ch','ছ'],['e','এ','j','জ'],
+                                ['o','অ','t','ত'],['O','ও','T','ট'],['OI','ঐ','d','দ'],
+                                ['OU','ঔ','D','ড'],['rri','ঋ','n','ন'],['','','N','ণ'],
+                                ['sh','শ','p','প'],['Sh','ষ','b','ব'],['s','স','bh','ভ'],
+                                ['h','হ','m','ম'],['r','র','l','ল'],['R','ড়','ng','ং'],
+                                ['^','ঁ','..','।'],
+                            ] as $row)
+                            <tr style="border-top:1px solid var(--border)">
+                                <td style="padding:4px 6px"><code style="background:var(--surface-2);padding:1px 5px;border-radius:4px;color:var(--accent);font-size:.78rem">{{ $row[0] }}</code></td>
+                                <td style="padding:4px 6px;font-family:'Hind Siliguri',sans-serif;font-size:1rem">{{ $row[1] }}</td>
+                                <td style="padding:4px 6px"><code style="background:var(--surface-2);padding:1px 5px;border-radius:4px;color:var(--accent);font-size:.78rem">{{ $row[2] }}</code></td>
+                                <td style="padding:4px 6px;font-family:'Hind Siliguri',sans-serif;font-size:1rem">{{ $row[3] }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);font-size:.75rem;color:var(--text-secondary)">
+                        দুটো ব্যঞ্জনবর্ণ একসাথে লিখলে যুক্তবর্ণ হয় — যেমন <code style="color:var(--accent)">kt</code> → <span style="font-family:'Hind Siliguri',sans-serif">ক্ত</span>,
+                        <code style="color:var(--accent)">ng</code> → <span style="font-family:'Hind Siliguri',sans-serif">ং</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="topbar-divider"></div>
+
             {{-- Dark mode + shortcuts --}}
             <div class="ui-controls">
                 <button class="ctrl-btn ctrl-btn-dark" id="darkModeBtn" onclick="toggleDarkMode()" title="ডার্ক মোড">
@@ -492,20 +549,32 @@
         <div class="shortcuts-card">
             <h3><i class="fas fa-keyboard" style="color:var(--accent)"></i> কীবোর্ড শর্টকাট</h3>
             <div class="shortcut-row">
-                <span>নতুন বিক্রয়</span>
+                <a href="{{ route('sales.create') }}" onclick="toggleShortcutsHelp()" style="color:var(--accent);text-decoration:none;font-weight:600">
+                    <i class="fas fa-plus" style="font-size:.7rem;margin-right:4px"></i>নতুন বিক্রয়
+                </a>
                 <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">S</kbd></span>
             </div>
             <div class="shortcut-row">
-                <span>মাল রিসিভ</span>
+                <a href="{{ route('purchases.create') }}" onclick="toggleShortcutsHelp()" style="color:var(--accent);text-decoration:none;font-weight:600">
+                    <i class="fas fa-plus" style="font-size:.7rem;margin-right:4px"></i>মাল রিসিভ
+                </a>
                 <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">P</kbd></span>
             </div>
             <div class="shortcut-row">
-                <span>ড্যাশবোর্ড</span>
+                <a href="{{ route('dashboard') }}" onclick="toggleShortcutsHelp()" style="color:var(--text-primary);text-decoration:none">
+                    <i class="fas fa-gauge" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>ড্যাশবোর্ড
+                </a>
                 <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">D</kbd></span>
             </div>
             <div class="shortcut-row">
                 <span>ডার্ক/লাইট মোড</span>
                 <span style="color:var(--text-secondary);font-size:.8rem">টপবারে 🌙 বোতাম</span>
+            </div>
+            <div class="shortcut-row">
+                <a href="#" onclick="toggleShortcutsHelp();togglePhonetic();return false;" style="color:var(--text-primary);text-decoration:none">
+                    <span style="font-family:'Hind Siliguri',sans-serif;font-weight:700;margin-right:4px">ক</span>বাংলা ফোনেটিক টাইপিং
+                </a>
+                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">B</kbd></span>
             </div>
             <div class="shortcut-row">
                 <span>এই উইন্ডো</span>
@@ -596,17 +665,21 @@ document.addEventListener('click', function(e) {
     if (wrap && !wrap.contains(e.target)) closeNotif();
 });
 
-/* ── Sidebar active-link highlighter (JS, bypasses Blade/cache) ── */
-(function () {
-    var path = window.location.pathname;          // e.g. /customers/3/ledger
+/* ── Sidebar active-link highlighter (runs on every Turbo navigation) ── */
+function _syncSidebarActive() {
+    var path = window.location.pathname;
 
-    /* 1. Strip PHP-generated active classes (clean slate) */
-    document.querySelectorAll('.sidebar-nav .nav-item').forEach(function (el) {
+    /* Close all accordions, then open only the active one */
+    document.querySelectorAll('.sidebar-nav .nav-group').forEach(function(g) {
+        g.classList.remove('open');
+    });
+
+    /* Strip active classes */
+    document.querySelectorAll('.sidebar-nav .nav-item').forEach(function(el) {
         el.classList.remove('active');
     });
 
-    /* 2. Special cases: /customers/{id}/ledger → /customers-ledger
-                         /suppliers/{id}/ledger → /suppliers-ledger */
+    /* Special cases: /customers/{id}/ledger and /suppliers/{id}/ledger */
     var specialTarget = null;
     if (/^\/customers\/\d+\/ledger/.test(path)) {
         specialTarget = '/customers-ledger';
@@ -614,39 +687,31 @@ document.addEventListener('click', function(e) {
         specialTarget = '/suppliers-ledger';
     }
 
-    /* 3. Find the best-matching anchor */
-    var bestEl  = null;
-    var bestLen = -1;
-
-    document.querySelectorAll('.sidebar-nav a.nav-item').forEach(function (a) {
+    var bestEl = null, bestLen = -1;
+    document.querySelectorAll('.sidebar-nav a.nav-item').forEach(function(a) {
         try {
             var aPath = new URL(a.href, window.location.origin).pathname;
-
             if (specialTarget) {
-                // Only match the special target link exactly
                 if (aPath === specialTarget) { bestEl = a; bestLen = aPath.length; }
                 return;
             }
-
-            // Exact match wins over prefix match; longer prefix wins over shorter
             var isExact  = (path === aPath);
             var isPrefix = (!isExact && path.startsWith(aPath + '/'));
             if (isExact || isPrefix) {
-                if (aPath.length > bestLen) {
-                    bestLen = aPath.length;
-                    bestEl  = a;
-                }
+                if (aPath.length > bestLen) { bestLen = aPath.length; bestEl = a; }
             }
-        } catch (e) {}
+        } catch(e) {}
     });
 
-    /* 4. Apply active + open parent accordion */
     if (bestEl) {
         bestEl.classList.add('active');
         var group = bestEl.closest('.nav-group');
-        if (group) { group.classList.add('open'); }
+        if (group) group.classList.add('open');
     }
-})();
+}
+
+_syncSidebarActive(); // initial page load
+document.addEventListener('turbo:load', _syncSidebarActive);
 </script>
 
 @stack('scripts')
@@ -686,10 +751,196 @@ function drRange(fromName, toName, formSel, type) {
 </script>
 
 <script>
-// ── Compact table toggle — auto-inject on every card that has a table ──
-// A separate inner div (tbl-y-scroll) handles overflow-y so that
-// position:sticky works on thead + tfoot (dual overflow on same element breaks sticky).
-document.addEventListener('DOMContentLoaded', function () {
+// ── Bengali Phonetic Typing Engine (Avro-style) ────────────────────────
+(function () {
+    const HASANTA = '্';
+    const VOWELS = {
+        "rri":{ ind:"ঋ", kar:"ৃ" },
+        "OI": { ind:"ঐ", kar:"ৈ" },
+        "OU": { ind:"ঔ", kar:"ৌ" },
+        "aa": { ind:"আ", kar:"া" },
+        "a":  { ind:"আ", kar:"া" },
+        "i":  { ind:"ই", kar:"ি" },
+        "I":  { ind:"ঈ", kar:"ী" },
+        "u":  { ind:"উ", kar:"ু" },
+        "U":  { ind:"ঊ", kar:"ূ" },
+        "e":  { ind:"এ", kar:"ে" },
+        "O":  { ind:"ও", kar:"ো" },
+        "o":  { ind:"অ", kar:"" }
+    };
+    const CONSONANTS = {
+        "kh":"খ","gh":"ঘ","Ng":"ঙ","ch":"ছ","jh":"ঝ","NG":"ঞ",
+        "Th":"ঠ","Dh":"ঢ","ph":"ফ","bh":"ভ","dh":"ধ","th":"থ",
+        "sh":"শ","Sh":"ষ","Rh":"ঢ়",
+        "ng":"ং",
+        "k":"ক","g":"গ","c":"চ","j":"জ","T":"ট","D":"ড","N":"ণ",
+        "t":"ত","d":"দ","n":"ন","p":"প","f":"ফ","b":"ব","v":"ভ",
+        "m":"ম","z":"য","r":"র","l":"ল","S":"শ","s":"স","h":"হ",
+        "R":"ড়","y":"য়"
+    };
+    const SPECIALS = { ",,":"্", "..":"।", "^":"ঁ", ":":"ঃ" };
+
+    const ALL_KEYS = [...Object.keys(VOWELS),...Object.keys(CONSONANTS),...Object.keys(SPECIALS)]
+        .sort((a,b)=>b.length-a.length);
+    const MAX_LEN = ALL_KEYS.reduce((m,k)=>Math.max(m,k.length),1);
+
+    function lookup(s) {
+        for (let len=Math.min(MAX_LEN,s.length); len>=1; len--) {
+            const seg=s.slice(0,len);
+            if (CONSONANTS[seg]!==undefined) return {type:'cons',key:seg};
+            if (VOWELS[seg]!==undefined)     return {type:'vowel',key:seg};
+            if (SPECIALS[seg]!==undefined)   return {type:'special',key:seg};
+        }
+        return null;
+    }
+
+    function translitPart(text) {
+        let out='', prevCons=false, i=0;
+        while (i<text.length) {
+            const m=lookup(text.slice(i));
+            if (m) {
+                if (m.type==='cons') {
+                    if (prevCons) out+=HASANTA;
+                    out+=CONSONANTS[m.key]; prevCons=true;
+                } else if (m.type==='vowel') {
+                    out+=prevCons ? VOWELS[m.key].kar : VOWELS[m.key].ind;
+                    prevCons=false;
+                } else {
+                    out+=SPECIALS[m.key]; prevCons=false;
+                }
+                i+=m.key.length;
+            } else { out+=text[i]; prevCons=false; i++; }
+        }
+        return out;
+    }
+
+    // ── Per-input state attached directly to DOM element ──
+    const BREAK = /[\s,।!?;'"()\[\]]/;
+
+    function attachPhonetic(el) {
+        if (el._ph) return;
+        el._phBuf = '';       // phonetic buffer for current word
+        el._phStart = 0;      // cursor position where current word started
+
+        el._phKey = function(e) {
+            if (!window._phoneticActive) return;
+            if (e.ctrlKey||e.metaKey||e.altKey) return;
+
+            if (e.key.length===1) {
+                if (BREAK.test(e.key)) {
+                    // word-break char: commit buffer (already converted in value), reset
+                    el._phBuf='';
+                    // after char is inserted, advance wordStart
+                    setTimeout(()=>{ el._phStart=el.selectionStart; },0);
+                } else {
+                    e.preventDefault();
+                    el._phBuf+=e.key;
+                    const before=el.value.slice(0,el._phStart);
+                    const after =el.value.slice(el.selectionStart);
+                    const conv  =translitPart(el._phBuf);
+                    el.value=before+conv+after;
+                    const p=el._phStart+conv.length;
+                    el.setSelectionRange(p,p);
+                    el.dispatchEvent(new Event('input',{bubbles:true}));
+                }
+            } else if (e.key==='Backspace' && el._phBuf.length>0) {
+                e.preventDefault();
+                el._phBuf=el._phBuf.slice(0,-1);
+                const before=el.value.slice(0,el._phStart);
+                const after =el.value.slice(el.selectionStart);
+                const conv  =translitPart(el._phBuf);
+                el.value=before+conv+after;
+                const p=el._phStart+conv.length;
+                el.setSelectionRange(p,p);
+                el.dispatchEvent(new Event('input',{bubbles:true}));
+            } else if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key)) {
+                el._phBuf='';
+                setTimeout(()=>{ el._phStart=el.selectionStart; },0);
+            }
+        };
+        el._phReset = function() {
+            el._phBuf='';
+            el._phStart=el.selectionStart||el.value.length;
+        };
+        el.addEventListener('keydown', el._phKey);
+        el.addEventListener('focus',   el._phReset);
+        el.addEventListener('click',   el._phReset);
+        el._ph=true;
+    }
+
+    function attachAll() {
+        document.querySelectorAll('input[type="text"],input:not([type]),textarea')
+            .forEach(el => {
+                const im = el.getAttribute('inputmode');
+                if (im === 'decimal' || im === 'numeric') return;
+                attachPhonetic(el);
+            });
+    }
+
+    // Toggle
+    window._phoneticActive = false;
+
+    function applyPhoneticUI(active) {
+        attachAll();
+        const btn=document.getElementById('phoneticBtn');
+        if (btn) {
+            btn.style.background = active ? 'var(--accent)' : '';
+            btn.style.color      = active ? '#fff' : '';
+            btn.title = active
+                ? 'বাংলা ফোনেটিক চালু — বন্ধ করতে ক্লিক করুন'
+                : 'বাংলা ফোনেটিক টাইপিং চালু করুন (Alt+B)';
+        }
+        document.querySelectorAll('input[type="text"],input:not([type]),textarea')
+            .forEach(el=>{
+                if (el.getAttribute('inputmode') === 'decimal' ||
+                    el.getAttribute('inputmode') === 'numeric') return;
+                el.style.borderColor = active ? 'var(--accent)' : '';
+            });
+    }
+
+    window.togglePhonetic = function() {
+        window._phoneticActive = !window._phoneticActive;
+        localStorage.setItem('phoneticMode', window._phoneticActive ? '1' : '0');
+        applyPhoneticUI(window._phoneticActive);
+    };
+
+    // Restore saved state + re-attach to new inputs on every Turbo navigation
+    document.addEventListener('turbo:load', function() {
+        if (localStorage.getItem('phoneticMode') === '1') {
+            window._phoneticActive = true;
+        }
+        applyPhoneticUI(window._phoneticActive);
+        attachAll();
+    });
+
+    // Alt+B shortcut
+    document.addEventListener('keydown', e=>{
+        if (e.altKey && e.key==='b') { e.preventDefault(); window.togglePhonetic(); }
+    });
+
+    // Cheat sheet panel toggle
+    window.togglePhoneticHelp = function(e) {
+        e.stopPropagation();
+        const panel = document.getElementById('phoneticHelpPanel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    };
+    document.addEventListener('click', function(e) {
+        const panel = document.getElementById('phoneticHelpPanel');
+        if (panel && !panel.contains(e.target)) panel.style.display = 'none';
+    });
+
+    // Also attach when new inputs appear (modals, dynamic rows)
+    const obs=new MutationObserver(()=>{ if(window._phoneticActive) attachAll(); });
+    if (!window._phoneticObsStarted) {
+        window._phoneticObsStarted = true;
+        document.addEventListener('turbo:load', ()=>{
+            obs.observe(document.body,{childList:true,subtree:true});
+        }, { once: true });
+    }
+})();
+
+// ── Compact table toggle — re-runs on every Turbo navigation ──
+document.addEventListener('turbo:load', function () {
     document.querySelectorAll('.card').forEach(function (card) {
         const header = card.querySelector('.card-header');
         const wrap   = card.querySelector('.table-wrap');
@@ -919,15 +1170,15 @@ document.addEventListener('DOMContentLoaded', function () {
 </style>
 
 <script>
-const mmSlides   = @json($mmFiles);
-const mmInterval = {{ $mmInterval * 1000 }};
-let mmCurrent    = 0;
-let mmTimer      = null;
-let mmDragging   = false;
+var mmSlides   = @json($mmFiles);
+var mmInterval = {{ $mmInterval * 1000 }};
+var mmCurrent    = 0;
+var mmTimer      = null;
+var mmDragging   = false;
 
-const MM_KEY      = 'mm_slide_idx';
-const MM_TIME_KEY = 'mm_slide_time';
-let mmPaused = false;
+var MM_KEY      = 'mm_slide_idx';
+var MM_TIME_KEY = 'mm_slide_time';
+var mmPaused = false;
 
 function setPlayPauseIcon(paused) {
     const icon = document.getElementById('mmPlayPauseIcon');
@@ -1028,7 +1279,7 @@ function restorePopup() {
 }
 function minimizePopup() { closePopup(); }
 
-let isFullscreen = false;
+var isFullscreen = false;
 function toggleFullscreen() {
     const popup = document.getElementById('mmPopup');
     isFullscreen = !isFullscreen;
@@ -1068,8 +1319,8 @@ function toggleFullscreen() {
     });
 })();
 
-// Save position immediately before navigating away (most reliable)
-window.addEventListener('beforeunload', () => {
+// Save position before Turbo navigates away (beforeunload doesn't fire for Turbo)
+document.addEventListener('turbo:before-visit', () => {
     const current = document.getElementById('mmSlide_' + mmCurrent);
     if (!current) return;
     if (current.tagName === 'VIDEO' && current.currentTime > 0) {
@@ -1081,8 +1332,8 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-// Start slideshow — resume from last known slide + audio/video position (survives page refresh)
-document.addEventListener('DOMContentLoaded', () => {
+// Start slideshow — resume from last known slide + audio/video position
+document.addEventListener('turbo:load', () => {
     if (!mmSlides.length) return;
     const savedIdx  = parseInt(localStorage.getItem(MM_KEY)  ?? '0', 10);
     const savedTime = parseFloat(localStorage.getItem(MM_TIME_KEY) ?? '0');
@@ -1143,7 +1394,7 @@ document.addEventListener('DOMContentLoaded', () => {
 @endauth
 
 {{-- ══ Mini Chat Widget ═══════════════════════════════════════════ --}}
-<div id="miniChatRoot">
+<div id="miniChatRoot" data-turbo-permanent>
 
     {{-- Collapsed FAB --}}
     <button id="miniChatFab" onclick="miniChatToggle()" title="চ্যাট খুলুন">

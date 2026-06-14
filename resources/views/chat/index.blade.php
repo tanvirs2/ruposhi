@@ -151,9 +151,9 @@
 
 @push('scripts')
 <script>
-const RECEIVER_ID = {{ $activeUser ? $activeUser->id : 'null' }};
-let lastMsgId     = {{ $messages->isNotEmpty() ? $messages->last()->id : 0 }};
-let pollTimer     = null;
+var RECEIVER_ID = {{ $activeUser ? $activeUser->id : 'null' }};
+var lastMsgId     = {{ $messages->isNotEmpty() ? $messages->last()->id : 0 }};
+var pollTimer     = null;
 
 // ── Auto-scroll to bottom ────────────────────────────────────
 function scrollBottom(smooth = false) {
@@ -164,7 +164,7 @@ function scrollBottom(smooth = false) {
 scrollBottom();
 
 // ── Auto-grow textarea ───────────────────────────────────────
-const chatInput = document.getElementById('chatInput');
+var chatInput = document.getElementById('chatInput');
 if (chatInput) {
     chatInput.addEventListener('input', function () {
         this.style.height = 'auto';

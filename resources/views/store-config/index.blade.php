@@ -501,9 +501,9 @@ function switchTab(name, btn) {
     btn.classList.add('active');
 }
 
-const payAddUrl    = '{{ route("store-config.payment-method.add") }}';
-const payDeleteUrl = '{{ route("store-config.payment-method.delete") }}';
-const csrfToken    = '{{ csrf_token() }}';
+var payAddUrl    = '{{ route("store-config.payment-method.add") }}';
+var payDeleteUrl = '{{ route("store-config.payment-method.delete") }}';
+var csrfToken    = '{{ csrf_token() }}';
 
 async function addPayMethod() {
     const nameEl  = document.getElementById('newPayName');
@@ -598,11 +598,11 @@ function updateTabCount(n) {
 }
 
 /* ══ Multimedia JS ══════════════════════════════════════════ */
-const mmToggleUrl   = '{{ route("store-config.multimedia.toggle") }}';
-const mmIntervalUrl = '{{ route("store-config.multimedia.interval") }}';
-const mmUploadUrl   = '{{ route("store-config.multimedia.upload") }}';
-const mmDeleteUrl   = '{{ route("store-config.multimedia.delete") }}';
-let   mmEnabled     = {{ $multimediaEnabled ? 'true' : 'false' }};
+var mmToggleUrl   = '{{ route("store-config.multimedia.toggle") }}';
+var mmIntervalUrl = '{{ route("store-config.multimedia.interval") }}';
+var mmUploadUrl   = '{{ route("store-config.multimedia.upload") }}';
+var mmDeleteUrl   = '{{ route("store-config.multimedia.delete") }}';
+var   mmEnabled     = {{ $multimediaEnabled ? 'true' : 'false' }};
 
 async function toggleMM() {
     mmEnabled = !mmEnabled;
@@ -630,7 +630,7 @@ async function toggleMM() {
     showToast(mmEnabled ? '✓ মাল্টিমিডিয়া চালু হয়েছে' : 'মাল্টিমিডিয়া বন্ধ করা হয়েছে', mmEnabled ? 'success' : 'warn');
 }
 
-let intervalTimer;
+var intervalTimer;
 function updateInterval(val) {
     clearTimeout(intervalTimer);
     intervalTimer = setTimeout(async () => {

@@ -1,23 +1,27 @@
 /* ── Sidebar toggle ─────────────────────────────────────────── */
-const sidebar     = document.getElementById('sidebar');
-const mainWrapper = document.getElementById('mainWrapper');
-const menuBtn     = document.getElementById('menuBtn');
-const toggleBtn   = document.getElementById('sidebarToggle');
+// sidebar is data-turbo-permanent — reference stays valid across navigations
+const sidebar  = document.getElementById('sidebar');
+const toggleBtn = document.getElementById('sidebarToggle');
 
-/* Create mobile backdrop */
+/* Backdrop: give it an id + permanent so Turbo doesn't remove it */
 const backdrop = document.createElement('div');
 backdrop.className = 'sidebar-backdrop';
+backdrop.id = 'sidebarBackdrop';
+backdrop.setAttribute('data-turbo-permanent', '');
 document.body.appendChild(backdrop);
 
 function isMobile() { return window.innerWidth <= 768; }
 
 function toggleSidebar() {
+    // mainWrapper is NOT permanent — look it up fresh each call
+    const mw = document.getElementById('mainWrapper');
     if (isMobile()) {
         sidebar.classList.toggle('mobile-open');
         backdrop.classList.toggle('visible');
     } else {
         sidebar.classList.toggle('collapsed');
-        mainWrapper.classList.toggle('expanded');
+        mw?.classList.toggle('expanded');
+        sessionStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
     }
 }
 
@@ -26,6 +30,7 @@ backdrop.addEventListener('click', () => {
     backdrop.classList.remove('visible');
 });
 
+const menuBtn = document.getElementById('menuBtn');
 [menuBtn, toggleBtn].forEach(btn => btn?.addEventListener('click', toggleSidebar));
 
 /* ── Nav-group accordion ─────────────────────────────────────── */
@@ -35,40 +40,24 @@ function toggleNavGroup(id) {
     group.classList.toggle('open');
 }
 
-/* ── Alert auto-dismiss ──────────────────────────────────────── */
-document.querySelectorAll('.alert.alert-success').forEach(alert => {
-    setTimeout(() => {
-        alert.style.transition = 'opacity .5s, transform .5s';
-        alert.style.opacity = '0';
-        alert.style.transform = 'translateY(-8px)';
-        setTimeout(() => alert.remove(), 500);
-    }, 4000);
-});
+/* ── Form submit loading state — event delegation (works on all pages) ── */
+document.addEventListener('submit', function(e) {
+    const form = e.target;
+    if (form.matches('[data-no-loader]')) return;
+    const btn = form.querySelector('button[type=submit]');
+    if (btn && !btn.classList.contains('btn-icon-sm')) {
+        btn.classList.add('loading');
+        setTimeout(() => btn.classList.remove('loading'), 8000);
+    }
+}, true);
 
-/* ── Form submit loading state ───────────────────────────────── */
-document.querySelectorAll('form:not([data-no-loader])').forEach(form => {
-    form.addEventListener('submit', function () {
-        const btn = this.querySelector('button[type=submit]');
-        if (btn && !btn.classList.contains('btn-icon-sm')) {
-            btn.classList.add('loading');
-            // Re-enable after 8s as failsafe
-            setTimeout(() => btn.classList.remove('loading'), 8000);
-        }
-    });
-});
-
-/* ── Live clock ─────────────────────────────────────────────── */
-const clockEl = document.getElementById('clock');
-
+/* ── Utility functions ───────────────────────────────────────── */
 const banglaDigits    = n => String(n).replace(/\d/g, d => '০১২৩৪৫৬৭৮৯'[d]);
 const toEnglishDigits = s => String(s).replace(/[০-৯]/g, d => '০১২৩৪৫৬৭৮৯'.indexOf(d));
-window.toEnglishDigits = toEnglishDigits; // expose globally for blade inline scripts
+window.toEnglishDigits = toEnglishDigits;
 
 /* ── Bengali → English digit converter on all numeric inputs ── */
 function attachBengaliConverter(root) {
-    // NOTE: type="number" inputs are intentionally excluded — browsers block
-    // non-ASCII digits (like Bengali) before JS sees them. Use type="text"
-    // inputmode="decimal" on all numeric inputs that need Bengali conversion.
     const selector = [
         'input[inputmode="decimal"]',
         'input[inputmode="numeric"]',
@@ -86,7 +75,7 @@ function attachBengaliConverter(root) {
     ].join(',');
 
     (root || document).querySelectorAll(selector).forEach(input => {
-        if (input.dataset.bengaliWired) return;   // avoid double-binding
+        if (input.dataset.bengaliWired) return;
         input.dataset.bengaliWired = '1';
 
         input.addEventListener('input', function () {
@@ -95,41 +84,32 @@ function attachBengaliConverter(root) {
 
             const start = this.selectionStart;
             const end   = this.selectionEnd;
-            // Count how many Bengali chars were before the cursor
             const beforeCursor = this.value.slice(0, start);
             const replaced     = toEnglishDigits(this.value);
             this.value         = replaced;
 
-            // Restore cursor — length doesn't change, so position stays same
             try { this.setSelectionRange(start, end); } catch(_) {}
-
-            // Fire change event so Vue/Alpine/custom listeners react
             this.dispatchEvent(new Event('change', { bubbles: true }));
         });
     });
 }
+window.attachBengaliConverter = attachBengaliConverter;
 
-// Run once on DOM ready
-document.addEventListener('DOMContentLoaded', () => attachBengaliConverter(document));
-
-// Re-run when dynamic rows are added (POS cart, purchase rows etc.)
-const _origAttach = window.attachBengaliConverter;
-window.attachBengaliConverter = attachBengaliConverter;   // expose globally
+/* ── Live clock ─────────────────────────────────────────────── */
 const banglaDay    = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহ', 'শুক্র', 'শনি'];
 const banglaMonth  = ['জানু', 'ফেব্রু', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
                       'জুলাই', 'আগস্ট', 'সেপ্টে', 'অক্টো', 'নভে', 'ডিসে'];
 
 function updateClock() {
+    const clockEl = document.getElementById('clock');
     if (!clockEl) return;
     const now  = new Date();
     let h      = now.getHours();
     const m    = String(now.getMinutes()).padStart(2, '0');
     const ampm = h >= 12 ? 'PM' : 'AM';
     h = h % 12 || 12;
-
     const timeStr = `${banglaDigits(String(h).padStart(2,'0'))}:${banglaDigits(m)} ${ampm}`;
     const dateStr = `${banglaDay[now.getDay()]} ${banglaDigits(now.getDate())} ${banglaMonth[now.getMonth()]}`;
-
     clockEl.querySelector('.time').textContent = timeStr;
     clockEl.querySelector('.date').textContent = dateStr;
 }
@@ -141,13 +121,10 @@ setInterval(updateClock, 1000);
 (function () {
     let _pendingForm = null;
 
-    // Intercept all DELETE method form submissions
     document.addEventListener('submit', function (e) {
         const form = e.target;
-        // Check for Laravel _method=DELETE
         const methodInput = form.querySelector('input[name="_method"]');
         if (!methodInput || methodInput.value.toUpperCase() !== 'DELETE') return;
-        // Skip if already confirmed
         if (form.dataset.confirmed) { delete form.dataset.confirmed; return; }
 
         e.preventDefault();
@@ -159,7 +136,7 @@ setInterval(updateClock, 1000);
             modal.querySelector('.confirm-msg').textContent = msg;
             modal.classList.add('open');
         }
-    }, true); // capture phase so it runs before onsubmit
+    }, true);
 
     window._confirmDelete = function () {
         const modal = document.getElementById('deleteConfirmModal');
@@ -177,14 +154,14 @@ setInterval(updateClock, 1000);
         _pendingForm = null;
     };
 
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('turbo:load', function () {
         const overlay = document.getElementById('deleteConfirmModal');
-        if (overlay) {
+        if (overlay && !overlay._wired) {
+            overlay._wired = true;
             overlay.addEventListener('click', function (e) {
                 if (e.target === overlay) window._cancelDelete();
             });
         }
-        // Remove old inline onsubmit confirm() calls — handled by modal now
         document.querySelectorAll('form[onsubmit*="confirm"]').forEach(f => f.removeAttribute('onsubmit'));
     });
 })();
@@ -194,123 +171,113 @@ setInterval(updateClock, 1000);
     let _timer = null;
     let _drop  = null;
 
-    document.addEventListener('DOMContentLoaded', function () {
+    // Create permanent dropdown (survives Turbo body replacement)
+    _drop = document.createElement('div');
+    _drop.className = 'gsearch-drop';
+    _drop.id = 'gSearchDrop';
+    _drop.setAttribute('data-turbo-permanent', '');
+    document.body.appendChild(_drop);
+
+    function position() {
         const input = document.getElementById('globalSearch');
         if (!input) return;
-
-        _drop = document.createElement('div');
-        _drop.className = 'gsearch-drop';
-        document.body.appendChild(_drop);
-
-        function position() {
-            const r = input.getBoundingClientRect();
-            _drop.style.top   = (r.bottom + 4) + 'px';
-            _drop.style.right = (window.innerWidth - r.right) + 'px';
-            _drop.style.left  = 'auto';
-        }
-
-        input.addEventListener('input', function () {
-            clearTimeout(_timer);
-            const q = this.value.trim();
-            if (q.length < 2) { _drop.style.display = 'none'; return; }
-            _timer = setTimeout(() => doSearch(q), 250);
-        });
-
-        input.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') { _drop.style.display = 'none'; this.blur(); }
-        });
-
-        document.addEventListener('click', function (e) {
-            if (!input.contains(e.target) && !_drop.contains(e.target))
-                _drop.style.display = 'none';
-        });
-
-        window.addEventListener('scroll', position, true);
-        window.addEventListener('resize', position);
-
-        function doSearch(q) {
-            fetch('/search?q=' + encodeURIComponent(q))
-                .then(r => r.json())
-                .then(data => renderResults(data, q))
-                .catch(() => {});
-        }
-
-        function renderResults(data, q) {
-            const sections = [];
-
-            if (data.items?.length) {
-                sections.push(`<div class="gsearch-label">পণ্য</div>`);
-                data.items.forEach(i => {
-                    sections.push(`<a href="/items/${i.id}/edit" class="gsearch-item">
-                        <div class="gsearch-item-icon"><i class="fas fa-box-open"></i></div>
-                        <div><div>${highlight(i.name, q)}</div></div>
-                    </a>`);
-                });
-            }
-            if (data.customers?.length) {
-                if (sections.length) sections.push('<div class="gsearch-divider"></div>');
-                sections.push(`<div class="gsearch-label">কাস্টমার</div>`);
-                data.customers.forEach(c => {
-                    sections.push(`<a href="/customers/${c.id}" class="gsearch-item">
-                        <div class="gsearch-item-icon"><i class="fas fa-user"></i></div>
-                        <div><div>${highlight(c.name, q)}</div><div class="gsearch-item-sub">${c.phone || ''}</div></div>
-                    </a>`);
-                });
-            }
-            if (data.suppliers?.length) {
-                if (sections.length) sections.push('<div class="gsearch-divider"></div>');
-                sections.push(`<div class="gsearch-label">সরবরাহকারী</div>`);
-                data.suppliers.forEach(s => {
-                    sections.push(`<a href="/suppliers/${s.id}" class="gsearch-item">
-                        <div class="gsearch-item-icon"><i class="fas fa-truck"></i></div>
-                        <div><div>${highlight(s.name, q)}</div><div class="gsearch-item-sub">${s.phone || ''}</div></div>
-                    </a>`);
-                });
-            }
-
-            if (!sections.length) {
-                sections.push(`<div class="gsearch-empty"><i class="fas fa-magnifying-glass"></i> "${q}" পাওয়া যায়নি</div>`);
-            }
-
-            _drop.innerHTML = `<div class="gsearch-section">${sections.join('')}</div>`;
-            position();
-            _drop.style.display = 'block';
-        }
-
-        function highlight(text, q) {
-            const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
-            return text.replace(re, '<mark style="background:#fef3c7;color:#92400e;border-radius:2px;padding:0 1px">$1</mark>');
-        }
-    });
-})();
-
-/* ── Active nav link ────────────────────────────────────────── */
-const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-document.querySelectorAll('.nav-item').forEach(link => {
-    const href = link.getAttribute('href') || '';
-    if (href === currentPage || (currentPage === '' && href === 'index.html')) {
-        link.classList.add('active');
-    } else {
-        link.classList.remove('active');
+        const r = input.getBoundingClientRect();
+        _drop.style.top   = (r.bottom + 4) + 'px';
+        _drop.style.right = (window.innerWidth - r.right) + 'px';
+        _drop.style.left  = 'auto';
     }
-});
+
+    // Event delegation — works across Turbo navigations
+    document.addEventListener('input', function(e) {
+        if (!e.target.matches('#globalSearch')) return;
+        clearTimeout(_timer);
+        const q = e.target.value.trim();
+        if (q.length < 2) { _drop.style.display = 'none'; return; }
+        _timer = setTimeout(() => doSearch(q), 250);
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (!e.target.matches('#globalSearch')) return;
+        if (e.key === 'Escape') { _drop.style.display = 'none'; e.target.blur(); }
+    });
+
+    document.addEventListener('click', function (e) {
+        const input = document.getElementById('globalSearch');
+        if (input && !input.contains(e.target) && !_drop.contains(e.target))
+            _drop.style.display = 'none';
+    });
+
+    window.addEventListener('scroll', position, true);
+    window.addEventListener('resize', position);
+
+    function doSearch(q) {
+        fetch('/search?q=' + encodeURIComponent(q))
+            .then(r => r.json())
+            .then(data => renderResults(data, q))
+            .catch(() => {});
+    }
+
+    function renderResults(data, q) {
+        const sections = [];
+
+        if (data.items?.length) {
+            sections.push(`<div class="gsearch-label">পণ্য</div>`);
+            data.items.forEach(i => {
+                sections.push(`<a href="/items/${i.id}/edit" class="gsearch-item">
+                    <div class="gsearch-item-icon"><i class="fas fa-box-open"></i></div>
+                    <div><div>${highlight(i.name, q)}</div></div>
+                </a>`);
+            });
+        }
+        if (data.customers?.length) {
+            if (sections.length) sections.push('<div class="gsearch-divider"></div>');
+            sections.push(`<div class="gsearch-label">কাস্টমার</div>`);
+            data.customers.forEach(c => {
+                sections.push(`<a href="/customers/${c.id}" class="gsearch-item">
+                    <div class="gsearch-item-icon"><i class="fas fa-user"></i></div>
+                    <div><div>${highlight(c.name, q)}</div><div class="gsearch-item-sub">${c.phone || ''}</div></div>
+                </a>`);
+            });
+        }
+        if (data.suppliers?.length) {
+            if (sections.length) sections.push('<div class="gsearch-divider"></div>');
+            sections.push(`<div class="gsearch-label">সরবরাহকারী</div>`);
+            data.suppliers.forEach(s => {
+                sections.push(`<a href="/suppliers/${s.id}" class="gsearch-item">
+                    <div class="gsearch-item-icon"><i class="fas fa-truck"></i></div>
+                    <div><div>${highlight(s.name, q)}</div><div class="gsearch-item-sub">${s.phone || ''}</div></div>
+                </a>`);
+            });
+        }
+
+        if (!sections.length) {
+            sections.push(`<div class="gsearch-empty"><i class="fas fa-magnifying-glass"></i> "${q}" পাওয়া যায়নি</div>`);
+        }
+
+        _drop.innerHTML = `<div class="gsearch-section">${sections.join('')}</div>`;
+        position();
+        _drop.style.display = 'block';
+    }
+
+    function highlight(text, q) {
+        const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+        return text.replace(re, '<mark style="background:#fef3c7;color:#92400e;border-radius:2px;padding:0 1px">$1</mark>');
+    }
+})();
 
 /* ── Animate stat counters ──────────────────────────────────── */
 function animateValue(el, duration = 900) {
     const text = el.textContent.trim();
     const isCurrency = text.includes('৳');
 
-    // For currency: extract the numeric part before decimal, keep suffix
     let endNum, prefix, suffix;
     if (isCurrency) {
-        // e.g. "৳ 1,998,000.00" → prefix="৳ ", endNum=1998000, suffix=".00"
         const match = text.match(/^(৳\s*)([\d,]+)(\.\d+)?$/);
         if (!match) return;
         prefix  = match[1];
         endNum  = parseInt(match[2].replace(/,/g, ''), 10);
         suffix  = match[3] ?? '';
     } else {
-        // plain integer e.g. "5"
         endNum  = parseInt(text.replace(/[^\d]/g, ''), 10);
         prefix  = '';
         suffix  = '';
@@ -329,34 +296,9 @@ function animateValue(el, duration = 900) {
     }, 16);
 }
 
-document.querySelectorAll('.stat-value').forEach(el => animateValue(el));
-
-/* ── Ripple on module cards ─────────────────────────────────── */
-document.querySelectorAll('.module-card').forEach(card => {
-    card.addEventListener('click', function (e) {
-        const ripple = document.createElement('span');
-        const rect   = card.getBoundingClientRect();
-        const size   = Math.max(rect.width, rect.height);
-        ripple.style.cssText = `
-            position:absolute;width:${size}px;height:${size}px;
-            border-radius:50%;background:rgba(79,70,229,.12);
-            top:${e.clientY - rect.top - size/2}px;
-            left:${e.clientX - rect.left - size/2}px;
-            transform:scale(0);animation:ripple .5s linear;
-            pointer-events:none;
-        `;
-        card.appendChild(ripple);
-        setTimeout(() => ripple.remove(), 550);
-    });
-});
-
-/* inject ripple keyframe */
-const style = document.createElement('style');
-style.textContent = `@keyframes ripple{to{transform:scale(2.5);opacity:0}}`;
-document.head.appendChild(style);
-
 /* ── Dark Mode ──────────────────────────────────────────────── */
 (function () {
+    // Apply theme immediately from localStorage to prevent flash
     const saved = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', saved);
 
@@ -368,17 +310,16 @@ document.head.appendChild(style);
         _syncDarkBtn();
     };
 
-    function _syncDarkBtn() {
+    window._syncDarkBtn = function() {
         const btn  = document.getElementById('darkModeBtn');
         const icon = document.getElementById('darkModeIcon');
         if (!btn) return;
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
         btn.title = isDark ? 'লাইট মোড' : 'ডার্ক মোড';
-    }
+    };
 
-    // sync after DOM ready
-    document.addEventListener('DOMContentLoaded', _syncDarkBtn);
+    document.addEventListener('turbo:load', window._syncDarkBtn);
 })();
 
 /* ── Font Size ──────────────────────────────────────────────── */
@@ -392,14 +333,14 @@ document.head.appendChild(style);
         _syncFontBtns();
     };
 
-    function _syncFontBtns() {
+    window._syncFontBtns = function() {
         const cur = document.documentElement.getAttribute('data-fontsize') || 'md';
         document.querySelectorAll('.ctrl-btn[data-size]').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.size === cur);
         });
-    }
+    };
 
-    document.addEventListener('DOMContentLoaded', _syncFontBtns);
+    document.addEventListener('turbo:load', window._syncFontBtns);
 })();
 
 /* ── Keyboard shortcuts ─────────────────────────────────────── */
@@ -412,7 +353,6 @@ document.head.appendChild(style);
     };
 
     document.addEventListener('keydown', function (e) {
-        // Skip if user is typing in an input/textarea
         if (e.target.matches('input,textarea,select')) return;
         if (e.altKey && !e.ctrlKey && !e.metaKey) {
             const fn = map[e.key.toLowerCase()];
@@ -425,10 +365,10 @@ document.head.appendChild(style);
         if (el) el.classList.toggle('open');
     };
 
-    // close on backdrop click
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('turbo:load', function () {
         const overlay = document.getElementById('shortcutsOverlay');
-        if (overlay) {
+        if (overlay && !overlay._wired) {
+            overlay._wired = true;
             overlay.addEventListener('click', function (e) {
                 if (e.target === overlay) overlay.classList.remove('open');
             });
@@ -436,13 +376,13 @@ document.head.appendChild(style);
     });
 })();
 
-/* ── Info tooltip (ⓘ button) ────────────────────────────────── */
+/* ── Info tooltip (ⓘ button) — permanent so Turbo doesn't remove it ── */
 (function () {
     let activeBtn = null;
 
-    // Build popover: textEl on top, arrow on bottom
     const popover = document.createElement('div');
     popover.id = 'info-popover';
+    popover.setAttribute('data-turbo-permanent', '');
     popover.style.cssText = [
         'display:none',
         'position:fixed',
@@ -490,7 +430,6 @@ document.head.appendChild(style);
         const vpW   = window.innerWidth;
         const vpH   = window.innerHeight;
 
-        // Prefer above; fall back to below
         const spaceAbove = bRect.top - 12;
         const spaceBelow = vpH - bRect.bottom - 12;
         const goBelow    = spaceAbove < pH && spaceBelow > spaceAbove;
@@ -506,12 +445,10 @@ document.head.appendChild(style);
             arrowBottom = '-5px';
         }
 
-        // Horizontal: align with button, clamp to viewport
         let left = bRect.left + bRect.width / 2 - 20;
         if (left + pW > vpW - 8) left = vpW - pW - 8;
         if (left < 8) left = 8;
 
-        // Arrow horizontal stays near button
         const arrowLeft = Math.min(Math.max(bRect.left - left + bRect.width / 2 - 5, 10), pW - 20);
 
         popover.style.top  = top  + 'px';
@@ -532,7 +469,7 @@ document.head.appendChild(style);
         const btn = e.target.closest('.info-btn');
         if (btn) {
             e.stopPropagation();
-            e.preventDefault(); // prevent anchor navigation when inside <a>
+            e.preventDefault();
             if (activeBtn === btn) { hidePopover(); return; }
             showPopover(btn);
             return;
@@ -543,6 +480,61 @@ document.head.appendChild(style);
     window.addEventListener('scroll', hidePopover, true);
     window.addEventListener('resize', hidePopover);
 })();
+
+/* ── Per-page init (runs on every Turbo navigation) ─────────── */
+document.addEventListener('turbo:load', function() {
+    // Restore mainWrapper expanded state when sidebar is collapsed
+    const mw = document.getElementById('mainWrapper');
+    if (mw && sidebar?.classList.contains('collapsed')) {
+        mw.classList.add('expanded');
+    }
+
+    // Alert auto-dismiss
+    document.querySelectorAll('.alert.alert-success').forEach(function(alert) {
+        if (alert._autoHide) return;
+        alert._autoHide = true;
+        setTimeout(() => {
+            alert.style.transition = 'opacity .5s, transform .5s';
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateY(-8px)';
+            setTimeout(() => alert.remove(), 500);
+        }, 4000);
+    });
+
+    // Bengali converter on all new inputs
+    attachBengaliConverter(document);
+
+    // Stat counter animation
+    document.querySelectorAll('.stat-value').forEach(function(el) {
+        if (!el._animated) { el._animated = true; animateValue(el); }
+    });
+
+    // Module card ripples
+    document.querySelectorAll('.module-card').forEach(function(card) {
+        if (card._rippleWired) return;
+        card._rippleWired = true;
+        card.addEventListener('click', function (e) {
+            const ripple = document.createElement('span');
+            const rect   = card.getBoundingClientRect();
+            const size   = Math.max(rect.width, rect.height);
+            ripple.style.cssText = `
+                position:absolute;width:${size}px;height:${size}px;
+                border-radius:50%;background:rgba(79,70,229,.12);
+                top:${e.clientY - rect.top - size/2}px;
+                left:${e.clientX - rect.left - size/2}px;
+                transform:scale(0);animation:ripple .5s linear;
+                pointer-events:none;
+            `;
+            card.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 550);
+        });
+    });
+});
+
+/* inject ripple keyframe once */
+const _rippleStyle = document.createElement('style');
+_rippleStyle.textContent = `@keyframes ripple{to{transform:scale(2.5);opacity:0}}`;
+document.head.appendChild(_rippleStyle);
 
 /* ── Amount in Bengali words (টাকার অংক কথায়) ─────────────────── */
 const bnOnesWords = [
@@ -580,7 +572,6 @@ function bnTakaWords(v) {
     return s;
 }
 
-// Polling watcher — also catches programmatic value changes (e.g. "সম্পূর্ণ" button)
 function bnWatchTakaWords(inputId, targetId) {
     const el = document.getElementById(inputId);
     const t  = document.getElementById(targetId);
@@ -597,6 +588,6 @@ function bnWatchTakaWords(inputId, targetId) {
     setInterval(update, 300);
 }
 
-window.bnNumWords      = bnNumWords;
-window.bnTakaWords     = bnTakaWords;
+window.bnNumWords       = bnNumWords;
+window.bnTakaWords      = bnTakaWords;
 window.bnWatchTakaWords = bnWatchTakaWords;

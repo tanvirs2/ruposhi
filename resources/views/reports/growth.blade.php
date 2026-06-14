@@ -359,11 +359,11 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-const LABELS   = @json($labels);
-const REVENUE  = @json($revenue);
-const COGS     = @json($cogs);
-const EXPENSES = @json($expenses);
-const PROFIT   = @json($profit);
+var LABELS   = @json($labels);
+var REVENUE  = @json($revenue);
+var COGS     = @json($cogs);
+var EXPENSES = @json($expenses);
+var PROFIT   = @json($profit);
 
 @php
 $monthNames = ['01'=>'জানু','02'=>'ফেব্রু','03'=>'মার্চ','04'=>'এপ্রিল',
@@ -371,9 +371,9 @@ $monthNames = ['01'=>'জানু','02'=>'ফেব্রু','03'=>'মার�
                '09'=>'সেপ্টে','10'=>'অক্টো','11'=>'নভে','12'=>'ডিসে'];
 $dispLabels = array_map(fn($l) => $monthNames[$l] ?? $l, $labels);
 @endphp
-const DISP_LABELS = @json($dispLabels);
+var DISP_LABELS = @json($dispLabels);
 
-const chartDefaults = {
+var chartDefaults = {
     responsive: true,
     maintainAspectRatio: true,
     plugins: { legend: { display: false } },
@@ -413,9 +413,9 @@ new Chart(document.getElementById('barChart'), {
 });
 
 // ── 3. Doughnut chart ────────────────────────────────────
-const totalCogs = COGS.reduce((a,b)=>a+b,0);
-const totalExp  = EXPENSES.reduce((a,b)=>a+b,0);
-const totalPro  = Math.max(0, PROFIT.reduce((a,b)=>a+b,0));
+var totalCogs = COGS.reduce((a,b)=>a+b,0);
+var totalExp  = EXPENSES.reduce((a,b)=>a+b,0);
+var totalPro  = Math.max(0, PROFIT.reduce((a,b)=>a+b,0));
 new Chart(document.getElementById('doughnutChart'), {
     type: 'doughnut',
     data: {

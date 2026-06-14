@@ -236,7 +236,7 @@ function toggleItems(btn) {
     btn.textContent = expanded ? `+${count} আরো ▾` : '▴ কম দেখুন';
 }
 
-const savedView = localStorage.getItem('saleView') || 'invoice';
+var savedView = localStorage.getItem('saleView') || 'invoice';
 setView(savedView);
 </script>
 @endpush

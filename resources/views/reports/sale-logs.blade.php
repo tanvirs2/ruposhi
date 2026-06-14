@@ -130,7 +130,7 @@ foreach ($logs as $l) {
 
 {{-- Store all log data as JSON for modal --}}
 <script>
-const logData = {!! json_encode($logJson) !!};
+var logData = {!! json_encode($logJson) !!};
 
 function showDetail(id) {
     const d = logData[id]; if (!d) return;

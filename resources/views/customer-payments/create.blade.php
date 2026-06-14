@@ -111,18 +111,18 @@
 <script>
 // allCustomers is a client-side cache (server-side search), seeded with the
 // pre-selected customer (if arriving from a ledger).
-let allCustomers = [];
+var allCustomers = [];
 @if(!empty($preCustomer))
 allCustomers.push(@json($preCustomer));
 @endif
-const searchEl      = document.getElementById('customerSearch');
-const hiddenId      = document.getElementById('customerIdInput');
-const dueBox        = document.getElementById('dueBox');
-const amountEl      = document.getElementById('amountInput');
-let currentDue      = 0;
+var searchEl      = document.getElementById('customerSearch');
+var hiddenId      = document.getElementById('customerIdInput');
+var dueBox        = document.getElementById('dueBox');
+var amountEl      = document.getElementById('amountInput');
+var currentDue      = 0;
 
 // Floating dropdown
-const dropEl = document.createElement('div');
+var dropEl = document.createElement('div');
 dropEl.style.cssText = 'position:fixed;display:none;z-index:9999;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);overflow-y:auto;max-height:260px';
 document.body.appendChild(dropEl);
 
@@ -139,7 +139,7 @@ document.addEventListener('click', e => {
         dropEl.style.display = 'none';
 });
 
-let _custSearchTimer = null;
+var _custSearchTimer = null;
 searchEl.addEventListener('input', function() {
     const q = this.value.trim();
     if (!q) { dropEl.style.display='none'; hiddenId.value=''; renderDue(null); return; }
@@ -229,11 +229,11 @@ function setFullPay() {
 
 // Pre-select if coming from ledger
 @if($selectedId)
-const pre = allCustomers.find(c => c.id == {{ $selectedId }});
+var pre = allCustomers.find(c => c.id == {{ $selectedId }});
 if (pre) { searchEl.value = pre.name; selectCustomer(pre.id); }
 @endif
 
-document.addEventListener('DOMContentLoaded', () => bnWatchTakaWords('amountInput', 'amountWords'));
+document.addEventListener('turbo:load', () => bnWatchTakaWords('amountInput', 'amountWords'));
 </script>
 @endpush
 @endsection

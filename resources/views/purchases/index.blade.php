@@ -260,7 +260,7 @@ function toggleItems(btn) {
 }
 
 // Restore last used view
-const savedView = localStorage.getItem('purchaseView') || 'invoice';
+var savedView = localStorage.getItem('purchaseView') || 'invoice';
 setView(savedView);
 </script>
 @endpush

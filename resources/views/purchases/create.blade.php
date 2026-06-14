@@ -2,6 +2,7 @@
 @section('title', 'মাল রিসিভ')
 @section('page-title', 'মাল রিসিভ')
 @section('breadcrumb', 'সরবরাহকারী থেকে আইটেম গ্রহণ ও স্টক আপডেট')
+@push('styles')<meta name="turbo-cache-control" content="no-cache">@endpush
 
 @section('content')
 <form method="POST" action="{{ route('purchases.store') }}" id="receiveForm">
@@ -513,16 +514,16 @@ function makeFloatingDropdown(inputEl, dropEl) {
 }
 
 // ── Supplier search ──────────────────────────────────────────
-const allSuppliers    = @json($suppliers);
-const supplierSearch  = document.getElementById('supplierSearch');
-const supplierIdInput = document.getElementById('supplierIdInput');
-const supplierSelected= document.getElementById('supplierSelected');
-const supplierDrop    = document.createElement('div');
-const sDrop           = makeFloatingDropdown(supplierSearch, supplierDrop);
-const prevAdvanceRow  = document.getElementById('prevAdvanceRow');
-const prevAdvanceDisp = document.getElementById('prevAdvanceDisplay');
-let supplierAdvance   = 0; // credit balance (positive = supplier has advance)
-let supplierPrevDue   = 0; // signed previous balance (>0 = we owe, <0 = advance)
+var allSuppliers    = @json($suppliers);
+var supplierSearch  = document.getElementById('supplierSearch');
+var supplierIdInput = document.getElementById('supplierIdInput');
+var supplierSelected= document.getElementById('supplierSelected');
+var supplierDrop    = document.createElement('div');
+var sDrop           = makeFloatingDropdown(supplierSearch, supplierDrop);
+var prevAdvanceRow  = document.getElementById('prevAdvanceRow');
+var prevAdvanceDisp = document.getElementById('prevAdvanceDisplay');
+var supplierAdvance   = 0; // credit balance (positive = supplier has advance)
+var supplierPrevDue   = 0; // signed previous balance (>0 = we owe, <0 = advance)
 
 supplierSearch.addEventListener('input', function() {
     const q = this.value.trim().toLowerCase();
@@ -615,13 +616,13 @@ function selectSupplier(id) {
 }
 
 // ── Items ────────────────────────────────────────────────────
-const allItems = @json($items);
-let cart = [];
+var allItems = @json($items);
+var cart = [];
 
-const itemSearch  = document.getElementById('itemSearch');
-const suggestions = document.getElementById('itemSuggestions');
-const itemsBody   = document.getElementById('itemsBody');
-const stockPanel  = document.getElementById('stockPanel');
+var itemSearch  = document.getElementById('itemSearch');
+var suggestions = document.getElementById('itemSuggestions');
+var itemsBody   = document.getElementById('itemsBody');
+var stockPanel  = document.getElementById('stockPanel');
 
 itemSearch.addEventListener('input', function() {
     const q = this.value.toLowerCase().trim();
@@ -845,8 +846,8 @@ function updateSummary() {
 }
 
 // ── Categorised extra costs ──────────────────────────────────
-const extraCategories = @json($extraCategories);
-let extraCostRowCount = 0;
+var extraCategories = @json($extraCategories);
+var extraCostRowCount = 0;
 
 function getExtraCostTotal() {
     let total = 0;
@@ -857,8 +858,8 @@ function getExtraCostTotal() {
 }
 
 // ── Categorised deposits ──────────────────────────────────────
-const depositCategories = @json($depositCategories);
-let depositRowCount = 0;
+var depositCategories = @json($depositCategories);
+var depositRowCount = 0;
 
 function getDepositTotal() {
     let total = 0;
@@ -943,7 +944,7 @@ function addExtraCostRow() {
     row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px';
     row.innerHTML = `
         <select name="extra_costs[${idx}][category]" class="extra-cost-cat form-select"
-            style="flex:1;padding:6px 8px;font-size:.82rem;min-width:0" onchange="updateSummary()">
+            style="flex:1;padding:6px 8px;font-size:.82rem;min-width:0" onchange="this.style.borderColor='';updateSummary()">
             <option value="">-- ক্যাটাগরি --</option>
             ${opts}
         </select>
@@ -991,6 +992,23 @@ document.getElementById('receiveForm').addEventListener('submit', function(e) {
         return;
     }
     suppErr.style.display = 'none';
+
+    // Extra cost rows: category required when amount is entered
+    let extraCatMissing = false;
+    document.querySelectorAll('#extraCostRows > div').forEach(function(row) {
+        const cat = row.querySelector('.extra-cost-cat');
+        const amt = row.querySelector('.extra-cost-amount');
+        if (amt && parseFloat(toEnglishDigits(amt.value)) > 0 && cat && !cat.value) {
+            extraCatMissing = true;
+            cat.style.borderColor = '#dc2626';
+        }
+    });
+    if (extraCatMissing) {
+        e.preventDefault();
+        alert('অতিরিক্ত খরচের ক্যাটাগরি নির্বাচন করুন!');
+        return;
+    }
+
     // Allow no-item submit (pure advance payment to supplier)
 });
 
@@ -1031,9 +1049,9 @@ document.getElementById('receiveForm').addEventListener('input', function(e) {
 // ══════════════════════════════════════════════════════════════
 // PURCHASE DRAFT — auto-save to sessionStorage, restore on reload
 // ══════════════════════════════════════════════════════════════
-const DRAFT_KEY = 'purchase_draft_{{ auth()->user()->shop_id }}_{{ auth()->id() }}';
-let _draftTimer  = null;
-let _pendingDraft = null;
+var DRAFT_KEY = 'purchase_draft_{{ auth()->user()->shop_id }}_{{ auth()->id() }}';
+var _draftTimer  = null;
+var _pendingDraft = null;
 
 function scheduleDraftSave() {
     clearTimeout(_draftTimer);
@@ -1266,7 +1284,7 @@ async function saveNewSupplier() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => bnWatchTakaWords('paidInput', 'paidWords'));
+document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'));
 </script>
 @endpush
 @endsection

@@ -338,9 +338,9 @@
 
 @push('scripts')
 <script>
-const allCustomers = @json($customers);
-let selectedId  = null;
-let selectedArea = '';   // currently selected area_id (string)
+var allCustomers = @json($customers);
+var selectedId  = null;
+var selectedArea = '';   // currently selected area_id (string)
 
 function onAreaChange() {
     selectedArea = document.getElementById('areaFilter').value;

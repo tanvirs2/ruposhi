@@ -114,16 +114,16 @@
 
 @push('scripts')
 <script>
-const ME         = {{ auth()->id() }};
-const SEND_URL   = '{{ route('chat.group.send') }}';
-const POLL_URL   = '{{ route('chat.group.poll') }}';
-let lastMsgId    = {{ $messages->isNotEmpty() ? $messages->last()->id : 0 }};
-let pollTimer    = null;
+var ME         = {{ auth()->id() }};
+var SEND_URL   = '{{ route('chat.group.send') }}';
+var POLL_URL   = '{{ route('chat.group.poll') }}';
+var lastMsgId    = {{ $messages->isNotEmpty() ? $messages->last()->id : 0 }};
+var pollTimer    = null;
 
 scrollBottom();
 
 // ── Auto-grow ────────────────────────────────────────────────
-const chatInput = document.getElementById('chatInput');
+var chatInput = document.getElementById('chatInput');
 chatInput.addEventListener('input', function () {
     this.style.height = 'auto';
     this.style.height = Math.min(this.scrollHeight, 120) + 'px';

@@ -216,7 +216,7 @@ $existingItems = $purchase->items->map(fn($pi) => [
     'priceEntered' => true,
 ]);
 @endphp
-const existingCartData = @json($existingItems);
+var existingCartData = @json($existingItems);
 
 // ── Floating dropdown helper ─────────────────────────────────
 function makeFloatingDropdown(inputEl, dropEl) {
@@ -235,12 +235,12 @@ function makeFloatingDropdown(inputEl, dropEl) {
 }
 
 // ── Supplier search ──────────────────────────────────────────
-const allSuppliers    = @json($suppliers);
-const supplierSearch  = document.getElementById('supplierSearch');
-const supplierIdInput = document.getElementById('supplierIdInput');
-const supplierSelected= document.getElementById('supplierSelected');
-const supplierDrop    = document.createElement('div');
-const sDrop           = makeFloatingDropdown(supplierSearch, supplierDrop);
+var allSuppliers    = @json($suppliers);
+var supplierSearch  = document.getElementById('supplierSearch');
+var supplierIdInput = document.getElementById('supplierIdInput');
+var supplierSelected= document.getElementById('supplierSelected');
+var supplierDrop    = document.createElement('div');
+var sDrop           = makeFloatingDropdown(supplierSearch, supplierDrop);
 
 supplierSearch.addEventListener('input', function() {
     const q = this.value.trim().toLowerCase();
@@ -289,12 +289,12 @@ function selectSupplier(id) {
 }
 
 // ── Items ────────────────────────────────────────────────────
-const allItems = @json($items);
-let cart = [];
-const itemSearch  = document.getElementById('itemSearch');
-const suggestions = document.getElementById('itemSuggestions');
-const itemsBody   = document.getElementById('itemsBody');
-const stockPanel  = document.getElementById('stockPanel');
+var allItems = @json($items);
+var cart = [];
+var itemSearch  = document.getElementById('itemSearch');
+var suggestions = document.getElementById('itemSuggestions');
+var itemsBody   = document.getElementById('itemsBody');
+var stockPanel  = document.getElementById('stockPanel');
 
 itemSearch.addEventListener('input', function() {
     const q = this.value.toLowerCase().trim();
@@ -414,8 +414,8 @@ function renderCart() {
 }
 
 // ── Categorised extra costs ──────────────────────────────────
-const extraCategories = @json($extraCategories);
-let extraCostRowCount = 0;
+var extraCategories = @json($extraCategories);
+var extraCostRowCount = 0;
 
 function getExtraCostTotal() {
     let total = 0;
@@ -426,8 +426,8 @@ function getExtraCostTotal() {
 }
 
 // ── Categorised deposits ──────────────────────────────────────
-const depositCategories = @json($depositCategories);
-let depositRowCount = 0;
+var depositCategories = @json($depositCategories);
+var depositRowCount = 0;
 
 function getDepositTotal() {
     let total = 0;
@@ -591,7 +591,7 @@ document.getElementById('receiveForm').addEventListener('submit',function(e){
     @endif
 })();
 
-document.addEventListener('DOMContentLoaded', () => bnWatchTakaWords('paidInput', 'paidWords'));
+document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'));
 </script>
 @endpush
 @endsection

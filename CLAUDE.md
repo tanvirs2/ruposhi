@@ -402,6 +402,19 @@ Added via migration `2026_05_31_..._add_performance_indexes_to_all_tables`:
 ### Sale log snapshots
 Stored in `sale_logs.snapshot` (JSON) with: id, sale_date, customer_name, total_amount, paid_amount, due_amount, items[], payment_method, status, notes.
 
+### Turbo Drive (Hotwire Turbo 8) — SPA-like navigation
+- Turbo intercepts links, AJAX-fetches the page, swaps `<body>`, fires `turbo:load` (NOT `DOMContentLoaded`).
+- Loaded via CDN `<script>` in `layouts/app.blade.php`; CSRF token injected on `turbo:before-fetch-request`.
+- `data-turbo-permanent` keeps DOM elements across navigations (sidebar `#sidebar`, chat `#miniChatRoot`, backdrop `#sidebarBackdrop`, search dropdown `#gSearchDrop`, info popover).
+- All page init moved from `DOMContentLoaded` → `turbo:load`. Per-page one-time setup guarded with flags (`_autoHide`, `_animated`, etc.) since `turbo:load` fires on every visit.
+- Form pages (sales/purchases create) have `<meta name="turbo-cache-control" content="no-cache">` via `@push('styles')` to disable Turbo's cached preview.
+
+### ⚠️ Turbo gotcha — NEVER use top-level `const`/`let` in inline page `<script>`
+- Turbo re-evaluates body `<script>` on every visit. Top-level `const`/`let` survive in global scope, so the 2nd visit re-declares them → `SyntaxError: Identifier already declared` → **entire script aborts** ("JS dead until refresh").
+- **Rule:** all column-0 (top-level) declarations in inline page scripts MUST be `var` (redeclarable). `const`/`let` is fine ONLY inside functions/blocks.
+- Functions (`function foo(){}`) and inline `onclick=` handlers re-run/stay global fine — only top-level `let`/`const` break.
+- Fixed across 17 views (both create/edit, payment create, index pages, reports, chat, ledger-select, app layout).
+
 ---
 
 ## Store Config Keys
@@ -488,6 +501,11 @@ Accessed via `\App\Models\StoreConfig::get('key', 'default')`:
 62. **Payment Log system** — `payment_logs` table; Root records/views payments per super_admin; Root `/root/payments` index with filters; Root super-admin show page has summary bar + payment form + history
 63. Reseller client show page (`/reseller/clients/{id}`) — client info, shop list, license history, payment history, inline renewal form
 64. Reseller dashboard: commission summary card — total payments, commission rate, calculated commission, recent 5 payments
+
+### Session 7 — Turbo Drive (SPA navigation) & জমা in পরিশোধ তালিকা
+65. **Turbo Drive (Hotwire Turbo 8)** — SPA-like navigation; no full reloads, swaps `<body>`, fires `turbo:load`; `data-turbo-permanent` on sidebar/chat/backdrop/search/popover; all init moved `DOMContentLoaded`→`turbo:load`; `turbo-cache-control: no-cache` on form pages
+66. **জমা (deposit) entries in পরিশোধ তালিকা** — `SupplierPaymentController::index()` merges `Purchase` (paid) + `PurchaseDeposit` rows via manual `LengthAwarePaginator`; view shows blue "জমা" badge, category in মন্তব্য, মোট জমা stat card + tfoot total
+67. **Fixed: Turbo + top-level `const`/`let` SyntaxError** — Turbo re-evaluates body scripts on every visit; top-level `const`/`let` re-declaration aborted the whole script ("JS dead until refresh"). Converted all column-0 `const`/`let`→`var` across 17 views (see Turbo gotcha above)
 
 ---
 

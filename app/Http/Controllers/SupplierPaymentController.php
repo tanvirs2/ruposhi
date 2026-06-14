@@ -5,27 +5,67 @@ namespace App\Http\Controllers;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Models\Purchase;
+use App\Models\PurchaseDeposit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Http\Controllers\StoreConfigController;
 
 class SupplierPaymentController extends Controller
 {
     public function index(Request $request)
     {
-        $base = Purchase::with(['supplier', 'user'])
+        // Purchase rows (paid_amount > 0)
+        $purchaseRows = Purchase::with(['supplier', 'user'])
             ->withCount('items')
             ->where('paid_amount', '>', 0)
             ->when($request->supplier_id, fn($q) => $q->where('supplier_id', $request->supplier_id))
             ->when($request->from, fn($q) => $q->whereDate('purchase_date', '>=', $request->from))
-            ->when($request->to,   fn($q) => $q->whereDate('purchase_date', '<=', $request->to));
+            ->when($request->to,   fn($q) => $q->whereDate('purchase_date', '<=', $request->to))
+            ->get()
+            ->map(fn($p) => ['type' => 'purchase', 'row' => $p]);
 
-        $totalPaid = (clone $base)->sum('paid_amount');
-        $payments  = $base->latest('purchase_date')->latest('id')->paginate(20);
+        $totalPaid = $purchaseRows->sum(fn($r) => $r['row']->paid_amount);
+
+        // Deposit rows from purchases (জমা entries)
+        $depositRows = PurchaseDeposit::with(['purchase.supplier', 'purchase.user'])
+            ->whereHas('purchase', function ($q) use ($request) {
+                $q->when($request->supplier_id, fn($q2) => $q2->where('supplier_id', $request->supplier_id))
+                  ->when($request->from, fn($q2) => $q2->whereDate('purchase_date', '>=', $request->from))
+                  ->when($request->to,   fn($q2) => $q2->whereDate('purchase_date', '<=', $request->to));
+            })
+            ->get()
+            ->map(fn($d) => ['type' => 'deposit', 'row' => $d]);
+
+        $totalDeposit = $depositRows->sum(fn($r) => $r['row']->amount);
+
+        // Merge and sort by date desc, then purchase id desc
+        $merged = $purchaseRows->concat($depositRows)
+            ->sortByDesc(function ($item) {
+                $ts = $item['type'] === 'purchase'
+                    ? $item['row']->purchase_date->timestamp
+                    : $item['row']->purchase->purchase_date->timestamp;
+                $id = $item['type'] === 'purchase'
+                    ? $item['row']->id
+                    : $item['row']->purchase_id;
+                return $ts * 1000000 + $id;
+            })
+            ->values();
+
+        // Manual pagination
+        $perPage     = 20;
+        $currentPage = (int) $request->input('page', 1);
+        $payments    = new LengthAwarePaginator(
+            $merged->forPage($currentPage, $perPage),
+            $merged->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         $suppliers = Supplier::orderBy('name')->get();
 
-        return view('supplier-payments.index', compact('payments', 'suppliers', 'totalPaid'));
+        return view('supplier-payments.index', compact('payments', 'suppliers', 'totalPaid', 'totalDeposit'));
     }
 
     public function create(Request $request)
