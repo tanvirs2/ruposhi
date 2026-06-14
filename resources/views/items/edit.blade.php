@@ -3,6 +3,30 @@
 @section('page-title', 'আইটেম সম্পাদনা')
 
 @section('content')
+@php
+    $qty     = $item->stock?->quantity ?? 0;
+    $minQty  = $item->stock?->min_quantity ?? 5;
+    $isLow   = $qty > 0 && $qty <= $minQty;
+    $isOut   = $qty <= 0;
+    $isNeg   = $qty < 0;
+    $stockColor = $isNeg ? '#dc2626' : ($isOut ? '#dc2626' : ($isLow ? '#d97706' : '#16a34a'));
+    $stockBg    = $isNeg ? '#fee2e2' : ($isOut ? '#fee2e2' : ($isLow ? '#fef9c3' : '#dcfce7'));
+    $stockLabel = $isNeg ? 'ঋণাত্মক স্টক' : ($isOut ? 'স্টক শেষ' : ($isLow ? 'কম স্টক' : 'পর্যাপ্ত স্টক'));
+@endphp
+<div style="display:flex;align-items:center;gap:16px;padding:14px 20px;background:{{ $stockBg }};border:1px solid {{ $stockColor }}22;border-radius:10px;margin-bottom:18px">
+    <div style="font-size:2rem;line-height:1">📦</div>
+    <div>
+        <div style="font-size:.75rem;font-weight:600;color:{{ $stockColor }};text-transform:uppercase;letter-spacing:.04em">বর্তমান স্টক</div>
+        <div style="font-size:1.6rem;font-weight:800;color:{{ $stockColor }};line-height:1.1">
+            {{ number_format($qty, 0) }} <span style="font-size:.9rem;font-weight:500">{{ $item->unit ?: 'বস্তা' }}</span>
+        </div>
+        <div style="font-size:.75rem;color:{{ $stockColor }};opacity:.8;margin-top:2px">{{ $stockLabel }} · সর্বনিম্ন: {{ $minQty }} {{ $item->unit ?: 'বস্তা' }}</div>
+    </div>
+    <div style="margin-left:auto">
+        <a href="{{ route('stock.index') }}" class="btn btn-ghost" style="font-size:.8rem">স্টক তালিকা</a>
+    </div>
+</div>
+
 <div class="form-card">
     <form method="POST" action="{{ route('items.update', $item) }}">
         @csrf @method('PUT')

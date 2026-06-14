@@ -50,6 +50,7 @@ class ItemController extends Controller
 
     public function edit(Item $item)
     {
+        $item->load('stock');
         $categories = Category::orderBy('name')->get();
         return view('items.edit', compact('item', 'categories'));
     }
