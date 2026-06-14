@@ -649,7 +649,7 @@
     </div>
 </div>
 
-<script src="{{ asset('js/app.js') }}"></script>
+<script src="{{ asset('js/app.js') }}" data-turbo-eval="false"></script>
 
 <script>
 /* ── Notification Bell ── */

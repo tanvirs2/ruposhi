@@ -92,12 +92,20 @@
     </div>
     <div class="ledger-kpi {{ $periodBalance > 0 ? 'ledger-kpi-red' : 'ledger-kpi-green' }}">
         <div class="ledger-kpi-label"><i class="fas fa-calculator"></i> এই সময়ের বাকী</div>
-        <div class="ledger-kpi-value">৳ {{ number_format(max(0,$periodBalance), 0) }}</div>
+        @if($periodBalance < 0)
+            <div class="ledger-kpi-value" style="color:#1d4ed8">অগ্রিম ৳ {{ number_format(abs($periodBalance), 0) }}</div>
+        @else
+            <div class="ledger-kpi-value">৳ {{ number_format($periodBalance, 0) }}</div>
+        @endif
         <div class="ledger-kpi-sub">নির্বাচিত পিরিয়ড অনুযায়ী</div>
     </div>
     <div class="ledger-kpi {{ $realTotalDue > 0 ? 'ledger-kpi-orange' : 'ledger-kpi-green' }}">
         <div class="ledger-kpi-label"><i class="fas fa-scale-balanced"></i> সর্বমোট বাকী</div>
-        <div class="ledger-kpi-value">৳ {{ number_format(max(0,$realTotalDue), 0) }}</div>
+        @if($realTotalDue < 0)
+            <div class="ledger-kpi-value" style="color:#1d4ed8">অগ্রিম ৳ {{ number_format(abs($realTotalDue), 0) }}</div>
+        @else
+            <div class="ledger-kpi-value">৳ {{ number_format($realTotalDue, 0) }}</div>
+        @endif
         <div class="ledger-kpi-sub">সকল লেনদেন হিসেবে</div>
     </div>
 </div>

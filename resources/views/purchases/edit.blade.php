@@ -354,7 +354,16 @@ function replaceItem(idx, newId) {
     };
     renderCart();
 }
-function updateQty(id,val) { const item=cart.find(c=>c.id===id); if(item){item.qty=parseFloat(toEnglishDigits(val))||0;} updateRowTotal(id); updateSummary(); }
+function updateQty(id,val) { var item=cart.find(c=>c.id===id); if(item){item.qty=parseFloat(toEnglishDigits(val))||0;} updateRowTotal(id); updateSummary(); renderStockPanel(); }
+function renderStockPanel() {
+    if (!stockPanel) return;
+    if (!cart.length) { stockPanel.style.display='none'; return; }
+    document.getElementById('stockChangeSummary').innerHTML = cart.map(function(c) {
+        var ns = c.currentStock + (c.qty||0);
+        return '<div class="stock-change-row"><span class="item-name">'+c.name+'</span><span class="stock-arrow"><span class="old">'+c.currentStock+'</span><span class="arrow">→</span><span class="new">'+ns+' বস্তা</span><span style="color:#16a34a;font-size:.75rem">(+'+c.qty+')</span></span></div>';
+    }).join('');
+    stockPanel.style.display = 'block';
+}
 function updatePrice(id,val) { const item=cart.find(c=>c.id===id); if(item){item.price=parseFloat(toEnglishDigits(val))||0;item.priceEntered=val.trim()!=='';} updateRowTotal(id); updateSummary(); }
 function useLastPrice(id) {
     const item=cart.find(c=>c.id===id); if(!item) return;

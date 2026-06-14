@@ -704,8 +704,8 @@ function addItem(id) {
             id:           item.id,
             name:         item.name,
             cost:         parseFloat(item.purchase_price),
-            price:        0,
-            priceEntered: false,
+            price:        parseFloat(item.sale_price),
+            priceEntered: true,
             defaultPrice: parseFloat(item.sale_price),
             qty:          1,
             stock:        avail

@@ -62,7 +62,10 @@
                     $method      = $isDeposit ? $row->purchase->payment_method : $row->payment_method;
                     $amount      = $isDeposit ? $row->amount : $row->paid_amount;
                     $userName    = $isDeposit ? ($row->purchase->user->name ?? '—') : ($row->user->name ?? '—');
-                    $notes       = $isDeposit ? $row->category_name : ($row->notes ?? '—');
+                    $rawNotes    = $isDeposit ? $row->category_name : ($row->notes ?? '—');
+                    $notes       = preg_match('/^__advance_for:(\d+)$/', $rawNotes, $m)
+                                    ? 'রিসিভ #RCV-'.str_pad($m[1],4,'0',STR_PAD_LEFT).'-এর অতিরিক্ত পরিশোধ'
+                                    : $rawNotes;
                 @endphp
                 <tr @if($isDeposit) style="background:#f0f7ff" @endif>
                     <td>
