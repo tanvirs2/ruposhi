@@ -90,7 +90,7 @@
                                 <i class="fas fa-pen"></i>
                             </a>
                             <form class="admin-only" method="POST" action="{{ route('customers.destroy', $customer) }}"
-                                  onsubmit="return confirm('এই কাস্টমার মুছে ফেলবেন?')">
+                                  data-confirm-msg="{{ $customer->name }} — কাস্টমার মুছে ফেলবেন? বাকী: ৳{{ number_format($customer->due_amount,0) }}। এই কাজ পূর্বাবস্থায় ফেরানো যাবে না।">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn-icon-sm btn-icon-danger" title="মুছুন">
                                     <i class="fas fa-trash"></i>

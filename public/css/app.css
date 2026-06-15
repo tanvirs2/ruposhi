@@ -1413,6 +1413,9 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
         left: 0;
         right: 0;
     }
+    .purchase-submit-mobile { display: block !important; }
+    .purchase-submit-desktop { display: none !important; }
+    .pos-layout { padding-bottom: 80px; }
 }
 .suggestions-list { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
 .suggestion-item {

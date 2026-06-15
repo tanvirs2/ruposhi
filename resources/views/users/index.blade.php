@@ -38,7 +38,8 @@
                         <div class="action-btns">
                             <a href="{{ route('users.edit', $u) }}" class="btn-icon-sm" title="সম্পাদনা"><i class="fas fa-pen"></i></a>
                             @if($u->id !== auth()->id())
-                            <form method="POST" action="{{ route('users.destroy', $u) }}" onsubmit="return confirm('এই ব্যবহারকারী মুছে ফেলবেন?')">
+                            <form method="POST" action="{{ route('users.destroy', $u) }}"
+                                  data-confirm-msg="{{ $u->name }} ({{ $u->role }}) — ব্যবহারকারী মুছে ফেলবেন? লগইন অ্যাক্সেস চলে যাবে।">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn-icon-sm btn-icon-danger" title="মুছুন"><i class="fas fa-trash"></i></button>
                             </form>

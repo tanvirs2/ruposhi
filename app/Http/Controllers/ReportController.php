@@ -357,12 +357,23 @@ class ReportController extends Controller
         $extraCostByCategory = $saleExtraCosts->groupBy('category_name')
             ->map(fn($rows) => $rows->sum('amount'));
 
+        // 7-day trend for the chart (always last 7 days, not filtered)
+        $trendDays = collect(range(6, 0))->map(function ($daysAgo) {
+            $date = today()->subDays($daysAgo);
+            return [
+                'date'  => $date->format('d/m'),
+                'total' => Sale::whereDate('sale_date', $date)->sum('total_amount'),
+                'paid'  => Sale::whereDate('sale_date', $date)->sum('paid_amount'),
+            ];
+        });
+
         return view('reports.sales', compact(
             'sales', 'saleItems', 'customers',
             'standalonePayments', 'noItemSales',
             'grandTotal', 'grandPaid', 'grandItemPaid', 'grandDue', 'grandStandalone',
             'grandExtraCost', 'grandDiscount',
             'saleExtraCosts', 'extraCostByCategory',
+            'trendDays',
             'from', 'to'
         ));
     }

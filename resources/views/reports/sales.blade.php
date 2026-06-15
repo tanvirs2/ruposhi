@@ -130,6 +130,61 @@
     @endif
 </div>
 
+{{-- 7-Day Trend Chart ────────────────────────────────────────── --}}
+<div class="card no-print" style="margin-bottom:20px">
+    <div class="card-header">
+        <h3><i class="fas fa-chart-bar"></i> গত ৭ দিনের ট্রেন্ড</h3>
+        <span style="font-size:.75rem;color:var(--text-secondary)">সবুজ = পরিশোধ, ধূসর = মোট বিক্রয়</span>
+    </div>
+    <div style="padding:16px 20px 8px">
+        @php $trendMax = $trendDays->max('total') ?: 1; @endphp
+        <div style="display:flex;align-items:flex-end;gap:6px;height:130px;padding-bottom:32px;position:relative">
+            {{-- Gridlines --}}
+            @foreach([100,50] as $pct)
+            <div style="position:absolute;left:0;right:0;bottom:calc(32px + {{ $pct }}%);border-top:1px dashed var(--border);pointer-events:none">
+                <span style="position:absolute;left:0;top:-14px;font-size:.62rem;color:var(--text-secondary)">
+                    ৳{{ number_format($trendMax * $pct / 100 / 1000, 0) }}ক
+                </span>
+            </div>
+            @endforeach
+
+            @foreach($trendDays as $day)
+            @php
+                $totalPct = $trendMax > 0 ? ($day['total'] / $trendMax * 100) : 0;
+                $paidPct  = $trendMax > 0 ? ($day['paid']  / $trendMax * 100) : 0;
+                $isToday  = $day['date'] === today()->format('d/m');
+            @endphp
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end;position:relative">
+                {{-- Total bar (background) --}}
+                <div style="width:100%;position:relative">
+                    <div style="width:100%;background:var(--surface-2);border:1.5px solid var(--border);
+                                border-radius:4px 4px 0 0;height:{{ max(4, $totalPct) }}px;
+                                max-height:98px;position:relative">
+                        {{-- Paid bar overlay --}}
+                        @if($day['paid'] > 0)
+                        <div style="position:absolute;bottom:0;left:0;right:0;
+                                    background:#16a34a22;border-bottom:3px solid #16a34a;
+                                    height:{{ min(100, $paidPct > 0 ? ($day['paid']/$day['total']*100) : 0) }}%;
+                                    border-radius:0 0 2px 2px">
+                        </div>
+                        @endif
+                    </div>
+                </div>
+                @if($day['total'] > 0)
+                <div style="font-size:.58rem;color:var(--text-secondary);white-space:nowrap;margin-top:2px">
+                    ৳{{ number_format($day['total']/1000,1) }}ক
+                </div>
+                @endif
+                <div style="font-size:.65rem;color:{{ $isToday ? 'var(--accent)' : 'var(--text-secondary)' }};
+                            font-weight:{{ $isToday ? '700' : '400' }};margin-top:2px;text-align:center">
+                    {{ $day['date'] }}@if($isToday)<br><span style="font-size:.55rem">আজ</span>@endif
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+
 @php
     [$namedItems, $walkinItems] = $saleItems->partition(fn($r) => $r->customer_name !== null);
     // Per-sale aggregates (paid/due/extra/disc are repeated per item — take unique sales)

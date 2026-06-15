@@ -80,7 +80,7 @@
                         <div class="action-btns">
                             <a href="{{ route('sales.show', $p) }}" class="btn-icon-sm" title="ইনভয়েস"><i class="fas fa-eye"></i></a>
                             <form class="admin-only" method="POST" action="{{ route('sales.destroy', $p) }}"
-                                onsubmit="return confirm('এই পরিশোধ মুছলে কাস্টমারের বাকী বাড়বে। নিশ্চিত?')">
+                                  data-confirm-msg="পরিশোধ ৳{{ number_format($p->paid_amount,0) }} মুছে ফেলবেন? {{ $p->customer?->name ?? '' }}-এর বাকী ৳{{ number_format($p->paid_amount,0) }} বেড়ে যাবে।">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button>
                             </form>

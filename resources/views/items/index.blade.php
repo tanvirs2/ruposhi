@@ -58,7 +58,8 @@
                     <td class="tc">
                         <div class="action-btns">
                             <a href="{{ route('items.edit', $item) }}" class="btn-icon-sm"><i class="fas fa-pen"></i></a>
-                            <form class="admin-only" method="POST" action="{{ route('items.destroy', $item) }}" onsubmit="return confirm('এই আইটেম মুছে ফেলবেন?')">
+                            <form class="admin-only" method="POST" action="{{ route('items.destroy', $item) }}"
+                                  data-confirm-msg="{{ $item->name }} — আইটেম মুছে ফেলবেন? স্টক ও সব বিক্রয় ইতিহাস মুছে যাবে।">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button>
                             </form>

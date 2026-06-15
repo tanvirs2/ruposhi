@@ -331,12 +331,19 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:14px">
+                <button type="submit" class="btn btn-primary purchase-submit-desktop" style="width:100%;justify-content:center;padding:14px">
                     <i class="fas fa-boxes-stacked"></i> মাল রিসিভ ও স্টক আপডেট করুন
                 </button>
             </div>
         </div>
     </div>
+</div>
+
+{{-- Mobile floating submit bar --}}
+<div class="sale-submit-bar purchase-submit-mobile" style="display:none">
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:1rem">
+        <i class="fas fa-boxes-stacked"></i> মাল রিসিভ ও স্টক আপডেট করুন
+    </button>
 </div>
 </form>
 

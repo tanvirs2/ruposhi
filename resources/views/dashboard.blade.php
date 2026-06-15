@@ -1,78 +1,121 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'ড্যাশবোর্ড')
 @section('page-title', 'ড্যাশবোর্ড')
 
 @section('content')
 
-{{-- Stats --}}
-<div class="stats-grid">
+{{-- Quick Actions --}}
+<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+    <a href="{{ route('sales.create') }}" class="btn btn-primary" style="padding:12px 24px;font-size:.95rem;flex:1;min-width:160px;justify-content:center">
+        <i class="fas fa-plus-circle"></i> নতুন বিক্রয়
+    </a>
+    <a href="{{ route('purchases.create') }}" class="btn btn-secondary" style="padding:12px 24px;font-size:.95rem;flex:1;min-width:160px;justify-content:center">
+        <i class="fas fa-truck-ramp-box"></i> মাল রিসিভ
+    </a>
+    <a href="{{ route('customer-payments.create') }}" class="btn btn-ghost" style="padding:12px 24px;font-size:.95rem;flex:1;min-width:160px;justify-content:center">
+        <i class="fas fa-hand-holding-dollar"></i> পরিশোধ নিন
+    </a>
+    <a href="{{ route('reports.sales') }}" class="btn btn-ghost" style="padding:12px 24px;font-size:.95rem;flex:1;min-width:160px;justify-content:center">
+        <i class="fas fa-chart-bar"></i> আজকের রিপোর্ট
+    </a>
+</div>
+
+{{-- Today Stats --}}
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+    <div class="stat-card stat-orange">
+        <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+        <div class="stat-body">
+            <span class="stat-label">আজকের বিক্রয়</span>
+            <span class="stat-value">৳ {{ number_format($stats['today_sales'], 0) }}</span>
+            <span style="font-size:.72rem;color:#b45309;margin-top:2px">মোট ইনভয়েস মূল্য</span>
+        </div>
+    </div>
+    <div class="stat-card stat-green">
+        <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+        <div class="stat-body">
+            <span class="stat-label">আজকের পরিশোধ</span>
+            <span class="stat-value">৳ {{ number_format($stats['today_paid'], 0) }}</span>
+            <span style="font-size:.72rem;color:#15803d;margin-top:2px">নগদ/ব্যাংক জমা</span>
+        </div>
+    </div>
+    <div class="stat-card stat-red" style="background:linear-gradient(135deg,#fee2e2,#fecaca)">
+        <div class="stat-icon" style="background:#dc2626"><i class="fas fa-hourglass-half"></i></div>
+        <div class="stat-body">
+            <span class="stat-label">আজকের বাকী</span>
+            <span class="stat-value" style="color:#dc2626">৳ {{ number_format($stats['today_due'], 0) }}</span>
+            <span style="font-size:.72rem;color:#b91c1c;margin-top:2px">আদায় হয়নি</span>
+        </div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+    <div class="stat-card" style="background:linear-gradient(135deg,#fdf4ff,#fae8ff)">
+        <div class="stat-icon" style="background:#9333ea"><i class="fas fa-scale-unbalanced-flip"></i></div>
+        <div class="stat-body">
+            <span class="stat-label">মোট কাস্টমার বকেয়া</span>
+            <span class="stat-value" style="color:#9333ea">৳ {{ number_format($stats['total_customer_due'], 0) }}</span>
+            <span style="font-size:.72rem;color:#7e22ce;margin-top:2px">সব কাস্টমারের মিলিয়ে</span>
+        </div>
+    </div>
     <div class="stat-card stat-blue">
         <div class="stat-icon"><i class="fas fa-users"></i></div>
         <div class="stat-body">
             <span class="stat-label">মোট কাস্টমার</span>
             <span class="stat-value">{{ number_format($stats['customers']) }}</span>
+            <span style="font-size:.72rem;color:#1d4ed8;margin-top:2px">নিবন্ধিত</span>
         </div>
     </div>
-    <div class="stat-card stat-green">
-        <div class="stat-icon"><i class="fas fa-box-open"></i></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#fff7ed,#fed7aa)">
+        <div class="stat-icon" style="background:#ea580c"><i class="fas fa-triangle-exclamation"></i></div>
         <div class="stat-body">
-            <span class="stat-label">মোট আইটেম</span>
-            <span class="stat-value">{{ number_format($stats['items']) }}</span>
-        </div>
-    </div>
-    <div class="stat-card stat-orange">
-        <div class="stat-icon"><i class="fas fa-receipt"></i></div>
-        <div class="stat-body">
-            <span class="stat-label">আজকের বিক্রয়</span>
-            <span class="stat-value">৳ {{ number_format($stats['today_sales'], 2) }}</span>
-        </div>
-    </div>
-    <div class="stat-card stat-purple">
-        <div class="stat-icon"><i class="fas fa-warehouse"></i></div>
-        <div class="stat-body">
-            <span class="stat-label">স্টক মূল্য</span>
-            <span class="stat-value">৳ {{ number_format($stats['stock_value'], 2) }}</span>
+            <span class="stat-label">কম / শেষ স্টক</span>
+            <span class="stat-value" style="color:#ea580c">{{ $stats['low_stock_count'] }} / {{ $stats['out_stock_count'] }}</span>
+            <span style="font-size:.72rem;color:#c2410c;margin-top:2px">আইটেম সংখ্যা</span>
         </div>
     </div>
 </div>
 
-{{-- Module Grid --}}
-<div class="section-header">
-    <h2>মডিউল সমূহ</h2>
-    <span class="section-sub">একটি মডিউলে ক্লিক করে শুরু করুন</span>
+{{-- 7-Day Trend Chart --}}
+<div class="card" style="margin-bottom:20px">
+    <div class="card-header">
+        <h3><i class="fas fa-chart-line"></i> গত ৭ দিনের বিক্রয়</h3>
+        <a href="{{ route('reports.sales') }}" class="card-link">বিস্তারিত <i class="fas fa-chevron-right"></i></a>
+    </div>
+    <div style="padding:16px 20px">
+        @php
+            $maxVal = $sevenDayTrend->max('total') ?: 1;
+        @endphp
+        <div style="display:flex;align-items:flex-end;gap:8px;height:120px;padding-bottom:28px;position:relative">
+            {{-- Gridlines --}}
+            @foreach([100,66,33] as $pct)
+            <div style="position:absolute;left:0;right:0;bottom:calc(28px + {{$pct}}%);border-top:1px dashed var(--border);pointer-events:none"></div>
+            @endforeach
+
+            @foreach($sevenDayTrend as $day)
+            @php
+                $barPct = $maxVal > 0 ? ($day['total'] / $maxVal * 100) : 0;
+                $isToday = \Carbon\Carbon::createFromFormat('d/m', $day['date'])->isSameDay(today());
+            @endphp
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end">
+                @if($day['total'] > 0)
+                <div style="font-size:.62rem;color:var(--text-secondary);white-space:nowrap">৳{{ number_format($day['total']/1000,0) }}ক</div>
+                @endif
+                <div style="width:100%;background:{{ $isToday ? 'var(--accent)' : 'var(--surface-2)' }};
+                            border-radius:5px 5px 0 0;
+                            height:{{ max(4, $barPct) }}%;
+                            border:1.5px solid {{ $isToday ? 'var(--accent)' : 'var(--border)' }};
+                            transition:height .3s ease;min-height:4px">
+                </div>
+                <div style="font-size:.65rem;color:{{ $isToday ? 'var(--accent)' : 'var(--text-secondary)' }};font-weight:{{ $isToday ? '700' : '400' }};margin-top:4px;text-align:center">
+                    {{ $day['date'] }}
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
 </div>
 
-<div class="module-grid">
-    @php
-    $modules = [
-        ['href' => route('customers.index'),   'color' => '#3b82f6', 'icon' => 'fas fa-users',             'title' => 'কাস্টমার',       'desc' => 'যোগ, হালনাগাদ, মুছে ফেলুন এবং কাস্টমার অনুসন্ধান'],
-        ['href' => route('items.index'),        'color' => '#10b981', 'icon' => 'fas fa-box-open',          'title' => 'আইটেমস',         'desc' => 'যোগ, হালনাগাদ, মুছে ফেলুন এবং আইটেম অনুসন্ধান'],
-        ['href' => route('suppliers.index'),    'color' => '#f59e0b', 'icon' => 'fas fa-truck',             'title' => 'সরবরাহকারী',     'desc' => 'যোগ, হালনাগাদ, মুছে ফেলুন এবং সরবরাহকারী অনুসন্ধান'],
-        ['href' => route('reports.index'),      'color' => '#8b5cf6', 'icon' => 'fas fa-chart-bar',         'title' => 'রিপোর্ট',        'desc' => 'দেখুন এবং রিপোর্ট তৈরি করুন'],
-        ['href' => route('purchases.index'),    'color' => '#ef4444', 'icon' => 'fas fa-cart-plus',         'title' => 'গ্রহণ',          'desc' => 'ক্রয় অর্ডার প্রক্রিয়া করুন'],
-        ['href' => route('sales.index'),        'color' => '#f97316', 'icon' => 'fas fa-receipt',           'title' => 'বিক্রয়',        'desc' => 'বিক্রি এবং ফেরত প্রক্রিয়া করুন'],
-        ['href' => route('employees.index'),    'color' => '#06b6d4', 'icon' => 'fas fa-id-badge',          'title' => 'কর্মচারী',      'desc' => 'যোগ, হালনাগাদ, মুছে ফেলুন এবং কর্মচারী অনুসন্ধান'],
-        ['href' => route('store-config.index'), 'color' => '#0d9488', 'icon' => 'fas fa-store',             'title' => 'স্টোর কনফিগ',   'desc' => 'স্টোর এর কনফিগারেশন পরিবর্তন'],
-        ['href' => route('stock.index'),        'color' => '#14b8a6', 'icon' => 'fas fa-warehouse',         'title' => 'স্টক',           'desc' => 'স্টক ব্যবস্থাপনা'],
-        ['href' => route('expenses.index'),     'color' => '#ec4899', 'icon' => 'fas fa-money-bill-transfer','title' => 'অতিরিক্ত খরচ', 'desc' => 'অতিরিক্ত খরচের বিবরণ'],
-    ];
-    @endphp
-
-    @foreach($modules as $m)
-    <a href="{{ $m['href'] }}" class="module-card">
-        <div class="module-icon-wrap" style="--c:{{ $m['color'] }}">
-            <i class="{{ $m['icon'] }}"></i>
-        </div>
-        <div class="module-info">
-            <h3>{{ $m['title'] }}</h3>
-            <p>{{ $m['desc'] }}</p>
-        </div>
-        <span class="module-arrow"><i class="fas fa-arrow-right"></i></span>
-    </a>
-    @endforeach
-</div>
-
-{{-- Bottom --}}
+{{-- Bottom grid --}}
 <div class="bottom-grid">
     <div class="card">
         <div class="card-header">
@@ -82,26 +125,30 @@
         <div class="table-wrap">
             <table class="data-table">
                 <thead>
-                    <tr><th>ইনভয়েস</th><th>কাস্টমার</th><th>পরিমাণ</th><th>স্ট্যাটাস</th></tr>
+                    <tr><th>ইনভয়েস</th><th>কাস্টমার</th><th>মোট</th><th>বাকী</th></tr>
                 </thead>
                 <tbody>
                     @forelse($recent_sales as $sale)
                     <tr>
-                        <td><span class="mono">#INV-{{ str_pad($sale->id, 4, '0', STR_PAD_LEFT) }}</span></td>
-                        <td>{{ $sale->customer?->name ?? 'ওয়াক-ইন' }}</td>
-                        <td>৳ {{ number_format($sale->total_amount, 2) }}</td>
                         <td>
-                            @if($sale->status === 'completed')
-                                <span class="badge badge-green">সম্পন্ন</span>
-                            @elseif($sale->status === 'pending')
-                                <span class="badge badge-yellow">মুলতুবি</span>
+                            <a href="{{ route('sales.show', $sale) }}" class="link-primary mono">
+                                #INV-{{ str_pad($sale->id, 4, '0', STR_PAD_LEFT) }}
+                            </a>
+                        </td>
+                        <td>{{ $sale->customer?->name ?? 'ওয়াক-ইন' }}</td>
+                        <td>৳ {{ number_format($sale->total_amount, 0) }}</td>
+                        <td>
+                            @if($sale->due_amount > 0)
+                                <span class="badge badge-red">৳ {{ number_format($sale->due_amount, 0) }}</span>
+                            @elseif($sale->due_amount < 0)
+                                <span class="badge" style="background:#eff6ff;color:#1d4ed8">অগ্রিম</span>
                             @else
-                                <span class="badge badge-red">বাতিল</span>
+                                <span class="badge badge-green">পরিশোধিত</span>
                             @endif
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:24px">কোনো বিক্রয় নেই</td></tr>
+                    <tr><td colspan="4" class="empty-row">আজ কোনো বিক্রয় নেই</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -111,23 +158,30 @@
     <div class="card">
         <div class="card-header">
             <h3><i class="fas fa-triangle-exclamation"></i> কম স্টক সতর্কতা</h3>
-            <a href="{{ route('stock.index') }}?filter=low" class="card-link">স্টক দেখুন <i class="fas fa-chevron-right"></i></a>
+            <a href="{{ route('stock.low') }}" class="card-link">স্টক দেখুন <i class="fas fa-chevron-right"></i></a>
         </div>
         <div class="alert-list">
             @forelse($low_stock as $s)
-            <div class="alert-item">
-                <div class="alert-icon" style="background:#fee2e2;color:#ef4444"><i class="fas fa-box"></i></div>
+            <a href="{{ route('items.edit', $s->item) }}" class="alert-item" style="text-decoration:none;color:inherit">
+                <div class="alert-icon" style="background:{{ $s->quantity <= 0 ? '#fee2e2' : '#fef9c3' }};color:{{ $s->quantity <= 0 ? '#ef4444' : '#d97706' }}">
+                    <i class="fas fa-box"></i>
+                </div>
                 <div class="alert-body">
                     <span class="alert-name">{{ $s->item->name }}</span>
                     <div class="stock-bar">
-                        @php $pct = $s->min_quantity > 0 ? min(100, ($s->quantity / $s->min_quantity) * 100) : 0; @endphp
+                        @php $pct = $s->min_quantity > 0 ? min(100, max(0, ($s->quantity / $s->min_quantity) * 100)) : 0; @endphp
                         <div class="stock-fill" style="width:{{ $pct }}%;background:{{ $pct < 20 ? '#ef4444' : '#f59e0b' }}"></div>
                     </div>
                 </div>
-                <span class="alert-qty" style="color:{{ $pct < 20 ? '#ef4444' : '#f59e0b' }}">{{ $s->quantity }} টি</span>
-            </div>
+                <span class="alert-qty" style="color:{{ $s->quantity <= 0 ? '#ef4444' : '#d97706' }};font-weight:700">
+                    {{ $s->quantity }} {{ $s->item->unit ?: 'বস্তা' }}
+                </span>
+            </a>
             @empty
-            <div style="text-align:center;color:#94a3b8;padding:32px">সব স্টক পর্যাপ্ত</div>
+            <div style="text-align:center;color:#94a3b8;padding:32px">
+                <i class="fas fa-circle-check" style="font-size:2rem;margin-bottom:8px;display:block;color:#16a34a"></i>
+                সব স্টক পর্যাপ্ত
+            </div>
             @endforelse
         </div>
     </div>

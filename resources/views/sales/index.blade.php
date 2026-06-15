@@ -95,7 +95,8 @@
                         <td>
                             <div class="action-btns">
                                 <a href="{{ route('sales.show',$sale) }}" class="btn-icon-sm"><i class="fas fa-eye"></i></a>
-                                <form class="admin-only" method="POST" action="{{ route('sales.destroy',$sale) }}" onsubmit="return confirm('এই বিক্রয় মুছে ফেলবেন? স্টক পুনরুদ্ধার হবে।')">
+                                <form class="admin-only" method="POST" action="{{ route('sales.destroy',$sale) }}"
+                                      data-confirm-msg="বিক্রয় #INV-{{ str_pad($sale->id,4,'0',STR_PAD_LEFT) }} মুছে ফেলবেন? ৳{{ number_format($sale->total_amount,0) }} — স্টক ও বাকী পুনরুদ্ধার হবে।">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button>
                                 </form>

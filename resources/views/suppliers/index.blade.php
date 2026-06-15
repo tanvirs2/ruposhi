@@ -57,7 +57,8 @@
                             <a href="{{ route('suppliers.edit', $supplier) }}" class="btn-icon-sm" title="সম্পাদনা">
                                 <i class="fas fa-pen"></i>
                             </a>
-                            <form class="admin-only" method="POST" action="{{ route('suppliers.destroy', $supplier) }}" onsubmit="return confirm('মুছে ফেলবেন?')">
+                            <form class="admin-only" method="POST" action="{{ route('suppliers.destroy', $supplier) }}"
+                                  data-confirm-msg="{{ $supplier->name }} — সরবরাহকারী মুছে ফেলবেন? বকেয়া: ৳{{ number_format($supplier->due_amount,0) }}। এই কাজ পূর্বাবস্থায় ফেরানো যাবে না।">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button>
                             </form>

@@ -369,15 +369,6 @@
         </div>
         <div class="topbar-right">
 
-            {{-- Quick actions --}}
-            <div class="quick-actions">
-                <a href="{{ route('sales.create') }}" class="btn-quick btn-quick-sale" title="নতুন বিক্রয় (Alt+S)">
-                    <i class="fas fa-plus"></i><span>নতুন বিক্রয়</span>
-                </a>
-            </div>
-
-            <div class="topbar-divider"></div>
-
             {{-- Font size controls --}}
             <div class="ui-controls">
                 <button class="ctrl-btn" data-size="sm" onclick="setFontSize('sm')" title="ছোট লেখা">A</button>
@@ -443,6 +434,33 @@
                 <button class="ctrl-btn" onclick="toggleShortcutsHelp()" title="কীবোর্ড শর্টকাট (Alt+/)">
                     <i class="fas fa-keyboard"></i>
                 </button>
+            </div>
+
+            <div class="topbar-divider"></div>
+
+            {{-- Offline indicator --}}
+            <div class="ui-controls" style="position:relative">
+                <div id="offlineDot" style="display:none;align-items:center;gap:5px;padding:0 8px;
+                     background:#fee2e2;border-radius:20px;height:32px;cursor:default" title="ইন্টারনেট সংযোগ নেই">
+                    <i class="fas fa-wifi" style="color:#dc2626;font-size:.75rem;text-decoration:line-through"></i>
+                    <span style="font-size:.7rem;font-weight:700;color:#dc2626">অফলাইন</span>
+                </div>
+                <button class="ctrl-btn" id="offlinePendingBtn" onclick="syncOfflineSales()"
+                        title="অফলাইনে সংরক্ষিত বিক্রয় sync করুন" style="display:none;position:relative">
+                    <i class="fas fa-cloud-arrow-up" style="color:#1d4ed8"></i>
+                    <span id="offlinePendingBadge" style="display:none;position:absolute;top:-4px;right:-4px;
+                          background:#dc2626;color:#fff;border-radius:50%;width:16px;height:16px;
+                          font-size:.58rem;align-items:center;justify-content:center;font-weight:700">0</span>
+                </button>
+            </div>
+
+            <div class="topbar-divider"></div>
+
+            {{-- Quick actions --}}
+            <div class="quick-actions">
+                <a href="{{ route('sales.create') }}" class="btn-quick btn-quick-sale" title="নতুন বিক্রয় (Alt+S)">
+                    <i class="fas fa-plus"></i><span>নতুন বিক্রয়</span>
+                </a>
             </div>
 
             <div class="topbar-divider"></div>
@@ -586,6 +604,25 @@
         </div>
     </div>
 
+    {{-- Offline / Sync banner — persists across Turbo navigations --}}
+    <div id="offlineSyncBanner" data-turbo-permanent style="display:none;
+         align-items:center;gap:12px;padding:10px 20px;
+         background:linear-gradient(90deg,#eff6ff,#dbeafe);
+         border-bottom:1.5px solid #93c5fd;color:#1e40af;
+         font-size:.82rem;font-weight:600;flex-wrap:wrap">
+        <i class="fas fa-wifi-slash" style="font-size:.9rem;color:#1d4ed8"></i>
+        <span id="offlineBannerMsg">ইন্টারনেট নেই</span>
+        <button id="offlineSyncBtn" onclick="syncOfflineSales()"
+                style="display:none;margin-left:auto;background:#1d4ed8;color:#fff;
+                       border:none;border-radius:8px;padding:6px 16px;font-size:.78rem;
+                       font-weight:700;cursor:pointer;align-items:center;gap:6px">
+            <i class="fas fa-rotate"></i> Sync করুন
+        </button>
+        <button onclick="this.closest('#offlineSyncBanner').style.display='none'"
+                style="background:none;border:none;color:#93c5fd;cursor:pointer;
+                       font-size:1.1rem;padding:0 4px;line-height:1">×</button>
+    </div>
+
     <main class="content">
         @if(session('success'))
             <div class="alert alert-success" role="alert">
@@ -650,6 +687,7 @@
 </div>
 
 <script src="{{ asset('js/app.js') }}" data-turbo-eval="false"></script>
+<script src="{{ asset('js/offline-sales.js') }}" data-turbo-eval="false"></script>
 
 <script>
 /* ── Notification Bell ── */
