@@ -12,6 +12,8 @@ class SupplierController extends Controller
 {
     public function index(Request $request)
     {
+        $showAll = $request->boolean('show_all'); // toggle: show zero-due suppliers
+
         $baseQuery = Supplier::when($request->search, fn($q) =>
             $q->where('name', 'like', "%{$request->search}%")
               ->orWhere('phone', 'like', "%{$request->search}%")
@@ -21,9 +23,11 @@ class SupplierController extends Controller
         $totalCredit = abs((clone $baseQuery)->where('due_amount', '<', 0)->sum('due_amount'));
         $totalDue    = $grossDue - $totalCredit;
 
-        $suppliers = $baseQuery->latest()->paginate(15);
+        $suppliers = (clone $baseQuery)
+            ->when(!$showAll, fn($q) => $q->where('due_amount', '!=', 0)) // hide clean by default
+            ->latest()->paginate(15);
 
-        return view('suppliers.index', compact('suppliers', 'grossDue', 'totalCredit', 'totalDue'));
+        return view('suppliers.index', compact('suppliers', 'grossDue', 'totalCredit', 'totalDue', 'showAll'));
     }
 
     public function ledgerSelect()

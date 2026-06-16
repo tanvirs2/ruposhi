@@ -349,6 +349,7 @@ function animateValue(el, duration = 900) {
         's': () => { const a = document.querySelector('a[href*="sales/create"]'); if (a) window.location = a.href; },
         'p': () => { const a = document.querySelector('a[href*="purchases/create"]'); if (a) window.location = a.href; },
         'd': () => { const a = document.querySelector('a[href*="dashboard"]'); if (a) window.location = a.href; },
+        'k': () => { const a = document.querySelector('a[href$="/stock"]'); if (a) window.location = a.href; },
         '/': () => { toggleShortcutsHelp(); },
     };
 

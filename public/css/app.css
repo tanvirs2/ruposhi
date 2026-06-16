@@ -1215,6 +1215,29 @@ a { text-decoration: none; color: inherit; }
 .card-filter { padding: 14px 20px; border-bottom: 1px solid var(--border); }
 .filter-form { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
+/* ─── Filter status chips ───────────────────────────────────── */
+.filter-chips {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    padding: 12px 20px; border-bottom: 1px solid var(--border);
+}
+.fchip {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 8px 5px 13px; border-radius: 20px;
+    font-size: .8rem; font-weight: 600;
+    color: var(--text-secondary); background: var(--surface-2);
+    border: 1.5px solid var(--border); text-decoration: none;
+    transition: border-color .15s, color .15s, background .15s;
+}
+.fchip:hover { border-color: var(--chip); color: var(--chip); }
+.fchip-active { background: var(--chip); border-color: var(--chip); color: #fff; }
+.fchip-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 20px; height: 19px; padding: 0 6px; border-radius: 10px;
+    font-size: .68rem; font-weight: 800;
+    background: rgba(0,0,0,.07); color: inherit;
+}
+.fchip-active .fchip-count { background: rgba(255,255,255,.22); color: #fff; }
+
 /* ─── Form styles ───────────────────────────────────────────── */
 .form-card {
     background: var(--surface);
@@ -1417,7 +1440,7 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
     .purchase-submit-desktop { display: none !important; }
     .pos-layout { padding-bottom: 80px; }
 }
-.suggestions-list { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.suggestions-list { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow-y: auto; max-height: 360px; }
 .suggestion-item {
     display: flex; align-items: center; justify-content: space-between;
     padding: 10px 14px; cursor: pointer;

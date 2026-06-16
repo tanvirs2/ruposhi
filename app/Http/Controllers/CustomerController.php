@@ -13,31 +13,58 @@ class CustomerController extends Controller
 {
     public function index(Request $request)
     {
-        $showAll = $request->boolean('show_all'); // toggle: show zero-due customers
+        $status = $request->get('status', 'active');     // active|due|advance|clean|all
+        $search = trim((string) $request->get('search', ''));
+        $areaId = $request->area_id;
 
-        $customers = Customer::with('area')
-            ->when($request->search, fn($q) =>
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('phone', 'like', "%{$request->search}%")
-            )
-            ->when($request->area_id, fn($q) => $q->where('area_id', $request->area_id))
-            ->when(!$showAll, fn($q) => $q->where('due_amount', '!=', 0)) // hide clean by default
-            ->latest()->paginate(15);
+        // Reusable scoped builder (search + area). Search wrapped in a sub-closure
+        // so the orWhere group can't bypass the shop_id global scope.
+        $makeQuery = function () use ($search, $areaId) {
+            return Customer::query()
+                ->when($search !== '', fn($q) => $q->where(fn($s) => $s
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('proprietor', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")))
+                ->when($areaId, fn($q) => $q->where('area_id', $areaId));
+        };
+
+        // Per-status counts (for the filter chip badges) — respect search + area
+        $counts = [
+            'due'     => $makeQuery()->where('due_amount', '>', 0)->count(),
+            'advance' => $makeQuery()->where('due_amount', '<', 0)->count(),
+            'clean'   => $makeQuery()->where('due_amount', '=', 0)->count(),
+        ];
+        $counts['active'] = $counts['due'] + $counts['advance'];
+        $counts['all']    = $counts['active'] + $counts['clean'];
+
+        // Customer list filtered by chosen status
+        $list = $makeQuery()->with('area');
+        switch ($status) {
+            case 'due':     $list->where('due_amount', '>', 0); break;
+            case 'advance': $list->where('due_amount', '<', 0); break;
+            case 'clean':   $list->where('due_amount', '=', 0); break;
+            case 'all':     break;                                  // no due filter
+            default:        $list->where('due_amount', '!=', 0);    // 'active'
+        }
+        $customers = $list->latest()->paginate(15)->withQueryString();
 
         $areas = CustomerArea::orderBy('name')->get();
 
-        $baseQuery = Customer::when($request->search, fn($q) =>
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('phone', 'like', "%{$request->search}%")
-            )
-            ->when($request->area_id, fn($q) => $q->where('area_id', $request->area_id));
+        // Gross due (positive only), credit (negative, shown positive), net = gross - credit
+        $grossDue    = $makeQuery()->where('due_amount', '>', 0)->sum('due_amount');
+        $totalCredit = abs($makeQuery()->where('due_amount', '<', 0)->sum('due_amount'));
+        $totalDue    = $grossDue - $totalCredit; // net balance
 
-        // Gross due (positive only), credit (negative only, shown as positive), net = gross - credit
-        $grossDue  = (clone $baseQuery)->where('due_amount', '>', 0)->sum('due_amount');
-        $totalCredit = abs((clone $baseQuery)->where('due_amount', '<', 0)->sum('due_amount'));
-        $totalDue  = $grossDue - $totalCredit; // net balance
+        $data = compact(
+            'customers', 'areas', 'totalDue', 'grossDue', 'totalCredit',
+            'status', 'counts', 'search'
+        );
 
-        return view('customers.index', compact('customers', 'areas', 'totalDue', 'grossDue', 'totalCredit', 'showAll'));
+        if ($request->ajax()) {
+            return view('customers._results', $data);
+        }
+
+        return view('customers.index', $data);
     }
 
     public function create()

@@ -585,6 +585,12 @@
                 <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">D</kbd></span>
             </div>
             <div class="shortcut-row">
+                <a href="{{ route('stock.index') }}" onclick="toggleShortcutsHelp()" style="color:var(--text-primary);text-decoration:none">
+                    <i class="fas fa-warehouse" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>স্টক
+                </a>
+                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">K</kbd></span>
+            </div>
+            <div class="shortcut-row">
                 <span>ডার্ক/লাইট মোড</span>
                 <span style="color:var(--text-secondary);font-size:.8rem">টপবারে 🌙 বোতাম</span>
             </div>
@@ -857,8 +863,22 @@ function drRange(fromName, toName, formSel, type) {
 
     function attachPhonetic(el) {
         if (el._ph) return;
-        el._phBuf = '';       // phonetic buffer for current word
-        el._phStart = 0;      // cursor position where current word started
+        el._phBuf    = '';    // phonetic buffer for current word
+        el._phStart  = 0;     // value-index where current word started
+        el._phAnchor = 0;     // cursor pos expected right after our last edit
+
+        function commit(buf) {
+            const before = el.value.slice(0, el._phStart);
+            // slice from selectionEnd so any selected text is consumed/replaced,
+            // matching normal typing behaviour (select "নাবিল" + type → replaces it)
+            const after  = el.value.slice(el.selectionEnd);
+            const conv   = translitPart(buf);
+            el.value     = before + conv + after;
+            const p      = el._phStart + conv.length;
+            el.setSelectionRange(p, p);
+            el._phAnchor = p;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+        }
 
         el._phKey = function(e) {
             if (!window._phoneticActive) return;
@@ -869,36 +889,44 @@ function drRange(fromName, toName, formSel, type) {
                     // word-break char: commit buffer (already converted in value), reset
                     el._phBuf='';
                     // after char is inserted, advance wordStart
-                    setTimeout(()=>{ el._phStart=el.selectionStart; },0);
+                    setTimeout(()=>{ el._phStart=el.selectionStart; el._phAnchor=el.selectionStart; },0);
                 } else {
                     e.preventDefault();
+                    // active text selection → this keystroke replaces it: drop the
+                    // stale buffer and start a fresh word at the selection start
+                    if (el.selectionStart !== el.selectionEnd) {
+                        el._phBuf='';
+                        el._phStart=el.selectionStart;
+                    }
                     el._phBuf+=e.key;
-                    const before=el.value.slice(0,el._phStart);
-                    const after =el.value.slice(el.selectionStart);
-                    const conv  =translitPart(el._phBuf);
-                    el.value=before+conv+after;
-                    const p=el._phStart+conv.length;
-                    el.setSelectionRange(p,p);
-                    el.dispatchEvent(new Event('input',{bubbles:true}));
+                    commit(el._phBuf);
                 }
-            } else if (e.key==='Backspace' && el._phBuf.length>0) {
-                e.preventDefault();
-                el._phBuf=el._phBuf.slice(0,-1);
-                const before=el.value.slice(0,el._phStart);
-                const after =el.value.slice(el.selectionStart);
-                const conv  =translitPart(el._phBuf);
-                el.value=before+conv+after;
-                const p=el._phStart+conv.length;
-                el.setSelectionRange(p,p);
-                el.dispatchEvent(new Event('input',{bubbles:true}));
+            } else if (e.key==='Backspace') {
+                if (el.selectionStart !== el.selectionEnd) {
+                    // selection delete — let the browser remove the range, just
+                    // reset our word tracking so the next keystroke starts clean
+                    el._phBuf='';
+                    setTimeout(()=>{ el._phStart=el.selectionStart; el._phAnchor=el.selectionStart; },0);
+                } else if (el._phBuf.length>0) {
+                    e.preventDefault();
+                    el._phBuf=el._phBuf.slice(0,-1);
+                    commit(el._phBuf);
+                }
             } else if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key)) {
                 el._phBuf='';
-                setTimeout(()=>{ el._phStart=el.selectionStart; },0);
+                setTimeout(()=>{ el._phStart=el.selectionStart; el._phAnchor=el.selectionStart; },0);
             }
         };
         el._phReset = function() {
-            el._phBuf='';
-            el._phStart=el.selectionStart||el.value.length;
+            const cur = el.selectionStart ?? el.value.length;
+            // Cursor is exactly where our last edit left it — this focus/click is
+            // spurious (e.g. a dropdown re-render stealing focus mid-word), not a
+            // real reposition by the user. Keep the in-progress buffer intact so we
+            // don't re-insert the conversion on top of itself (e.g. "না" → "ননা").
+            if (cur === el._phAnchor && el._phBuf) return;
+            el._phBuf    = '';
+            el._phStart  = cur;
+            el._phAnchor = cur;
         };
         el.addEventListener('keydown', el._phKey);
         el.addEventListener('focus',   el._phReset);

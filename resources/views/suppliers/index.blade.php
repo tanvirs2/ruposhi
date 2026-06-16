@@ -13,6 +13,19 @@
             </div>
             <button type="submit" class="btn btn-secondary">খুঁজুন</button>
             @if(request('search'))<a href="{{ route('suppliers.index') }}" class="btn btn-ghost">পরিষ্কার</a>@endif
+
+            {{-- Toggle: hide/show zero-due suppliers --}}
+            @if($showAll)
+                <a href="{{ route('suppliers.index', array_merge(request()->except('show_all'), [])) }}"
+                   class="btn btn-ghost" style="color:#0d9488;border-color:#0d9488">
+                    <i class="fas fa-eye-slash"></i> পরিষ্কার লুকান
+                </a>
+            @else
+                <a href="{{ route('suppliers.index', array_merge(request()->all(), ['show_all' => 1])) }}"
+                   class="btn btn-ghost">
+                    <i class="fas fa-eye"></i> সব দেখুন
+                </a>
+            @endif
         </form>
     </div>
     <div class="table-wrap">

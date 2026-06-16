@@ -1,19 +1,21 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'কাস্টমার')
 @section('page-title', 'কাস্টমার')
 
 @section('content')
 @include('partials.page-header', ['title' => 'কাস্টমার তালিকা', 'createRoute' => route('customers.create'), 'createLabel' => 'নতুন কাস্টমার'])
 
-<div class="card">
+<div class="card" id="custCard">
     <div class="card-filter">
-        <form method="GET" action="{{ route('customers.index') }}" class="filter-form">
-            <div class="search-box">
+        <form method="GET" action="{{ route('customers.index') }}" class="filter-form" id="custFilterForm">
+            <input type="hidden" name="status" value="{{ $status }}">
+            <div class="search-box" style="flex:1;min-width:200px">
                 <i class="fas fa-search"></i>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="নাম বা ফোন নম্বর...">
+                <input type="text" name="search" value="{{ $search }}" placeholder="নাম, প্রোপ্রাইটর বা ফোন..."
+                       autocomplete="off" id="custSearchInput">
             </div>
             <div class="form-group-field">
-                <select name="area_id" class="form-select">
+                <select name="area_id" class="form-select" id="custAreaSelect">
                     <option value="">সকল এরিয়া</option>
                     @foreach($areas as $area)
                         <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
@@ -22,112 +24,98 @@
                     @endforeach
                 </select>
             </div>
-            <button type="submit" class="btn btn-secondary">খুঁজুন</button>
-            @if(request('search') || request('area_id'))
-                <a href="{{ route('customers.index') }}" class="btn btn-ghost">পরিষ্কার</a>
-            @endif
-
-            {{-- Toggle: hide/show zero-due customers --}}
-            @if($showAll)
-                <a href="{{ route('customers.index', array_merge(request()->except('show_all'), [])) }}"
-                   class="btn btn-ghost" style="color:#0d9488;border-color:#0d9488">
-                    <i class="fas fa-eye-slash"></i> পরিষ্কার লুকান
-                </a>
-            @else
-                <a href="{{ route('customers.index', array_merge(request()->all(), ['show_all' => 1])) }}"
-                   class="btn btn-ghost">
-                    <i class="fas fa-eye"></i> সব দেখুন
-                </a>
-            @endif
+            <button type="submit" class="btn btn-secondary"><i class="fas fa-search"></i> খুঁজুন</button>
+            <a href="{{ route('customers.index') }}" class="btn btn-ghost" id="custClearBtn"
+               style="{{ ($search || request('area_id') || $status !== 'active') ? '' : 'display:none' }}">
+                <i class="fas fa-xmark"></i> পরিষ্কার
+            </a>
         </form>
     </div>
 
-    <div class="table-wrap">
-        <table class="data-table">
-            <colgroup>
-                <col style="width:50px">    {{-- # --}}
-                <col style="width:180px">   {{-- প্রতিষ্ঠান --}}
-                <col style="width:150px">   {{-- প্রোপ্রাইটর --}}
-                <col style="width:120px">   {{-- এরিয়া --}}
-                <col style="width:130px">   {{-- ফোন --}}
-                <col style="width:120px">   {{-- বকেয়া --}}
-                <col style="width:90px">    {{-- অ্যাকশন --}}
-            </colgroup>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>প্রতিষ্ঠান</th>
-                    <th>প্রোপ্রাইটর</th>
-                    <th>এরিয়া</th>
-                    <th>ফোন</th>
-                    <th>বকেয়া</th>
-                    <th>অ্যাকশন</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($customers as $customer)
-                <tr>
-                    <td class="mono">{{ $loop->iteration }}</td>
-                    <td><strong>{{ $customer->name }}</strong></td>
-                    <td>{{ $customer->proprietor ?? '—' }}</td>
-                    <td>{{ $customer->area?->name ?? '—' }}</td>
-                    <td>{{ $customer->phone ?? '—' }}</td>
-                    <td>
-                        @if($customer->due_amount > 0)
-                            <span class="badge badge-red">৳ {{ number_format($customer->due_amount, 0) }}</span>
-                        @elseif($customer->due_amount < 0)
-                            <span class="badge" style="background:#eff6ff;color:#1d4ed8">অগ্রিম ৳ {{ number_format(abs($customer->due_amount), 0) }}</span>
-                        @else
-                            <span class="badge badge-green">পরিষ্কার</span>
-                        @endif
-                    </td>
-                    <td>
-                        <div class="action-btns">
-                            <a href="{{ route('customers.ledger', $customer) }}" class="btn-icon-sm" title="লেজার" style="color:#0d9488">
-                                <i class="fas fa-book-open"></i>
-                            </a>
-                            <a href="{{ route('customers.edit', $customer) }}" class="btn-icon-sm" title="সম্পাদনা">
-                                <i class="fas fa-pen"></i>
-                            </a>
-                            <form class="admin-only" method="POST" action="{{ route('customers.destroy', $customer) }}"
-                                  data-confirm-msg="{{ $customer->name }} — কাস্টমার মুছে ফেলবেন? বাকী: ৳{{ number_format($customer->due_amount,0) }}। এই কাজ পূর্বাবস্থায় ফেরানো যাবে না।">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="btn-icon-sm btn-icon-danger" title="মুছুন">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                @empty
-                <tr><td colspan="7" class="empty-row">কোনো কাস্টমার পাওয়া যায়নি</td></tr>
-                @endforelse
-            </tbody>
-            @if($customers->isNotEmpty())
-            <tfoot>
-                <tr class="tfoot-summary">
-                    <td colspan="5" style="text-align:right;font-weight:700;padding-right:16px">মোট বকেয়া</td>
-                    <td style="font-weight:800;color:#dc2626">৳ {{ number_format($grossDue, 0) }}</td>
-                    <td></td>
-                </tr>
-                @if($totalCredit > 0)
-                <tr class="tfoot-summary">
-                    <td colspan="5" style="text-align:right;font-weight:700;padding-right:16px">মোট অগ্রিম (−)</td>
-                    <td style="font-weight:800;color:#1d4ed8">৳ {{ number_format($totalCredit, 0) }}</td>
-                    <td></td>
-                </tr>
-                <tr class="tfoot-summary">
-                    <td colspan="5" style="text-align:right;font-weight:700;padding-right:16px">নিট বকেয়া</td>
-                    <td style="font-weight:800;color:{{ $totalDue > 0 ? '#dc2626' : '#16a34a' }}">
-                        ৳ {{ number_format(abs($totalDue), 0) }}
-                    </td>
-                    <td></td>
-                </tr>
-                @endif
-            </tfoot>
-            @endif
-        </table>
+    <div id="custResults">
+        @include('customers._results')
     </div>
-    <div class="pagination-wrap">{{ $customers->withQueryString()->links() }}</div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    var card  = document.getElementById('custCard');
+    if (!card || card._ajaxBound) return;   // guard: don't re-bind on repeated turbo:load
+    card._ajaxBound = true;
+
+    var form    = document.getElementById('custFilterForm');
+    var input   = document.getElementById('custSearchInput');
+    var area    = document.getElementById('custAreaSelect');
+    var results = document.getElementById('custResults');
+    var clearBtn = document.getElementById('custClearBtn');
+    var statusInput = form.querySelector('input[name="status"]');
+
+    function syncClearBtn() {
+        var active = input.value.trim() || area.value || statusInput.value !== 'active';
+        clearBtn.style.display = active ? '' : 'none';
+    }
+
+    function buildUrl() {
+        var params = new URLSearchParams();
+        if (input.value.trim()) params.set('search', input.value.trim());
+        if (area.value) params.set('area_id', area.value);
+        if (statusInput.value) params.set('status', statusInput.value);
+        var qs = params.toString();
+        return form.action + (qs ? '?' + qs : '');
+    }
+
+    function load(url, opts) {
+        opts = opts || {};
+        results.style.opacity = '.5';
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                results.innerHTML = html;
+                results.style.opacity = '1';
+                syncClearBtn();
+                if (opts.keepFocus && document.activeElement !== input) {
+                    input.focus();
+                    var v = input.value; input.value = ''; input.value = v; // caret to end
+                }
+            })
+            .catch(function () { results.style.opacity = '1'; window.location = url; });
+    }
+
+    // live search
+    var t;
+    input.addEventListener('input', function () {
+        clearTimeout(t);
+        t = setTimeout(function () { load(buildUrl(), { keepFocus: true }); }, 300);
+    });
+
+    // area dropdown
+    area.addEventListener('change', function () { load(buildUrl()); });
+
+    // form submit (Enter key / খুঁজুন button)
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        load(buildUrl());
+    });
+
+    // status chips + পরিষ্কার link + pagination — all live inside #custCard,
+    // delegate so re-rendered content (chips/pagination) stays wired
+    card.addEventListener('click', function (e) {
+        var link = e.target.closest('a');
+        if (!link) return;
+        var withinResults = results.contains(link);
+        var isChip   = link.hasAttribute('data-ajax-filter');
+        var isClear  = link.id === 'custClearBtn';
+        var isPage   = withinResults && link.closest('.pagination-wrap');
+        if (!isChip && !isClear && !isPage) return;
+
+        e.preventDefault();
+        var url = link.href;
+        load(url);
+        if (isChip) { statusInput.value = new URL(url, window.location.origin).searchParams.get('status') || 'active'; }
+        if (isClear) { input.value = ''; area.value = ''; statusInput.value = 'active'; }
+    });
+})();
+</script>
+@endpush

@@ -664,7 +664,7 @@ var profitPanel   = document.getElementById('profitPanel');
 itemSearch.addEventListener('input', function() {
     const q = this.value.toLowerCase().trim();
     if (!q) { suggestions.innerHTML = ''; return; }
-    const matches = allItems.filter(i => i.name.toLowerCase().includes(q)).slice(0, 6);
+    const matches = allItems.filter(i => i.name.toLowerCase().includes(q)).slice(0, 20);
     suggestions.innerHTML = matches.map(i => {
         const avail  = i.stock ? parseFloat(i.stock.quantity) : 0;
         const minQty = i.stock ? parseFloat(i.stock.min_quantity) : 0;

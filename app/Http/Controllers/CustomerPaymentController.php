@@ -23,9 +23,12 @@ class CustomerPaymentController extends Controller
         $totalPaid = (clone $base)->sum('paid_amount');
         $payments  = $base->latest('sale_date')->latest('id')->paginate(20);
 
-        $customers = Customer::orderBy('name')->get();
+        // Only resolve the currently-filtered customer (for pre-filling the
+        // search box) — never load the full customer table here, it can
+        // grow into the thousands.
+        $selectedCustomer = $request->customer_id ? Customer::find($request->customer_id) : null;
 
-        return view('customer-payments.index', compact('payments', 'customers', 'totalPaid'));
+        return view('customer-payments.index', compact('payments', 'selectedCustomer', 'totalPaid'));
     }
 
     public function create(Request $request)

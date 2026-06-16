@@ -634,7 +634,7 @@ var stockPanel  = document.getElementById('stockPanel');
 itemSearch.addEventListener('input', function() {
     const q = this.value.toLowerCase().trim();
     if (!q) { suggestions.innerHTML = ''; return; }
-    const matches = allItems.filter(i => i.name.toLowerCase().includes(q)).slice(0, 8);
+    const matches = allItems.filter(i => i.name.toLowerCase().includes(q)).slice(0, 20);
     suggestions.innerHTML = matches.map(i => {
         const stock = i.stock ? i.stock.quantity : 0;
         return `<div class="suggestion-item" onclick="addItem(${i.id})">
