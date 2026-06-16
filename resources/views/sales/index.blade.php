@@ -5,25 +5,24 @@
 @section('content')
 @include('partials.page-header', ['title' => 'বিক্রয় তালিকা', 'createRoute' => route('sales.create'), 'createLabel' => 'নতুন বিক্রয়'])
 
-<div class="card">
+<div class="card" id="salesCard">
     <div class="card-filter" style="flex-wrap:wrap;gap:8px">
-        <form method="GET" class="filter-form" id="salesFilterForm" style="flex:1;min-width:0">
+        <form method="GET" class="filter-form" id="salesFilterForm" action="{{ route('sales.index') }}" style="flex:1;min-width:0">
             <div class="search-box"><i class="fas fa-search"></i>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="কাস্টমার বা ইনভয়েস নম্বর...">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="কাস্টমার বা ইনভয়েস নম্বর..." autocomplete="off" id="salesSearchInput">
             </div>
-            <select name="status" class="form-select" style="width:auto;min-width:130px">
+            <select name="status" class="form-select" style="width:auto;min-width:130px" id="salesStatusSelect">
                 <option value="">সব স্ট্যাটাস</option>
                 <option value="completed" @selected(request('status')=='completed')>সম্পন্ন</option>
                 <option value="pending"   @selected(request('status')=='pending')>মুলতুবি</option>
                 <option value="cancelled" @selected(request('status')=='cancelled')>বাতিল</option>
             </select>
-            <input type="date" name="date_from" class="form-select" value="{{ $dateFrom }}" title="শুরুর তারিখ" style="width:145px">
-            <input type="date" name="date_to"   class="form-select" value="{{ $dateTo }}"   title="শেষ তারিখ"  style="width:145px">
+            <input type="date" name="date_from" class="form-select" value="{{ $dateFrom }}" title="শুরুর তারিখ" style="width:145px" id="salesDateFrom">
+            <input type="date" name="date_to"   class="form-select" value="{{ $dateTo }}"   title="শেষ তারিখ"  style="width:145px" id="salesDateTo">
             @include('partials.date-range-buttons', ['fromName'=>'date_from','toName'=>'date_to','formClass'=>'#salesFilterForm'])
             <button type="submit" class="btn btn-secondary">ফিল্টার</button>
-            @if($dateFrom || $dateTo || request('search') || request('status'))
-                <a href="{{ route('sales.index') }}" class="btn btn-outline" title="ক্লিয়ার করুন"><i class="fas fa-xmark"></i></a>
-            @endif
+            <a href="{{ route('sales.index') }}" class="btn btn-outline" id="salesClearBtn" title="ক্লিয়ার করুন"
+               style="{{ ($dateFrom || $dateTo || request('search') || request('status')) ? '' : 'display:none' }}"><i class="fas fa-xmark"></i></a>
         </form>
 
         {{-- View toggle --}}
@@ -37,152 +36,8 @@
         </div>
     </div>
 
-    {{-- ══ INVOICE VIEW ══════════════════════════════════════════ --}}
-    <div id="invoiceView">
-        <div class="table-wrap">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>ইনভয়েস</th>
-                        <th>কাস্টমার</th>
-                        <th>মালের বিবরণ</th>
-                        <th>তারিখ</th>
-                        <th>মোট</th>
-                        <th>পরিশোধ</th>
-                        <th>বকেয়া</th>
-                        <th>স্ট্যাটাস</th>
-                        <th>অ্যাকশন</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($sales as $sale)
-                    @php
-                        $itemLines = $sale->items->map(fn($si) => ($si->item->name ?? '?') . ' ×' . (int)$si->quantity)->toArray();
-                        $preview   = implode(', ', array_slice($itemLines, 0, 2));
-                        $hasMore   = count($itemLines) > 2;
-                        $full      = implode(', ', $itemLines);
-                    @endphp
-                    <tr>
-                        <td><a href="{{ route('sales.show', $sale) }}" class="link-primary mono">#INV-{{ str_pad($sale->id,4,'0',STR_PAD_LEFT) }}</a></td>
-                        <td>{{ $sale->customer?->name ?? 'ওয়াক-ইন' }}</td>
-                        <td style="max-width:220px">
-                            @if($sale->items->isEmpty())
-                                <span style="color:#94a3b8;font-size:.8rem">— পণ্য নেই</span>
-                            @else
-                                <span class="item-preview" style="font-size:.8rem;color:#475569">{{ $preview }}</span>
-                                @if($hasMore)
-                                    <span class="item-full" style="display:none;font-size:.8rem;color:#475569">{{ $full }}</span>
-                                    <button type="button" onclick="toggleItems(this)"
-                                        style="display:inline-block;margin-left:4px;font-size:.72rem;color:var(--accent);
-                                               background:none;border:none;cursor:pointer;font-weight:600;padding:0">
-                                        +{{ count($itemLines)-2 }} আরো ▾
-                                    </button>
-                                @endif
-                            @endif
-                        </td>
-                        <td>
-                            {{ $sale->sale_date->format('d M Y') }}
-                            <br><small style="color:#94a3b8;font-size:.75rem">{{ $sale->created_at->format('h:i a') }}</small>
-                        </td>
-                        <td>৳ {{ number_format($sale->total_amount,2) }}</td>
-                        <td style="color:#16a34a">৳ {{ number_format($sale->paid_amount,2) }}</td>
-                        <td>{{ $sale->due_amount > 0 ? '৳ '.number_format($sale->due_amount,2) : '—' }}</td>
-                        <td>
-                            @if($sale->status==='completed') <span class="badge badge-green">সম্পন্ন</span>
-                            @elseif($sale->status==='pending') <span class="badge badge-yellow">মুলতুবি</span>
-                            @else <span class="badge badge-red">বাতিল</span> @endif
-                        </td>
-                        <td>
-                            <div class="action-btns">
-                                <a href="{{ route('sales.show',$sale) }}" class="btn-icon-sm"><i class="fas fa-eye"></i></a>
-                                <form class="admin-only" method="POST" action="{{ route('sales.destroy',$sale) }}"
-                                      data-confirm-msg="বিক্রয় #INV-{{ str_pad($sale->id,4,'0',STR_PAD_LEFT) }} মুছে ফেলবেন? ৳{{ number_format($sale->total_amount,0) }} — স্টক ও বাকী পুনরুদ্ধার হবে।">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr><td colspan="9" class="empty-row">কোনো বিক্রয় পাওয়া যায়নি</td></tr>
-                    @endforelse
-                </tbody>
-                @if($sales->isNotEmpty())
-                <tfoot>
-                    <tr class="tfoot-summary">
-                        <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
-                        <td style="font-weight:800">৳ {{ number_format($grandTotal, 0) }}</td>
-                        <td style="font-weight:800;color:#16a34a">৳ {{ number_format($grandPaid, 0) }}</td>
-                        <td style="font-weight:800;color:#dc2626">{{ $grandDue > 0 ? '৳ '.number_format($grandDue, 0) : '—' }}</td>
-                        <td colspan="2"></td>
-                    </tr>
-                </tfoot>
-                @endif
-            </table>
-        </div>
-        <div class="pagination-wrap">{{ $sales->withQueryString()->links() }}</div>
-    </div>
-
-    {{-- ══ ITEM VIEW ═══════════════════════════════════════════════ --}}
-    <div id="itemView" style="display:none">
-        <div class="table-wrap">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>ইনভয়েস</th>
-                        <th>কাস্টমার</th>
-                        <th>আইটেমের নাম</th>
-                        <th style="text-align:right">পরিমাণ</th>
-                        <th style="text-align:right">একক মূল্য</th>
-                        <th style="text-align:right">সাবটোটাল</th>
-                        <th>তারিখ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @php $itemViewEmpty = true; $totalQty = 0; $totalSubtotal = 0; @endphp
-                    @foreach($sales as $sale)
-                        @foreach($sale->items as $si)
-                            @php
-                                $itemViewEmpty  = false;
-                                $totalQty      += $si->quantity;
-                                $totalSubtotal += $si->subtotal;
-                            @endphp
-                            <tr>
-                                <td>
-                                    <a href="{{ route('sales.show', $sale) }}" class="link-primary mono">
-                                        #INV-{{ str_pad($sale->id,4,'0',STR_PAD_LEFT) }}
-                                    </a>
-                                </td>
-                                <td>{{ $sale->customer?->name ?? 'ওয়াক-ইন' }}</td>
-                                <td style="font-weight:500">{{ $si->item->name ?? '—' }}</td>
-                                <td style="text-align:right">{{ number_format($si->quantity, 0) }}</td>
-                                <td style="text-align:right">৳ {{ number_format($si->price, 2) }}</td>
-                                <td style="text-align:right;font-weight:600">৳ {{ number_format($si->subtotal, 0) }}</td>
-                                <td>
-                                    {{ $sale->sale_date->format('d M Y') }}
-                                    <br><small style="color:#94a3b8;font-size:.75rem">{{ $sale->created_at->format('h:i a') }}</small>
-                                </td>
-                            </tr>
-                        @endforeach
-                    @endforeach
-                    @if($itemViewEmpty)
-                    <tr><td colspan="7" class="empty-row">কোনো আইটেম পাওয়া যায়নি</td></tr>
-                    @endif
-                </tbody>
-                @if(!$itemViewEmpty)
-                <tfoot>
-                    <tr class="tfoot-summary">
-                        <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
-                        <td style="text-align:right;font-weight:800">{{ number_format($totalQty, 0) }}</td>
-                        <td></td>
-                        <td style="text-align:right;font-weight:800;color:#16a34a">৳ {{ number_format($totalSubtotal, 0) }}</td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-                @endif
-            </table>
-        </div>
-        <div class="pagination-wrap">{{ $sales->withQueryString()->links() }}</div>
+    <div id="salesResults">
+        @include('sales._results')
     </div>
 </div>
 
@@ -239,6 +94,82 @@ function toggleItems(btn) {
 
 var savedView = localStorage.getItem('saleView') || 'invoice';
 setView(savedView);
+
+/* ── AJAX live filter ── */
+(function () {
+    var card = document.getElementById('salesCard');
+    if (!card || card._ajaxBound) return;
+    card._ajaxBound = true;
+
+    var form     = document.getElementById('salesFilterForm');
+    var input    = document.getElementById('salesSearchInput');
+    var status   = document.getElementById('salesStatusSelect');
+    var dateFrom = document.getElementById('salesDateFrom');
+    var dateTo   = document.getElementById('salesDateTo');
+    var results  = document.getElementById('salesResults');
+    var clearBtn = document.getElementById('salesClearBtn');
+
+    function syncClearBtn() {
+        var active = input.value.trim() || status.value || dateFrom.value || dateTo.value;
+        clearBtn.style.display = active ? '' : 'none';
+    }
+
+    function buildUrl() {
+        var params = new URLSearchParams();
+        if (input.value.trim()) params.set('search', input.value.trim());
+        if (status.value) params.set('status', status.value);
+        if (dateFrom.value) params.set('date_from', dateFrom.value);
+        if (dateTo.value)   params.set('date_to', dateTo.value);
+        var qs = params.toString();
+        return form.action + (qs ? '?' + qs : '');
+    }
+
+    function load(url, opts) {
+        opts = opts || {};
+        results.style.opacity = '.5';
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                results.innerHTML = html;
+                results.style.opacity = '1';
+                syncClearBtn();
+                setView(localStorage.getItem('saleView') || 'invoice');
+                if (opts.keepFocus && document.activeElement !== input) {
+                    input.focus();
+                    var v = input.value; input.value = ''; input.value = v;
+                }
+            })
+            .catch(function () { results.style.opacity = '1'; window.location = url; });
+    }
+
+    var t;
+    input.addEventListener('input', function () {
+        clearTimeout(t);
+        t = setTimeout(function () { load(buildUrl(), { keepFocus: true }); }, 300);
+    });
+
+    status.addEventListener('change', function () { load(buildUrl()); });
+    dateFrom.addEventListener('change', function () { load(buildUrl()); });
+    dateTo.addEventListener('change', function () { load(buildUrl()); });
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        load(buildUrl());
+    });
+
+    card.addEventListener('click', function (e) {
+        var link = e.target.closest('a');
+        if (!link) return;
+        var withinResults = results.contains(link);
+        var isClear = link.id === 'salesClearBtn';
+        var isPage  = withinResults && link.closest('.pagination-wrap');
+        if (!isClear && !isPage) return;
+
+        e.preventDefault();
+        load(link.href);
+        if (isClear) { input.value = ''; status.value = ''; dateFrom.value = ''; dateTo.value = ''; }
+    });
+})();
 </script>
 @endpush
 @endsection

@@ -5,19 +5,18 @@
 @section('content')
 @include('partials.page-header', ['title' => 'রিসিভ তালিকা', 'createRoute' => route('purchases.create'), 'createLabel' => 'নতুন রিসিভ'])
 
-<div class="card">
+<div class="card" id="purchasesCard">
     <div class="card-filter" style="flex-wrap:wrap;gap:8px">
-        <form method="GET" class="filter-form" style="flex:1;min-width:0">
+        <form method="GET" class="filter-form" id="purchasesFilterForm" action="{{ route('purchases.index') }}" style="flex:1;min-width:0">
             <div class="search-box"><i class="fas fa-search"></i>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="সরবরাহকারী বা নম্বর...">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="সরবরাহকারী বা নম্বর..." autocomplete="off" id="purchasesSearchInput">
             </div>
-            <input type="date" name="date_from" class="form-select" value="{{ $dateFrom }}" title="শুরুর তারিখ" style="width:145px">
-            <input type="date" name="date_to"   class="form-select" value="{{ $dateTo }}"   title="শেষ তারিখ"  style="width:145px">
-            @include('partials.date-range-buttons', ['fromName'=>'date_from','toName'=>'date_to'])
+            <input type="date" name="date_from" class="form-select" value="{{ $dateFrom }}" title="শুরুর তারিখ" style="width:145px" id="purchasesDateFrom">
+            <input type="date" name="date_to"   class="form-select" value="{{ $dateTo }}"   title="শেষ তারিখ"  style="width:145px" id="purchasesDateTo">
+            @include('partials.date-range-buttons', ['fromName'=>'date_from','toName'=>'date_to','formClass'=>'#purchasesFilterForm'])
             <button type="submit" class="btn btn-secondary">ফিল্টার</button>
-            @if($dateFrom || $dateTo || request('search'))
-                <a href="{{ route('purchases.index') }}" class="btn btn-outline" title="ক্লিয়ার করুন"><i class="fas fa-xmark"></i></a>
-            @endif
+            <a href="{{ route('purchases.index') }}" class="btn btn-outline" id="purchasesClearBtn" title="ক্লিয়ার করুন"
+               style="{{ ($dateFrom || $dateTo || request('search')) ? '' : 'display:none' }}"><i class="fas fa-xmark"></i></a>
         </form>
 
         {{-- View toggle --}}
@@ -31,177 +30,8 @@
         </div>
     </div>
 
-    {{-- ══ INVOICE VIEW ══════════════════════════════════════════ --}}
-    <div id="invoiceView">
-        <div class="table-wrap">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>রিসিভ নম্বর</th>
-                        <th>সরবরাহকারী</th>
-                        <th>মালের বিবরণ</th>
-                        <th>তারিখ</th>
-                        <th>মোট মূল্য</th>
-                        <th>পরিশোধ</th>
-                        <th>বকেয়া</th>
-                        <th>অ্যাকশন</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($purchases as $purchase)
-                    @php
-                        $itemLines = $purchase->items->map(fn($pi) => ($pi->item->name ?? '?') . ' ×' . (int)$pi->quantity)->toArray();
-                        $preview   = implode(', ', array_slice($itemLines, 0, 2));
-                        $hasMore   = count($itemLines) > 2;
-                        $full      = implode(', ', $itemLines);
-                    @endphp
-                    <tr>
-                        <td>
-                            <a href="{{ route('purchases.show', $purchase) }}" class="link-primary mono">
-                                #RCV-{{ str_pad($purchase->id,4,'0',STR_PAD_LEFT) }}
-                            </a>
-                        </td>
-                        <td>{{ $purchase->supplier?->name ?? '—' }}</td>
-                        <td style="max-width:220px">
-                            @if($purchase->items->isEmpty())
-                                <span style="color:#94a3b8;font-size:.8rem">— অগ্রিম পরিশোধ</span>
-                            @else
-                                <span class="item-preview" style="font-size:.8rem;color:#475569">{{ $preview }}</span>
-                                @if($hasMore)
-                                    <span class="item-full" style="display:none;font-size:.8rem;color:#475569">{{ $full }}</span>
-                                    <button type="button" onclick="toggleItems(this)"
-                                        style="display:inline-block;margin-left:4px;font-size:.72rem;color:var(--accent);
-                                               background:none;border:none;cursor:pointer;font-weight:600;padding:0">
-                                        +{{ count($itemLines)-2 }} আরো ▾
-                                    </button>
-                                @endif
-                            @endif
-                        </td>
-                        <td>
-                            {{ $purchase->purchase_date->format('d M Y') }}
-                            <br><small style="color:#94a3b8;font-size:.75rem">{{ $purchase->created_at->format('h:i a') }}</small>
-                        </td>
-                        <td>৳ {{ number_format($purchase->total_amount,0) }}</td>
-                        <td>৳ {{ number_format($purchase->paid_amount,0) }}</td>
-                        <td>
-                            @if($purchase->due_amount > 0)
-                                <span style="color:#ef4444;font-weight:600">৳ {{ number_format($purchase->due_amount,0) }}</span>
-                            @elseif($purchase->due_amount < 0)
-                                <span style="background:#eff6ff;color:#1d4ed8;font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:20px">
-                                    অগ্রিম ৳ {{ number_format(abs($purchase->due_amount),0) }}
-                                </span>
-                            @else
-                                <span style="color:#16a34a">পরিশোধিত</span>
-                            @endif
-                        </td>
-                        <td>
-                            <div class="action-btns">
-                                <a href="{{ route('purchases.show',$purchase) }}" class="btn-icon-sm" title="বিবরণ"><i class="fas fa-eye"></i></a>
-                                <form class="admin-only" method="POST" action="{{ route('purchases.destroy',$purchase) }}"
-                                      data-confirm-msg="রিসিভ #RCV-{{ str_pad($purchase->id,4,'0',STR_PAD_LEFT) }} মুছে ফেলবেন? ৳{{ number_format($purchase->total_amount,0) }} — স্টক কমে যাবে ও বকেয়া পুনরুদ্ধার হবে।">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="btn-icon-sm btn-icon-danger" title="মুছুন"><i class="fas fa-trash"></i></button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr><td colspan="8" class="empty-row">কোনো রিসিভ পাওয়া যায়নি</td></tr>
-                    @endforelse
-                </tbody>
-                @if($purchases->isNotEmpty())
-                <tfoot>
-                    <tr class="tfoot-summary">
-                        <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
-                        <td style="font-weight:800">৳ {{ number_format($grandTotal, 0) }}</td>
-                        <td style="font-weight:800;color:#16a34a">৳ {{ number_format($grandPaid, 0) }}</td>
-                        <td style="font-weight:800;color:#dc2626">৳ {{ number_format($grossDue, 0) }}</td>
-                        <td></td>
-                    </tr>
-                    @if($totalCredit > 0)
-                    <tr class="tfoot-summary">
-                        <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">মোট অগ্রিম (−)</td>
-                        <td></td><td></td>
-                        <td style="font-weight:800;color:#1d4ed8">৳ {{ number_format($totalCredit, 0) }}</td>
-                        <td></td>
-                    </tr>
-                    <tr class="tfoot-summary">
-                        <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">নিট বকেয়া</td>
-                        <td></td><td></td>
-                        <td style="font-weight:800;color:{{ $grandDue > 0 ? '#dc2626' : '#16a34a' }}">
-                            ৳ {{ number_format(abs($grandDue), 0) }}
-                            @if($grandDue <= 0) <span style="font-size:.75rem">(অগ্রিম)</span> @endif
-                        </td>
-                        <td></td>
-                    </tr>
-                    @endif
-                </tfoot>
-                @endif
-            </table>
-        </div>
-        <div class="pagination-wrap">{{ $purchases->withQueryString()->links() }}</div>
-    </div>
-
-    {{-- ══ ITEM VIEW ═══════════════════════════════════════════════ --}}
-    <div id="itemView" style="display:none">
-        <div class="table-wrap">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>রিসিভ নম্বর</th>
-                        <th>সরবরাহকারী</th>
-                        <th>আইটেমের নাম</th>
-                        <th style="text-align:right">পরিমাণ</th>
-                        <th style="text-align:right">একক মূল্য</th>
-                        <th style="text-align:right">সাবটোটাল</th>
-                        <th>তারিখ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @php $itemViewEmpty = true; $totalQty = 0; $totalSubtotal = 0; @endphp
-                    @foreach($purchases as $purchase)
-                        @foreach($purchase->items as $pi)
-                            @php
-                                $itemViewEmpty = false;
-                                $totalQty      += $pi->quantity;
-                                $totalSubtotal += $pi->subtotal;
-                            @endphp
-                            <tr>
-                                <td>
-                                    <a href="{{ route('purchases.show', $purchase) }}" class="link-primary mono">
-                                        #RCV-{{ str_pad($purchase->id,4,'0',STR_PAD_LEFT) }}
-                                    </a>
-                                </td>
-                                <td>{{ $purchase->supplier?->name ?? '—' }}</td>
-                                <td style="font-weight:500">{{ $pi->item->name ?? '—' }}</td>
-                                <td style="text-align:right">{{ number_format($pi->quantity, 0) }}</td>
-                                <td style="text-align:right">৳ {{ number_format($pi->price, 2) }}</td>
-                                <td style="text-align:right;font-weight:600">৳ {{ number_format($pi->subtotal, 0) }}</td>
-                                <td>
-                                    {{ $purchase->purchase_date->format('d M Y') }}
-                                    <br><small style="color:#94a3b8;font-size:.75rem">{{ $purchase->created_at->format('h:i a') }}</small>
-                                </td>
-                            </tr>
-                        @endforeach
-                    @endforeach
-                    @if($itemViewEmpty)
-                    <tr><td colspan="7" class="empty-row">কোনো আইটেম পাওয়া যায়নি</td></tr>
-                    @endif
-                </tbody>
-                @if(!$itemViewEmpty)
-                <tfoot>
-                    <tr class="tfoot-summary">
-                        <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
-                        <td style="text-align:right;font-weight:800">{{ number_format($totalQty, 0) }}</td>
-                        <td></td>
-                        <td style="text-align:right;font-weight:800;color:#dc2626">৳ {{ number_format($totalSubtotal, 0) }}</td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-                @endif
-            </table>
-        </div>
-        <div class="pagination-wrap">{{ $purchases->withQueryString()->links() }}</div>
+    <div id="purchasesResults">
+        @include('purchases._results')
     </div>
 </div>
 
@@ -262,6 +92,79 @@ function toggleItems(btn) {
 // Restore last used view
 var savedView = localStorage.getItem('purchaseView') || 'invoice';
 setView(savedView);
+
+/* ── AJAX live filter ── */
+(function () {
+    var card = document.getElementById('purchasesCard');
+    if (!card || card._ajaxBound) return;
+    card._ajaxBound = true;
+
+    var form     = document.getElementById('purchasesFilterForm');
+    var input    = document.getElementById('purchasesSearchInput');
+    var dateFrom = document.getElementById('purchasesDateFrom');
+    var dateTo   = document.getElementById('purchasesDateTo');
+    var results  = document.getElementById('purchasesResults');
+    var clearBtn = document.getElementById('purchasesClearBtn');
+
+    function syncClearBtn() {
+        var active = input.value.trim() || dateFrom.value || dateTo.value;
+        clearBtn.style.display = active ? '' : 'none';
+    }
+
+    function buildUrl() {
+        var params = new URLSearchParams();
+        if (input.value.trim()) params.set('search', input.value.trim());
+        if (dateFrom.value) params.set('date_from', dateFrom.value);
+        if (dateTo.value)   params.set('date_to', dateTo.value);
+        var qs = params.toString();
+        return form.action + (qs ? '?' + qs : '');
+    }
+
+    function load(url, opts) {
+        opts = opts || {};
+        results.style.opacity = '.5';
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                results.innerHTML = html;
+                results.style.opacity = '1';
+                syncClearBtn();
+                setView(localStorage.getItem('purchaseView') || 'invoice');
+                if (opts.keepFocus && document.activeElement !== input) {
+                    input.focus();
+                    var v = input.value; input.value = ''; input.value = v;
+                }
+            })
+            .catch(function () { results.style.opacity = '1'; window.location = url; });
+    }
+
+    var t;
+    input.addEventListener('input', function () {
+        clearTimeout(t);
+        t = setTimeout(function () { load(buildUrl(), { keepFocus: true }); }, 300);
+    });
+
+    dateFrom.addEventListener('change', function () { load(buildUrl()); });
+    dateTo.addEventListener('change', function () { load(buildUrl()); });
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        load(buildUrl());
+    });
+
+    card.addEventListener('click', function (e) {
+        var link = e.target.closest('a');
+        if (!link) return;
+        var withinResults = results.contains(link);
+        var isClear = link.id === 'purchasesClearBtn';
+        var isPage  = withinResults && link.closest('.pagination-wrap');
+        if (!isClear && !isPage) return;
+
+        e.preventDefault();
+        load(link.href);
+        if (isClear) { input.value = ''; dateFrom.value = ''; dateTo.value = ''; }
+    });
+})();
 </script>
 @endpush
 @endsection

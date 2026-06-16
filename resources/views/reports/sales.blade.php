@@ -18,14 +18,12 @@
                 <input type="date" name="to" value="{{ $to }}">
             </div>
             @include('partials.date-range-buttons')
-            <div class="form-group-field">
+            <div class="form-group-field" style="position:relative;min-width:200px">
                 <label>কাস্টমার</label>
-                <select name="customer_id" class="form-select" style="min-width:180px">
-                    <option value="">সব কাস্টমার</option>
-                    @foreach($customers as $c)
-                        <option value="{{ $c->id }}" @selected(request('customer_id') == $c->id)>{{ $c->name }}</option>
-                    @endforeach
-                </select>
+                <input type="hidden" name="customer_id" id="rsCustomerId" value="{{ request('customer_id') }}">
+                <input type="text" id="rsCustomerSearch" class="form-select" autocomplete="off"
+                       placeholder="সব কাস্টমার (খুঁজতে লিখুন)"
+                       value="{{ $selectedCustomer?->name }}">
             </div>
             <button type="submit" class="btn btn-primary" style="align-self:flex-end">
                 <i class="fas fa-search"></i> রিপোর্ট দেখুন
@@ -702,4 +700,82 @@
     .sale-detail-table td { font-size: .75rem; padding: 4px 6px; }
 }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+(function () {
+    var input   = document.getElementById('rsCustomerSearch');
+    var idInput = document.getElementById('rsCustomerId');
+    if (!input || !idInput) return;
+
+    var drop = document.createElement('div');
+    document.body.appendChild(drop);
+    drop.style.cssText = 'position:fixed;display:none;z-index:9999;background:#fff;' +
+        'border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);' +
+        'overflow-y:auto;max-height:260px';
+
+    function position() {
+        var r = input.getBoundingClientRect();
+        drop.style.top   = (r.bottom + 4) + 'px';
+        drop.style.left  = r.left + 'px';
+        drop.style.width = r.width + 'px';
+    }
+    function show(html) { drop.innerHTML = html; position(); drop.style.display = 'block'; }
+    function hide() { drop.style.display = 'none'; drop.innerHTML = ''; }
+
+    var matches = [];
+    window.rsSelectCustomer = function (id) {
+        var c = matches.find(function (x) { return x.id === id; });
+        if (!c) return;
+        idInput.value = c.id;
+        input.value   = c.name;
+        hide();
+    };
+    window.rsClearCustomer = function () {
+        idInput.value = '';
+        input.value   = '';
+        hide();
+    };
+
+    function render() {
+        if (!matches.length) {
+            show('<div class="suggestion-item" style="color:#94a3b8">কোনো কাস্টমার পাওয়া যায়নি</div>');
+            return;
+        }
+        var html = '<div class="suggestion-item" style="color:#0d9488;font-weight:700" onclick="rsClearCustomer()">— সব কাস্টমার —</div>';
+        html += matches.map(function (c) {
+            return '<div class="suggestion-item" onclick="rsSelectCustomer(' + c.id + ')">' +
+                '<strong style="font-size:.9rem">' + c.name + '</strong>' +
+                (c.phone ? '<span style="font-size:.76rem;color:#94a3b8;margin-left:8px">' + c.phone + '</span>' : '') +
+                '</div>';
+        }).join('');
+        show(html);
+    }
+
+    var timer;
+    input.addEventListener('input', function () {
+        var q = input.value.trim();
+        idInput.value = '';
+        clearTimeout(timer);
+        if (!q) { hide(); return; }
+        show('<div class="suggestion-item" style="color:#94a3b8">খুঁজছি…</div>');
+        timer = setTimeout(function () {
+            fetch('{{ route('customers.search') }}?q=' + encodeURIComponent(q), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) { matches = data; render(); })
+                .catch(function () { show('<div class="suggestion-item" style="color:#94a3b8">খুঁজতে সমস্যা হয়েছে</div>'); });
+        }, 250);
+    });
+    input.addEventListener('focus', function () { if (matches.length) render(); });
+
+    window.addEventListener('scroll', position, true);
+    window.addEventListener('resize', position);
+    document.addEventListener('click', function (e) {
+        if (!input.contains(e.target) && !drop.contains(e.target)) hide();
+    });
+})();
+</script>
 @endpush

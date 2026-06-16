@@ -259,7 +259,7 @@ class ReportController extends Controller
     {
         $from      = $request->from ?? now()->toDateString();
         $to        = $request->to   ?? now()->toDateString();
-        $customers = Customer::orderBy('name')->get();
+        $selectedCustomer = $request->customer_id ? Customer::find($request->customer_id) : null;
 
         // Summary-level (per sale) for cards
         $sales = Sale::with(['customer'])
@@ -368,7 +368,7 @@ class ReportController extends Controller
         });
 
         return view('reports.sales', compact(
-            'sales', 'saleItems', 'customers',
+            'sales', 'saleItems', 'selectedCustomer',
             'standalonePayments', 'noItemSales',
             'grandTotal', 'grandPaid', 'grandItemPaid', 'grandDue', 'grandStandalone',
             'grandExtraCost', 'grandDiscount',

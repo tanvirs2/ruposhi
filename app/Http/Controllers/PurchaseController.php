@@ -40,9 +40,15 @@ class PurchaseController extends Controller
         $totalCredit = abs((clone $query)->where('due_amount', '<', 0)->sum('due_amount'));
         $grandDue    = $grossDue - $totalCredit;
 
-        $purchases = $query->latest('purchase_date')->latest('id')->paginate(20);
+        $purchases = $query->latest('purchase_date')->latest('id')->paginate(20)->withQueryString();
 
-        return view('purchases.index', compact('purchases', 'grandTotal', 'grandPaid', 'grandDue', 'grossDue', 'totalCredit', 'dateFrom', 'dateTo'));
+        $data = compact('purchases', 'grandTotal', 'grandPaid', 'grandDue', 'grossDue', 'totalCredit', 'dateFrom', 'dateTo');
+
+        if ($request->ajax()) {
+            return view('purchases._results', $data);
+        }
+
+        return view('purchases.index', $data);
     }
 
     public function create()

@@ -142,10 +142,14 @@
         var pendBtn = document.getElementById('offlinePendingBtn');
         var banner  = document.getElementById('offlineSyncBanner');
         var badge   = document.getElementById('offlinePendingBadge');
+        var wrap    = document.getElementById('offlineIndicatorWrap');
+        var divider = document.getElementById('offlineIndicatorDivider');
 
         if (!navigator.onLine) {
             if (dot)     dot.style.display = 'flex';
             if (pendBtn) pendBtn.style.display = 'none';
+            if (wrap)    wrap.style.display = 'flex';
+            if (divider) divider.style.display = 'block';
             if (banner) {
                 banner.querySelector('#offlineBannerMsg').textContent =
                     'ইন্টারনেট নেই — বিক্রয় জমা করুন, অফলাইনে সংরক্ষিত হবে';
@@ -160,6 +164,8 @@
                     badge.style.display = n > 0 ? 'inline-flex' : 'none';
                 }
                 if (pendBtn) pendBtn.style.display = n > 0 ? 'flex' : 'none';
+                if (wrap)    wrap.style.display = n > 0 ? 'flex' : 'none';
+                if (divider) divider.style.display = n > 0 ? 'block' : 'none';
                 if (banner) {
                     if (n > 0) {
                         banner.querySelector('#offlineBannerMsg').textContent =

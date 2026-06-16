@@ -40,9 +40,15 @@ class SaleController extends Controller
         $grandPaid  = (clone $query)->sum('paid_amount');
         $grandDue   = (clone $query)->sum('due_amount');
 
-        $sales = $query->latest('sale_date')->latest('id')->paginate(20);
+        $sales = $query->latest('sale_date')->latest('id')->paginate(20)->withQueryString();
 
-        return view('sales.index', compact('sales', 'grandTotal', 'grandPaid', 'grandDue', 'dateFrom', 'dateTo'));
+        $data = compact('sales', 'grandTotal', 'grandPaid', 'grandDue', 'dateFrom', 'dateTo');
+
+        if ($request->ajax()) {
+            return view('sales._results', $data);
+        }
+
+        return view('sales.index', $data);
     }
 
     public function create()

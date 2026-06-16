@@ -431,7 +431,7 @@
                 <button class="ctrl-btn ctrl-btn-dark" id="darkModeBtn" onclick="toggleDarkMode()" title="ডার্ক মোড">
                     <i class="fas fa-moon" id="darkModeIcon"></i>
                 </button>
-                <button class="ctrl-btn" onclick="toggleShortcutsHelp()" title="কীবোর্ড শর্টকাট (Alt+/)">
+                <button class="ctrl-btn ctrl-btn-highlight" onclick="toggleShortcutsHelp()" title="কীবোর্ড শর্টকাট (Alt+/)">
                     <i class="fas fa-keyboard"></i>
                 </button>
             </div>
@@ -439,7 +439,7 @@
             <div class="topbar-divider"></div>
 
             {{-- Offline indicator --}}
-            <div class="ui-controls" style="position:relative">
+            <div class="ui-controls" id="offlineIndicatorWrap" style="position:relative;display:none">
                 <div id="offlineDot" style="display:none;align-items:center;gap:5px;padding:0 8px;
                      background:#fee2e2;border-radius:20px;height:32px;cursor:default" title="ইন্টারনেট সংযোগ নেই">
                     <i class="fas fa-wifi" style="color:#dc2626;font-size:.75rem;text-decoration:line-through"></i>
@@ -454,7 +454,7 @@
                 </button>
             </div>
 
-            <div class="topbar-divider"></div>
+            <div class="topbar-divider" id="offlineIndicatorDivider" style="display:none"></div>
 
             {{-- Quick actions --}}
             <div class="quick-actions">
@@ -853,7 +853,8 @@ function drRange(fromName, toName, formSel, type) {
     };
     document.querySelector(`input[name="${fromName}"]`).value = fmt(from);
     document.querySelector(`input[name="${toName}"]`).value   = fmt(to);
-    document.querySelector(formSel).submit();
+    const f = document.querySelector(formSel);
+    if (f.requestSubmit) f.requestSubmit(); else f.submit();
 }
 </script>
 

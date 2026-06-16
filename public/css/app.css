@@ -432,6 +432,7 @@ a { text-decoration: none; color: inherit; }
 .ctrl-btn-dark { font-size: .88rem; }
 .ctrl-btn-fs-md { font-size: .92rem; }
 .ctrl-btn-fs-lg { font-size: 1.05rem; }
+.ctrl-btn-highlight { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
 
 /* Shrink topbar font-size/control buttons on laptop & tablet screens */
 @media (max-width: 1366px) {

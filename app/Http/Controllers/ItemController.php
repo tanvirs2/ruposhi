@@ -13,15 +13,20 @@ class ItemController extends Controller
     {
         $items = Item::with(['category', 'stock'])
             ->when($request->search, fn($q) =>
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('code', 'like', "%{$request->search}%")
+                $q->where(fn($s) => $s
+                    ->where('name', 'like', "%{$request->search}%")
+                    ->orWhere('code', 'like', "%{$request->search}%"))
             )
             ->when($request->category_id, fn($q) =>
                 $q->where('category_id', $request->category_id)
             )
-            ->latest()->paginate(20);
+            ->latest()->paginate(20)->withQueryString();
 
         $categories = Category::orderBy('name')->get();
+
+        if ($request->ajax()) {
+            return view('items._results', compact('items'));
+        }
 
         return view('items.index', compact('items', 'categories'));
     }

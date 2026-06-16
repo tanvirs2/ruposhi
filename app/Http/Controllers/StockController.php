@@ -61,10 +61,16 @@ class StockController extends Controller
             ->whereDate('purchases.purchase_date', $filterDate)
             ->sum('purchase_items.quantity');
 
-        return view('stock.index', compact(
+        $data = compact(
             'stock', 'todaySales', 'totalSales', 'todayReceive', 'filterDate', 'updatedDate',
             'grandStockQty', 'grandStockValue', 'grandTodaySales', 'grandTotalSales', 'grandTodayReceive'
-        ));
+        );
+
+        if ($request->ajax()) {
+            return view('stock._results', $data);
+        }
+
+        return view('stock.index', $data);
     }
 
     /* স্টক রিপোর্ট — search a specific item and see full details */
