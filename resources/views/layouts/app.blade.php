@@ -465,6 +465,38 @@
 
             <div class="topbar-divider"></div>
 
+            {{-- What's New --}}
+            @php
+                $whatsNew = config('whats_new', []);
+            @endphp
+            <div class="notif-wrap" id="whatsNewWrap" data-latest-version="{{ $whatsNew[0]['version'] ?? '' }}">
+                <button class="ctrl-btn" id="whatsNewBtn" onclick="toggleWhatsNew(event)" title="নতুন কী আছে">
+                    <i class="fas fa-gift"></i>
+                    <span class="whatsnew-dot" id="whatsNewDot" style="display:none"></span>
+                </button>
+                <div class="notif-dropdown" id="whatsNewDropdown">
+                    <div class="notif-header">
+                        <span><i class="fas fa-gift" style="margin-right:6px;color:var(--accent)"></i>নতুন কী আছে</span>
+                    </div>
+                    <div class="whatsnew-body">
+                        @forelse($whatsNew as $entry)
+                        <div class="whatsnew-entry">
+                            <div class="whatsnew-entry-date">v{{ $entry['version'] }} &nbsp;·&nbsp; {{ $entry['date'] }}</div>
+                            <ul>
+                                @foreach($entry['items'] as $item)
+                                <li>{{ $item }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        @empty
+                        <div class="notif-empty"><i class="fas fa-gift"></i><div>কোনো আপডেট নেই</div></div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
+            <div class="topbar-divider"></div>
+
             {{-- Notification Bell --}}
             <div class="notif-wrap" id="notifWrap">
                 <button class="ctrl-btn notif-bell-btn" id="notifBtn" onclick="toggleNotif(event)" title="বিজ্ঞপ্তি">
@@ -708,6 +740,37 @@ document.addEventListener('click', function(e) {
     var wrap = document.getElementById('notifWrap');
     if (wrap && !wrap.contains(e.target)) closeNotif();
 });
+
+/* ── What's New panel ── */
+function toggleWhatsNew(e) {
+    e.stopPropagation();
+    var dd = document.getElementById('whatsNewDropdown');
+    dd.classList.toggle('open');
+    if (dd.classList.contains('open')) {
+        var wrap = document.getElementById('whatsNewWrap');
+        localStorage.setItem('whatsNewSeen', wrap.getAttribute('data-latest-version'));
+        var dot = document.getElementById('whatsNewDot');
+        if (dot) dot.style.display = 'none';
+    }
+}
+function closeWhatsNew() {
+    var dd = document.getElementById('whatsNewDropdown');
+    if (dd) dd.classList.remove('open');
+}
+document.addEventListener('click', function(e) {
+    var wrap = document.getElementById('whatsNewWrap');
+    if (wrap && !wrap.contains(e.target)) closeWhatsNew();
+});
+function _syncWhatsNewDot() {
+    var wrap = document.getElementById('whatsNewWrap');
+    var dot  = document.getElementById('whatsNewDot');
+    if (!wrap || !dot) return;
+    var latest = wrap.getAttribute('data-latest-version');
+    var seen   = localStorage.getItem('whatsNewSeen');
+    dot.style.display = (latest && latest !== seen) ? '' : 'none';
+}
+document.addEventListener('turbo:load', _syncWhatsNewDot);
+_syncWhatsNewDot();
 
 /* ── Sidebar active-link highlighter (runs on every Turbo navigation) ── */
 function _syncSidebarActive() {

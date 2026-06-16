@@ -1,0 +1,47 @@
+<?php
+
+// Each entry: version number + date + user-facing Bengali bullet points
+// (plain language, no technical terms — shop staff read these). Newest
+// entry first. Shown in the topbar "নতুন কী আছে" panel; "version" (the
+// first entry's) is compared against the visitor's localStorage to show
+// the unread dot — it has no relation to app/composer versioning.
+//
+// On every "pd" (push and deploy), a new entry is added to the top of
+// this list automatically — version bumped by 0.1, today's date, and a
+// short plain-Bangla summary of what changed in that push.
+return [
+    [
+        'version' => '1.3',
+        'date'    => '১৬ জুন, ২০২৬',
+        'items'   => [
+            'এখন লগইন পেজেও "নতুন কী আছে" বাটনে ক্লিক করে সাম্প্রতিক আপডেট দেখা যাবে',
+            'একটি সমস্যা ঠিক করা হয়েছে যার কারণে অ্যাপের কিছু পেজে এরর দেখাচ্ছিল',
+        ],
+    ],
+    [
+        'version' => '1.2',
+        'date'    => '১৬ জুন, ২০২৬',
+        'items'   => [
+            'কাস্টমার তালিকায় এখন তাৎক্ষণিক ফিল্টার হয় — সার্চ করলে পেজ রিফ্রেশ হয় না',
+            'কাস্টমার পরিশোধ পেজে কাস্টমার এখন লিখে সার্চ করে বাছাই করা যাবে (লম্বা ড্রপডাউনের বদলে)',
+            'বাংলা ফোনেটিক টাইপিং: লেখা সিলেক্ট করে নতুন কিছু টাইপ করলে এখন ঠিকমতো প্রতিস্থাপন হয়',
+        ],
+    ],
+    [
+        'version' => '1.1',
+        'date'    => '১৫ জুন, ২০২৬',
+        'items'   => [
+            'ড্যাশবোর্ড ও রিপোর্ট পেজে বিভিন্ন উন্নতি',
+            'ইন্টারনেট না থাকলেও বিক্রয় করা যাবে — সংযোগ ফিরলে স্বয়ংক্রিয়ভাবে সিঙ্ক হবে',
+        ],
+    ],
+    [
+        'version' => '1.0',
+        'date'    => '১৪ জুন, ২০২৬',
+        'items'   => [
+            'পেজ পরিবর্তন এখন অনেক দ্রুত — পুরো পেজ রিলোড হয় না',
+            'পরিশোধ তালিকায় এখন সরবরাহকারীর জমার তথ্যও দেখানো হয়',
+            'আইটেম এডিট পেজে বর্তমান স্টক দেখানো শুরু হয়েছে',
+        ],
+    ],
+];

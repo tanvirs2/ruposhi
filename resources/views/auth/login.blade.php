@@ -300,9 +300,124 @@
             .page-wrapper { flex-direction: column; align-items: center; }
             .dev-panel { max-width: 400px; width: 100%; }
         }
+
+        /* ── What's New button + modal ──────────────────────── */
+        .whatsnew-btn {
+            position: fixed;
+            top: 18px;
+            right: 18px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            background: rgba(255,255,255,.12);
+            border: 1px solid rgba(255,255,255,.3);
+            color: #fff;
+            border-radius: 999px;
+            padding: 8px 16px;
+            font-family: inherit;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            transition: background .15s;
+            z-index: 50;
+        }
+        .whatsnew-btn:hover { background: rgba(255,255,255,.22); }
+        .whatsnew-btn .whatsnew-dot {
+            width: 8px; height: 8px;
+            border-radius: 999px;
+            background: #ef4444;
+            border: 2px solid #134e4a;
+            margin-left: 2px;
+        }
+        .whatsnew-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(15,23,42,.55);
+            align-items: center; justify-content: center;
+            z-index: 100;
+            padding: 16px;
+        }
+        .whatsnew-overlay.open { display: flex; }
+        .whatsnew-modal {
+            background: #fff;
+            border-radius: 16px;
+            width: 100%; max-width: 420px;
+            max-height: 80vh;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0,0,0,.35);
+        }
+        .whatsnew-modal-header {
+            display: flex; align-items: center; gap: 8px;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.95rem; font-weight: 700; color: #0f172a;
+        }
+        .whatsnew-modal-header i { color: #0d9488; }
+        .whatsnew-modal-close {
+            margin-left: auto;
+            background: none; border: none;
+            color: #94a3b8; font-size: 1rem;
+            cursor: pointer; padding: 4px;
+        }
+        .whatsnew-modal-body {
+            overflow-y: auto;
+            padding: 4px 0;
+        }
+        .whatsnew-entry {
+            padding: 12px 20px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .whatsnew-entry:last-child { border-bottom: none; }
+        .whatsnew-entry-date {
+            font-size: .72rem;
+            font-weight: 700;
+            color: #0d9488;
+            margin-bottom: 6px;
+        }
+        .whatsnew-entry ul { margin: 0; padding-left: 18px; }
+        .whatsnew-entry li {
+            font-size: .82rem;
+            color: #334155;
+            line-height: 1.55;
+            margin-bottom: 4px;
+        }
+        .whatsnew-entry li:last-child { margin-bottom: 0; }
     </style>
 </head>
+@php
+    $whatsNew = config('whats_new', []);
+@endphp
 <body>
+
+<button class="whatsnew-btn" id="whatsNewBtn" data-latest-version="{{ $whatsNew[0]['version'] ?? '' }}" onclick="openWhatsNew()">
+    <i class="fas fa-gift"></i> নতুন কী আছে
+    <span class="whatsnew-dot" id="whatsNewDot" style="display:none"></span>
+</button>
+
+<div class="whatsnew-overlay" id="whatsNewOverlay" onclick="if(event.target===this) closeWhatsNew()">
+    <div class="whatsnew-modal">
+        <div class="whatsnew-modal-header">
+            <i class="fas fa-gift"></i> নতুন কী আছে
+            <button class="whatsnew-modal-close" onclick="closeWhatsNew()"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="whatsnew-modal-body">
+            @forelse($whatsNew as $entry)
+            <div class="whatsnew-entry">
+                <div class="whatsnew-entry-date">v{{ $entry['version'] }} &nbsp;·&nbsp; {{ $entry['date'] }}</div>
+                <ul>
+                    @foreach($entry['items'] as $item)
+                    <li>{{ $item }}</li>
+                    @endforeach
+                </ul>
+            </div>
+            @empty
+            <div class="whatsnew-entry">কোনো আপডেট নেই</div>
+            @endforelse
+        </div>
+    </div>
+</div>
 
 <div class="page-wrapper">
 
@@ -536,6 +651,26 @@ function fillCreds(email, password) {
     document.getElementById('password').type  = 'password';
     document.getElementById('eyeIcon').className = 'fas fa-eye';
 }
+
+/* ── What's New modal ── */
+function openWhatsNew() {
+    document.getElementById('whatsNewOverlay').classList.add('open');
+    var btn = document.getElementById('whatsNewBtn');
+    localStorage.setItem('whatsNewSeen', btn.getAttribute('data-latest-version'));
+    var dot = document.getElementById('whatsNewDot');
+    if (dot) dot.style.display = 'none';
+}
+function closeWhatsNew() {
+    document.getElementById('whatsNewOverlay').classList.remove('open');
+}
+(function() {
+    var btn = document.getElementById('whatsNewBtn');
+    var dot = document.getElementById('whatsNewDot');
+    if (!btn || !dot) return;
+    var latest = btn.getAttribute('data-latest-version');
+    var seen   = localStorage.getItem('whatsNewSeen');
+    dot.style.display = (latest && latest !== seen) ? '' : 'none';
+})();
 </script>
 </body>
 </html>
