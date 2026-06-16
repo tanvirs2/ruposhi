@@ -371,9 +371,9 @@
 
             {{-- Font size controls --}}
             <div class="ui-controls">
-                <button class="ctrl-btn" data-size="sm" onclick="setFontSize('sm')" title="ছোট লেখা">A</button>
-                <button class="ctrl-btn" data-size="md" onclick="setFontSize('md')" title="স্বাভাবিক লেখা" style="font-size:.92rem">A</button>
-                <button class="ctrl-btn" data-size="lg" onclick="setFontSize('lg')" title="বড় লেখা" style="font-size:1.05rem">A</button>
+                <button class="ctrl-btn ctrl-btn-fs-sm" data-size="sm" onclick="setFontSize('sm')" title="ছোট লেখা">A</button>
+                <button class="ctrl-btn ctrl-btn-fs-md" data-size="md" onclick="setFontSize('md')" title="স্বাভাবিক লেখা">A</button>
+                <button class="ctrl-btn ctrl-btn-fs-lg" data-size="lg" onclick="setFontSize('lg')" title="বড় লেখা">A</button>
             </div>
 
             <div class="topbar-divider"></div>

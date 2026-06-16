@@ -35,9 +35,11 @@
 html { font-size: 15px; }
 
 /* ─── Font size presets ─────────────────────────────────────── */
-html[data-fontsize="sm"] { font-size: 13px; }
-html[data-fontsize="md"] { font-size: 15px; }
-html[data-fontsize="lg"] { font-size: 17px; }
+/* zoom scales the whole UI (padding, buttons, icons, tables) proportionally —
+   not just text — so "ছোট লেখা" actually makes everything more compact */
+html[data-fontsize="sm"] { font-size: 13px; zoom: 0.9; }
+html[data-fontsize="md"] { font-size: 15px; zoom: 1; }
+html[data-fontsize="lg"] { font-size: 17px; zoom: 1.08; }
 
 /* ─── Dark mode variables ───────────────────────────────────── */
 html[data-theme="dark"] {
@@ -428,6 +430,17 @@ a { text-decoration: none; color: inherit; }
 .ctrl-btn:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
 .ctrl-btn.active { background: var(--accent); color: #fff; border-color: transparent; }
 .ctrl-btn-dark { font-size: .88rem; }
+.ctrl-btn-fs-md { font-size: .92rem; }
+.ctrl-btn-fs-lg { font-size: 1.05rem; }
+
+/* Shrink topbar font-size/control buttons on laptop & tablet screens */
+@media (max-width: 1366px) {
+    .ctrl-btn { width: 24px; height: 24px; font-size: .68rem; }
+    .ctrl-btn-fs-md { font-size: .76rem; }
+    .ctrl-btn-fs-lg { font-size: .85rem; }
+    .ui-controls { gap: 2px; }
+    .topbar-divider { height: 18px; }
+}
 
 /* ── Delete confirm modal ───────────────────────────────────── */
 .confirm-modal {
