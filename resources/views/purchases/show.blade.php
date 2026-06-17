@@ -67,7 +67,7 @@
         <i class="fas fa-piggy-bank" style="color:#ca8a04;font-size:1.4rem"></i>
         <div>
             <div style="font-weight:700;color:#92400e;font-size:.95rem">অগ্রিম পরিশোধ</div>
-            <div style="font-size:.83rem;color:#78350f;margin-top:2px">কোনো মাল রিসিভ হয়নি — শুধুমাত্র সরবরাহকারীকে অগ্রিম পরিশোধ করা হয়েছে।</div>
+            <div style="font-size:.83rem;color:#78350f;margin-top:2px">কোনো পণ্য গ্রহণ হয়নি — শুধুমাত্র সরবরাহকারীকে অগ্রিম পরিশোধ করা হয়েছে।</div>
         </div>
     </div>
     @endif

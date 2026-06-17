@@ -8,6 +8,14 @@
     <form method="POST" action="{{ route('customer-payments.store') }}">
         @csrf
 
+        {{-- Area filter (optional) — searchable; narrows the customer search --}}
+        <div class="form-group-field" style="margin-bottom:12px">
+            <label><i class="fas fa-location-dot" style="color:var(--accent)"></i> এরিয়া</label>
+            <input type="text" id="areaSearch" class="form-select" autocomplete="off"
+                   placeholder="— সব এরিয়া — (খুঁজতে লিখুন)" style="width:100%">
+            <input type="hidden" id="areaFilter" value="">
+        </div>
+
         {{-- Customer search --}}
         <div class="form-group-field" style="margin-bottom:0">
             <label>কাস্টমার <span class="req">*</span></label>
@@ -117,6 +125,9 @@ allCustomers.push(@json($preCustomer));
 @endif
 var searchEl      = document.getElementById('customerSearch');
 var hiddenId      = document.getElementById('customerIdInput');
+var areaEl        = document.getElementById('areaFilter');   // hidden — holds selected area_id
+var areaSearchEl  = document.getElementById('areaSearch');   // visible search box
+var allAreas      = @json($areas->map(fn($a) => ['id' => $a->id, 'name' => $a->name])->values());
 var dueBox        = document.getElementById('dueBox');
 var amountEl      = document.getElementById('amountInput');
 var currentDue      = 0;
@@ -142,16 +153,82 @@ document.addEventListener('click', e => {
 var _custSearchTimer = null;
 searchEl.addEventListener('input', function() {
     const q = this.value.trim();
-    if (!q) { dropEl.style.display='none'; hiddenId.value=''; renderDue(null); return; }
+    hiddenId.value=''; renderDue(null);
+    if (!q && !areaEl.value) { dropEl.style.display='none'; return; }
     dropEl.innerHTML = `<div class="suggestion-item" style="color:#94a3b8">খুঁজছি…</div>`;
     positionDrop(); dropEl.style.display = 'block';
     clearTimeout(_custSearchTimer);
     _custSearchTimer = setTimeout(() => fetchCustomers(q), 250);
 });
 
+// Clicking into the box while an area is selected lists that area's customers
+searchEl.addEventListener('focus', function() {
+    if (!searchEl.value.trim() && areaEl.value) fetchCustomers('');
+});
+
+// ── Searchable area combobox (client-side filter) ──────────────
+var areaDropEl = document.createElement('div');
+areaDropEl.style.cssText = 'position:fixed;display:none;z-index:9999;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);overflow-y:auto;max-height:260px';
+document.body.appendChild(areaDropEl);
+
+function positionAreaDrop() {
+    const r = areaSearchEl.getBoundingClientRect();
+    areaDropEl.style.top   = (r.bottom + 4) + 'px';
+    areaDropEl.style.left  = r.left + 'px';
+    areaDropEl.style.width = r.width + 'px';
+}
+window.addEventListener('scroll', positionAreaDrop, true);
+window.addEventListener('resize', positionAreaDrop);
+document.addEventListener('click', e => {
+    if (!areaSearchEl.contains(e.target) && !areaDropEl.contains(e.target))
+        areaDropEl.style.display = 'none';
+});
+
+function renderAreaMatches(q) {
+    q = (q || '').trim().toLowerCase();
+    const list = q ? allAreas.filter(a => a.name.toLowerCase().includes(q)) : allAreas;
+    let html = `<div class="suggestion-item" onclick="clearArea()" style="color:#0d9488;font-weight:600">— সব এরিয়া —</div>`;
+    html += list.map(a => `<div class="suggestion-item" onclick="selectArea(${a.id})">${a.name}</div>`).join('');
+    if (q && !list.length) html += `<div class="suggestion-item" style="color:#94a3b8">কোনো এরিয়া পাওয়া যায়নি</div>`;
+    areaDropEl.innerHTML = html;
+    positionAreaDrop();
+    areaDropEl.style.display = 'block';
+}
+
+areaSearchEl.addEventListener('input', function() { renderAreaMatches(this.value); });
+areaSearchEl.addEventListener('focus', function() { renderAreaMatches(this.value); });
+
+window.selectArea = function(id) {
+    const a = allAreas.find(x => x.id === id);
+    areaEl.value       = a ? a.id : '';
+    areaSearchEl.value = a ? a.name : '';
+    areaDropEl.style.display = 'none';
+    onAreaChanged();
+};
+window.clearArea = function() {
+    areaEl.value = '';
+    areaSearchEl.value = '';
+    areaDropEl.style.display = 'none';
+    onAreaChanged();
+};
+
+// Picking/clearing an area resets the selection and re-lists customers in it
+function onAreaChanged() {
+    hiddenId.value=''; searchEl.value=''; renderDue(null);
+    if (areaEl.value) {
+        dropEl.innerHTML = `<div class="suggestion-item" style="color:#94a3b8">খুঁজছি…</div>`;
+        positionDrop(); dropEl.style.display = 'block';
+        searchEl.focus();
+        fetchCustomers('');
+    } else {
+        dropEl.style.display = 'none';
+    }
+}
+
 async function fetchCustomers(q) {
     try {
-        const res = await fetch(`{{ route('customers.search') }}?q=${encodeURIComponent(q)}`, {
+        const areaParam = areaEl.value ? `&area_id=${encodeURIComponent(areaEl.value)}` : '';
+        const res = await fetch(`{{ route('customers.search') }}?q=${encodeURIComponent(q)}${areaParam}`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
         });
         const raw = await res.json();
@@ -159,6 +236,7 @@ async function fetchCustomers(q) {
         const matches = raw.map(c => ({
             id: c.id, name: c.name, phone: c.phone || '',
             proprietor: c.proprietor || '', due: parseFloat(c.due_amount) || 0,
+            area: c.area ? c.area.name : '',
         }));
         matches.forEach(c => { if (!allCustomers.find(x => x.id === c.id)) allCustomers.push(c); });
         renderCustomerMatches(matches);
@@ -181,7 +259,7 @@ function renderCustomerMatches(matches) {
                     ? `<span style="font-size:.78rem;font-weight:700;color:#dc2626;background:#fee2e2;padding:2px 8px;border-radius:20px;white-space:nowrap">বাকী: ৳${c.due.toLocaleString()}</span>`
                     : `<span style="font-size:.78rem;font-weight:700;color:#16a34a;background:#dcfce7;padding:2px 8px;border-radius:20px;white-space:nowrap">বাকীমুক্ত ✓</span>`}
             </div>
-            ${c.phone ? `<span style="font-size:.75rem;color:#94a3b8;display:block;margin-top:2px">📞 ${c.phone}</span>` : ''}
+            ${(c.phone || c.area) ? `<span style="font-size:.75rem;color:#94a3b8;display:block;margin-top:2px">${c.phone ? `📞 ${c.phone}` : ''}${c.phone && c.area ? ' &nbsp;·&nbsp; ' : ''}${c.area ? `📍 ${c.area}` : ''}</span>` : ''}
         </div>
     `).join('') || `<div class="suggestion-item" style="color:#94a3b8">কোনো কাস্টমার পাওয়া যায়নি</div>`;
 

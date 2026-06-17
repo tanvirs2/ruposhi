@@ -18,15 +18,12 @@
             {{-- Area filter --}}
             <div class="ls-field">
                 <label class="ls-label"><i class="fas fa-map-marker-alt" style="margin-right:4px;color:var(--accent)"></i>এলাকা</label>
-                <div class="ls-select-wrap">
-                    <select id="areaFilter" class="ls-select" onchange="onAreaChange()">
-                        <option value="">— সব এলাকা —</option>
-                        @foreach($areas as $area)
-                        <option value="{{ $area->id }}">{{ $area->name }}</option>
-                        @endforeach
-                    </select>
-                    <i class="fas fa-chevron-down ls-select-icon"></i>
-                </div>
+                @include('partials.area-combobox', [
+                    'acId' => 'areaFilter',
+                    'acClass' => 'ls-select',
+                    'acPlaceholder' => '— সব এলাকা — (খুঁজতে লিখুন)',
+                    'acAllLabel' => '— সব এলাকা —',
+                ])
             </div>
 
             {{-- Customer search --}}
@@ -363,10 +360,10 @@ function updatePanel() {
         el.style.display = show ? '' : 'none';
         if (show) visible++;
     });
-    // Update title & count
-    const areaSelect = document.getElementById('areaFilter');
-    const areaName   = areaId
-        ? areaSelect.options[areaSelect.selectedIndex].text
+    // Update title & count — selected area name is shown in the combobox input
+    const areaInput = document.querySelector('.area-combobox .ac-search');
+    const areaName  = areaId
+        ? ((areaInput && areaInput.value.trim()) || 'এলাকা')
         : 'সকল কাস্টমার';
     document.getElementById('panelTitle').textContent = areaName;
     document.getElementById('panelCount').textContent = visible;
@@ -460,5 +457,11 @@ document.addEventListener('click', e => {
     if (!e.target.closest('.ls-search-wrap') && !e.target.closest('.ls-dropdown'))
         document.getElementById('customerDropdown').style.display = 'none';
 });
+
+// The area combobox dispatches `change` on the hidden #areaFilter input.
+// (#areaFilter is recreated on each Turbo navigation, so binding here once
+// per page load is correct — it doesn't stack onto a persistent element.)
+var _areaFilterEl = document.getElementById('areaFilter');
+if (_areaFilterEl) _areaFilterEl.addEventListener('change', onAreaChange);
 </script>
 @endpush

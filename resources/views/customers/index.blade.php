@@ -14,15 +14,13 @@
                 <input type="text" name="search" value="{{ $search }}" placeholder="নাম, প্রোপ্রাইটর বা ফোন..."
                        autocomplete="off" id="custSearchInput">
             </div>
-            <div class="form-group-field">
-                <select name="area_id" class="form-select" id="custAreaSelect">
-                    <option value="">সকল এরিয়া</option>
-                    @foreach($areas as $area)
-                        <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
-                            {{ $area->name }}
-                        </option>
-                    @endforeach
-                </select>
+            <div class="form-group-field" style="min-width:180px">
+                @include('partials.area-combobox', [
+                    'acId' => 'custAreaSelect',
+                    'acValue' => request('area_id'),
+                    'acPlaceholder' => 'সকল এরিয়া (খুঁজুন)',
+                    'acAllLabel' => 'সকল এরিয়া',
+                ])
             </div>
             <button type="submit" class="btn btn-secondary"><i class="fas fa-search"></i> খুঁজুন</button>
             <a href="{{ route('customers.index') }}" class="btn btn-ghost" id="custClearBtn"
@@ -114,7 +112,10 @@
         var url = link.href;
         load(url);
         if (isChip) { statusInput.value = new URL(url, window.location.origin).searchParams.get('status') || 'active'; }
-        if (isClear) { input.value = ''; area.value = ''; statusInput.value = 'active'; }
+        if (isClear) {
+            input.value = ''; area.value = ''; statusInput.value = 'active';
+            var acs = card.querySelector('.area-combobox .ac-search'); if (acs) acs.value = '';
+        }
     });
 })();
 </script>

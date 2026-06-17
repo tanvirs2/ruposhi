@@ -1252,6 +1252,11 @@ a { text-decoration: none; color: inherit; }
 }
 .fchip-active .fchip-count { background: rgba(255,255,255,.22); color: #fff; }
 
+/* ─── Searchable area combobox dropdown ─────────────────────── */
+.ac-item { padding: 9px 13px; cursor: pointer; font-size: .88rem; border-bottom: 1px solid #f1f5f9; }
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover { background: var(--accent-light); }
+
 /* ─── Form styles ───────────────────────────────────────────── */
 .form-card {
     background: var(--surface);

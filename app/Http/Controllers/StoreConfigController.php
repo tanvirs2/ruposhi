@@ -29,7 +29,7 @@ class StoreConfigController extends Controller
         ['name' => 'চেক (সাধারণ)',          'group' => 'চেক'],
         ['name' => 'চেক ডাচবাংলা',         'group' => 'চেক'],
         ['name' => 'চেক সোনালী',           'group' => 'চেক'],
-        ['name' => 'মাল ফেরত',             'group' => 'অন্যান্য'],
+        ['name' => 'পণ্য ফেরত',             'group' => 'অন্যান্য'],
         ['name' => 'কমিশন বাবদ',           'group' => 'অন্যান্য'],
         ['name' => 'বাকী',                 'group' => 'অন্যান্য'],
         ['name' => 'অন্যান্য',             'group' => 'অন্যান্য'],

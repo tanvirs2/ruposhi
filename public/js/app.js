@@ -345,20 +345,44 @@ function animateValue(el, duration = 900) {
 
 /* ── Keyboard shortcuts ─────────────────────────────────────── */
 (function () {
+    // Navigate to the matching sidebar/topbar link if it exists (keeps
+    // role-correct URLs) — otherwise fall back to the canonical path so the
+    // shortcut still works on pages/screens where the link isn't rendered.
+    const go = (selector, fallback) => {
+        const a = document.querySelector(selector);
+        window.location = a ? a.href : fallback;
+    };
+    // Keyed by e.code (physical key) — reliable across keyboard layouts and
+    // unaffected by the Alt modifier, unlike e.key.
     const map = {
-        's': () => { const a = document.querySelector('a[href*="sales/create"]'); if (a) window.location = a.href; },
-        'p': () => { const a = document.querySelector('a[href*="purchases/create"]'); if (a) window.location = a.href; },
-        'd': () => { const a = document.querySelector('a[href*="dashboard"]'); if (a) window.location = a.href; },
-        'k': () => { const a = document.querySelector('a[href$="/stock"]'); if (a) window.location = a.href; },
-        '/': () => { toggleShortcutsHelp(); },
+        'KeyS':  () => go('a[href*="sales/create"]',     '/sales/create'),
+        'KeyP':  () => go('a[href*="purchases/create"]', '/purchases/create'),
+        'KeyD':  () => go('a[href$="/dashboard"]',       '/dashboard'),
+        'KeyK':  () => go('a[href$="/stock"]',           '/stock'),
+        'KeyT':  () => go('a[href*="reports/sales"]',    '/reports/sales'),
+        'Slash': () => toggleShortcutsHelp(),
     };
 
     document.addEventListener('keydown', function (e) {
-        if (e.target.matches('input,textarea,select')) return;
-        if (e.altKey && !e.ctrlKey && !e.metaKey) {
-            const fn = map[e.key.toLowerCase()];
-            if (fn) { e.preventDefault(); fn(); }
+        if (!e.altKey || e.ctrlKey || e.metaKey) return;
+
+        // Alt+B toggles Bengali phonetic typing. Handled here (app.js runs once)
+        // instead of the layout body script — that re-ran on every Turbo
+        // navigation and stacked duplicate listeners, so the toggle fired
+        // multiple times and appeared to "sometimes" do nothing. Works inside
+        // inputs too, since that's exactly where you switch typing on.
+        if (e.code === 'KeyB') {
+            if (typeof window.togglePhonetic === 'function') { e.preventDefault(); window.togglePhonetic(); }
+            return;
         }
+
+        const fn = map[e.code];
+        if (!fn) return;
+        // Don't hijack typing inside a field (Alt+letter could discard input)
+        const t = e.target;
+        if (t && t.matches && t.matches('input,textarea,select,[contenteditable="true"]')) return;
+        e.preventDefault();
+        fn();
     });
 
     window.toggleShortcutsHelp = function () {
@@ -375,6 +399,86 @@ function animateValue(el, duration = 900) {
             });
         }
     });
+})();
+
+/* ── Searchable area combobox ────────────────────────────────────────
+   Drop-in replacement for long <select> area filters. Rendered by the
+   partials/area-combobox.blade.php partial. Bound once here (app.js loads
+   with data-turbo-eval="false"); initAreaComboboxes() runs on every
+   turbo:load and wires any not-yet-initialised .area-combobox on the page. */
+(function () {
+    let openCtl = null;   // controller of the currently-open dropdown
+
+    // One set of global listeners (added once) — avoids the per-init
+    // stacking that body scripts suffer on every Turbo navigation.
+    window.addEventListener('scroll', function () { if (openCtl) openCtl.position(); }, true);
+    window.addEventListener('resize', function () { if (openCtl) openCtl.position(); });
+    document.addEventListener('click', function (e) {
+        if (openCtl && !openCtl.input.contains(e.target) && !openCtl.drop.contains(e.target)) {
+            openCtl.drop.style.display = 'none';
+            openCtl = null;
+        }
+    });
+
+    const esc = s => String(s).replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    window.initAreaComboboxes = function () {
+        document.querySelectorAll('.area-combobox:not([data-ac-ready])').forEach(function (box) {
+            box.setAttribute('data-ac-ready', '1');
+            const input  = box.querySelector('.ac-search');
+            const hidden = box.querySelector('.ac-id');
+            const dataEl = box.querySelector('.ac-data');
+            let areas;
+            try { areas = JSON.parse(dataEl ? dataEl.textContent : '[]'); } catch (_) { areas = []; }
+            const allLabel = box.getAttribute('data-all-label') || '— সব এলাকা —';
+
+            const drop = document.createElement('div');
+            drop.className = 'ac-drop';
+            drop.style.cssText = 'position:fixed;display:none;z-index:9999;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);overflow-y:auto;max-height:260px';
+            document.body.appendChild(drop);
+
+            function position() {
+                const r = input.getBoundingClientRect();
+                drop.style.top   = (r.bottom + 4) + 'px';
+                drop.style.left  = r.left + 'px';
+                drop.style.width = r.width + 'px';
+            }
+            function render(q) {
+                q = (q || '').trim().toLowerCase();
+                const list = q ? areas.filter(a => a.name.toLowerCase().indexOf(q) !== -1) : areas;
+                let html = '<div class="ac-item" data-id="">' + esc(allLabel) + '</div>';
+                html += list.map(a => '<div class="ac-item" data-id="' + a.id + '">' + esc(a.name) + '</div>').join('');
+                if (q && !list.length) html += '<div class="ac-item ac-empty" style="color:#94a3b8">কোনো এলাকা পাওয়া যায়নি</div>';
+                drop.innerHTML = html;
+                position();
+                drop.style.display = 'block';
+                openCtl = { input, drop, position };
+            }
+            function setVal(id, name) {
+                hidden.value = id || '';
+                input.value  = name || '';
+                drop.style.display = 'none';
+                openCtl = null;
+                hidden.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            input.addEventListener('input', function () { render(this.value); });
+            input.addEventListener('focus', function () { render(this.value); });
+            // mousedown (not click) so selection fires before the input blurs
+            drop.addEventListener('mousedown', function (e) {
+                const item = e.target.closest('.ac-item');
+                if (!item || item.classList.contains('ac-empty')) return;
+                e.preventDefault();
+                const id = item.getAttribute('data-id');
+                if (!id) { setVal('', ''); return; }
+                const a = areas.find(x => String(x.id) === String(id));
+                setVal(id, a ? a.name : '');
+            });
+        });
+    };
+
+    document.addEventListener('turbo:load', window.initAreaComboboxes);
 })();
 
 /* ── Info tooltip (ⓘ button) — permanent so Turbo doesn't remove it ── */

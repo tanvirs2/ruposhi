@@ -21,14 +21,11 @@
             </div>
             <div class="form-group-field">
                 <label>এরিয়া</label>
-                <select name="area_id" class="form-select">
-                    <option value="">এরিয়া নির্বাচন করুন</option>
-                    @foreach($areas as $area)
-                        <option value="{{ $area->id }}" {{ old('area_id', $customer->area_id) == $area->id ? 'selected' : '' }}>
-                            {{ $area->name }}
-                        </option>
-                    @endforeach
-                </select>
+                @include('partials.area-combobox', [
+                    'acValue' => old('area_id', $customer->area_id),
+                    'acPlaceholder' => 'এরিয়া নির্বাচন করুন (খুঁজুন)',
+                    'acAllLabel' => '— এরিয়া নেই —',
+                ])
             </div>
             <div class="form-group-field form-full">
                 <label>ঠিকানা</label>

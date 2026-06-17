@@ -1,9 +1,9 @@
 @extends('layouts.app')
-@section('title', 'মাল রিসিভ তালিকা')
-@section('page-title', 'মাল রিসিভ')
+@section('title', 'পণ্য গ্রহণ তালিকা')
+@section('page-title', 'পণ্য গ্রহণ')
 
 @section('content')
-@include('partials.page-header', ['title' => 'রিসিভ তালিকা', 'createRoute' => route('purchases.create'), 'createLabel' => 'নতুন রিসিভ'])
+@include('partials.page-header', ['title' => 'গ্রহণ তালিকা', 'createRoute' => route('purchases.create'), 'createLabel' => 'নতুন গ্রহণ'])
 
 <div class="card" id="purchasesCard">
     <div class="card-filter" style="flex-wrap:wrap;gap:8px">

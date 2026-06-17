@@ -425,7 +425,7 @@ var profitPanel = document.getElementById('profitPanel');
 itemSearch.addEventListener('input', function() {
     const q = this.value.toLowerCase().trim();
     if (!q) { suggestions.innerHTML = ''; return; }
-    const matches = allItems.filter(i => i.name.toLowerCase().includes(q)).slice(0, 6);
+    const matches = allItems.filter(i => i.name.toLowerCase().includes(q));
     suggestions.innerHTML = matches.map(i => {
         const avail  = i.stock ? parseFloat(i.stock.quantity) : 0;
         const minQty = i.stock ? parseFloat(i.stock.min_quantity) : 0;
@@ -727,7 +727,7 @@ function cancelChangeItem(idx) {
 function searchForChange(idx, q) {
     const resultsEl = document.getElementById('item-change-results-' + idx);
     if (!q.trim()) { resultsEl.innerHTML = ''; return; }
-    const matches = allItems.filter(i => i.name.toLowerCase().includes(q.toLowerCase())).slice(0, 6);
+    const matches = allItems.filter(i => i.name.toLowerCase().includes(q.toLowerCase()));
     resultsEl.innerHTML = matches.map(i => {
         const avail = i.stock ? parseFloat(i.stock.quantity) : 0;
         const stockColor = avail <= 0 ? '#dc2626' : '#16a34a';

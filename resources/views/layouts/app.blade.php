@@ -177,7 +177,7 @@
                     <a href="{{ route('suppliers.ledger-select') }}" class="nav-item nav-child {{ $_path==='suppliers-ledger' || ($_seg==='suppliers' && str_ends_with($_path,'ledger')) ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-book-open"></i></span>
                         <span class="nav-label">লেজার রিপোর্ট</span>
-                        <button type="button" class="info-btn" data-info="সরবরাহকারীর সকল মাল গ্রহণ ও পরিশোধের বিস্তারিত হিসাব।">i</button>
+                        <button type="button" class="info-btn" data-info="সরবরাহকারীর সকল পণ্য গ্রহণ ও পরিশোধের বিস্তারিত হিসাব।">i</button>
                     </a>
                     <a href="{{ route('suppliers.due-report') }}" class="nav-item nav-child {{ $_path==='suppliers-due-report' ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-file-invoice-dollar"></i></span>
@@ -192,7 +192,7 @@
             <span class="nav-section-label">লেনদেন</span>
             <a href="{{ route('purchases.index') }}" class="nav-item {{ $_seg==='purchases' ? 'active' : '' }}">
                 <span class="nav-icon"><i class="fas fa-truck-ramp-box"></i></span>
-                <span class="nav-label">মাল রিসিভ</span>
+                <span class="nav-label">পণ্য গ্রহণ</span>
                 <button type="button" class="info-btn" data-info="সরবরাহকারীর কাছ থেকে মালামাল গ্রহণ করুন। পরিমাণ ও মূল্য লিখলে স্টক স্বয়ংক্রিয়ভাবে আপডেট হবে এবং বকেয়া হিসাব হবে।">i</button>
             </a>
             <a href="{{ route('sales.index') }}" class="nav-item {{ $_seg==='sales' ? 'active' : '' }}">
@@ -247,7 +247,7 @@
                     <a href="{{ route('reports.daily-receive') }}" class="nav-item nav-child {{ $_path==='reports/daily-receive' ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-truck-ramp-box"></i></span>
                         <span class="nav-label">দৈনিক রিসিভ রিপোর্ট</span>
-                        <button type="button" class="info-btn" data-info="প্রতিদিন কত মাল রিসিভ হয়েছে, কোন সরবরাহকারী থেকে, মোট মূল্য কত।">i</button>
+                        <button type="button" class="info-btn" data-info="প্রতিদিন কত পণ্য গ্রহণ হয়েছে, কোন সরবরাহকারী থেকে, মোট মূল্য কত।">i</button>
                     </a>
                     <a href="{{ route('reports.daily-sales-stock') }}" class="nav-item nav-child {{ $_path==='reports/daily-sales-stock' ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
@@ -606,7 +606,7 @@
             </div>
             <div class="shortcut-row">
                 <a href="{{ route('purchases.create') }}" onclick="toggleShortcutsHelp()" style="color:var(--accent);text-decoration:none;font-weight:600">
-                    <i class="fas fa-plus" style="font-size:.7rem;margin-right:4px"></i>মাল রিসিভ
+                    <i class="fas fa-plus" style="font-size:.7rem;margin-right:4px"></i>পণ্য গ্রহণ
                 </a>
                 <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">P</kbd></span>
             </div>
@@ -621,6 +621,12 @@
                     <i class="fas fa-warehouse" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>স্টক
                 </a>
                 <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">K</kbd></span>
+            </div>
+            <div class="shortcut-row">
+                <a href="{{ route('reports.sales') }}" onclick="toggleShortcutsHelp()" style="color:var(--text-primary);text-decoration:none">
+                    <i class="fas fa-chart-line" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>বিক্রয় রিপোর্ট
+                </a>
+                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">T</kbd></span>
             </div>
             <div class="shortcut-row">
                 <span>ডার্ক/লাইট মোড</span>
@@ -1043,10 +1049,9 @@ function drRange(fromName, toName, formSel, type) {
         attachAll();
     });
 
-    // Alt+B shortcut
-    document.addEventListener('keydown', e=>{
-        if (e.altKey && e.key==='b') { e.preventDefault(); window.togglePhonetic(); }
-    });
+    // Alt+B shortcut is bound once in app.js (data-turbo-eval="false") — NOT
+    // here, because this body script re-runs on every Turbo navigation and a
+    // keydown listener added here would stack into duplicates.
 
     // Cheat sheet panel toggle
     window.togglePhoneticHelp = function(e) {

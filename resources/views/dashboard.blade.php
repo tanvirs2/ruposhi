@@ -10,7 +10,7 @@
         <i class="fas fa-plus-circle"></i> নতুন বিক্রয়
     </a>
     <a href="{{ route('purchases.create') }}" class="btn btn-secondary" style="padding:12px 24px;font-size:.95rem;flex:1;min-width:160px;justify-content:center">
-        <i class="fas fa-truck-ramp-box"></i> মাল রিসিভ
+        <i class="fas fa-truck-ramp-box"></i> পণ্য গ্রহণ
     </a>
     <a href="{{ route('customer-payments.create') }}" class="btn btn-ghost" style="padding:12px 24px;font-size:.95rem;flex:1;min-width:160px;justify-content:center">
         <i class="fas fa-hand-holding-dollar"></i> পরিশোধ নিন

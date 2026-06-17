@@ -83,7 +83,7 @@
                         @if($isDeposit)
                             <span class="badge" style="background:#eff6ff;color:#1d4ed8"><i class="fas fa-piggy-bank" style="margin-right:3px;font-size:.7rem"></i>জমা</span>
                         @elseif($row->items_count > 0)
-                            <span class="badge" style="background:#ccfbf1;color:#0f766e">মাল রিসিভ</span>
+                            <span class="badge" style="background:#ccfbf1;color:#0f766e">পণ্য গ্রহণ</span>
                         @else
                             <span class="badge" style="background:#eff6ff;color:#1d4ed8">অগ্রিম</span>
                         @endif

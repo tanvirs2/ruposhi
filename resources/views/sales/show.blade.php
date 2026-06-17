@@ -199,7 +199,7 @@
     <div class="memo-footer">
 
         {{-- N.B. note --}}
-        <div class="memo-footer-note">বিঃ দ্রঃ ক্রটিপূর্ণ মাল ফেরৎযোগ্য।</div>
+        <div class="memo-footer-note">বিঃ দ্রঃ ক্রটিপূর্ণ পণ্য ফেরৎযোগ্য।</div>
 
         {{-- Store name repeated, big & bold --}}
         <div class="memo-footer-name">{{ $store['name'] }}</div>

@@ -1,10 +1,15 @@
 ﻿@extends('layouts.app')
-@section('title', 'মাল রিসিভ')
-@section('page-title', 'মাল রিসিভ')
+@section('title', 'পণ্য গ্রহণ')
+@section('page-title', 'পণ্য গ্রহণ')
 @section('breadcrumb', 'সরবরাহকারী থেকে আইটেম গ্রহণ ও স্টক আপডেট')
 @push('styles')<meta name="turbo-cache-control" content="no-cache">@endpush
 
 @section('content')
+{{-- Amber tint — instantly distinguishes পণ্য গ্রহণ from বিক্রয়.
+     Kept IN the body (not @push('styles')) so Turbo removes it when the
+     body is swapped on navigation away — otherwise the head-level rule
+     would linger and tint every page until a full refresh. --}}
+<style>.content { background: #fffbeb !important; }</style>
 <form method="POST" action="{{ route('purchases.store') }}" id="receiveForm">
 @csrf
 
@@ -22,7 +27,7 @@
             border-radius:10px;padding:11px 20px;margin-bottom:16px;
             display:flex;align-items:center;gap:16px;color:#92400e;flex-wrap:wrap">
     <i class="fas fa-truck-ramp-box" style="font-size:1.3rem;flex-shrink:0"></i>
-    <span style="font-weight:800;font-size:1rem;letter-spacing:.3px;flex-shrink:0">মাল রিসিভ</span>
+    <span style="font-weight:800;font-size:1rem;letter-spacing:.3px;flex-shrink:0">পণ্য গ্রহণ</span>
 
     <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
         <div style="background:rgba(180,83,9,.1);border-radius:8px;padding:5px 14px;text-align:center">
@@ -193,7 +198,7 @@
                 <div class="receive-stock-panel" id="stockPanel" style="display:none">
                     <div class="stock-panel-title">
                         <i class="fas fa-warehouse"></i> স্টক পরিবর্তন
-                        <button type="button" class="info-btn" style="margin-left:4px" data-info="মাল রিসিভ করলে স্টক কীভাবে পরিবর্তন হবে তার পূর্বরূপ। বাম সংখ্যা বর্তমান স্টক, ডান সংখ্যা নতুন স্টক।">i</button>
+                        <button type="button" class="info-btn" style="margin-left:4px" data-info="পণ্য গ্রহণ করলে স্টক কীভাবে পরিবর্তন হবে তার পূর্বরূপ। বাম সংখ্যা বর্তমান স্টক, ডান সংখ্যা নতুন স্টক।">i</button>
                     </div>
                     <div id="stockChangeSummary"></div>
                 </div>
@@ -284,7 +289,7 @@
                 <div id="advancePayWarning" style="display:none;padding:10px 14px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;gap:8px;align-items:flex-start">
                     <i class="fas fa-circle-info" style="color:#ca8a04;margin-top:2px;flex-shrink:0"></i>
                     <div style="font-size:.83rem;color:#92400e;line-height:1.5">
-                        কোনো মাল নেই — <strong><span id="advancePayAmt"></span></strong> সরবরাহকারীর অগ্রিম পরিশোধ হিসেবে যোগ হবে।
+                        কোনো পণ্য নেই —<strong><span id="advancePayAmt"></span></strong> সরবরাহকারীর অগ্রিম পরিশোধ হিসেবে যোগ হবে।
                         পরবর্তী রিসিভে এই অগ্রিম স্বয়ংক্রিয়ভাবে বাদ যাবে।
                     </div>
                 </div>
@@ -332,7 +337,7 @@
                 </div>
 
                 <button type="submit" class="btn btn-primary purchase-submit-desktop" style="width:100%;justify-content:center;padding:14px">
-                    <i class="fas fa-boxes-stacked"></i> মাল রিসিভ ও স্টক আপডেট করুন
+                    <i class="fas fa-boxes-stacked"></i> পণ্য গ্রহণ ও স্টক আপডেট করুন
                 </button>
             </div>
         </div>
@@ -342,7 +347,7 @@
 {{-- Mobile floating submit bar --}}
 <div class="sale-submit-bar purchase-submit-mobile" style="display:none">
     <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:1rem">
-        <i class="fas fa-boxes-stacked"></i> মাল রিসিভ ও স্টক আপডেট করুন
+        <i class="fas fa-boxes-stacked"></i> পণ্য গ্রহণ ও স্টক আপডেট করুন
     </button>
 </div>
 </form>
@@ -384,9 +389,6 @@
 
 @push('styles')
 <style>
-/* Amber tint — instantly distinguishes মাল রিসিভ from বিক্রয় */
-.content { background: #fffbeb !important; }
-
 /* ── নতুন সরবরাহকারী Modal ─────────────────────────────── */
 .cust-modal-overlay {
     position: fixed; inset: 0; z-index: 9999;

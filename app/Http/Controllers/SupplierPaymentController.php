@@ -90,7 +90,7 @@ class SupplierPaymentController extends Controller
 
         // A supplier payment with NO items is functionally identical to a
         // no-item advance purchase. So we create a Purchase record here:
-        //  - shows in the মাল রিসিভ তালিকা (receive list) with অগ্রিম badge
+        //  - shows in the পণ্য গ্রহণ তালিকা (receive list) with অগ্রিম badge
         //  - generates an invoice (purchases.show)
         //  - reduces supplier due exactly once (due_amount = total(0) - paid)
         $purchase = null;

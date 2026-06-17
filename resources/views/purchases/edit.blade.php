@@ -1,7 +1,7 @@
 @extends('layouts.app')
-@section('title', 'রিসিভ সংশোধন — #RCV-' . str_pad($purchase->id, 4, '0', STR_PAD_LEFT))
-@section('page-title', 'রিসিভ সংশোধন')
-@section('breadcrumb', 'মাল রিসিভ সংশোধন করুন')
+@section('title', 'গ্রহণ সংশোধন — #RCV-' . str_pad($purchase->id, 4, '0', STR_PAD_LEFT))
+@section('page-title', 'গ্রহণ সংশোধন')
+@section('breadcrumb', 'পণ্য গ্রহণ সংশোধন করুন')
 
 @section('content')
 <form method="POST" action="{{ route('purchases.update', $purchase) }}" id="receiveForm">
@@ -299,7 +299,7 @@ var stockPanel  = document.getElementById('stockPanel');
 itemSearch.addEventListener('input', function() {
     const q = this.value.toLowerCase().trim();
     if (!q) { suggestions.innerHTML=''; return; }
-    const matches = allItems.filter(i=>i.name.toLowerCase().includes(q)).slice(0,8);
+    const matches = allItems.filter(i=>i.name.toLowerCase().includes(q));
     suggestions.innerHTML = matches.map(i => {
         const stock = i.stock ? i.stock.quantity : 0;
         return `<div class="suggestion-item" onclick="addItem(${i.id})"><strong>${i.name}</strong><div style="font-size:.78rem;color:#64748b;margin-top:2px">ক্রয়মূল্য: ৳${parseFloat(i.purchase_price).toLocaleString()} &nbsp;|&nbsp; স্টক: ${stock}</div></div>`;
@@ -331,7 +331,7 @@ function cancelChangeItem(idx) {
 function searchForChange(idx, q) {
     const resultsEl = document.getElementById('item-change-results-' + idx);
     if (!q.trim()) { resultsEl.innerHTML = ''; return; }
-    const matches = allItems.filter(i => i.name.toLowerCase().includes(q.toLowerCase())).slice(0, 6);
+    const matches = allItems.filter(i => i.name.toLowerCase().includes(q.toLowerCase()));
     resultsEl.innerHTML = matches.map(i => {
         const avail = i.stock ? parseFloat(i.stock.quantity) : 0;
         return `<div onclick="replaceItem(${idx}, ${i.id})" style="padding:7px 10px;cursor:pointer;font-size:.83rem;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center"

@@ -80,18 +80,22 @@ class CustomerController extends Controller
      */
     public function search(Request $request)
     {
-        $q = trim((string) $request->get('q', ''));
-        if (mb_strlen($q) < 1) {
+        $q      = trim((string) $request->get('q', ''));
+        $areaId = $request->get('area_id');
+
+        // Need at least a query OR an area filter — otherwise return nothing.
+        if (mb_strlen($q) < 1 && !$areaId) {
             return response()->json([]);
         }
 
         $customers = Customer::with('area:id,name')
-            ->where(fn($sub) => $sub
+            ->when(mb_strlen($q) >= 1, fn($query) => $query->where(fn($sub) => $sub
                 ->where('name', 'like', "%{$q}%")
                 ->orWhere('proprietor', 'like', "%{$q}%")
-                ->orWhere('phone', 'like', "%{$q}%"))
+                ->orWhere('phone', 'like', "%{$q}%")))
+            ->when($areaId, fn($query) => $query->where('area_id', $areaId))
             ->orderBy('name')
-            ->limit(15)
+            ->limit(30)
             ->get(['id', 'name', 'proprietor', 'phone', 'due_amount', 'area_id']);
 
         return response()->json($customers);

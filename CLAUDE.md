@@ -409,6 +409,27 @@ Stored in `sale_logs.snapshot` (JSON) with: id, sale_date, customer_name, total_
 - All page init moved from `DOMContentLoaded` → `turbo:load`. Per-page one-time setup guarded with flags (`_autoHide`, `_animated`, etc.) since `turbo:load` fires on every visit.
 - Form pages (sales/purchases create) have `<meta name="turbo-cache-control" content="no-cache">` via `@push('styles')` to disable Turbo's cached preview.
 
+### ⚠️ Turbo gotcha — page-specific CSS must go in body, NOT `@push('styles')`
+- `@push('styles')` injects into `<head>`. Turbo merges `<head>` on navigation and **never removes pushed styles** — they leak to all subsequent pages until hard refresh.
+- **Rule:** any CSS that should only apply to one page (e.g. a tinted background) must be an inline `<style>` tag inside `@section('content')` (the body), NOT a `@push('styles')` rule.
+- Example: `purchases/create.blade.php` amber background: `<style>.content { background: #fffbeb !important; }</style>` placed at the top of the content section.
+
+### Searchable area combobox (`partials/area-combobox.blade.php`)
+Drop-in replacement for `<select>` area fields when there may be hundreds of areas.
+```blade
+@include('partials.area-combobox', [
+    'areas'          => $areas,          // required — collection with id/name
+    'acId'           => 'mySelectId',    // optional — id on the hidden input
+    'acName'         => 'area_id',       // default
+    'acValue'        => old('area_id'),  // pre-selected id
+    'acPlaceholder'  => 'খুঁজুন...',
+    'acAllLabel'     => '— সব এলাকা —',
+])
+```
+- Renders: visible search `<input>` + hidden `<input name="area_id">` + embedded JSON
+- Wired by `initAreaComboboxes()` in `app.js` on every `turbo:load`
+- Dispatches native `change` event on the hidden input when selection changes — existing `addEventListener('change', ...)` handlers work unchanged
+
 ### ⚠️ Turbo gotcha — NEVER use top-level `const`/`let` in inline page `<script>`
 - Turbo re-evaluates body `<script>` on every visit. Top-level `const`/`let` survive in global scope, so the 2nd visit re-declares them → `SyntaxError: Identifier already declared` → **entire script aborts** ("JS dead until refresh").
 - **Rule:** all column-0 (top-level) declarations in inline page scripts MUST be `var` (redeclarable). `const`/`let` is fine ONLY inside functions/blocks.
@@ -437,7 +458,7 @@ Accessed via `\App\Models\StoreConfig::get('key', 'default')`:
 8. Floating submit button on sale create
 9. NoCacheHeaders middleware
 10. All date filters default to today (not start of month)
-11. Sales list expandable মালের বিবরণ column
+11. Sales list expandable পণ্যের বিবরণ column
 12. Customer list with gross/net due tfoot breakdown
 
 ### Session 2
@@ -506,6 +527,14 @@ Accessed via `\App\Models\StoreConfig::get('key', 'default')`:
 65. **Turbo Drive (Hotwire Turbo 8)** — SPA-like navigation; no full reloads, swaps `<body>`, fires `turbo:load`; `data-turbo-permanent` on sidebar/chat/backdrop/search/popover; all init moved `DOMContentLoaded`→`turbo:load`; `turbo-cache-control: no-cache` on form pages
 66. **জমা (deposit) entries in পরিশোধ তালিকা** — `SupplierPaymentController::index()` merges `Purchase` (paid) + `PurchaseDeposit` rows via manual `LengthAwarePaginator`; view shows blue "জমা" badge, category in মন্তব্য, মোট জমা stat card + tfoot total
 67. **Fixed: Turbo + top-level `const`/`let` SyntaxError** — Turbo re-evaluates body scripts on every visit; top-level `const`/`let` re-declaration aborted the whole script ("JS dead until refresh"). Converted all column-0 `const`/`let`→`var` across 17 views (see Turbo gotcha above)
+
+### Session 8 — UI Polish, Searchable Area, Keyboard Shortcuts
+68. **Item search limit removed** — `sales/edit` and `purchases/edit` item dropdowns now show all matches (was capped at 6/8)
+69. **পণ্য গ্রহণ page background leak fixed** — moved `.content { background: #fffbeb }` from `@push('styles')` (head — Turbo preserves forever) into body as inline `<style>` tag (Turbo removes on navigation away)
+70. **Keyboard shortcuts rewritten** — use `e.code` (physical key, reliable across layouts) instead of `e.key`; Alt+T for বিক্রয় রিপোর্ট (Alt+R was intercepted by NVIDIA App overlay at OS level); Alt+B handler moved to `app.js` (body-script listener stacked on every Turbo navigation causing double-toggle); canonical fallback paths added so shortcuts work even when sidebar link isn't in DOM
+71. **Sale-logs filter chips** — replaced `<select name="action">` dropdown with pill chips (সব / সংশোধিত / মুছে ফেলা) showing per-type counts; `ReportController::saleLogs()` passes `$counts` array
+72. **Searchable area combobox** — `partials/area-combobox.blade.php` partial (search input + hidden id input + embedded JSON); `initAreaComboboxes()` in `app.js` wires all `.area-combobox:not([data-ac-ready])` on every `turbo:load`; applied to `customers/index`, `customers/ledger-select`, `customers/create`, `customers/edit`, `customer-payments/create`; `CustomerController::search()` accepts `area_id` filter param
+73. **Renamed "মাল রিসিভ" → "পণ্য গ্রহণ"** throughout all views, controllers, and config — "মাল" → "পণ্য" everywhere standalone; "মালামাল" and "মালপত্র" preserved (different compound words); "মালের বিবরণ" → "পণ্যের বিবরণ", "মাল ফেরত" → "পণ্য ফেরত", "ক্রটিপূর্ণ মাল" → "ক্রটিপূর্ণ পণ্য"
 
 ---
 

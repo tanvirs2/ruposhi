@@ -32,7 +32,7 @@
     <div class="stat-card stat-blue">
         <div class="stat-icon"><i class="fas fa-truck-ramp-box"></i></div>
         <div class="stat-body">
-            <span class="stat-label">মোট মাল রিসিভ</span>
+            <span class="stat-label">মোট পণ্য গ্রহণ</span>
             <span class="stat-value">৳ {{ number_format($grandTotal, 0) }}</span>
         </div>
     </div>
@@ -149,6 +149,6 @@
     </div>
 </div>
 @empty
-<div class="card"><div class="empty-row">এই সময়কালে কোনো মাল রিসিভ নেই</div></div>
+<div class="card"><div class="empty-row">এই সময়কালে কোনো পণ্য গ্রহণ নেই</div></div>
 @endforelse
 @endsection

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\CustomerArea;
 use App\Models\CustomerPayment;
 use App\Models\Sale;
 use Illuminate\Http\Request;
@@ -46,7 +47,8 @@ class CustomerPaymentController extends Controller
             ];
         }
         $paymentMethods = StoreConfigController::getGroupedPaymentMethods();
-        return view('customer-payments.create', compact('preCustomer', 'selectedId', 'paymentMethods'));
+        $areas          = CustomerArea::orderBy('name')->get();
+        return view('customer-payments.create', compact('preCustomer', 'selectedId', 'paymentMethods', 'areas'));
     }
 
     public function store(Request $request)

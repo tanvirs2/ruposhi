@@ -17,18 +17,29 @@
                 <input type="date" name="to" value="{{ $to }}">
             </div>
             @include('partials.date-range-buttons')
-            <div class="form-group-field">
-                <label>ধরন</label>
-                <select name="action" class="form-select">
-                    <option value="">সব</option>
-                    <option value="edited"  @selected($action==='edited')>সংশোধিত</option>
-                    <option value="deleted" @selected($action==='deleted')>মুছে ফেলা</option>
-                </select>
-            </div>
+            {{-- preserve the active type filter across date searches --}}
+            <input type="hidden" name="action" value="{{ $action }}">
             <button type="submit" class="btn btn-primary" style="align-self:flex-end">
                 <i class="fas fa-search"></i> খুঁজুন
             </button>
         </form>
+    </div>
+
+    {{-- ধরন filter chips --}}
+    @php
+        $logChips = [
+            ''        => ['সব',        $counts[''],        '#475569'],
+            'edited'  => ['সংশোধিত',   $counts['edited'],  '#d97706'],
+            'deleted' => ['মুছে ফেলা', $counts['deleted'], '#dc2626'],
+        ];
+    @endphp
+    <div class="filter-chips" style="border-top:1px solid var(--border);border-bottom:none">
+        @foreach($logChips as $key => [$label, $cnt, $color])
+            <a href="{{ route('reports.sale-logs', array_merge(request()->except(['action','page']), ['action' => $key])) }}"
+               class="fchip {{ $action === $key ? 'fchip-active' : '' }}" style="--chip:{{ $color }}">
+                {{ $label }}<span class="fchip-count">{{ $cnt }}</span>
+            </a>
+        @endforeach
     </div>
 </div>
 
@@ -47,7 +58,7 @@
                     <th>কাস্টমার</th>
                     <th class="tr">মোট</th>
                     <th class="tr">পরিশোধ</th>
-                    <th>মালের বিবরণ</th>
+                    <th>পণ্যের বিবরণ</th>
                     <th>কারণ / মন্তব্য</th>
                     <th class="tc">ইউজার</th>
                     <th class="tc">বিস্তারিত</th>

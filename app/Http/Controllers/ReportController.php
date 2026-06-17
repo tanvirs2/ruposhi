@@ -473,7 +473,15 @@ class ReportController extends Controller
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        return view('reports.sale-logs', compact('logs', 'from', 'to', 'action'));
+        // Per-type counts for the filter chips (respect date range, ignore action)
+        $countBase = SaleLog::whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59']);
+        $counts = [
+            ''        => (clone $countBase)->count(),
+            'edited'  => (clone $countBase)->where('action', 'edited')->count(),
+            'deleted' => (clone $countBase)->where('action', 'deleted')->count(),
+        ];
+
+        return view('reports.sale-logs', compact('logs', 'from', 'to', 'action', 'counts'));
     }
 
     // ── Export: বিক্রয় রিপোর্ট ──────────────────────────────────

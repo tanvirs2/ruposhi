@@ -166,7 +166,7 @@ class PurchaseController extends Controller
             }
         });
 
-        return redirect()->route('purchases.show', $purchase)->with('success', 'মাল রিসিভ সম্পন্ন হয়েছে। স্টক আপডেট হয়েছে।');
+        return redirect()->route('purchases.show', $purchase)->with('success', 'পণ্য গ্রহণ সম্পন্ন হয়েছে। স্টক আপডেট হয়েছে।');
     }
 
     public function edit(Purchase $purchase)
