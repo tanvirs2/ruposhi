@@ -5,6 +5,8 @@
     --sidebar-w: 260px;
     --sidebar-collapsed: 72px;
     --topbar-h: 64px;
+    --active-sidebar-w: var(--sidebar-w); /* updated by JS on sidebar toggle */
+    --submit-bar-w: 360px; /* matches .sale-submit-bar width; updated in media queries */
 
     --bg: #f1f5f9;
     --surface: #ffffff;
@@ -346,7 +348,8 @@ a { text-decoration: none; color: inherit; }
     min-height: 100vh;
     transition: margin-left var(--transition);
 }
-.main-wrapper.expanded { margin-left: var(--sidebar-collapsed); }
+/* CSS-driven: sidebar class controls margin — no JS class toggling on mainWrapper needed */
+.sidebar.collapsed ~ .main-wrapper { margin-left: var(--sidebar-collapsed); }
 
 /* ─── Topbar ────────────────────────────────────────────────── */
 .topbar {
@@ -575,7 +578,8 @@ a { text-decoration: none; color: inherit; }
     border: none;
     outline: none;
     color: var(--text-primary);
-    width: 160px;
+    flex: 1;
+    min-width: 80px;
     font-family: inherit;
     font-size: 0.85rem;
 }
@@ -1438,6 +1442,14 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
 }
 .pos-right { position: sticky; top: calc(var(--topbar-h) + 16px); }
 
+/* Shrink right panel on medium screens (tablet / small laptop) */
+@media (max-width: 1400px) and (min-width: 901px) {
+    :root { --submit-bar-w: 290px; }
+    .pos-grid { grid-template-columns: 1fr 290px; gap: 14px; }
+    .sale-submit-bar { width: 290px; }
+    .content { padding: 18px 20px 40px; }
+}
+
 /* Floating sale submit bar — right panel on desktop, full-width on mobile */
 .sale-submit-bar {
     position: fixed;
@@ -1460,6 +1472,7 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
     .pos-layout { padding-bottom: 80px; }
 }
 .suggestions-list { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow-y: auto; max-height: 360px; }
+.suggestions-list:empty { display: none; }
 .suggestion-item {
     display: flex; align-items: center; justify-content: space-between;
     padding: 10px 14px; cursor: pointer;
@@ -1470,7 +1483,9 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
 .suggestion-item:last-child { border-bottom: none; }
 .suggestion-item:hover { background: var(--accent-light); }
 
-.summary-row { display: flex; justify-content: space-between; font-size: 0.88rem; color: var(--text-secondary); }
+.summary-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; color: var(--text-secondary); gap: 8px; }
+.summary-row > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.summary-row > span:last-child { flex-shrink: 0; white-space: nowrap; }
 .summary-total { font-weight: 700; font-size: 1rem; color: var(--text-primary); }
 
 /* ─── Invoice ───────────────────────────────────────────────── */
@@ -1548,7 +1563,7 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
 }
 
 /* ─── Topbar search (inherits .search-box, just wider) ─────── */
-.topbar .search-box input { width: 200px; }
+.topbar .search-box { width: 240px; }
 
 /* ─── Supplier/purchase index (reused customer styles) ──────── */
 

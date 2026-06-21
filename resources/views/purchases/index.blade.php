@@ -4,6 +4,19 @@
 
 @section('content')
 @include('partials.page-header', ['title' => 'গ্রহণ তালিকা', 'createRoute' => route('purchases.create'), 'createLabel' => 'নতুন গ্রহণ'])
+@if(auth()->user()->canManageShop() && (($pendingDeleteCount ?? 0) + ($pendingEditCount ?? 0)) > 0)
+<div style="background:#fff7ed;border:1.5px solid #fbbf24;border-radius:10px;padding:10px 18px;
+            margin-bottom:12px;display:flex;align-items:center;gap:16px;font-size:.88rem;flex-wrap:wrap">
+    <i class="fas fa-clock" style="color:#d97706;font-size:1rem"></i>
+    @if(($pendingDeleteCount ?? 0) > 0)
+        <span style="color:#92400e;font-weight:600"><i class="fas fa-trash" style="color:#ef4444"></i> {{ $pendingDeleteCount }}টি ডিলিট অনুমোদন অপেক্ষায়</span>
+    @endif
+    @if(($pendingEditCount ?? 0) > 0)
+        <span style="color:#92400e;font-weight:600"><i class="fas fa-pencil" style="color:#d97706"></i> {{ $pendingEditCount }}টি সংশোধন অনুমোদন অপেক্ষায়</span>
+    @endif
+    <span style="color:#92400e;font-size:.82rem">নিচের তালিকায় দেখুন।</span>
+</div>
+@endif
 
 <div class="card" id="purchasesCard">
     <div class="card-filter" style="flex-wrap:wrap;gap:8px">
@@ -27,6 +40,11 @@
             <button id="btnItemView" class="view-toggle-btn" onclick="setView('item')">
                 <i class="fas fa-list"></i> আইটেম ভিউ
             </button>
+            @if(auth()->user()->canManageShop())
+            <button id="btnUserView" class="view-toggle-btn" onclick="setView('user')">
+                <i class="fas fa-users"></i> ইউজার ভিউ
+            </button>
+            @endif
         </div>
     </div>
 
@@ -73,8 +91,12 @@
 function setView(type) {
     document.getElementById('invoiceView').style.display = type === 'invoice' ? '' : 'none';
     document.getElementById('itemView').style.display    = type === 'item'    ? '' : 'none';
+    var uv = document.getElementById('purchaseUserView');
+    if (uv) uv.style.display = type === 'user' ? '' : 'none';
     document.getElementById('btnInvoiceView').classList.toggle('active', type === 'invoice');
     document.getElementById('btnItemView').classList.toggle('active',    type === 'item');
+    var bu = document.getElementById('btnUserView');
+    if (bu) bu.classList.toggle('active', type === 'user');
     localStorage.setItem('purchaseView', type);
 }
 
@@ -130,6 +152,8 @@ setView(savedView);
                 results.style.opacity = '1';
                 syncClearBtn();
                 setView(localStorage.getItem('purchaseView') || 'invoice');
+                // reset to invoice if user view was active but now empty
+
                 if (opts.keepFocus && document.activeElement !== input) {
                     input.focus();
                     var v = input.value; input.value = ''; input.value = v;

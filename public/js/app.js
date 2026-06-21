@@ -12,16 +12,26 @@ document.body.appendChild(backdrop);
 
 function isMobile() { return window.innerWidth <= 768; }
 
+function _syncSidebarVar() {
+    var w = (!isMobile() && sidebar?.classList.contains('collapsed'))
+        ? 'var(--sidebar-collapsed)' : 'var(--sidebar-w)';
+    document.documentElement.style.setProperty('--active-sidebar-w', w);
+}
+
+// Restore sidebar collapsed state on fresh page load
+if (!isMobile() && localStorage.getItem('sidebarCollapsed') === '1') {
+    sidebar?.classList.add('collapsed');
+}
+_syncSidebarVar();
+
 function toggleSidebar() {
-    // mainWrapper is NOT permanent — look it up fresh each call
-    const mw = document.getElementById('mainWrapper');
     if (isMobile()) {
         sidebar.classList.toggle('mobile-open');
         backdrop.classList.toggle('visible');
     } else {
         sidebar.classList.toggle('collapsed');
-        mw?.classList.toggle('expanded');
-        sessionStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
+        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
+        _syncSidebarVar();
     }
 }
 
@@ -37,6 +47,12 @@ const menuBtn = document.getElementById('menuBtn');
 function toggleNavGroup(id) {
     const group = document.getElementById(id);
     if (!group) return;
+    // Collapsed sidebar: expand it first, then open this group
+    if (!isMobile() && sidebar?.classList.contains('collapsed')) {
+        toggleSidebar();
+        setTimeout(function() { group.classList.add('open'); }, 50);
+        return;
+    }
     group.classList.toggle('open');
 }
 
@@ -123,8 +139,11 @@ setInterval(updateClock, 1000);
 
     document.addEventListener('submit', function (e) {
         const form = e.target;
+        // Trigger for DELETE method forms OR any form with data-confirm-msg
         const methodInput = form.querySelector('input[name="_method"]');
-        if (!methodInput || methodInput.value.toUpperCase() !== 'DELETE') return;
+        const isDeleteForm = methodInput && methodInput.value.toUpperCase() === 'DELETE';
+        const hasConfirmMsg = !!form.dataset.confirmMsg;
+        if (!isDeleteForm && !hasConfirmMsg) return;
         if (form.dataset.confirmed) { delete form.dataset.confirmed; return; }
 
         e.preventDefault();
@@ -588,11 +607,8 @@ function animateValue(el, duration = 900) {
 
 /* ── Per-page init (runs on every Turbo navigation) ─────────── */
 document.addEventListener('turbo:load', function() {
-    // Restore mainWrapper expanded state when sidebar is collapsed
-    const mw = document.getElementById('mainWrapper');
-    if (mw && sidebar?.classList.contains('collapsed')) {
-        mw.classList.add('expanded');
-    }
+    // Remove txn-summary body class on navigation (only relevant on sale/purchase create pages)
+    document.body.classList.remove('txn-summary-active');
 
     // Alert auto-dismiss
     document.querySelectorAll('.alert.alert-success').forEach(function(alert) {

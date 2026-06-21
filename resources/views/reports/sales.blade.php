@@ -128,6 +128,20 @@
     @endif
 </div>
 
+{{-- Tab switcher (admin only) ───────────────────────────────── --}}
+@if(auth()->user()->canManageShop())
+<div class="no-print" style="display:flex;gap:0;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;width:fit-content;margin-bottom:20px">
+    <button id="btnReportDetail" class="report-tab-btn active" onclick="setReportView('detail')">
+        <i class="fas fa-table-list"></i> বিক্রয় বিবরণ
+    </button>
+    <button id="btnReportUser" class="report-tab-btn" onclick="setReportView('user')">
+        <i class="fas fa-users"></i> ইউজার ভিত্তিক
+    </button>
+</div>
+@endif
+
+<div id="reportDetailView">
+
 {{-- 7-Day Trend Chart ────────────────────────────────────────── --}}
 <div class="card no-print" style="margin-bottom:20px">
     <div class="card-header">
@@ -197,6 +211,50 @@
     $walkinExtra = $walkinUniqSales->sum('extra_cost');
     $walkinDisc  = $walkinUniqSales->sum('discount');
 @endphp
+
+{{-- User-wise sales summary ────────────────────────────────── --}}
+@if($userSummary->count() > 1)
+<div class="card no-print" style="margin-bottom:20px">
+    <div class="card-header">
+        <h3><i class="fas fa-users" style="color:var(--accent)"></i> ইউজার ভিত্তিক বিক্রয়</h3>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ইউজার</th>
+                    <th style="text-align:right">বিক্রয় সংখ্যা</th>
+                    <th style="text-align:right">মোট বিক্রয়</th>
+                    <th style="text-align:right">পরিশোধ</th>
+                    <th style="text-align:right">বাকী</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($userSummary as $row)
+                <tr>
+                    <td style="font-weight:600">{{ $row['name'] }}</td>
+                    <td style="text-align:right">{{ $row['count'] }}</td>
+                    <td style="text-align:right;font-weight:700">৳ {{ number_format($row['total'],0) }}</td>
+                    <td style="text-align:right;color:#16a34a">৳ {{ number_format($row['paid'],0) }}</td>
+                    <td style="text-align:right;color:{{ $row['due'] > 0 ? '#dc2626' : 'var(--text-secondary)' }}">
+                        {{ $row['due'] > 0 ? '৳ '.number_format($row['due'],0) : '—' }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td style="font-weight:700">মোট</td>
+                    <td style="text-align:right;font-weight:700">{{ $userSummary->sum('count') }}</td>
+                    <td style="text-align:right;font-weight:800">৳ {{ number_format($grandTotal,0) }}</td>
+                    <td style="text-align:right;font-weight:800;color:#16a34a">৳ {{ number_format($grandItemPaid,0) }}</td>
+                    <td style="text-align:right;font-weight:800;color:#dc2626">৳ {{ number_format($userSummary->sum('due'),0) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+@endif
 
 {{-- Per-item detail table — named customers ────────────────── --}}
 <div class="card">
@@ -633,10 +691,117 @@
 </div>
 @endif
 
+</div>{{-- /#reportDetailView --}}
+
+{{-- ══ ইউজার ভিত্তিক বিক্রয় ══════════════════════════════════════ --}}
+@if(auth()->user()->canManageShop())
+@php
+    $reportItemSales = $sales->filter(fn($s) => !$noItemSales->pluck('id')->contains($s->id));
+    $userGrouped = $reportItemSales->groupBy(fn($s) => ($s->user?->name ?? 'অজানা'));
+@endphp
+<div id="reportUserView" style="display:none">
+    @forelse($userGrouped as $uName => $uSales)
+    @php
+        $uTotal = $uSales->sum('total_amount');
+        $uPaid  = $uSales->sum('paid_amount');
+        $uDue   = $uSales->sum('due_amount');
+    @endphp
+    <div class="card" style="margin-bottom:18px">
+        <div class="card-header" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-bottom:1px solid #bfdbfe;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <h3 style="font-size:.95rem;color:#1d4ed8;margin:0">
+                <i class="fas fa-user" style="margin-right:6px"></i>{{ $uName }}
+            </h3>
+            <div style="display:flex;gap:16px;font-size:.82rem;flex-wrap:wrap;align-items:center">
+                <span style="color:var(--text-secondary)"><strong style="color:var(--text)">{{ $uSales->count() }}টি</strong> বিক্রয়</span>
+                <span style="color:#1d4ed8;font-weight:700">মোট ৳ {{ number_format($uTotal,0) }}</span>
+                <span style="color:#16a34a;font-weight:600">পরিশোধ ৳ {{ number_format($uPaid,0) }}</span>
+                @if($uDue > 0)<span style="color:#dc2626;font-weight:600">বাকী ৳ {{ number_format($uDue,0) }}</span>@endif
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table sale-detail-table">
+                <thead>
+                    <tr>
+                        <th class="tc">চালান নং</th>
+                        <th>কাস্টমার</th>
+                        <th class="tc col-hide-tablet">তারিখ</th>
+                        <th class="tr">মোট মূল্য</th>
+                        <th class="tr">পরিশোধ</th>
+                        <th class="tr">বাকী</th>
+                        <th class="tc col-hide-tablet">সময়</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($uSales->sortBy('sale_date') as $uSale)
+                    <tr>
+                        <td class="tc mono">
+                            <a href="{{ route('sales.show', $uSale->id) }}" class="link-primary">
+                                {{ str_pad($uSale->id, 6, '0', STR_PAD_LEFT) }}
+                            </a>
+                        </td>
+                        <td>{{ $uSale->customer?->name ?? '— ওয়াক-ইন' }}</td>
+                        <td class="tc col-hide-tablet" style="font-size:.8rem;color:#64748b;white-space:nowrap">
+                            {{ $uSale->sale_date->format('d/m/Y') }}
+                        </td>
+                        <td class="tr" style="font-weight:600">৳ {{ number_format($uSale->total_amount,0) }}</td>
+                        <td class="tr" style="color:#16a34a">৳ {{ number_format($uSale->paid_amount,0) }}</td>
+                        <td class="tr">
+                            @if($uSale->due_amount > 0)
+                                <span style="color:#dc2626;font-weight:600">৳ {{ number_format($uSale->due_amount,0) }}</span>
+                            @else
+                                <span style="color:#94a3b8">—</span>
+                            @endif
+                        </td>
+                        <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                            {{ $uSale->created_at->format('h:i a') }}
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+                <tfoot>
+                    <tr class="tfoot-summary">
+                        <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                        <td class="tr" style="font-weight:800">৳ {{ number_format($uTotal,0) }}</td>
+                        <td class="tr" style="color:#16a34a;font-weight:800">৳ {{ number_format($uPaid,0) }}</td>
+                        <td class="tr" style="font-weight:800;color:#dc2626">{{ $uDue > 0 ? '৳ '.number_format($uDue,0) : '—' }}</td>
+                        <td class="col-hide-tablet"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    @empty
+    <div style="text-align:center;padding:60px;color:var(--text-secondary)">
+        <i class="fas fa-users" style="font-size:2.5rem;opacity:.25;display:block;margin-bottom:12px"></i>
+        এই সময়কালে কোনো বিক্রয় নেই
+    </div>
+    @endforelse
+</div>
+@endif
+
 @endsection
 
 @push('styles')
 <style>
+.report-tab-btn {
+    padding: 7px 18px;
+    border: none;
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: .83rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background .15s, color .15s;
+    border-right: 1.5px solid var(--border);
+}
+.report-tab-btn:last-child { border-right: none; }
+.report-tab-btn:hover { background: var(--bg); color: var(--text); }
+.report-tab-btn.active { background: var(--accent); color: #fff; }
+
 .tc { text-align: center; }
 .tr { text-align: right; }
 .mono { font-family: 'Inter', monospace; font-size: .8rem; }
@@ -704,6 +869,21 @@
 
 @push('scripts')
 <script>
+function setReportView(type) {
+    var detailEl = document.getElementById('reportDetailView');
+    var userEl   = document.getElementById('reportUserView');
+    var btnD     = document.getElementById('btnReportDetail');
+    var btnU     = document.getElementById('btnReportUser');
+    if (detailEl) detailEl.style.display = type === 'detail' ? '' : 'none';
+    if (userEl)   userEl.style.display   = type === 'user'   ? '' : 'none';
+    if (btnD) btnD.classList.toggle('active', type === 'detail');
+    if (btnU) btnU.classList.toggle('active', type === 'user');
+    localStorage.setItem('reportView', type);
+}
+
+var savedReportView = localStorage.getItem('reportView') || 'detail';
+setReportView(savedReportView);
+
 (function () {
     var input   = document.getElementById('rsCustomerSearch');
     var idInput = document.getElementById('rsCustomerId');

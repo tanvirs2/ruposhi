@@ -7,19 +7,20 @@
 <form method="POST" action="{{ route('sales.store') }}" id="saleForm">
 @csrf
 
-{{-- Draft restore banner --}}
-<div id="draftBanner" style="display:none;align-items:center;gap:12px;flex-wrap:wrap;
+{{-- Draft restore banner — fixed at bottom, above submit bar --}}
+<div id="draftBanner" style="display:none;position:fixed;bottom:82px;left:calc(var(--active-sidebar-w) + 16px);
+     right:calc(var(--submit-bar-w) + 16px);z-index:190;align-items:center;gap:12px;flex-wrap:wrap;
      background:#fffbeb;border:1.5px solid #fbbf24;border-radius:10px;
-     padding:12px 18px;margin-bottom:16px;font-size:.88rem">
+     padding:10px 16px;font-size:.88rem;box-shadow:0 4px 20px rgba(0,0,0,.12)">
     <i class="fas fa-clock-rotate-left" style="color:#d97706;font-size:1.1rem"></i>
     <span id="draftBannerText" style="flex:1;color:#92400e;font-weight:600"></span>
     <button type="button" onclick="restoreDraftData()"
-        style="padding:7px 16px;border-radius:7px;border:none;background:#d97706;
+        style="padding:6px 14px;border-radius:7px;border:none;background:#d97706;
                color:#fff;font-weight:700;cursor:pointer;font-size:.85rem;font-family:inherit">
         <i class="fas fa-rotate-left"></i> পুনরুদ্ধার করুন
     </button>
     <button type="button" onclick="discardDraft()"
-        style="padding:7px 14px;border-radius:7px;border:1.5px solid #fbbf24;
+        style="padding:6px 12px;border-radius:7px;border:1.5px solid #fbbf24;
                background:transparent;color:#92400e;font-weight:600;cursor:pointer;
                font-size:.85rem;font-family:inherit">
         <i class="fas fa-trash"></i> বাতিল
@@ -31,9 +32,9 @@
     {{-- Left: Items --}}
     <div class="pos-left">
         <div class="card" style="margin-bottom:16px">
-            <div class="card-header"><h3><i class="fas fa-search"></i> আইটেম যোগ করুন</h3></div>
-            <div style="padding:16px">
-                <div class="search-box" style="margin-bottom:12px">
+            <div class="card-header" style="padding:10px 14px"><h3><i class="fas fa-search"></i> আইটেম যোগ করুন</h3></div>
+            <div style="padding:10px 14px;padding-top:8px">
+                <div class="search-box">
                     <i class="fas fa-search"></i>
                     <input type="text" id="itemSearch" placeholder="আইটেমের নাম লিখুন...">
                 </div>
@@ -105,8 +106,30 @@
                     <div id="customerSelected" style="display:none;margin-top:6px;font-size:.85rem"></div>
                 </div>
                 <div class="form-group-field">
-                    <label>তারিখ <span class="req">*</span></label>
-                    <input type="date" name="sale_date" value="{{ date('Y-m-d') }}" required>
+                    <label style="display:flex;justify-content:space-between;align-items:center">
+                        <span>তারিখ</span>
+                        @if(auth()->user()->canManageShop())
+                        <button type="button" onclick="toggleSaleDate()" id="saleDateToggleBtn"
+                            style="font-size:.75rem;color:var(--accent);background:none;border:none;
+                                   cursor:pointer;padding:0;font-family:inherit;font-weight:600">
+                            <i class="fas fa-pencil"></i> পরিবর্তন করুন
+                        </button>
+                        @endif
+                    </label>
+                    {{-- Read-only display (always shown initially) --}}
+                    <div id="saleDateDisplay"
+                        style="padding:7px 0;font-size:.9rem;font-weight:600;color:var(--text-primary)">
+                        {{ \Carbon\Carbon::today()->translatedFormat('j F, Y') }}
+                    </div>
+                    {{-- Actual date input — hidden by default, admin only --}}
+                    <input type="date" name="sale_date" id="saleDateInput"
+                        value="{{ date('Y-m-d') }}" required style="display:none"
+                        @if(!auth()->user()->canManageShop()) disabled @endif
+                        onchange="updateSaleDateDisplay(this.value)">
+                    @if(!auth()->user()->canManageShop())
+                    {{-- Staff: force today's date via hidden input --}}
+                    <input type="hidden" name="sale_date" value="{{ date('Y-m-d') }}">
+                    @endif
                 </div>
                 <div class="form-group-field">
                     <label>স্ট্যাটাস</label>
@@ -275,15 +298,15 @@
     {{-- Post-transaction summary — always visible directly above the CTA --}}
     <div id="txnSummary" style="display:none;border:1.5px solid var(--border);border-radius:10px;
          padding:8px 12px;margin-bottom:10px;background:var(--bg)">
-        <div style="display:flex;justify-content:space-between;align-items:center;
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;
                     font-size:.8rem;color:var(--text-secondary);margin-bottom:5px">
-            <span><i class="fas fa-wallet" style="margin-right:4px"></i> আজ মোট জমা</span>
-            <span id="txnCollected" style="font-weight:800;color:#16a34a">৳ 0</span>
+            <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><i class="fas fa-wallet" style="margin-right:4px"></i> আজ মোট জমা</span>
+            <span id="txnCollected" style="flex-shrink:0;font-weight:800;color:#16a34a;white-space:nowrap">৳ 0</span>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;
                     border-top:1px dashed var(--border);padding-top:6px">
-            <span style="font-size:.84rem;font-weight:700;color:var(--text-primary)">লেনদেনের পর সর্বমোট বাকী</span>
-            <span id="txnDueAfter" style="font-size:1.2rem;font-weight:800;color:#dc2626">৳ 0</span>
+            <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.84rem;font-weight:700;color:var(--text-primary)">লেনদেনের পর সর্বমোট বাকী</span>
+            <span id="txnDueAfter" style="flex-shrink:0;white-space:nowrap;font-size:1.2rem;font-weight:800;color:#dc2626">৳ 0</span>
         </div>
     </div>
     <button type="submit" form="saleForm" class="btn btn-primary"
@@ -976,6 +999,7 @@ function updateSummary() {
     if (txn) {
         const active = cart.length || owed > 0 || paid > 0;
         txn.style.display = active ? 'block' : 'none';
+        document.body.classList.toggle('txn-summary-active', !!active);
         if (active) {
             document.getElementById('txnCollected').textContent = '৳ ' + paid.toFixed(0);
             const after = document.getElementById('txnDueAfter');
@@ -1512,6 +1536,31 @@ function discardDraft() {
 
 var _pendingDraft = null;
 
+function toggleSaleDate() {
+    var inp = document.getElementById('saleDateInput');
+    var display = document.getElementById('saleDateDisplay');
+    var btn = document.getElementById('saleDateToggleBtn');
+    if (!inp) return;
+    if (inp.style.display === 'none') {
+        inp.style.display = '';
+        display.style.display = 'none';
+        if (btn) btn.innerHTML = '<i class="fas fa-times"></i> বাতিল';
+        inp.focus();
+    } else {
+        inp.style.display = 'none';
+        display.style.display = '';
+        if (btn) btn.innerHTML = '<i class="fas fa-pencil"></i> পরিবর্তন করুন';
+    }
+}
+
+function updateSaleDateDisplay(val) {
+    var display = document.getElementById('saleDateDisplay');
+    if (!display || !val) return;
+    var d = new Date(val);
+    var months = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+    display.textContent = d.getDate() + ' ' + months[d.getMonth()] + ', ' + d.getFullYear();
+}
+
 function restoreDraftData() {
     const draft = _pendingDraft;
     if (!draft) return;
@@ -1549,7 +1598,8 @@ function restoreDraftData() {
 
     // Restore date
     if (draft.saleDate) {
-        document.querySelector('input[name="sale_date"]').value = draft.saleDate;
+        var sdInp = document.getElementById('saleDateInput');
+        if (sdInp) { sdInp.value = draft.saleDate; updateSaleDateDisplay(draft.saleDate); }
     }
 
     // Restore discount

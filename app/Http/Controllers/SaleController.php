@@ -11,6 +11,9 @@ use App\Models\CustomerArea;
 use App\Models\Item;
 use App\Models\Stock;
 use App\Models\ExtraCostCategory;
+use App\Models\PendingEdit;
+use App\Services\SmsService;
+use App\Models\StoreConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\StoreConfigController;
@@ -23,7 +26,10 @@ class SaleController extends Controller
         $dateFrom = $request->date_from ?: null;
         $dateTo   = $request->date_to   ?: null;
 
-        $query = Sale::with(['customer', 'items.item'])
+        $isStaff = auth()->user()->role === 'staff';
+
+        $query = Sale::with(['customer', 'items.item', 'user:id,name'])
+            ->when($isStaff, fn($q) => $q->where('user_id', auth()->id()))
             ->when($request->search, fn($q) =>
                 // Wrap in a sub-group so the OR doesn't bypass the global shop_id scope
                 $q->where(fn($sub) =>
@@ -42,7 +48,31 @@ class SaleController extends Controller
 
         $sales = $query->latest('sale_date')->latest('id')->paginate(20)->withQueryString();
 
-        $data = compact('sales', 'grandTotal', 'grandPaid', 'grandDue', 'dateFrom', 'dateTo');
+        $pendingDeleteCount = Sale::whereNotNull('delete_requested_at')->count();
+        $pendingEditCount   = PendingEdit::where('model_type', 'sale')->where('status', 'pending')->count();
+
+        // Index pending edits by sale_id for O(1) lookup in the view
+        $saleIds     = $sales->pluck('id');
+        $pendingEditsMap = PendingEdit::where('model_type', 'sale')
+            ->where('status', 'pending')
+            ->whereIn('model_id', $saleIds)
+            ->with('requestedBy:id,name')
+            ->get()
+            ->keyBy('model_id');
+
+        // User-wise summary (same filters, no pagination)
+        $userSummary = (clone $query)
+            ->reorder()
+            ->select('user_id', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as total'), DB::raw('SUM(paid_amount) as paid'), DB::raw('SUM(due_amount) as due'))
+            ->groupBy('user_id')
+            ->with('user:id,name')
+            ->get()
+            ->map(fn($r) => ['name' => $r->user?->name ?? 'অজানা', 'count' => $r->count, 'total' => $r->total, 'paid' => $r->paid, 'due' => $r->due])
+            ->sortByDesc('total')
+            ->values();
+
+        $data = compact('sales', 'grandTotal', 'grandPaid', 'grandDue', 'dateFrom', 'dateTo',
+                        'pendingDeleteCount', 'pendingEditCount', 'pendingEditsMap', 'userSummary');
 
         if ($request->ajax()) {
             return view('sales._results', $data);
@@ -200,6 +230,13 @@ class SaleController extends Controller
             return back()->withErrors(['customer_id' => 'আইটেম ছাড়া বিক্রয়ে কাস্টমার নির্বাচন আবশ্যক।'])->withInput();
         }
 
+        // Staff: store as pending edit for admin approval
+        if (!auth()->user()->canManageShop()) {
+            $this->saveSalePendingEdit($sale, $request);
+            return redirect()->route('sales.show', $sale)
+                ->with('success', 'সংশোধনের অনুরোধ পাঠানো হয়েছে। অ্যাডমিনের অনুমোদনের অপেক্ষায়।');
+        }
+
         // Log current state BEFORE changes
         $this->logSale($sale, 'edited', $request->edit_note);
 
@@ -306,6 +343,240 @@ class SaleController extends Controller
         });
 
         return redirect()->route('sales.index')->with('success', 'বিক্রয় মুছে ফেলা হয়েছে।');
+    }
+
+    // ── Staff: request deletion approval ─────────────────────
+    public function requestDelete(Sale $sale)
+    {
+        if (auth()->user()->canManageShop()) {
+            return back()->with('error', 'অ্যাডমিন সরাসরি মুছতে পারেন।');
+        }
+        if ($sale->delete_requested_at) {
+            return back()->with('error', 'ইতিমধ্যে অনুরোধ পাঠানো হয়েছে।');
+        }
+        $sale->update([
+            'delete_requested_at' => now(),
+            'delete_requested_by' => auth()->id(),
+        ]);
+        return back()->with('success', 'ডিলিট অনুরোধ পাঠানো হয়েছে। অ্যাডমিনের অনুমোদনের অপেক্ষায়।');
+    }
+
+    // ── Admin: approve pending deletion ──────────────────────
+    public function approveDelete(Sale $sale)
+    {
+        if (!auth()->user()->canManageShop()) abort(403);
+        DB::transaction(function () use ($sale) {
+            $this->logSale($sale, 'deleted', 'মুছে ফেলা হয়েছে (স্টাফ অনুরোধ অনুমোদিত)');
+            foreach ($sale->items as $item) {
+                Stock::where('item_id', $item->item_id)->increment('quantity', $item->quantity);
+            }
+            if ($sale->customer_id) {
+                $customer = Customer::find($sale->customer_id);
+                $customer->decrement('due_amount', $sale->total_amount - $sale->paid_amount);
+            }
+            $sale->delete();
+        });
+        return back()->with('success', 'বিক্রয় মুছে ফেলা হয়েছে।');
+    }
+
+    // ── Admin: reject pending deletion ───────────────────────
+    public function rejectDelete(Sale $sale)
+    {
+        if (!auth()->user()->canManageShop()) abort(403);
+        $sale->update(['delete_requested_at' => null, 'delete_requested_by' => null]);
+        return back()->with('success', 'ডিলিট অনুরোধ বাতিল করা হয়েছে।');
+    }
+
+    // ── Admin: approve pending edit ───────────────────────────
+    public function approveEdit(PendingEdit $pendingEdit)
+    {
+        if (!auth()->user()->canManageShop()) abort(403);
+        if ($pendingEdit->model_type !== 'sale' || !$pendingEdit->isPending()) {
+            return back()->with('error', 'অনুরোধটি আর বৈধ নয়।');
+        }
+
+        $sale = Sale::findOrFail($pendingEdit->model_id);
+        $d    = $pendingEdit->proposed_data;
+
+        $this->logSale($sale, 'edited', 'সংশোধন অনুরোধ অনুমোদিত (স্টাফ: ' . ($pendingEdit->requestedBy?->name ?? '?') . ')');
+
+        DB::transaction(function () use ($sale, $d) {
+            foreach ($sale->items as $oldItem) {
+                Stock::where('item_id', $oldItem->item_id)->increment('quantity', $oldItem->quantity);
+            }
+            if ($sale->customer_id) {
+                Customer::find($sale->customer_id)?->increment('due_amount', $sale->paid_amount - $sale->total_amount);
+            }
+            $sale->items()->delete();
+
+            $total      = collect($d['items'] ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
+            $discount   = (float) ($d['discount'] ?? 0);
+            $extraCosts = collect($d['extra_costs'] ?? [])->filter(fn($r) => !empty($r['category']) && ($r['amount'] ?? 0) > 0);
+            $extraCost  = $extraCosts->sum(fn($r) => (float) $r['amount']);
+            $net        = $total - $discount + $extraCost;
+            $due        = max(0, $net - (float) $d['paid_amount']);
+
+            $previousDue = isset($d['customer_id']) && $d['customer_id']
+                ? Customer::find($d['customer_id'])?->due_amount ?? 0
+                : 0;
+
+            $sale->update([
+                'customer_id'    => $d['customer_id'] ?: null,
+                'total_amount'   => $net,
+                'discount'       => $discount,
+                'extra_cost'     => $extraCost,
+                'paid_amount'    => (float) $d['paid_amount'],
+                'due_amount'     => $due,
+                'previous_due'   => $previousDue,
+                'status'         => $d['status'] ?? 'completed',
+                'payment_method' => $d['payment_method'] ?? 'নগদ',
+                'notes'          => $d['notes'] ?? null,
+                'sale_date'      => $d['sale_date'],
+                'is_edited'      => true,
+                'edit_note'      => $d['edit_note'] ?? null,
+            ]);
+
+            foreach ($d['items'] ?? [] as $row) {
+                SaleItem::create(['sale_id' => $sale->id, 'item_id' => $row['id'], 'quantity' => $row['qty'], 'price' => $row['price'], 'subtotal' => $row['qty'] * $row['price']]);
+                Stock::where('item_id', $row['id'])->decrement('quantity', $row['qty']);
+            }
+
+            $sale->extraCosts()->delete();
+            foreach ($extraCosts as $row) {
+                SaleExtraCost::create(['sale_id' => $sale->id, 'category_name' => $row['category'], 'amount' => $row['amount']]);
+            }
+
+            if ($d['customer_id'] ?? null) {
+                Customer::find($d['customer_id'])?->increment('due_amount', $net - (float) $d['paid_amount']);
+            }
+        });
+
+        $pendingEdit->update(['status' => 'approved', 'decided_by' => auth()->id(), 'decided_at' => now()]);
+        return back()->with('success', 'সংশোধন অনুমোদিত এবং প্রযোজ্য হয়েছে।');
+    }
+
+    // ── Admin: reject pending edit ────────────────────────────
+    public function rejectEdit(PendingEdit $pendingEdit)
+    {
+        if (!auth()->user()->canManageShop()) abort(403);
+        $pendingEdit->update(['status' => 'rejected', 'decided_by' => auth()->id(), 'decided_at' => now()]);
+        if ($pendingEdit->model_type === 'sale') {
+            $sale = Sale::find($pendingEdit->model_id);
+            if ($sale) $this->logSale($sale, 'edit_rejected', 'সংশোধন অনুরোধ বাতিল করা হয়েছে');
+        }
+        return back()->with('success', 'সংশোধন অনুরোধ বাতিল করা হয়েছে।');
+    }
+
+    // ── Save pending edit for staff submission ────────────────
+    private function saveSalePendingEdit(Sale $sale, Request $request): void
+    {
+        $sale->loadMissing(['items.item', 'customer', 'extraCosts']);
+
+        $original = [
+            'sale_date'      => $sale->sale_date?->toDateString(),
+            'customer_id'    => $sale->customer_id,
+            'customer_name'  => $sale->customer?->name,
+            'status'         => $sale->status,
+            'payment_method' => $sale->payment_method,
+            'notes'          => $sale->notes ?? '',
+            'paid_amount'    => round((float) $sale->paid_amount, 2),
+            'discount'       => round((float) $sale->discount, 2),
+            'extra_costs'    => $sale->extraCosts->map(fn($e) => ['category' => $e->category_name, 'amount' => round((float)$e->amount, 2)])->sortBy('category')->values()->toArray(),
+            'items'          => $sale->items->map(fn($i) => ['id' => $i->item_id, 'name' => $i->item?->name ?? '?', 'qty' => round((float)$i->quantity, 3), 'price' => round((float)$i->price, 2)])->sortBy('id')->values()->toArray(),
+        ];
+
+        $proposed = [
+            'sale_date'      => $request->sale_date,
+            'customer_id'    => $request->customer_id ? (int) $request->customer_id : null,
+            'status'         => $request->status ?? 'completed',
+            'payment_method' => $request->payment_method ?? 'নগদ',
+            'notes'          => $request->notes ?? '',
+            'paid_amount'    => round((float) $request->paid_amount, 2),
+            'discount'       => round((float) ($request->discount ?? 0), 2),
+            'extra_costs'    => collect($request->extra_costs ?? [])->filter(fn($r) => !empty($r['category']) && ($r['amount'] ?? 0) > 0)->map(fn($r) => ['category' => $r['category'], 'amount' => round((float)$r['amount'], 2)])->sortBy('category')->values()->toArray(),
+            'items'          => collect($request->items ?? [])->map(fn($i) => ['id' => (int)$i['id'], 'qty' => round((float)$i['qty'], 3), 'price' => round((float)$i['price'], 2)])->sortBy('id')->values()->toArray(),
+            'edit_note'      => $request->edit_note ?? '',
+        ];
+
+        // Detect changes (compare comparable fields only)
+        $origSig = json_encode(array_diff_key($original, array_flip(['customer_name'])));
+        $propSig = json_encode(array_diff_key($proposed, array_flip(['edit_note'])));
+        $hasChanges = $origSig !== $propSig;
+
+        // Supersede any previous pending edit for this sale
+        PendingEdit::where('model_type', 'sale')->where('model_id', $sale->id)->where('status', 'pending')
+            ->update(['status' => 'superseded']);
+
+        $pending = PendingEdit::create([
+            'model_type'    => 'sale',
+            'model_id'      => $sale->id,
+            'requested_by'  => auth()->id(),
+            'original_data' => $original,
+            'proposed_data' => $proposed,
+            'has_changes'   => $hasChanges,
+            'status'        => $hasChanges ? 'pending' : 'no_change',
+        ]);
+
+        // Always log the attempt
+        $this->logSale($sale, $hasChanges ? 'edit_requested' : 'edit_attempted_no_change',
+            $hasChanges ? 'স্টাফ সংশোধন অনুরোধ পাঠিয়েছেন' : 'স্টাফ সম্পাদনা করার চেষ্টা করেছেন — কোনো পরিবর্তন নেই');
+
+        // Send SMS to admin only if there are actual changes
+        if ($hasChanges) {
+            $this->sendEditSms('sale', $sale, $pending);
+        }
+    }
+
+    // ── Send SMS notification to shop admin ───────────────────
+    private function sendEditSms(string $type, $model, PendingEdit $pending): void
+    {
+        try {
+            $phone = StoreConfig::get('store_phone', '');
+            if (empty($phone)) return;
+
+            $ref      = $type === 'sale' ? '#INV-' . str_pad($model->id, 4, '0', STR_PAD_LEFT) : '#RCV-' . str_pad($model->id, 4, '0', STR_PAD_LEFT);
+            $staff    = auth()->user()->name;
+            $appUrl   = config('app.url');
+            $link     = $appUrl . '/' . ($type === 'sale' ? 'sales' : 'purchases') . '/' . $model->id;
+
+            $changedFields = $this->summarizeChanges($pending->original_data, $pending->proposed_data);
+            $msg = "[POS] সংশোধন অনুরোধ\nরেকর্ড: {$ref}\nস্টাফ: {$staff}\nপরিবর্তন: {$changedFields}\nলিংক: {$link}";
+
+            $sms = app(SmsService::class);
+            $result = $sms->send($phone, $msg);
+            if ($result['success']) {
+                $pending->update(['sms_sent' => true]);
+            }
+        } catch (\Exception $e) {
+            // SMS failure should not break the request flow
+        }
+    }
+
+    // ── Summarize what changed (for SMS) ─────────────────────
+    private function summarizeChanges(array $original, array $proposed): string
+    {
+        $labels = [
+            'sale_date'      => 'তারিখ',
+            'purchase_date'  => 'তারিখ',
+            'customer_id'    => 'কাস্টমার',
+            'supplier_id'    => 'সরবরাহকারী',
+            'status'         => 'স্ট্যাটাস',
+            'payment_method' => 'পরিশোধ মোড',
+            'paid_amount'    => 'পরিশোধ',
+            'discount'       => 'ছাড়',
+            'notes'          => 'নোট',
+            'items'          => 'আইটেম',
+            'extra_costs'    => 'অতিরিক্ত খরচ',
+        ];
+
+        $changed = [];
+        foreach ($labels as $key => $label) {
+            if (!array_key_exists($key, $original) || !array_key_exists($key, $proposed)) continue;
+            if (json_encode($original[$key]) !== json_encode($proposed[$key])) {
+                $changed[] = $label;
+            }
+        }
+        return $changed ? implode(', ', $changed) : 'অজানা';
     }
 
     // ── Helper: snapshot sale and log the action ─────────────

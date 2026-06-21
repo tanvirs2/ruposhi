@@ -262,7 +262,7 @@ class ReportController extends Controller
         $selectedCustomer = $request->customer_id ? Customer::find($request->customer_id) : null;
 
         // Summary-level (per sale) for cards
-        $sales = Sale::with(['customer'])
+        $sales = Sale::with(['customer', 'user:id,name'])
             ->whereBetween('sale_date', [$from, $to])
             ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
             ->orderBy('sale_date')->orderBy('id')
@@ -330,6 +330,16 @@ class ReportController extends Controller
             ->orderBy('sale_items.id')
             ->get();
 
+        // Per-user summary (item-bearing sales only)
+        $userSummary = $itemSales->groupBy('user_id')
+            ->map(fn($grp) => [
+                'name'  => $grp->first()->user?->name ?? 'অজানা',
+                'count' => $grp->count(),
+                'total' => $grp->sum('total_amount'),
+                'paid'  => $grp->sum('paid_amount'),
+                'due'   => $grp->sum('due_amount'),
+            ])->sortByDesc('total');
+
         $grandExtraCost = $itemSales->sum('extra_cost');
         $grandDiscount  = $itemSales->sum('discount');
 
@@ -373,6 +383,7 @@ class ReportController extends Controller
             'grandTotal', 'grandPaid', 'grandItemPaid', 'grandDue', 'grandStandalone',
             'grandExtraCost', 'grandDiscount',
             'saleExtraCosts', 'extraCostByCategory',
+            'userSummary',
             'trendDays',
             'from', 'to'
         ));

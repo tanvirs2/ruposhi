@@ -281,6 +281,24 @@
             </div>
         </div>
 
+        @if(auth()->user()->canManageShop())
+        @php $pendingApprovalCount = \App\Models\Sale::whereNotNull('delete_requested_at')->count()
+            + \App\Models\Purchase::whereNotNull('delete_requested_at')->count()
+            + \App\Models\PendingEdit::where('status','pending')->count(); @endphp
+        <div class="nav-section">
+            <span class="nav-section-label">অনুমোদন</span>
+            <a href="{{ route('approvals.index') }}" class="nav-item {{ $_seg==='approvals' ? 'active' : '' }}">
+                <span class="nav-icon"><i class="fas fa-clipboard-check"></i></span>
+                <span class="nav-label">অনুমোদন কেন্দ্র
+                    @if($pendingApprovalCount > 0)
+                        <span style="background:#ef4444;color:#fff;font-size:.65rem;font-weight:700;
+                                     padding:1px 6px;border-radius:20px;margin-left:4px">{{ $pendingApprovalCount }}</span>
+                    @endif
+                </span>
+            </a>
+        </div>
+        @endif
+
         <div class="nav-section">
             <span class="nav-section-label">সেটিংস</span>
             @if(auth()->user()->canManageShop())
@@ -552,6 +570,17 @@
                             <div class="notif-content">
                                 <div class="notif-title">সরবরাহকারী বকেয়া</div>
                                 <div class="notif-desc">{{ $notifSuppliersDue }}জনকে মোট ৳{{ number_format($notifTotalSupplierDue, 0) }} দেওয়ার বাকী</div>
+                            </div>
+                            <i class="fas fa-chevron-right notif-arrow"></i>
+                        </a>
+                        @endif
+
+                        @if(isset($notifPendingApprovals) && $notifPendingApprovals > 0)
+                        <a href="{{ route('approvals.index') }}" class="notif-item notif-danger" onclick="closeNotif()">
+                            <div class="notif-icon-wrap notif-icon-red"><i class="fas fa-clipboard-check"></i></div>
+                            <div class="notif-content">
+                                <div class="notif-title">অনুমোদন অপেক্ষায়</div>
+                                <div class="notif-desc">{{ $notifPendingApprovals }}টি অনুরোধ আপনার অনুমোদনের অপেক্ষায়</div>
                             </div>
                             <i class="fas fa-chevron-right notif-arrow"></i>
                         </a>
@@ -1609,6 +1638,9 @@ document.addEventListener('turbo:load', () => {
     transition: transform .15s, box-shadow .15s;
 }
 #miniChatFab:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(15,148,137,.55); }
+/* Push FAB above fixed submit bars so it doesn't overlap */
+body:has(.sale-submit-bar) #miniChatFab { bottom: 82px; transition: bottom .2s; }
+body.txn-summary-active  #miniChatFab { bottom: 158px; }
 .mc-fab-badge {
     position: absolute; top: -3px; right: -3px;
     min-width: 18px; height: 18px;

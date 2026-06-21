@@ -54,9 +54,10 @@
 </div>
 
 {{-- Draft restore banner --}}
-<div id="draftBanner" style="display:none;align-items:center;gap:12px;flex-wrap:wrap;
+<div id="draftBanner" style="display:none;position:fixed;bottom:82px;left:calc(var(--active-sidebar-w) + 16px);
+     right:calc(var(--submit-bar-w) + 16px);z-index:190;align-items:center;gap:12px;flex-wrap:wrap;
      background:#fffbeb;border:1.5px solid #fbbf24;border-radius:10px;
-     padding:12px 18px;margin-bottom:16px;font-size:.88rem">
+     padding:10px 16px;font-size:.88rem;box-shadow:0 4px 20px rgba(0,0,0,.12)">
     <i class="fas fa-clock-rotate-left" style="color:#d97706;font-size:1.1rem"></i>
     <span id="draftBannerText" style="flex:1;color:#92400e;font-weight:600"></span>
     <button type="button" onclick="restoreDraftData()"
@@ -78,9 +79,9 @@
     {{-- Left: Item selection --}}
     <div class="pos-left">
         <div class="card" style="margin-bottom:16px">
-            <div class="card-header"><h3><i class="fas fa-box-open"></i> আইটেম যোগ করুন</h3></div>
-            <div style="padding:16px">
-                <div class="search-box" style="margin-bottom:12px">
+            <div class="card-header" style="padding:10px 14px"><h3><i class="fas fa-box-open"></i> আইটেম যোগ করুন</h3></div>
+            <div style="padding:10px 14px;padding-top:8px">
+                <div class="search-box">
                     <i class="fas fa-search"></i>
                     <input type="text" id="itemSearch" placeholder="আইটেমের নাম লিখুন...">
                 </div>
@@ -153,8 +154,27 @@
                 </div>
 
                 <div class="form-group-field">
-                    <label>রিসিভ তারিখ <span class="req">*</span></label>
-                    <input type="date" name="purchase_date" value="{{ date('Y-m-d') }}" required>
+                    <label style="display:flex;justify-content:space-between;align-items:center">
+                        <span>রিসিভ তারিখ</span>
+                        @if(auth()->user()->canManageShop())
+                        <button type="button" onclick="togglePurchaseDate()" id="purchaseDateToggleBtn"
+                            style="font-size:.75rem;color:var(--accent);background:none;border:none;
+                                   cursor:pointer;padding:0;font-family:inherit;font-weight:600">
+                            <i class="fas fa-pencil"></i> পরিবর্তন করুন
+                        </button>
+                        @endif
+                    </label>
+                    <div id="purchaseDateDisplay"
+                        style="padding:7px 0;font-size:.9rem;font-weight:600;color:var(--text-primary)">
+                        {{ \Carbon\Carbon::today()->translatedFormat('j F, Y') }}
+                    </div>
+                    <input type="date" name="purchase_date" id="purchaseDateInput"
+                        value="{{ date('Y-m-d') }}" required style="display:none"
+                        @if(!auth()->user()->canManageShop()) disabled @endif
+                        onchange="updatePurchaseDateDisplay(this.value)">
+                    @if(!auth()->user()->canManageShop())
+                    <input type="hidden" name="purchase_date" value="{{ date('Y-m-d') }}">
+                    @endif
                 </div>
 
                 <hr style="border:none;border-top:1px solid var(--border)">
@@ -324,15 +344,15 @@
                 {{-- Post-transaction supplier balance — directly above the CTA --}}
                 <div id="txnSummary" style="display:none;border:1.5px solid var(--border);border-radius:10px;
                      padding:8px 12px;background:var(--bg)">
-                    <div style="display:flex;justify-content:space-between;align-items:center;
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;
                                 font-size:.8rem;color:var(--text-secondary);margin-bottom:5px">
-                        <span><i class="fas fa-money-bill-wave" style="margin-right:4px"></i> আজ মোট দিচ্ছি</span>
-                        <span id="txnPaid" style="font-weight:800;color:#16a34a">৳ 0</span>
+                        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><i class="fas fa-money-bill-wave" style="margin-right:4px"></i> আজ মোট দিচ্ছি</span>
+                        <span id="txnPaid" style="flex-shrink:0;font-weight:800;color:#16a34a;white-space:nowrap">৳ 0</span>
                     </div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;
                                 border-top:1px dashed var(--border);padding-top:6px">
-                        <span style="font-size:.84rem;font-weight:700;color:var(--text-primary)">লেনদেনের পর সরবরাহকারীকে সর্বমোট বাকী</span>
-                        <span id="txnDueAfter" style="font-size:1.2rem;font-weight:800;color:#dc2626">৳ 0</span>
+                        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.84rem;font-weight:700;color:var(--text-primary)">লেনদেনের পর সরবরাহকারীকে বাকী</span>
+                        <span id="txnDueAfter" style="flex-shrink:0;white-space:nowrap;font-size:1.2rem;font-weight:800;color:#dc2626">৳ 0</span>
                     </div>
                 </div>
 
@@ -830,6 +850,7 @@ function updateSummary() {
     if (txn) {
         const active = cart.length || paid > 0 || supplierPrevDue !== 0;
         txn.style.display = active ? 'block' : 'none';
+        document.body.classList.toggle('txn-summary-active', !!active);
         if (active) {
             document.getElementById('txnPaid').textContent = '৳ ' + paid.toLocaleString();
             const resultBal = supplierPrevDue + netPayable - paid;
@@ -1062,6 +1083,31 @@ var DRAFT_KEY = 'purchase_draft_{{ auth()->user()->shop_id }}_{{ auth()->id() }}
 var _draftTimer  = null;
 var _pendingDraft = null;
 
+function togglePurchaseDate() {
+    var inp = document.getElementById('purchaseDateInput');
+    var display = document.getElementById('purchaseDateDisplay');
+    var btn = document.getElementById('purchaseDateToggleBtn');
+    if (!inp) return;
+    if (inp.style.display === 'none') {
+        inp.style.display = '';
+        display.style.display = 'none';
+        if (btn) btn.innerHTML = '<i class="fas fa-times"></i> বাতিল';
+        inp.focus();
+    } else {
+        inp.style.display = 'none';
+        display.style.display = '';
+        if (btn) btn.innerHTML = '<i class="fas fa-pencil"></i> পরিবর্তন করুন';
+    }
+}
+
+function updatePurchaseDateDisplay(val) {
+    var display = document.getElementById('purchaseDateDisplay');
+    if (!display || !val) return;
+    var d = new Date(val);
+    var months = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+    display.textContent = d.getDate() + ' ' + months[d.getMonth()] + ', ' + d.getFullYear();
+}
+
 function scheduleDraftSave() {
     clearTimeout(_draftTimer);
     _draftTimer = setTimeout(saveDraft, 1500);
@@ -1140,7 +1186,8 @@ function restoreDraftData() {
 
     // Restore date
     if (draft.purchaseDate) {
-        document.querySelector('input[name="purchase_date"]').value = draft.purchaseDate;
+        var pdInp = document.getElementById('purchaseDateInput');
+        if (pdInp) { pdInp.value = draft.purchaseDate; updatePurchaseDateDisplay(draft.purchaseDate); }
     }
 
     // Restore extra costs

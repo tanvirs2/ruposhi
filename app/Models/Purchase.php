@@ -9,9 +9,9 @@ class Purchase extends Model
 {
     use HasShopScope;
 
-    protected $fillable = ['supplier_id', 'user_id', 'total_amount', 'extra_cost', 'paid_amount', 'deposit_amount', 'due_amount', 'payment_method', 'notes', 'purchase_date'];
+    protected $fillable = ['supplier_id', 'user_id', 'total_amount', 'extra_cost', 'paid_amount', 'deposit_amount', 'due_amount', 'payment_method', 'notes', 'purchase_date', 'delete_requested_at', 'delete_requested_by'];
 
-    protected $casts = ['purchase_date' => 'date'];
+    protected $casts = ['purchase_date' => 'date', 'delete_requested_at' => 'datetime'];
 
     public function supplier()
     {
@@ -21,6 +21,11 @@ class Purchase extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function deleteRequestedBy()
+    {
+        return $this->belongsTo(User::class, 'delete_requested_by');
     }
 
     public function items()

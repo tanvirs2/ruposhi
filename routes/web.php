@@ -112,7 +112,23 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
     /* Supplier Payments */
     Route::resource('supplier-payments', SupplierPaymentController::class)->only('index', 'create', 'store', 'destroy');
     Route::resource('sales',     SaleController::class);
+    Route::post('sales/{sale}/request-delete',  [SaleController::class, 'requestDelete'])->name('sales.request-delete');
+    Route::post('sales/{sale}/approve-delete',  [SaleController::class, 'approveDelete'])->name('sales.approve-delete');
+    Route::post('sales/{sale}/reject-delete',   [SaleController::class, 'rejectDelete'])->name('sales.reject-delete');
+
     Route::resource('purchases', PurchaseController::class);
+    Route::post('purchases/{purchase}/request-delete', [PurchaseController::class, 'requestDelete'])->name('purchases.request-delete');
+    Route::post('purchases/{purchase}/approve-delete', [PurchaseController::class, 'approveDelete'])->name('purchases.approve-delete');
+    Route::post('purchases/{purchase}/reject-delete',  [PurchaseController::class, 'rejectDelete'])->name('purchases.reject-delete');
+
+    // Pending edit approval (shared for both sales and purchases)
+    Route::post('pending-edits/{pendingEdit}/approve', [SaleController::class, 'approveEdit'])->name('pending-edits.approve-sale');
+    Route::post('pending-edits/{pendingEdit}/approve-purchase', [PurchaseController::class, 'approveEdit'])->name('pending-edits.approve-purchase');
+    Route::post('pending-edits/{pendingEdit}/reject',  [SaleController::class, 'rejectEdit'])->name('pending-edits.reject-sale');
+    Route::post('pending-edits/{pendingEdit}/reject-purchase', [PurchaseController::class, 'rejectEdit'])->name('pending-edits.reject-purchase');
+
+    // Approvals page (admin only — all pending delete + edit requests)
+    Route::get('approvals', [App\Http\Controllers\ApprovalController::class, 'index'])->name('approvals.index')->middleware('shop.admin');
     Route::resource('employees', EmployeeController::class);
     Route::resource('expenses',  ExtraExpenseController::class);
 
