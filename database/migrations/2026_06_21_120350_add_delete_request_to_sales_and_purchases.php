@@ -9,13 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('sales', function (Blueprint $table) {
-            $table->timestamp('delete_requested_at')->nullable()->after('is_edited');
-            $table->unsignedBigInteger('delete_requested_by')->nullable()->after('delete_requested_at');
+            $table->timestamp('delete_requested_at')->nullable();
+            $table->unsignedBigInteger('delete_requested_by')->nullable();
         });
 
         Schema::table('purchases', function (Blueprint $table) {
-            $table->timestamp('delete_requested_at')->nullable()->after('is_edited');
-            $table->unsignedBigInteger('delete_requested_by')->nullable()->after('delete_requested_at');
+            $table->timestamp('delete_requested_at')->nullable();
+            $table->unsignedBigInteger('delete_requested_by')->nullable();
         });
     }
 
