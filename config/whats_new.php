@@ -11,6 +11,13 @@
 // short plain-Bangla summary of what changed in that push.
 return [
     [
+        'version' => '1.9',
+        'date'    => '২২ জুন, ২০২৬',
+        'items'   => [
+            'স্টাফ ইউজার বিক্রয় তালিকায় ঢুকলে ফাঁকা পেজ দেখাতো — এই সমস্যা সমাধান করা হয়েছে',
+        ],
+    ],
+    [
         'version' => '1.8',
         'date'    => '২২ জুন, ২০২৬',
         'items'   => [
