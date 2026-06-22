@@ -92,6 +92,7 @@
 @push('scripts')
 <script>
 function setView(type) {
+    if (type === 'user' && !document.getElementById('userView')) type = 'invoice';
     document.getElementById('invoiceView').style.display = type === 'invoice' ? '' : 'none';
     document.getElementById('itemView').style.display    = type === 'item'    ? '' : 'none';
     var uv = document.getElementById('userView');

@@ -870,6 +870,7 @@
 @push('scripts')
 <script>
 function setReportView(type) {
+    if (type === 'user' && !document.getElementById('reportUserView')) type = 'detail';
     var detailEl = document.getElementById('reportDetailView');
     var userEl   = document.getElementById('reportUserView');
     var btnD     = document.getElementById('btnReportDetail');
