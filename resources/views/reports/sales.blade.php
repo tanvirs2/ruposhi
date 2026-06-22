@@ -80,7 +80,7 @@
     <div class="stat-card" style="border-left:4px solid #16a34a;background:linear-gradient(135deg,#f0fdf4,#dcfce7)">
         <div class="stat-icon" style="background:#bbf7d0;color:#15803d"><i class="fas fa-hand-holding-dollar"></i></div>
         <div class="stat-body">
-            <span class="stat-label" style="color:#15803d;font-weight:700">মোট প্রাপ্তি</span>
+            <span class="stat-label" style="color:#15803d;font-weight:700">নগদ আছে</span>
             <span class="stat-value" style="color:#15803d">৳ {{ number_format($grandPaid, 0) }}</span>
             @if($extraPaid > 0)
             <span style="font-size:.70rem;color:#64748b;font-weight:500;margin-top:2px;display:block">

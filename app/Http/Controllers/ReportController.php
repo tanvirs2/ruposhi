@@ -261,9 +261,14 @@ class ReportController extends Controller
         $to        = $request->to   ?? now()->toDateString();
         $selectedCustomer = $request->customer_id ? Customer::find($request->customer_id) : null;
 
+        // Staff only see their own sales/payments; admins see everything
+        $isStaff = auth()->user()->role === 'staff';
+        $uid     = auth()->id();
+
         // Summary-level (per sale) for cards
         $sales = Sale::with(['customer', 'user:id,name'])
             ->whereBetween('sale_date', [$from, $to])
+            ->when($isStaff, fn($q) => $q->where('user_id', $uid))
             ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
             ->orderBy('sale_date')->orderBy('id')
             ->get();
@@ -271,6 +276,7 @@ class ReportController extends Controller
         // Standalone customer payments (not tied to any sale) in the same date range
         $standalonePayments = \App\Models\CustomerPayment::with('customer')
             ->whereBetween('payment_date', [$from, $to])
+            ->when($isStaff, fn($q) => $q->where('user_id', $uid))
             ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
             ->orderBy('payment_date')->orderBy('id')
             ->get();
@@ -280,6 +286,7 @@ class ReportController extends Controller
             ->whereDoesntHave('items')
             ->where('paid_amount', '>', 0)
             ->whereBetween('sale_date', [$from, $to])
+            ->when($isStaff, fn($q) => $q->where('user_id', $uid))
             ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
             ->orderBy('sale_date')->orderBy('id')
             ->get();
@@ -309,6 +316,7 @@ class ReportController extends Controller
             ->leftJoin('users',     'sales.user_id',     '=', 'users.id')
             ->whereBetween('sales.sale_date', [$from, $to])
             ->where('sales.shop_id', auth()->user()->shop_id)
+            ->when($isStaff, fn($q) => $q->where('sales.user_id', $uid))
             ->when($request->customer_id, fn($q) => $q->where('sales.customer_id', $request->customer_id))
             ->select(
                 DB::raw('DATE(sales.sale_date) as date'),
@@ -349,6 +357,7 @@ class ReportController extends Controller
             ->leftJoin('customers',  'sales.customer_id',        '=', 'customers.id')
             ->whereBetween('sales.sale_date', [$from, $to])
             ->where('sales.shop_id', auth()->user()->shop_id)
+            ->when($isStaff, fn($q) => $q->where('sales.user_id', $uid))
             ->when($request->customer_id, fn($q) => $q->where('sales.customer_id', $request->customer_id))
             ->select(
                 'sales.id          as sale_id',
@@ -368,12 +377,14 @@ class ReportController extends Controller
             ->map(fn($rows) => $rows->sum('amount'));
 
         // 7-day trend for the chart (always last 7 days, not filtered)
-        $trendDays = collect(range(6, 0))->map(function ($daysAgo) {
+        $trendDays = collect(range(6, 0))->map(function ($daysAgo) use ($isStaff, $uid) {
             $date = today()->subDays($daysAgo);
+            $base = Sale::whereDate('sale_date', $date)
+                ->when($isStaff, fn($q) => $q->where('user_id', $uid));
             return [
                 'date'  => $date->format('d/m'),
-                'total' => Sale::whereDate('sale_date', $date)->sum('total_amount'),
-                'paid'  => Sale::whereDate('sale_date', $date)->sum('paid_amount'),
+                'total' => (clone $base)->sum('total_amount'),
+                'paid'  => (clone $base)->sum('paid_amount'),
             ];
         });
 
@@ -643,6 +654,8 @@ class ReportController extends Controller
     // ── লাভ-লোকসান রিপোর্ট ──────────────────────────────────────
     public function profitLoss(Request $request)
     {
+        abort_unless(auth()->user()->canManageShop(), 403);
+
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
 
@@ -761,6 +774,8 @@ class ReportController extends Controller
     // ── Export: লাভ-লোকসান CSV ───────────────────────────────────
     public function exportProfitLoss(Request $request): StreamedResponse
     {
+        abort_unless(auth()->user()->canManageShop(), 403);
+
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
 

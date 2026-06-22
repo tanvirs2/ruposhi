@@ -4,6 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- ── Global JS error catcher (loaded first, before any other script) ──
+         Captures uncaught script errors — including inline-script SyntaxErrors
+         that break Turbo re-navigation ("buttons dead until refresh"). Logs the
+         page + script + line to localStorage so the intermittent issue becomes
+         diagnosable, and shows a dismissible refresh notice ONLY for the error
+         types that actually break the page, so users aren't stuck mid-task. --}}
+    <script>
+    (function () {
+        function logErr(info) {
+            try {
+                var arr = JSON.parse(localStorage.getItem('jsErrors') || '[]');
+                arr.unshift(info);
+                localStorage.setItem('jsErrors', JSON.stringify(arr.slice(0, 25)));
+            } catch (e) {}
+            try { console.error('[JSERR]', info); } catch (e) {}
+        }
+        function showNotice() {
+            if (document.getElementById('jsErrNotice')) return;
+            var host = document.body || document.documentElement;
+            var d = document.createElement('div');
+            d.id = 'jsErrNotice';
+            d.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99999;' +
+                'background:#fee2e2;color:#991b1b;border:1.5px solid #fca5a5;border-radius:10px;' +
+                'padding:10px 16px;font-family:Hind Siliguri,sans-serif;font-size:.86rem;font-weight:600;' +
+                'box-shadow:0 8px 24px rgba(0,0,0,.18);display:flex;align-items:center;gap:12px';
+            d.innerHTML = '<span>পেজে একটি সমস্যা হয়েছে — রিফ্রেশ করুন</span>' +
+                '<button onclick="location.reload()" style="background:#dc2626;color:#fff;border:none;' +
+                'border-radius:6px;padding:5px 14px;font-weight:700;cursor:pointer;font-family:inherit">রিফ্রেশ</button>' +
+                '<button onclick="this.parentNode.remove()" style="background:none;border:none;color:#991b1b;' +
+                'font-size:1.2rem;cursor:pointer;line-height:1;padding:0 2px">&times;</button>';
+            host.appendChild(d);
+        }
+        // Error messages that actually leave the page broken until a full reload
+        var breakers = /already been declared|already declared|is not defined|Unexpected (token|identifier|end)/i;
+        window.addEventListener('error', function (e) {
+            if (!e || !e.message) return; // ignore resource (img/script 404) load errors
+            logErr({ t: new Date().toISOString(), url: location.pathname,
+                     msg: String(e.message), src: String(e.filename || ''),
+                     line: e.lineno || 0, col: e.colno || 0 });
+            if (breakers.test(e.message)) showNotice();
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+            var m = e && e.reason ? (e.reason.message || String(e.reason)) : 'unhandledrejection';
+            logErr({ t: new Date().toISOString(), url: location.pathname, msg: 'PROMISE: ' + m });
+        });
+    })();
+    </script>
     <title>@yield('title', 'ড্যাশবোর্ড') — Inventory</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -264,11 +311,13 @@
                         <span class="nav-label">কাস্টমার বাকী রিপোর্ট</span>
                         <button type="button" class="info-btn" data-info="বাকী আছে এমন সকল কাস্টমারের তালিকা — কে কত টাকা বাকী, মোট বাকীর পরিমাণ।">i</button>
                     </a>
+                    @if(auth()->user()->canManageShop())
                     <a href="{{ route('reports.profit-loss') }}" class="nav-item nav-child {{ $_path==='reports/profit-loss' ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-scale-balanced"></i></span>
                         <span class="nav-label">লাভ-লোকসান</span>
                         <button type="button" class="info-btn" data-info="নির্দিষ্ট সময়কালের বিক্রয় আয়, পণ্য খরচ, পরিচালনা ব্যয় ও নিট লাভ-লোকসানের পূর্ণ বিবরণ।">i</button>
                     </a>
+                    @endif
                     <a href="{{ route('reports.sale-logs') }}" class="nav-item nav-child {{ $_path==='reports/sale-logs' ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-clock-rotate-left"></i></span>
                         <span class="nav-label">সংশোধন / মুছে ফেলার লগ</span>
@@ -382,7 +431,7 @@
         <div class="topbar-left">
             <div class="page-title">
                 <h1>@yield('page-title', 'ড্যাশবোর্ড')</h1>
-                <span class="breadcrumb">@hasSection('breadcrumb') @yield('breadcrumb') @else স্বাগতম, <strong>{{ auth()->user()->name }}</strong>@if(auth()->user()->shop) &nbsp;·&nbsp; <i class="fas fa-store" style="font-size:.72rem;opacity:.7"></i> {{ auth()->user()->shop->name }} @endif @endif</span>
+                <span class="breadcrumb">@hasSection('breadcrumb') @yield('breadcrumb') @else স্বাগতম, <strong>{{ auth()->user()->name }}</strong>&nbsp;<span style="display:inline-block;padding:1px 8px;border-radius:20px;font-size:.66rem;font-weight:700;vertical-align:middle;background:{{ in_array(auth()->user()->role, ['admin','super_admin']) ? '#dcfce7' : '#fef3c7' }};color:{{ in_array(auth()->user()->role, ['admin','super_admin']) ? '#15803d' : '#b45309' }}">{{ auth()->user()->role === 'super_admin' ? 'সুপার অ্যাডমিন' : (auth()->user()->role === 'admin' ? 'অ্যাডমিন' : 'স্টাফ') }}</span>@if(auth()->user()->shop) &nbsp;·&nbsp; <i class="fas fa-store" style="font-size:.72rem;opacity:.7"></i> {{ auth()->user()->shop->name }} @endif @endif</span>
             </div>
         </div>
         <div class="topbar-right">
@@ -1042,8 +1091,12 @@ function drRange(fromName, toName, formSel, type) {
             });
     }
 
-    // Toggle
-    window._phoneticActive = false;
+    // Toggle — preserve state across Turbo re-runs of this body script;
+    // restore the saved preference on first init (was unconditionally reset
+    // to false on every navigation, fighting the localStorage restore).
+    if (typeof window._phoneticActive === 'undefined') {
+        window._phoneticActive = localStorage.getItem('phoneticMode') === '1';
+    }
 
     function applyPhoneticUI(active) {
         attachAll();
@@ -1069,14 +1122,24 @@ function drRange(fromName, toName, formSel, type) {
         applyPhoneticUI(window._phoneticActive);
     };
 
-    // Restore saved state + re-attach to new inputs on every Turbo navigation
-    document.addEventListener('turbo:load', function() {
-        if (localStorage.getItem('phoneticMode') === '1') {
-            window._phoneticActive = true;
-        }
-        applyPhoneticUI(window._phoneticActive);
-        attachAll();
-    });
+    // Restore saved state + re-attach to new inputs on every Turbo navigation.
+    // Bind ONCE — this body script re-runs on every Turbo visit, so an unguarded
+    // addEventListener here stacked a fresh listener on every navigation. Over a
+    // long session (many page changes) dozens piled up, making the ক toggle
+    // erratic and unresponsive. A single persistent listener still fires on every
+    // turbo:load, which is all we need.
+    if (!window._phoneticBound) {
+        window._phoneticBound = true;
+        document.addEventListener('turbo:load', function() {
+            window._phoneticActive = localStorage.getItem('phoneticMode') === '1';
+            applyPhoneticUI(window._phoneticActive);
+            attachAll();
+        });
+        document.addEventListener('click', function(e) {
+            const panel = document.getElementById('phoneticHelpPanel');
+            if (panel && !panel.contains(e.target)) panel.style.display = 'none';
+        });
+    }
 
     // Alt+B shortcut is bound once in app.js (data-turbo-eval="false") — NOT
     // here, because this body script re-runs on every Turbo navigation and a
@@ -1088,10 +1151,7 @@ function drRange(fromName, toName, formSel, type) {
         const panel = document.getElementById('phoneticHelpPanel');
         panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
     };
-    document.addEventListener('click', function(e) {
-        const panel = document.getElementById('phoneticHelpPanel');
-        if (panel && !panel.contains(e.target)) panel.style.display = 'none';
-    });
+    // (outside-click handler to close the panel is now bound once, above)
 
     // Also attach when new inputs appear (modals, dynamic rows)
     const obs=new MutationObserver(()=>{ if(window._phoneticActive) attachAll(); });
