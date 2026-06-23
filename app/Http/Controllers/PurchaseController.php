@@ -24,11 +24,8 @@ class PurchaseController extends Controller
     {
         $dateFrom = $request->date_from ?: null;
         $dateTo   = $request->date_to   ?: null;
-        $isStaff  = auth()->user()->role === 'staff';
-
         $query = Purchase::with('supplier', 'items.item', 'user:id,name')
             ->has('items')
-            ->when($isStaff, fn($q) => $q->where('user_id', auth()->id()))
             ->when($request->search, fn($q) =>
                 // Wrap in a sub-group so the OR doesn't bypass the global shop_id scope
                 $q->where(fn($sub) =>

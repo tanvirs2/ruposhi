@@ -693,18 +693,49 @@
 
 </div>{{-- /#reportDetailView --}}
 
-{{-- ══ ইউজার ভিত্তিক বিক্রয় ══════════════════════════════════════ --}}
+{{-- ══ ইউজার ভিত্তিক — সব ধরনের লেনদেন একটাই টেবিলে ════════════ --}}
 @if(auth()->user()->canManageShop())
 @php
-    $reportItemSales = $sales->filter(fn($s) => !$noItemSales->pluck('id')->contains($s->id));
-    $userGrouped = $reportItemSales->groupBy(fn($s) => ($s->user?->name ?? 'অজানা'));
+    $reportItemSales  = $sales->filter(fn($s) => !$noItemSales->pluck('id')->contains($s->id));
+    $itemByUser       = $reportItemSales->groupBy(fn($s) => ($s->user?->name ?? 'অজানা'));
+    $noItemByUser     = $noItemSales->groupBy(fn($s) => ($s->user?->name ?? 'অজানা'));
+    $standaloneByUser = $standalonePayments->groupBy(fn($p) => ($p->user?->name ?? 'অজানা'));
+    $allUserNames = $itemByUser->keys()
+        ->merge($noItemByUser->keys())
+        ->merge($standaloneByUser->keys())
+        ->unique()
+        ->sortByDesc(fn($n) => ($itemByUser->get($n)?->sum('total_amount') ?? 0))
+        ->values();
 @endphp
 <div id="reportUserView" style="display:none">
-    @forelse($userGrouped as $uName => $uSales)
+    @forelse($allUserNames as $uName)
     @php
-        $uTotal = $uSales->sum('total_amount');
-        $uPaid  = $uSales->sum('paid_amount');
-        $uDue   = $uSales->sum('due_amount');
+        $uItem   = $itemByUser->get($uName)       ?? collect();
+        $uNoItem = $noItemByUser->get($uName)     ?? collect();
+        $uStand  = $standaloneByUser->get($uName) ?? collect();
+
+        $uTotal      = $uItem->sum('total_amount');
+        $uPaid       = $uItem->sum('paid_amount');
+        $uDue        = $uItem->sum('due_amount');
+        $uDisc       = $uItem->sum('discount');
+        $uExtra      = $uItem->sum('extra_cost');
+        $uLabor      = $uItem->sum('labor_cost');
+        $uNoItemPaid = $uNoItem->sum('paid_amount');
+        $uStandPaid  = $uStand->sum('amount');
+        $uCashTotal  = $uPaid + $uNoItemPaid + $uStandPaid;
+
+        // Merge all rows into one collection, sorted by date
+        $uRows = collect();
+        foreach ($uItem as $s) {
+            $uRows->push(['type'=>'sale','date'=>$s->sale_date,'obj'=>$s]);
+        }
+        foreach ($uNoItem as $s) {
+            $uRows->push(['type'=>'noitem','date'=>$s->sale_date,'obj'=>$s]);
+        }
+        foreach ($uStand as $p) {
+            $uRows->push(['type'=>'standalone','date'=>$p->payment_date,'obj'=>$p]);
+        }
+        $uRows = $uRows->sortBy('date')->values();
     @endphp
     <div class="card" style="margin-bottom:18px">
         <div class="card-header" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-bottom:1px solid #bfdbfe;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -712,17 +743,21 @@
                 <i class="fas fa-user" style="margin-right:6px"></i>{{ $uName }}
             </h3>
             <div style="display:flex;gap:16px;font-size:.82rem;flex-wrap:wrap;align-items:center">
-                <span style="color:var(--text-secondary)"><strong style="color:var(--text)">{{ $uSales->count() }}টি</strong> বিক্রয়</span>
-                <span style="color:#1d4ed8;font-weight:700">মোট ৳ {{ number_format($uTotal,0) }}</span>
-                <span style="color:#16a34a;font-weight:600">পরিশোধ ৳ {{ number_format($uPaid,0) }}</span>
+                <span style="color:var(--text-secondary)"><strong style="color:var(--text)">{{ $uRows->count() }}টি</strong> লেনদেন</span>
+                @if($uTotal > 0)<span style="color:#1d4ed8;font-weight:700">বিক্রয় ৳ {{ number_format($uTotal,0) }}</span>@endif
                 @if($uDue > 0)<span style="color:#dc2626;font-weight:600">বাকী ৳ {{ number_format($uDue,0) }}</span>@endif
+                @if($uDisc > 0)<span style="color:#9333ea;font-weight:600">ছাড় ৳ {{ number_format($uDisc,0) }}</span>@endif
+                @if($uExtra > 0)<span style="color:#ea580c;font-weight:600">অতি. খরচ ৳ {{ number_format($uExtra,0) }}</span>@endif
+                @if($uLabor > 0)<span style="color:#ca8a04;font-weight:600">শ্রমিক ৳ {{ number_format($uLabor,0) }}</span>@endif
+                <span style="color:#16a34a;font-weight:700;border-left:1px solid #bfdbfe;padding-left:16px">নগদ প্রাপ্তি ৳ {{ number_format($uCashTotal,0) }}</span>
             </div>
         </div>
         <div class="table-wrap">
             <table class="data-table sale-detail-table">
                 <thead>
                     <tr>
-                        <th class="tc">চালান নং</th>
+                        <th class="tc">নং</th>
+                        <th class="tc">ধরন</th>
                         <th>কাস্টমার</th>
                         <th class="tc col-hide-tablet">তারিখ</th>
                         <th class="tr">মোট মূল্য</th>
@@ -732,38 +767,60 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($uSales->sortBy('sale_date') as $uSale)
+                    @foreach($uRows as $row)
+                    @php $obj = $row['obj']; $type = $row['type']; @endphp
                     <tr>
                         <td class="tc mono">
-                            <a href="{{ route('sales.show', $uSale->id) }}" class="link-primary">
-                                {{ str_pad($uSale->id, 6, '0', STR_PAD_LEFT) }}
-                            </a>
+                            @if($type === 'standalone')
+                                {{ str_pad($obj->id, 6, '0', STR_PAD_LEFT) }}
+                            @else
+                                <a href="{{ route('sales.show', $obj->id) }}" class="link-primary">
+                                    {{ str_pad($obj->id, 6, '0', STR_PAD_LEFT) }}
+                                </a>
+                            @endif
                         </td>
-                        <td>{{ $uSale->customer?->name ?? '— ওয়াক-ইন' }}</td>
+                        <td class="tc">
+                            @if($type === 'sale')
+                                <span style="background:#dbeafe;color:#1d4ed8;padding:1px 8px;border-radius:20px;font-size:.72rem;font-weight:700;white-space:nowrap">বিক্রয়</span>
+                            @elseif($type === 'noitem')
+                                <span style="background:#fef3c7;color:#92400e;padding:1px 8px;border-radius:20px;font-size:.72rem;font-weight:700;white-space:nowrap">বাকী পরিশোধ</span>
+                            @else
+                                <span style="background:#dcfce7;color:#15803d;padding:1px 8px;border-radius:20px;font-size:.72rem;font-weight:700;white-space:nowrap">পরিশোধ</span>
+                            @endif
+                        </td>
+                        <td>{{ $obj->customer?->name ?? ($type === 'sale' ? '— ওয়াক-ইন' : '—') }}</td>
                         <td class="tc col-hide-tablet" style="font-size:.8rem;color:#64748b;white-space:nowrap">
-                            {{ $uSale->sale_date->format('d/m/Y') }}
+                            {{ \Carbon\Carbon::parse($row['date'])->format('d/m/Y') }}
                         </td>
-                        <td class="tr" style="font-weight:600">৳ {{ number_format($uSale->total_amount,0) }}</td>
-                        <td class="tr" style="color:#16a34a">৳ {{ number_format($uSale->paid_amount,0) }}</td>
+                        <td class="tr" style="font-weight:600">
+                            @if($type === 'sale')
+                                ৳ {{ number_format($obj->total_amount,0) }}
+                            @else
+                                <span style="color:#94a3b8">—</span>
+                            @endif
+                        </td>
+                        <td class="tr" style="color:#16a34a;font-weight:600">
+                            ৳ {{ number_format($type === 'standalone' ? $obj->amount : $obj->paid_amount, 0) }}
+                        </td>
                         <td class="tr">
-                            @if($uSale->due_amount > 0)
-                                <span style="color:#dc2626;font-weight:600">৳ {{ number_format($uSale->due_amount,0) }}</span>
+                            @if($type === 'sale' && $obj->due_amount > 0)
+                                <span style="color:#dc2626;font-weight:600">৳ {{ number_format($obj->due_amount,0) }}</span>
                             @else
                                 <span style="color:#94a3b8">—</span>
                             @endif
                         </td>
                         <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
-                            {{ $uSale->created_at->format('h:i a') }}
+                            {{ \Carbon\Carbon::parse($obj->created_at)->format('h:i a') }}
                         </td>
                     </tr>
                     @endforeach
                 </tbody>
                 <tfoot>
                     <tr class="tfoot-summary">
-                        <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                        <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
                         <td class="tr" style="font-weight:800">৳ {{ number_format($uTotal,0) }}</td>
-                        <td class="tr" style="color:#16a34a;font-weight:800">৳ {{ number_format($uPaid,0) }}</td>
-                        <td class="tr" style="font-weight:800;color:#dc2626">{{ $uDue > 0 ? '৳ '.number_format($uDue,0) : '—' }}</td>
+                        <td class="tr" style="color:#16a34a;font-weight:800">৳ {{ number_format($uCashTotal,0) }}</td>
+                        <td class="tr" style="color:#dc2626;font-weight:800">{{ $uDue > 0 ? '৳ '.number_format($uDue,0) : '—' }}</td>
                         <td class="col-hide-tablet"></td>
                     </tr>
                 </tfoot>
@@ -773,7 +830,7 @@
     @empty
     <div style="text-align:center;padding:60px;color:var(--text-secondary)">
         <i class="fas fa-users" style="font-size:2.5rem;opacity:.25;display:block;margin-bottom:12px"></i>
-        এই সময়কালে কোনো বিক্রয় নেই
+        এই সময়কালে কোনো লেনদেন নেই
     </div>
     @endforelse
 </div>

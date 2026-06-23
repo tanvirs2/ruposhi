@@ -274,7 +274,7 @@ class ReportController extends Controller
             ->get();
 
         // Standalone customer payments (not tied to any sale) in the same date range
-        $standalonePayments = \App\Models\CustomerPayment::with('customer')
+        $standalonePayments = \App\Models\CustomerPayment::with(['customer', 'user:id,name'])
             ->whereBetween('payment_date', [$from, $to])
             ->when($isStaff, fn($q) => $q->where('user_id', $uid))
             ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
@@ -282,7 +282,7 @@ class ReportController extends Controller
             ->get();
 
         // Sales with NO items (customer paying off previous due via sale form, no products sold)
-        $noItemSales = Sale::with('customer')
+        $noItemSales = Sale::with(['customer', 'user:id,name'])
             ->whereDoesntHave('items')
             ->where('paid_amount', '>', 0)
             ->whereBetween('sale_date', [$from, $to])
@@ -741,6 +741,31 @@ class ReportController extends Controller
             ->orderByDesc('profit')
             ->get();
 
+        // ── User-wise performance breakdown ──────────────────────
+        $userPerformance = DB::table('sale_items')
+            ->join('items', 'sale_items.item_id', '=', 'items.id')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->leftJoin('users', 'sales.user_id', '=', 'users.id')
+            ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
+            ->selectRaw('
+                users.id as user_id,
+                COALESCE(users.name, "অজানা") as user_name,
+                COUNT(DISTINCT sales.id) as sale_count,
+                SUM(sale_items.subtotal) as revenue,
+                SUM(items.purchase_price * sale_items.quantity) as cost,
+                SUM(sale_items.subtotal) - SUM(items.purchase_price * sale_items.quantity) as profit
+            ')
+            ->groupBy('users.id', 'users.name')
+            ->orderByDesc('profit')
+            ->get()
+            ->map(function ($row) {
+                $row->margin = $row->revenue > 0
+                    ? round($row->profit / $row->revenue * 100, 1)
+                    : 0;
+                return $row;
+            });
+
         // ── Daily detail rows (one row per sale item) ─────────────
         $dailyDetail = DB::table('sale_items')
             ->join('items', 'sale_items.item_id', '=', 'items.id')
@@ -767,7 +792,7 @@ class ReportController extends Controller
             'cogs', 'grossProfit', 'grossMargin',
             'expenseCategories', 'totalExpenses',
             'netProfit', 'netMargin',
-            'monthly', 'itemBreakdown', 'dailyDetail'
+            'monthly', 'itemBreakdown', 'dailyDetail', 'userPerformance'
         ));
     }
 

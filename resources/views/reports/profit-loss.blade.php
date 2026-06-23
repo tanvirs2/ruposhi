@@ -344,6 +344,67 @@
         </table>
     </div>
 </div>
+
+{{-- ══ ইউজার ভিত্তিক পারফরম্যান্স ══════════════════════════════════ --}}
+@if($userPerformance->isNotEmpty())
+<div class="card" style="margin-top:24px">
+    <div class="card-header" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-bottom:1px solid #bfdbfe;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <h3 style="font-size:.95rem;color:#1d4ed8;margin:0">
+            <i class="fas fa-users" style="margin-right:6px"></i> ইউজার ভিত্তিক পারফরম্যান্স
+        </h3>
+        <span style="font-size:.78rem;color:#64748b">{{ $userPerformance->count() }} জন ইউজার</span>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>ইউজার</th>
+                    <th class="tc">বিক্রয় সংখ্যা</th>
+                    <th class="tr">বিক্রয় মূল্য</th>
+                    <th class="tr">ক্রয় মূল্য (খরচ)</th>
+                    <th class="tr">লাভ</th>
+                    <th class="tc">মার্জিন</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($userPerformance as $i => $u)
+                @php
+                    $uMargin = $u->margin ?? 0;
+                    $badgeClass = $uMargin >= 8 ? 'good' : ($uMargin >= 4 ? 'med' : 'poor');
+                @endphp
+                <tr>
+                    <td style="color:#94a3b8;font-size:.8rem">{{ $i + 1 }}</td>
+                    <td style="font-weight:600">
+                        <i class="fas fa-user" style="font-size:.75rem;color:#94a3b8;margin-right:5px"></i>
+                        {{ $u->user_name }}
+                    </td>
+                    <td class="tc">{{ number_format($u->sale_count, 0) }}টি</td>
+                    <td class="tr" style="font-weight:600">৳ {{ number_format($u->revenue, 0) }}</td>
+                    <td class="tr" style="color:#94a3b8">৳ {{ number_format($u->cost, 0) }}</td>
+                    <td class="tr" style="font-weight:700;color:{{ $u->profit >= 0 ? '#16a34a' : '#dc2626' }}">
+                        {{ $u->profit >= 0 ? '' : '− ' }}৳ {{ number_format(abs($u->profit), 0) }}
+                    </td>
+                    <td class="tc">
+                        <span class="margin-badge {{ $badgeClass }}">{{ $uMargin }}%</span>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td colspan="2" style="font-weight:700;text-align:right;padding-right:16px">মোট</td>
+                    <td class="tc" style="font-weight:700">{{ number_format($userPerformance->sum('sale_count'), 0) }}টি</td>
+                    <td class="tr" style="font-weight:800">৳ {{ number_format($userPerformance->sum('revenue'), 0) }}</td>
+                    <td class="tr" style="color:#94a3b8;font-weight:700">৳ {{ number_format($userPerformance->sum('cost'), 0) }}</td>
+                    <td class="tr" style="font-weight:800;color:#16a34a">৳ {{ number_format($userPerformance->sum('profit'), 0) }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+@endif
 @endsection
 
 @push('styles')

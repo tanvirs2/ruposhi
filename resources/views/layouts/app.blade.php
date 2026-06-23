@@ -239,12 +239,12 @@
             <span class="nav-section-label">লেনদেন</span>
             <a href="{{ route('purchases.index') }}" class="nav-item {{ $_seg==='purchases' ? 'active' : '' }}">
                 <span class="nav-icon"><i class="fas fa-truck-ramp-box"></i></span>
-                <span class="nav-label">পণ্য গ্রহণ</span>
+                <span class="nav-label">পণ্য রিসিভ লিস্ট</span>
                 <button type="button" class="info-btn" data-info="সরবরাহকারীর কাছ থেকে মালামাল গ্রহণ করুন। পরিমাণ ও মূল্য লিখলে স্টক স্বয়ংক্রিয়ভাবে আপডেট হবে এবং বকেয়া হিসাব হবে।">i</button>
             </a>
             <a href="{{ route('sales.index') }}" class="nav-item {{ $_seg==='sales' ? 'active' : '' }}">
                 <span class="nav-icon"><i class="fas fa-receipt"></i></span>
-                <span class="nav-label">বিক্রয়</span>
+                <span class="nav-label">বিক্রয় লিস্ট</span>
                 <button type="button" class="info-btn" data-info="নতুন বিক্রয় এন্ট্রি করুন। পণ্য নির্বাচন করুন, কাস্টমার সেট করুন, পরিশোধ ও বাকী রেকর্ড করুন। বিক্রয়ে স্টক স্বয়ংক্রিয়ভাবে কমবে।">i</button>
             </a>
         </div>
@@ -278,7 +278,7 @@
                     </a>
                     <a href="{{ route('reports.sales') }}" class="nav-item nav-child {{ $_path==='reports/sales' ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-receipt"></i></span>
-                        <span class="nav-label">বিক্রয় রিপোর্ট</span>
+                        <span class="nav-label">দৈনিক বিক্রয় রিপোর্ট</span>
                         <button type="button" class="info-btn" data-info="তারিখ ভিত্তিক বিক্রয়ের বিস্তারিত ইতিহাস — কোন পণ্য কত বিক্রি হয়েছে, লাভ কত।">i</button>
                     </a>
                     <a href="{{ route('reports.daily-payments') }}" class="nav-item nav-child {{ $_path==='reports/daily-payments' ? 'active' : '' }}">
@@ -702,7 +702,7 @@
             </div>
             <div class="shortcut-row">
                 <a href="{{ route('reports.sales') }}" onclick="toggleShortcutsHelp()" style="color:var(--text-primary);text-decoration:none">
-                    <i class="fas fa-chart-line" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>বিক্রয় রিপোর্ট
+                    <i class="fas fa-chart-line" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>দৈনিক বিক্রয় রিপোর্ট
                 </a>
                 <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">T</kbd></span>
             </div>

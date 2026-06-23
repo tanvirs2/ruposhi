@@ -3,7 +3,7 @@
 @section('page-title', 'পণ্য গ্রহণ')
 
 @section('content')
-@include('partials.page-header', ['title' => 'গ্রহণ তালিকা', 'createRoute' => route('purchases.create'), 'createLabel' => 'নতুন গ্রহণ'])
+@include('partials.page-header', ['title' => 'পণ্য রিসিভ লিস্ট', 'createRoute' => route('purchases.create'), 'createLabel' => 'নতুন গ্রহণ'])
 @if(auth()->user()->canManageShop() && (($pendingDeleteCount ?? 0) + ($pendingEditCount ?? 0)) > 0)
 <div style="background:#fff7ed;border:1.5px solid #fbbf24;border-radius:10px;padding:10px 18px;
             margin-bottom:12px;display:flex;align-items:center;gap:16px;font-size:.88rem;flex-wrap:wrap">
