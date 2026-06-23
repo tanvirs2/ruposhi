@@ -6,6 +6,8 @@ use App\Models\Customer;
 use App\Models\CustomerArea;
 use App\Models\CustomerPayment;
 use App\Models\Sale;
+use App\Models\StoreConfig;
+use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -154,6 +156,30 @@ class CustomerController extends Controller
         }
         $customer->delete();
         return redirect()->route('customers.index')->with('success', 'কাস্টমার মুছে ফেলা হয়েছে।');
+    }
+
+    // ── বাকী Reminder SMS ────────────────────────────────────────
+    public function smsReminder(Request $request, Customer $customer, SmsService $sms)
+    {
+        if (!$customer->phone) {
+            return back()->with('error', 'কাস্টমারের ফোন নম্বর নেই।');
+        }
+        if ($customer->due_amount <= 0) {
+            return back()->with('error', 'এই কাস্টমারের কোনো বাকী নেই।');
+        }
+
+        $storeName = StoreConfig::get('store_name', 'দোকান');
+        $storePhone = StoreConfig::get('store_phone', '');
+        $msg = "প্রিয় {$customer->name},\nআপনার কাছে {$storeName}-এ ৳" . number_format($customer->due_amount, 0) . " বাকী আছে।\nঅনুগ্রহ করে দ্রুত পরিশোধ করুন।";
+        if ($storePhone) $msg .= "\nযোগাযোগ: {$storePhone}";
+        $msg .= "\nধন্যবাদ।";
+
+        $result = $sms->send($customer->phone, $msg, $customer->name);
+
+        return back()->with(
+            $result['success'] ? 'success' : 'error',
+            $result['success'] ? "{$customer->name}-কে বাকী reminder SMS পাঠানো হয়েছে।" : "SMS ব্যর্থ: {$result['response']}"
+        );
     }
 
     // ── Customer Ledger Selector ─────────────────────────────────

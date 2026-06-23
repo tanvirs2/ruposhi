@@ -92,8 +92,9 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
     /* Customers */
     Route::get('customers-search',            [CustomerController::class, 'search'])->name('customers.search');
     Route::resource('customers', CustomerController::class);
-    Route::get('customers/{customer}/ledger', [CustomerController::class, 'ledger'])->name('customers.ledger');
-    Route::get('customers-ledger',            [CustomerController::class, 'ledgerSelect'])->name('customers.ledger-select');
+    Route::get('customers/{customer}/ledger',          [CustomerController::class, 'ledger'])->name('customers.ledger');
+    Route::post('customers/{customer}/sms-reminder',   [CustomerController::class, 'smsReminder'])->name('customers.sms-reminder');
+    Route::get('customers-ledger',                     [CustomerController::class, 'ledgerSelect'])->name('customers.ledger-select');
 
     /* Customer Areas */
     Route::resource('customer-areas', CustomerAreaController::class)->except('show');

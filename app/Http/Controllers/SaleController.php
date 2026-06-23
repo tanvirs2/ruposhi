@@ -182,6 +182,25 @@ class SaleController extends Controller
             }
         });
 
+        // SMS: notify customer (skip walk-in, skip if toggle off)
+        $sale->load('customer', 'items.item');
+        if (StoreConfig::get('sms_on_sale', '1') == '1' && $sale->customer && $sale->customer->phone) {
+            $storeName = StoreConfig::get('store_name', 'দোকান');
+            $hasItems  = $sale->items->isNotEmpty();
+            if ($hasItems) {
+                $msg = "{$storeName}\nবিক্রয় #" . str_pad($sale->id, 6, '0', STR_PAD_LEFT)
+                    . "\nমোট: ৳" . number_format($sale->total_amount, 0)
+                    . "\nপরিশোধ: ৳" . number_format($sale->paid_amount, 0);
+                if ($sale->due_amount > 0) $msg .= "\nবাকী: ৳" . number_format($sale->due_amount, 0);
+                $msg .= "\nধন্যবাদ।";
+            } else {
+                $msg = "{$storeName}\nপেমেন্ট #" . str_pad($sale->id, 6, '0', STR_PAD_LEFT)
+                    . "\nপরিশোধ: ৳" . number_format($sale->paid_amount, 0)
+                    . "\nধন্যবাদ।";
+            }
+            app(SmsService::class)->send($sale->customer->phone, $msg, $sale->customer->name);
+        }
+
         return redirect()->route('sales.show', $sale)->with('success', 'বিক্রয় সফলভাবে সম্পন্ন হয়েছে।');
     }
 
@@ -317,6 +336,19 @@ class SaleController extends Controller
             }
         });
 
+        // SMS: notify admin of edit (skip if toggle off)
+        $adminPhone = StoreConfig::get('sms_on_edit', '1') == '1' ? StoreConfig::get('store_phone', '') : '';
+        if ($adminPhone) {
+            $sale->load('customer');
+            $storeName = StoreConfig::get('store_name', 'দোকান');
+            $msg = "[{$storeName}] বিক্রয় সংশোধন\n#" . str_pad($sale->id, 6, '0', STR_PAD_LEFT)
+                . " | " . ($sale->customer?->name ?? 'ওয়াক-ইন')
+                . "\nসংশোধনকারী: " . (auth()->user()->name)
+                . "\nনতুন মোট: ৳" . number_format($sale->total_amount, 0);
+            if ($request->edit_note) $msg .= "\nকারণ: {$request->edit_note}";
+            app(SmsService::class)->send($adminPhone, $msg);
+        }
+
         return redirect()->route('sales.show', $sale)->with('success', 'বিক্রয় সফলভাবে সংশোধন করা হয়েছে।');
     }
 
@@ -341,6 +373,17 @@ class SaleController extends Controller
             }
             $sale->delete();
         });
+
+        // SMS: notify admin of deletion (skip if toggle off)
+        $adminPhone = StoreConfig::get('sms_on_delete', '1') == '1' ? StoreConfig::get('store_phone', '') : '';
+        if ($adminPhone) {
+            $storeName = StoreConfig::get('store_name', 'দোকান');
+            $msg = "[{$storeName}] বিক্রয় মুছে ফেলা হয়েছে\n#" . str_pad($sale->id, 6, '0', STR_PAD_LEFT)
+                . " | " . ($sale->customer?->name ?? 'ওয়াক-ইন')
+                . "\nমোট: ৳" . number_format($sale->total_amount, 0)
+                . "\nমুছেছেন: " . (auth()->user()->name);
+            app(SmsService::class)->send($adminPhone, $msg);
+        }
 
         return redirect()->route('sales.index')->with('success', 'বিক্রয় মুছে ফেলা হয়েছে।');
     }

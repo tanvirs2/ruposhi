@@ -61,6 +61,15 @@
                         <a href="{{ route('customers.ledger', $customer) }}" class="btn-icon-sm" title="লেজার" style="color:#0d9488">
                             <i class="fas fa-book-open"></i>
                         </a>
+                        @if($customer->due_amount > 0 && $customer->phone)
+                        <form method="POST" action="{{ route('customers.sms-reminder', $customer) }}"
+                              data-confirm-msg="{{ $customer->name }}-কে বাকী reminder SMS পাঠাবেন?">
+                            @csrf
+                            <button type="submit" class="btn-icon-sm" title="বাকী reminder SMS" style="color:#7c3aed">
+                                <i class="fas fa-comment-sms"></i>
+                            </button>
+                        </form>
+                        @endif
                         <a href="{{ route('customers.edit', $customer) }}" class="btn-icon-sm" title="সম্পাদনা">
                             <i class="fas fa-pen"></i>
                         </a>

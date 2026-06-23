@@ -6,6 +6,8 @@ use App\Models\Customer;
 use App\Models\CustomerArea;
 use App\Models\CustomerPayment;
 use App\Models\Sale;
+use App\Models\StoreConfig;
+use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -89,6 +91,18 @@ class CustomerPaymentController extends Controller
             // lost-update races; allows negative (credit) balance.
             $cust->decrement('due_amount', $request->amount);
         });
+
+        // SMS: notify customer of payment received (skip if toggle off)
+        $sale->load('customer');
+        if (StoreConfig::get('sms_on_payment', '1') == '1' && $sale->customer && $sale->customer->phone) {
+            $storeName   = StoreConfig::get('store_name', 'দোকান');
+            $newDue      = $sale->customer->fresh()->due_amount;
+            $msg = "{$storeName}\nপেমেন্ট গ্রহণ: ৳" . number_format($request->amount, 0);
+            if ($newDue > 0)       $msg .= "\nবাকী: ৳" . number_format($newDue, 0);
+            elseif ($newDue <= 0)  $msg .= "\nসম্পূর্ণ পরিশোধিত। ধন্যবাদ।";
+            $msg .= "\nধন্যবাদ।";
+            app(SmsService::class)->send($sale->customer->phone, $msg, $sale->customer->name);
+        }
 
         return redirect()->route('sales.show', $sale)->with('success', 'কাস্টমার পরিশোধ সম্পন্ন হয়েছে। বিক্রয় তালিকায় যোগ হয়েছে।');
     }

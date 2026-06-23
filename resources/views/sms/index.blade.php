@@ -86,7 +86,31 @@
                         style="font-family:monospace">
                 </div>
             </div>
-            <div class="api-footer">
+            {{-- Auto SMS toggles --}}
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+                <div style="font-size:.82rem;font-weight:700;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">
+                    <i class="fas fa-robot" style="margin-right:5px"></i> স্বয়ংক্রিয় SMS চালু/বন্ধ
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                    @php
+                        $toggles = [
+                            'sms_on_sale'    => 'নতুন বিক্রয়ে কাস্টমার SMS',
+                            'sms_on_payment' => 'পেমেন্টে কাস্টমার SMS',
+                            'sms_on_edit'    => 'বিক্রয় সংশোধনে অ্যাডমিন SMS',
+                            'sms_on_delete'  => 'বিক্রয় মুছলে অ্যাডমিন SMS',
+                        ];
+                    @endphp
+                    @foreach($toggles as $key => $label)
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.84rem;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface)">
+                        <input type="checkbox" name="{{ $key }}" value="1"
+                            {{ \App\Models\StoreConfig::get($key, '1') == '1' ? 'checked' : '' }}
+                            style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer">
+                        {{ $label }}
+                    </label>
+                    @endforeach
+                </div>
+            </div>
+            <div class="api-footer" style="margin-top:20px">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> সংরক্ষণ করুন
                 </button>

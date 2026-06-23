@@ -91,6 +91,11 @@ class SmsController extends Controller
         StoreConfig::set('sms_api_key',   trim($request->sms_api_key   ?? ''));
         StoreConfig::set('sms_sender_id', trim($request->sms_sender_id ?? ''));
 
+        // Auto-SMS toggles (checkbox = present means 1, absent means 0)
+        foreach (['sms_on_sale', 'sms_on_payment', 'sms_on_edit', 'sms_on_delete'] as $key) {
+            StoreConfig::set($key, $request->has($key) ? '1' : '0');
+        }
+
         return back()->with('success', 'SMS সেটিংস সংরক্ষণ হয়েছে।');
     }
 
