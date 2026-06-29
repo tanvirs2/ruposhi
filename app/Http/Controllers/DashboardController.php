@@ -50,4 +50,33 @@ class DashboardController extends Controller
 
         return view('dashboard', compact('stats', 'recent_sales', 'low_stock', 'sevenDayTrend'));
     }
+
+    public function userSummary()
+    {
+        $today = today()->toDateString();
+
+        $rows = Sale::with('user:id,name')
+            ->has('items')
+            ->whereDate('sale_date', $today)
+            ->get()
+            ->groupBy('user_id')
+            ->map(fn($grp) => [
+                'name'  => $grp->first()->user?->name ?? 'অজানা',
+                'count' => $grp->count(),
+                'total' => $grp->sum('total_amount'),
+                'paid'  => $grp->sum('paid_amount'),
+                'due'   => $grp->sum('due_amount'),
+            ])
+            ->sortByDesc('total')
+            ->values();
+
+        $totals = [
+            'count' => $rows->sum('count'),
+            'total' => $rows->sum('total'),
+            'paid'  => $rows->sum('paid'),
+            'due'   => $rows->sum('due'),
+        ];
+
+        return response()->json(['rows' => $rows, 'totals' => $totals]);
+    }
 }

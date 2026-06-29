@@ -244,8 +244,8 @@
                 <tr class="tfoot-summary">
                     <td style="font-weight:700">মোট</td>
                     <td style="text-align:right;font-weight:700">{{ $userSummary->sum('count') }}</td>
-                    <td style="text-align:right;font-weight:800">৳ {{ number_format($grandTotal,0) }}</td>
-                    <td style="text-align:right;font-weight:800;color:#16a34a">৳ {{ number_format($grandItemPaid,0) }}</td>
+                    <td style="text-align:right;font-weight:800">৳ {{ number_format($shopGrandTotal,0) }}</td>
+                    <td style="text-align:right;font-weight:800;color:#16a34a">৳ {{ number_format($shopGrandItemPaid,0) }}</td>
                     <td style="text-align:right;font-weight:800;color:#dc2626">৳ {{ number_format($userSummary->sum('due'),0) }}</td>
                 </tr>
             </tfoot>

@@ -75,6 +75,94 @@
     </div>
 </div>
 
+{{-- আজকের ইউজার ভিত্তিক বিক্রয় (lazy loaded) --}}
+<div class="card" style="margin-bottom:20px">
+    <div class="card-header">
+        <h3><i class="fas fa-users"></i> আজকের ইউজার ভিত্তিক বিক্রয়</h3>
+        <a href="{{ route('reports.sales') }}" class="card-link">বিস্তারিত <i class="fas fa-chevron-right"></i></a>
+    </div>
+    <div id="dashUserSummary" style="padding:12px 0">
+        {{-- skeleton --}}
+        <div id="dashUserSummaryLoader" style="padding:16px 20px;display:flex;flex-direction:column;gap:10px">
+            @for($i=0;$i<3;$i++)
+            <div style="height:36px;background:linear-gradient(90deg,var(--surface-2) 25%,var(--border) 50%,var(--surface-2) 75%);background-size:200% 100%;border-radius:6px;animation:dashSkeleton 1.2s infinite"></div>
+            @endfor
+        </div>
+        <div id="dashUserSummaryContent" style="display:none">
+            <div class="table-wrap">
+                <table class="data-table" id="dashUserTable">
+                    <thead>
+                        <tr>
+                            <th>ইউজার</th>
+                            <th style="text-align:right">বিক্রয় সংখ্যা</th>
+                            <th style="text-align:right">মোট বিক্রয়</th>
+                            <th style="text-align:right">পরিশোধ</th>
+                            <th style="text-align:right">বাকী</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dashUserBody"></tbody>
+                    <tfoot id="dashUserFoot" style="display:none">
+                        <tr class="tfoot-summary">
+                            <td style="font-weight:700">মোট</td>
+                            <td id="dashFootCount" style="text-align:right;font-weight:800"></td>
+                            <td id="dashFootTotal" style="text-align:right;font-weight:800"></td>
+                            <td id="dashFootPaid"  style="text-align:right;font-weight:800;color:#16a34a"></td>
+                            <td id="dashFootDue"   style="text-align:right;font-weight:800;color:#dc2626"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+@keyframes dashSkeleton {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+</style>
+<script>
+document.addEventListener('turbo:load', function() {
+    fetch('{{ route('dashboard.user-summary') }}', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+        var body = document.getElementById('dashUserBody');
+        var foot = document.getElementById('dashUserFoot');
+        if (!body) return;
+
+        if (!data.rows || !data.rows.length) {
+            body.innerHTML = '<tr><td colspan="5" class="empty-row">আজ কোনো বিক্রয় নেই</td></tr>';
+        } else {
+            var fmt = function(n){ return '৳ ' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:0}); };
+            body.innerHTML = data.rows.map(function(r) {
+                return '<tr>'
+                    + '<td><strong>' + r.name + '</strong></td>'
+                    + '<td style="text-align:right">' + r.count + '</td>'
+                    + '<td style="text-align:right;font-weight:700">' + fmt(r.total) + '</td>'
+                    + '<td style="text-align:right;color:#16a34a">' + fmt(r.paid) + '</td>'
+                    + '<td style="text-align:right;color:' + (r.due > 0 ? '#dc2626' : '#94a3b8') + '">'
+                    + (r.due > 0 ? fmt(r.due) : '—') + '</td>'
+                    + '</tr>';
+            }).join('');
+            document.getElementById('dashFootCount').textContent = data.totals.count;
+            document.getElementById('dashFootTotal').textContent = fmt(data.totals.total);
+            document.getElementById('dashFootPaid').textContent  = fmt(data.totals.paid);
+            document.getElementById('dashFootDue').textContent   = data.totals.due > 0 ? fmt(data.totals.due) : '—';
+            if (foot) foot.style.display = '';
+        }
+
+        document.getElementById('dashUserSummaryLoader').style.display  = 'none';
+        document.getElementById('dashUserSummaryContent').style.display = '';
+    })
+    .catch(function() {
+        var loader = document.getElementById('dashUserSummaryLoader');
+        if (loader) loader.innerHTML = '<p style="padding:16px;color:#94a3b8;font-size:.85rem">লোড করা যায়নি।</p>';
+    });
+}, { once: true });
+</script>
+
 {{-- 7-Day Trend Chart --}}
 <div class="card" style="margin-bottom:20px">
     <div class="card-header">

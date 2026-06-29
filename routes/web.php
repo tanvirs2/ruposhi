@@ -88,6 +88,7 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
 
     Route::get('/', fn() => redirect()->route('dashboard'));
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/user-summary', [DashboardController::class, 'userSummary'])->name('dashboard.user-summary');
 
     /* Customers */
     Route::get('customers-search',            [CustomerController::class, 'search'])->name('customers.search');
