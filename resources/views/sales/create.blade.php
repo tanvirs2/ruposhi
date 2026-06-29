@@ -739,6 +739,66 @@ function addItem(id) {
     renderCart();
 }
 
+function openItemChange(id) {
+    closeAllItemChanges();
+    var box = document.getElementById('item-change-box-' + id);
+    if (!box) return;
+    box.style.display = 'block';
+    box.querySelector('input').value = '';
+    box.querySelector('input').focus();
+}
+function closeItemChange(id) {
+    var box = document.getElementById('item-change-box-' + id);
+    if (box) box.style.display = 'none';
+}
+function closeAllItemChanges() {
+    document.querySelectorAll('[id^="item-change-box-"]').forEach(function(b){ b.style.display='none'; });
+}
+function searchItemChange(oldId, q) {
+    var drop = document.getElementById('item-change-drop-' + oldId);
+    if (!drop) return;
+    q = q.toLowerCase().trim();
+    if (!q) { drop.style.display = 'none'; return; }
+    var matches = allItems.filter(function(i){ return i.name.toLowerCase().includes(q) && i.id !== oldId; }).slice(0, 15);
+    if (!matches.length) { drop.innerHTML = '<div style="padding:10px;color:#94a3b8;font-size:.82rem">পাওয়া যায়নি</div>'; drop.style.display='block'; return; }
+    drop.innerHTML = matches.map(function(i){
+        var avail = i.stock ? parseFloat(i.stock.quantity) : 0;
+        var clr = avail <= 0 ? '#dc2626' : avail < 5 ? '#d97706' : '#16a34a';
+        return '<div style="padding:8px 12px;cursor:pointer;font-size:.85rem;border-bottom:1px solid var(--border)" '
+            + 'onmousedown="replaceCartItem('+oldId+','+i.id+')" '
+            + 'onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">'
+            + '<strong>' + i.name + '</strong>'
+            + '<span style="float:right;font-size:.75rem;color:'+clr+'">স্টক: '+avail+'</span>'
+            + '</div>';
+    }).join('');
+    drop.style.display = 'block';
+}
+function replaceCartItem(oldId, newId) {
+    var newItem = allItems.find(function(i){ return i.id === newId; });
+    if (!newItem) return;
+    var avail = newItem.stock ? parseFloat(newItem.stock.quantity) : 0;
+    // Check if newItem already in cart — merge qty
+    var existing = cart.find(function(c){ return c.id === newId; });
+    var oldEntry = cart.find(function(c){ return c.id === oldId; });
+    if (existing) {
+        existing.qty += (oldEntry ? oldEntry.qty : 1);
+        cart = cart.filter(function(c){ return c.id !== oldId; });
+    } else {
+        var idx = cart.findIndex(function(c){ return c.id === oldId; });
+        if (idx === -1) return;
+        cart[idx] = {
+            id: newItem.id,
+            name: newItem.name,
+            cost: parseFloat(newItem.purchase_price),
+            price: parseFloat(newItem.sale_price),
+            priceEntered: true,
+            defaultPrice: parseFloat(newItem.sale_price),
+            qty: oldEntry ? oldEntry.qty : 1,
+            stock: avail
+        };
+    }
+    renderCart();
+}
 function removeItem(id) {
     cart = cart.filter(c => c.id !== id);
     renderCart();
@@ -864,11 +924,19 @@ function renderCart() {
         const stockClr   = overStock ? '#92400e' : '#15803d';
         const stockTxt   = (overStock ? '⚠ স্টক: ' : 'স্টক: ') + (c.stock ?? '?');
 
-        return `<tr>
+        return `<tr id="cart-row-${c.id}">
             <td style="white-space:nowrap">
-                ${c.name}
+                <span class="cart-item-name" style="cursor:pointer" onclick="openItemChange(${c.id})" title="ক্লিক করে পরিবর্তন করুন">${c.name}</span>
+                <button type="button" onclick="openItemChange(${c.id})" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:.75rem;margin-left:3px;vertical-align:middle" title="আইটেম পরিবর্তন করুন"><i class="fas fa-pen-to-square"></i></button>
                 <span id="stock-badge-${c.id}" style="font-size:.68rem;font-weight:700;background:${stockBg};color:${stockClr};padding:1px 6px;border-radius:20px;display:inline-block;margin-left:5px;vertical-align:middle">${stockTxt}</span>
                 <input type="hidden" name="items[${idx}][id]" value="${c.id}">
+                <div id="item-change-box-${c.id}" style="display:none;position:relative;margin-top:6px">
+                    <input type="text" placeholder="নতুন আইটেম খুঁজুন..." autocomplete="off"
+                        style="width:200px;font-size:.82rem;padding:4px 8px;border:1.5px solid var(--accent);border-radius:6px"
+                        oninput="searchItemChange(${c.id},this.value)"
+                        onkeydown="if(event.key==='Escape')closeItemChange(${c.id})">
+                    <div id="item-change-drop-${c.id}" style="position:absolute;top:100%;left:0;z-index:999;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:240px;max-height:200px;overflow-y:auto;display:none"></div>
+                </div>
             </td>
             <td>
                 <input type="text" inputmode="decimal" name="items[${idx}][qty]" value="${c.qty}"
@@ -1766,6 +1834,12 @@ window.addEventListener('resize', syncSubmitBarSpacer);
 document.addEventListener('turbo:load', syncSubmitBarSpacer);
 
 document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'));
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('[id^="item-change-box-"]') && !e.target.closest('.cart-item-name') && !e.target.closest('[onclick^="openItemChange"]')) {
+        closeAllItemChanges();
+    }
+});
 </script>
 @endpush
 @endsection

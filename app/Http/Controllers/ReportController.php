@@ -261,11 +261,44 @@ class ReportController extends Controller
         $to        = $request->to   ?? now()->toDateString();
         $selectedCustomer = $request->customer_id ? Customer::find($request->customer_id) : null;
 
-        // Staff only see their own sales/payments; admins see everything
         $isStaff = auth()->user()->role === 'staff';
         $uid     = auth()->id();
 
-        // Summary-level (per sale) for cards
+        // Full-shop stats (always unfiltered — shown in cards for all users)
+        $allShopItemSales  = Sale::with(['user:id,name'])
+            ->has('items')
+            ->whereBetween('sale_date', [$from, $to])
+            ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
+            ->get();
+        $allShopNoItemSales = Sale::doesntHave('items')
+            ->where('paid_amount', '>', 0)
+            ->whereBetween('sale_date', [$from, $to])
+            ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
+            ->get();
+        $allShopStandalone  = \App\Models\CustomerPayment::whereBetween('payment_date', [$from, $to])
+            ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
+            ->sum('amount');
+        $shopGrandTotal    = $allShopItemSales->sum('total_amount');
+        $shopGrandItemPaid = $allShopItemSales->sum('paid_amount');
+        $shopGrandNoItem   = $allShopNoItemSales->sum('paid_amount');
+        $shopGrandPaid     = $shopGrandItemPaid + $shopGrandNoItem + $allShopStandalone;
+        $shopGrandDue      = max(0, $allShopItemSales->sum('due_amount')
+                             - $allShopNoItemSales->sum(fn($s) => min($s->paid_amount, max(0, $s->previous_due ?? 0)))
+                             - $allShopStandalone);
+        $shopGrandCount    = $allShopItemSales->count() + $allShopNoItemSales->count();
+        $shopExtraNote     = $shopGrandNoItem + $allShopStandalone;
+
+        // Full-shop user summary (always unfiltered — for cash reconciliation by all users)
+        $userSummary = $allShopItemSales->groupBy('user_id')
+            ->map(fn($grp) => [
+                'name'  => $grp->first()->user?->name ?? 'অজানা',
+                'count' => $grp->count(),
+                'total' => $grp->sum('total_amount'),
+                'paid'  => $grp->sum('paid_amount'),
+                'due'   => $grp->sum('due_amount'),
+            ])->sortByDesc('total');
+
+        // Staff only see their own data in the detail section; admins see everything
         $sales = Sale::with(['customer', 'user:id,name'])
             ->whereBetween('sale_date', [$from, $to])
             ->when($isStaff, fn($q) => $q->where('user_id', $uid))
@@ -297,18 +330,11 @@ class ReportController extends Controller
         $grandStandalone    = $standalonePayments->sum('amount');
         $grandNoItemPaid    = $noItemSales->sum('paid_amount');
         $grandItemPaid      = $itemSales->sum('paid_amount');
-        // Total cash received = item-sale payments + no-item sale payments + standalone payments
         $grandPaid          = $grandItemPaid + $grandNoItemPaid + $grandStandalone;
-        // Effective due reduction from no-item sales:
-        // Only min(paid, previous_due) actually reduces a customer's due.
-        // If customer had 0 due and paid 5000 → reduces 0 due, not other customers' dues.
-        // previous_due can be negative (customer had credit). Only positive previous dues
-        // can actually be reduced — negative means customer already had advance balance.
         $grandNoItemDueReduction = $noItemSales->sum(fn($s) => min($s->paid_amount, max(0, $s->previous_due ?? 0)));
-        // Net due = item-sale dues minus EFFECTIVE payments toward previous dues
         $grandDue           = max(0, $itemSales->sum('due_amount') - $grandNoItemDueReduction - $grandStandalone);
 
-        // Per-item rows for the detail table (old-system style)
+        // Per-item rows for the detail table (admin only — staff won't see this section)
         $saleItems = DB::table('sale_items')
             ->join('items',     'sale_items.item_id',    '=', 'items.id')
             ->join('sales',     'sale_items.sale_id',    '=', 'sales.id')
@@ -337,16 +363,6 @@ class ReportController extends Controller
             ->orderBy('sales.id')
             ->orderBy('sale_items.id')
             ->get();
-
-        // Per-user summary (item-bearing sales only)
-        $userSummary = $itemSales->groupBy('user_id')
-            ->map(fn($grp) => [
-                'name'  => $grp->first()->user?->name ?? 'অজানা',
-                'count' => $grp->count(),
-                'total' => $grp->sum('total_amount'),
-                'paid'  => $grp->sum('paid_amount'),
-                'due'   => $grp->sum('due_amount'),
-            ])->sortByDesc('total');
 
         $grandExtraCost = $itemSales->sum('extra_cost');
         $grandDiscount  = $itemSales->sum('discount');
@@ -377,10 +393,9 @@ class ReportController extends Controller
             ->map(fn($rows) => $rows->sum('amount'));
 
         // 7-day trend for the chart (always last 7 days, not filtered)
-        $trendDays = collect(range(6, 0))->map(function ($daysAgo) use ($isStaff, $uid) {
+        $trendDays = collect(range(6, 0))->map(function ($daysAgo) {
             $date = today()->subDays($daysAgo);
-            $base = Sale::whereDate('sale_date', $date)
-                ->when($isStaff, fn($q) => $q->where('user_id', $uid));
+            $base = Sale::whereDate('sale_date', $date);
             return [
                 'date'  => $date->format('d/m'),
                 'total' => (clone $base)->sum('total_amount'),
@@ -395,6 +410,8 @@ class ReportController extends Controller
             'grandExtraCost', 'grandDiscount',
             'saleExtraCosts', 'extraCostByCategory',
             'userSummary',
+            'shopGrandTotal', 'shopGrandPaid', 'shopGrandItemPaid', 'shopGrandDue',
+            'shopGrandCount', 'shopExtraNote',
             'trendDays',
             'from', 'to'
         ));

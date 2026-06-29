@@ -46,30 +46,29 @@ class SaleController extends Controller
         $grandPaid  = (clone $query)->sum('paid_amount');
         $grandDue   = (clone $query)->sum('due_amount');
 
+        // User-wise summary cloned BEFORE latest() mutates $query
+        $userSummary = (clone $query)
+            ->select('user_id', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as total'), DB::raw('SUM(paid_amount) as paid'), DB::raw('SUM(due_amount) as due'))
+            ->groupBy('user_id')
+            ->orderBy('user_id')
+            ->with('user:id,name')
+            ->get()
+            ->map(fn($r) => ['name' => $r->user?->name ?? 'অজানা', 'count' => $r->count, 'total' => $r->total, 'paid' => $r->paid, 'due' => $r->due])
+            ->sortByDesc('total')
+            ->values();
+
         $sales = $query->latest('sale_date')->latest('id')->paginate(20)->withQueryString();
 
         $pendingDeleteCount = Sale::whereNotNull('delete_requested_at')->count();
         $pendingEditCount   = PendingEdit::where('model_type', 'sale')->where('status', 'pending')->count();
 
-        // Index pending edits by sale_id for O(1) lookup in the view
-        $saleIds     = $sales->pluck('id');
+        $saleIds         = $sales->pluck('id');
         $pendingEditsMap = PendingEdit::where('model_type', 'sale')
             ->where('status', 'pending')
             ->whereIn('model_id', $saleIds)
             ->with('requestedBy:id,name')
             ->get()
             ->keyBy('model_id');
-
-        // User-wise summary (same filters, no pagination)
-        $userSummary = (clone $query)
-            ->reorder()
-            ->select('user_id', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as total'), DB::raw('SUM(paid_amount) as paid'), DB::raw('SUM(due_amount) as due'))
-            ->groupBy('user_id')
-            ->with('user:id,name')
-            ->get()
-            ->map(fn($r) => ['name' => $r->user?->name ?? 'অজানা', 'count' => $r->count, 'total' => $r->total, 'paid' => $r->paid, 'due' => $r->due])
-            ->sortByDesc('total')
-            ->values();
 
         $data = compact('sales', 'grandTotal', 'grandPaid', 'grandDue', 'dateFrom', 'dateTo',
                         'pendingDeleteCount', 'pendingEditCount', 'pendingEditsMap', 'userSummary');

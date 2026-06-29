@@ -55,24 +55,23 @@
     </div>
 </div>
 
-{{-- Summary cards ───────────────────────────────────────────── --}}
+{{-- Summary cards (all users, full-shop data) ───────────────── --}}
 <div class="sales-stats-grid no-print">
     <div class="stat-card stat-green">
         <div class="stat-icon"><i class="fas fa-receipt"></i></div>
         <div class="stat-body">
             <span class="stat-label">মোট বিক্রয়</span>
-            <span class="stat-value">৳ {{ number_format($grandTotal, 0) }}</span>
+            <span class="stat-value">৳ {{ number_format($shopGrandTotal, 0) }}</span>
         </div>
     </div>
     <div class="stat-card stat-blue">
         <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
         <div class="stat-body">
             <span class="stat-label">বিক্রয়ে পরিশোধ</span>
-            <span class="stat-value">৳ {{ number_format($grandItemPaid, 0) }}</span>
-            @php $extraPaid = $noItemSales->sum('paid_amount') + $grandStandalone; @endphp
-            @if($extraPaid > 0)
+            <span class="stat-value">৳ {{ number_format($shopGrandItemPaid, 0) }}</span>
+            @if($shopExtraNote > 0)
             <span style="font-size:.72rem;color:#2563eb;font-weight:600;margin-top:2px;display:block">
-                + ৳ {{ number_format($extraPaid, 0) }} বাকী পরিশোধ
+                + ৳ {{ number_format($shopExtraNote, 0) }} বাকী পরিশোধ
             </span>
             @endif
         </div>
@@ -81,10 +80,10 @@
         <div class="stat-icon" style="background:#bbf7d0;color:#15803d"><i class="fas fa-hand-holding-dollar"></i></div>
         <div class="stat-body">
             <span class="stat-label" style="color:#15803d;font-weight:700">নগদ আছে</span>
-            <span class="stat-value" style="color:#15803d">৳ {{ number_format($grandPaid, 0) }}</span>
-            @if($extraPaid > 0)
+            <span class="stat-value" style="color:#15803d">৳ {{ number_format($shopGrandPaid, 0) }}</span>
+            @if($shopExtraNote > 0)
             <span style="font-size:.70rem;color:#64748b;font-weight:500;margin-top:2px;display:block">
-                {{ number_format($grandItemPaid,0) }} + {{ number_format($extraPaid,0) }}
+                {{ number_format($shopGrandItemPaid,0) }} + {{ number_format($shopExtraNote,0) }}
             </span>
             @endif
         </div>
@@ -93,17 +92,17 @@
         <div class="stat-icon" style="background:#fee2e2;color:#dc2626"><i class="fas fa-triangle-exclamation"></i></div>
         <div class="stat-body">
             <span class="stat-label">মোট বাকী</span>
-            <span class="stat-value" style="color:#dc2626">৳ {{ number_format($grandDue, 0) }}</span>
+            <span class="stat-value" style="color:#dc2626">৳ {{ number_format($shopGrandDue, 0) }}</span>
         </div>
     </div>
     <div class="stat-card stat-purple">
         <div class="stat-icon"><i class="fas fa-hashtag"></i></div>
         <div class="stat-body">
             <span class="stat-label">মোট চালান</span>
-            <span class="stat-value">{{ $sales->count() }}</span>
+            <span class="stat-value">{{ $shopGrandCount }}</span>
         </div>
     </div>
-    @if($grandExtraCost > 0 || $grandDiscount > 0)
+    @if(auth()->user()->canManageShop() && ($grandExtraCost > 0 || $grandDiscount > 0))
     <div class="stat-card" style="border-left:4px solid #8b5cf6;background:linear-gradient(135deg,#faf5ff,#ede9fe)">
         <div class="stat-icon" style="background:#ddd6fe;color:#7c3aed"><i class="fas fa-coins"></i></div>
         <div class="stat-body">
@@ -128,7 +127,7 @@
     @endif
 </div>
 
-{{-- Tab switcher (admin only) ───────────────────────────────── --}}
+{{-- Tab switcher + full detail (admin only) ─────────────────── --}}
 @if(auth()->user()->canManageShop())
 <div class="no-print" style="display:flex;gap:0;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;width:fit-content;margin-bottom:20px">
     <button id="btnReportDetail" class="report-tab-btn active" onclick="setReportView('detail')">
@@ -138,7 +137,6 @@
         <i class="fas fa-users"></i> ইউজার ভিত্তিক
     </button>
 </div>
-@endif
 
 <div id="reportDetailView">
 
@@ -693,8 +691,7 @@
 
 </div>{{-- /#reportDetailView --}}
 
-{{-- ══ ইউজার ভিত্তিক — সব ধরনের লেনদেন একটাই টেবিলে ════════════ --}}
-@if(auth()->user()->canManageShop())
+{{-- ══ ইউজার ভিত্তিক — সব ধরনের লেনদেন একটাই টেবিলে (admin tab) ══ --}}
 @php
     $reportItemSales  = $sales->filter(fn($s) => !$noItemSales->pluck('id')->contains($s->id));
     $itemByUser       = $reportItemSales->groupBy(fn($s) => ($s->user?->name ?? 'অজানা'));
@@ -833,6 +830,115 @@
         এই সময়কালে কোনো লেনদেন নেই
     </div>
     @endforelse
+</div>
+@endif {{-- canManageShop --}}
+
+{{-- ══ Staff: নিজের transaction detail ══════════════════════════ --}}
+@if(!auth()->user()->canManageShop())
+@php
+    $staffItemsByDate = $saleItems->groupBy('date')->sortKeys();
+@endphp
+@if($staffItemsByDate->isNotEmpty())
+<div class="card" style="margin-bottom:20px">
+    <div class="card-header"><i class="fas fa-receipt" style="color:#0d9488"></i> <strong>আমার বিক্রয় বিবরণ</strong></div>
+    @foreach($staffItemsByDate as $date => $rows)
+    <div style="padding:10px 16px 4px;font-weight:700;color:var(--text-secondary);font-size:.82rem;border-top:1px solid var(--border)">
+        <i class="fas fa-calendar-day"></i> তারিখ: {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}
+        <span style="float:right;color:#94a3b8">{{ $rows->count() }}টি আইটেম</span>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>চালান নং</th>
+                    <th>কাস্টমার নাম</th>
+                    <th>আইটেম নাম</th>
+                    <th style="text-align:right">পরিমাণ</th>
+                    <th style="text-align:right">বিক্রয় মূল্য</th>
+                    <th style="text-align:right">মোট মূল্য</th>
+                    <th style="text-align:right">জমা</th>
+                    <th style="text-align:right">বাকী</th>
+                    <th>সময়</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($rows as $row)
+                <tr>
+                    <td class="mono"><a href="{{ route('sales.show', $row->sale_id) }}" style="color:#0d9488">#{{ str_pad($row->sale_id,6,'0',STR_PAD_LEFT) }}</a></td>
+                    <td>{{ $row->customer_name ?? 'ওয়াক-ইন' }}</td>
+                    <td>{{ $row->item_name }}</td>
+                    <td style="text-align:right">{{ number_format($row->qty, 0) }}</td>
+                    <td style="text-align:right">৳ {{ number_format($row->rate, 0) }}</td>
+                    <td style="text-align:right;font-weight:700">৳ {{ number_format($row->amount, 0) }}</td>
+                    <td style="text-align:right;color:#16a34a">৳ {{ number_format($row->paid_amount, 0) }}</td>
+                    <td style="text-align:right;color:{{ $row->due_amount > 0 ? '#dc2626' : '#94a3b8' }}">
+                        {{ $row->due_amount > 0 ? '৳ '.number_format($row->due_amount,0) : '—' }}
+                    </td>
+                    <td style="font-size:.8rem;color:#94a3b8">{{ \Carbon\Carbon::parse($row->sale_time)->format('h:i a') }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td colspan="5" style="text-align:right;font-weight:700">সর্বমোট</td>
+                    <td style="text-align:right;font-weight:800">৳ {{ number_format($rows->sum('amount'), 0) }}</td>
+                    <td style="text-align:right;font-weight:800;color:#16a34a">৳ {{ number_format($rows->sum('paid_amount'), 0) }}</td>
+                    <td style="text-align:right;font-weight:800;color:#dc2626">৳ {{ number_format($rows->sum('due_amount'), 0) }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    @endforeach
+</div>
+@endif
+@endif
+
+{{-- ══ ইউজার ভিত্তিক বিক্রয় — সবার জন্য (cash reconciliation) ══ --}}
+@php
+    $uSummaryRows = collect($userSummary)->values();
+@endphp
+@if($uSummaryRows->isNotEmpty())
+<div class="card" style="margin-bottom:20px">
+    <div class="card-header" style="display:flex;align-items:center;gap:8px">
+        <i class="fas fa-users" style="color:#0d9488"></i>
+        <strong>ইউজার ভিত্তিক বিক্রয়</strong>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ইউজার</th>
+                    <th style="text-align:right">বিক্রয় সংখ্যা</th>
+                    <th style="text-align:right">মোট বিক্রয়</th>
+                    <th style="text-align:right">পরিশোধ</th>
+                    <th style="text-align:right">বাকী</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($uSummaryRows as $row)
+                <tr>
+                    <td><strong>{{ $row['name'] }}</strong></td>
+                    <td style="text-align:right">{{ $row['count'] }}</td>
+                    <td style="text-align:right;font-weight:700">৳ {{ number_format($row['total'], 0) }}</td>
+                    <td style="text-align:right;color:#16a34a;font-weight:700">৳ {{ number_format($row['paid'], 0) }}</td>
+                    <td style="text-align:right;color:{{ $row['due'] > 0 ? '#dc2626' : '#94a3b8' }};font-weight:{{ $row['due'] > 0 ? '700' : '400' }}">
+                        {{ $row['due'] > 0 ? '৳ '.number_format($row['due'], 0) : '—' }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td><strong>মোট</strong></td>
+                    <td style="text-align:right;font-weight:700">{{ $uSummaryRows->sum('count') }}</td>
+                    <td style="text-align:right;font-weight:800">৳ {{ number_format($uSummaryRows->sum('total'), 0) }}</td>
+                    <td style="text-align:right;font-weight:800;color:#16a34a">৳ {{ number_format($uSummaryRows->sum('paid'), 0) }}</td>
+                    <td style="text-align:right;font-weight:800;color:#dc2626">৳ {{ number_format($uSummaryRows->sum('due'), 0) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
 </div>
 @endif
 
