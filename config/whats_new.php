@@ -11,6 +11,13 @@
 // short plain-Bangla summary of what changed in that push.
 return [
     [
+        'version' => '2.4',
+        'date'    => '২৯ জুন, ২০২৬',
+        'items'   => [
+            'ইউজার ভিত্তিক বিক্রয় টেবিলে "বাকী পরিশোধ" (পণ্য ছাড়া পেমেন্ট) এখন পরিশোধ কলামে যোগ হবে — ক্যাশ মেলানো সঠিক হবে',
+        ],
+    ],
+    [
         'version' => '2.3',
         'date'    => '২৯ জুন, ২০২৬',
         'items'   => [

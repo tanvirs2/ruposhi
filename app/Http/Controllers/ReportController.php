@@ -288,15 +288,35 @@ class ReportController extends Controller
         $shopGrandCount    = $allShopItemSales->count() + $allShopNoItemSales->count();
         $shopExtraNote     = $shopGrandNoItem + $allShopStandalone;
 
-        // Full-shop user summary (always unfiltered — for cash reconciliation by all users)
-        $userSummary = $allShopItemSales->groupBy('user_id')
+        // Full-shop user summary — item sales base
+        $userSummaryMap = $allShopItemSales->groupBy('user_id')
             ->map(fn($grp) => [
                 'name'  => $grp->first()->user?->name ?? 'অজানা',
                 'count' => $grp->count(),
                 'total' => $grp->sum('total_amount'),
                 'paid'  => $grp->sum('paid_amount'),
                 'due'   => $grp->sum('due_amount'),
-            ])->sortByDesc('total');
+            ]);
+
+        // Merge no-item payments (বাকী পরিশোধ) into each user's paid total
+        foreach ($allShopNoItemSales->groupBy('user_id') as $userId => $grp) {
+            $noItemPaid = $grp->sum('paid_amount');
+            if ($userSummaryMap->has($userId)) {
+                $row = $userSummaryMap[$userId];
+                $row['paid'] += $noItemPaid;
+                $userSummaryMap[$userId] = $row;
+            } else {
+                $userSummaryMap[$userId] = [
+                    'name'  => $grp->first()->user?->name ?? 'অজানা',
+                    'count' => 0,
+                    'total' => 0,
+                    'paid'  => $noItemPaid,
+                    'due'   => 0,
+                ];
+            }
+        }
+
+        $userSummary = $userSummaryMap->sortByDesc('total');
 
         // Staff only see their own data in the detail section; admins see everything
         $sales = Sale::with(['customer', 'user:id,name'])
