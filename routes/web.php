@@ -62,6 +62,10 @@ Route::middleware(['auth', 'root'])->prefix('root')->name('root.')->group(functi
     // System settings
     Route::get('/settings',  [\App\Http\Controllers\Root\SystemConfigController::class, 'edit'])->name('settings.edit');
     Route::put('/settings',  [\App\Http\Controllers\Root\SystemConfigController::class, 'update'])->name('settings.update');
+    // Database backup / restore
+    Route::get('/database',        [\App\Http\Controllers\Root\DatabaseController::class, 'index'])->name('database.index');
+    Route::get('/database/export', [\App\Http\Controllers\Root\DatabaseController::class, 'export'])->name('database.export');
+    Route::post('/database/import',[\App\Http\Controllers\Root\DatabaseController::class, 'import'])->name('database.import');
 });
 
 /* ── Reseller routes ───────────────────────────────────────── */

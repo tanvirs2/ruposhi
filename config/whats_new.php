@@ -11,6 +11,13 @@
 // short plain-Bangla summary of what changed in that push.
 return [
     [
+        'version' => '2.5',
+        'date'    => '২৯ জুন, ২০২৬',
+        'items'   => [
+            'Root প্যানেলে ডেটাবেজ ব্যাকআপ ও রিস্টোর সুবিধা যোগ হয়েছে — এক ক্লিকে সম্পূর্ণ ডেটা export করুন',
+        ],
+    ],
+    [
         'version' => '2.4',
         'date'    => '২৯ জুন, ২০২৬',
         'items'   => [

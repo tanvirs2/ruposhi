@@ -175,6 +175,9 @@
             <a href="{{ route('root.settings.edit') }}" class="{{ str_starts_with($r, 'root.settings') ? 'active' : '' }}">
                 <i class="fas fa-gear"></i> সেটিংস
             </a>
+            <a href="{{ route('root.database.index') }}" class="{{ str_starts_with($r, 'root.database') ? 'active' : '' }}">
+                <i class="fas fa-database"></i> ডেটাবেজ ব্যাকআপ
+            </a>
         </nav>
 
         <div class="rt-foot">
