@@ -2,10 +2,14 @@
 @section('title', 'দৈনিক সরবরাহকারী পরিশোধ')
 @section('page-title', 'দৈনিক সরবরাহকারী পরিশোধ')
 
+@push('styles')
+<meta name="turbo-cache-control" content="no-cache">
+@endpush
+
 @section('content')
 <div class="card" style="margin-bottom:20px">
     <div class="card-filter">
-        <form method="GET" class="filter-form">
+        <form method="GET" class="filter-form" data-date-snap>
             <div class="form-group-field">
                 <label>শুরু</label>
                 <input type="date" name="from" value="{{ $from }}">

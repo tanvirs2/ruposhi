@@ -3,6 +3,10 @@
 @section('page-title', 'দৈনিক বিক্রয় রিপোর্ট')
 @section('no-print-header', '1')
 
+@push('styles')
+<meta name="turbo-cache-control" content="no-cache">
+@endpush
+
 @section('content')
 
 {{-- Filter ────────────────────────────────────────────────── --}}
@@ -11,11 +15,11 @@
         <form method="GET" class="filter-form">
             <div class="form-group-field">
                 <label>শুরুর তারিখ</label>
-                <input type="date" name="from" value="{{ $from }}">
+                <input type="date" name="from" id="rptDateFrom" value="{{ $from }}">
             </div>
             <div class="form-group-field">
                 <label>শেষ তারিখ</label>
-                <input type="date" name="to" value="{{ $to }}">
+                <input type="date" name="to" id="rptDateTo" value="{{ $to }}">
             </div>
             @include('partials.date-range-buttons')
             <div class="form-group-field" style="position:relative;min-width:200px">
@@ -127,6 +131,21 @@
     @endif
 </div>
 
+@php
+    [$namedItems, $walkinItems] = $saleItems->partition(fn($r) => $r->customer_name !== null);
+    // Per-sale aggregates (paid/due/extra/disc are repeated per item — take unique sales)
+    $namedUniqSales  = $namedItems->unique('sale_id');
+    $walkinUniqSales = $walkinItems->unique('sale_id');
+    $namedPaid  = $namedUniqSales->sum('paid_amount');
+    $namedDue   = $namedUniqSales->sum('due_amount');
+    $namedExtra = $namedUniqSales->sum('extra_cost');
+    $namedDisc  = $namedUniqSales->sum('discount');
+    $walkinPaid  = $walkinUniqSales->sum('paid_amount');
+    $walkinDue   = $walkinUniqSales->sum('due_amount');
+    $walkinExtra = $walkinUniqSales->sum('extra_cost');
+    $walkinDisc  = $walkinUniqSales->sum('discount');
+@endphp
+
 {{-- Tab switcher + full detail (admin only) ─────────────────── --}}
 @if(auth()->user()->canManageShop())
 <div class="no-print" style="display:flex;gap:0;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;width:fit-content;margin-bottom:20px">
@@ -194,21 +213,6 @@
         </div>
     </div>
 </div>
-
-@php
-    [$namedItems, $walkinItems] = $saleItems->partition(fn($r) => $r->customer_name !== null);
-    // Per-sale aggregates (paid/due/extra/disc are repeated per item — take unique sales)
-    $namedUniqSales  = $namedItems->unique('sale_id');
-    $walkinUniqSales = $walkinItems->unique('sale_id');
-    $namedPaid  = $namedUniqSales->sum('paid_amount');
-    $namedDue   = $namedUniqSales->sum('due_amount');
-    $namedExtra = $namedUniqSales->sum('extra_cost');
-    $namedDisc  = $namedUniqSales->sum('discount');
-    $walkinPaid  = $walkinUniqSales->sum('paid_amount');
-    $walkinDue   = $walkinUniqSales->sum('due_amount');
-    $walkinExtra = $walkinUniqSales->sum('extra_cost');
-    $walkinDisc  = $walkinUniqSales->sum('discount');
-@endphp
 
 {{-- User-wise sales summary ────────────────────────────────── --}}
 @if($userSummary->count() > 1)
@@ -892,6 +896,198 @@
     @endforeach
 </div>
 @endif
+
+{{-- ── ওয়াক-ইন বিক্রয় (staff's own) ──────────────────────────── --}}
+@if($walkinItems->isNotEmpty())
+<div class="card" style="margin-top:18px;margin-bottom:20px">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,#f0fdfa,#ccfbf1);border-bottom:1px solid #99f6e4">
+        <h3 style="font-size:.95rem;color:#0f766e;margin:0">
+            <i class="fas fa-person-walking"></i> ওয়াক-ইন বিক্রয়
+        </h3>
+        <span style="font-size:.8rem;color:#0f766e">{{ $walkinItems->count() }} টি আইটেম</span>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table sale-detail-table">
+            <thead>
+                <tr>
+                    <th class="tc">চালান নং</th>
+                    <th class="tc col-hide-tablet">তারিখ</th>
+                    <th>আইটেম নাম</th>
+                    <th class="tc">পরিমাণ</th>
+                    <th class="tr">মোট মূল্য</th>
+                    <th class="tr">জমা</th>
+                    <th class="tr">বাকী</th>
+                    <th class="tc col-hide-tablet">সময়</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php $swRunning = 0; $swLastSale = null; @endphp
+                @foreach($walkinItems as $row)
+                @php
+                    $swRunning += $row->amount;
+                    $swIsNew = ($row->sale_id !== $swLastSale);
+                    $swLastSale = $row->sale_id;
+                @endphp
+                <tr class="{{ $swIsNew ? 'new-sale-row' : '' }}">
+                    <td class="tc mono">
+                        <a href="{{ route('sales.show', $row->sale_id) }}" class="link-primary">
+                            {{ str_pad($row->sale_id, 6, '0', STR_PAD_LEFT) }}
+                        </a>
+                    </td>
+                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                        @if($swIsNew) {{ \Carbon\Carbon::parse($row->date)->format('d/m/Y') }} @else — @endif
+                    </td>
+                    <td>{{ $row->item_name }}</td>
+                    <td class="tc">{{ (int)$row->qty }}</td>
+                    <td class="tr" style="font-weight:600">{{ number_format($swRunning, 0) }}</td>
+                    <td class="tr" style="color:#16a34a">
+                        @if($swIsNew) {{ number_format($row->paid_amount, 0) }} @else — @endif
+                    </td>
+                    <td class="tr">
+                        @if($swIsNew)
+                            @if($row->due_amount > 0)
+                                <span style="color:#dc2626;font-weight:600">{{ number_format($row->due_amount, 0) }}</span>
+                            @else <span style="color:#16a34a">—</span>
+                            @endif
+                        @else — @endif
+                    </td>
+                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                        {{ \Carbon\Carbon::parse($row->sale_time)->format('h:i:s a') }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                    <td class="tr" style="font-weight:800">{{ number_format($walkinItems->sum('amount'), 0) }}</td>
+                    <td class="tr" style="color:#16a34a;font-weight:700">{{ number_format($walkinPaid, 0) }}</td>
+                    <td class="tr" style="color:#dc2626;font-weight:700">{{ number_format($walkinDue, 0) }}</td>
+                    <td class="col-hide-tablet"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+@endif
+
+{{-- ── বাকী পরিশোধ (staff's own no-item sales) ─────────────────── --}}
+@if($noItemSales->isNotEmpty())
+<div class="card" style="margin-top:18px;margin-bottom:20px">
+    <div class="card-header" style="padding:12px 16px;background:#fffbeb;border-bottom:1px solid #fde68a">
+        <h3 style="font-size:.95rem;color:#92400e;margin:0">
+            <i class="fas fa-hand-holding-dollar"></i>
+            বাকী পরিশোধ (পণ্য ছাড়া বিক্রয়) — পূর্বের বাকীর বিপরীতে
+        </h3>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table sale-detail-table">
+            <thead>
+                <tr>
+                    <th class="tc">চালান নং</th>
+                    <th>কাস্টমার</th>
+                    <th class="tc">তারিখ</th>
+                    <th class="tc">পরিশোধ মোড</th>
+                    <th class="tr">পরিশোধ (৳)</th>
+                    <th class="tc">সময়</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($noItemSales as $s)
+                <tr>
+                    <td class="tc mono">
+                        <a href="{{ route('sales.show', $s->id) }}" class="link-primary">
+                            {{ str_pad($s->id, 6, '0', STR_PAD_LEFT) }}
+                        </a>
+                    </td>
+                    <td>{{ $s->customer?->name ?? '<span style="color:#94a3b8">ওয়াক-ইন</span>' }}</td>
+                    <td class="tc">{{ \Carbon\Carbon::parse($s->sale_date)->format('d/m/Y') }}</td>
+                    <td class="tc">{{ $s->payment_method ?: '—' }}</td>
+                    <td class="tr" style="color:#16a34a;font-weight:600">
+                        {{ number_format($s->paid_amount, 0) }}
+                    </td>
+                    <td class="tc" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                        {{ \Carbon\Carbon::parse($s->created_at)->format('h:i:s a') }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                    <td class="tr" style="color:#16a34a;font-weight:800">{{ number_format($noItemSales->sum('paid_amount'), 0) }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+@endif
+
+{{-- ── অতিরিক্ত খরচের বিবরণ (staff's own) ─────────────────────── --}}
+@if($saleExtraCosts->isNotEmpty())
+<div class="card" style="margin-top:18px;margin-bottom:20px">
+    <div class="card-header" style="padding:12px 16px;background:linear-gradient(135deg,#faf5ff,#ede9fe);border-bottom:1px solid #ddd6fe;display:flex;justify-content:space-between;align-items:center">
+        <h3 style="font-size:.95rem;color:#6d28d9;margin:0">
+            <i class="fas fa-coins"></i> অতিরিক্ত খরচের বিবরণ
+        </h3>
+        <span style="font-size:.78rem;color:#7c3aed;font-weight:600">
+            মোট: ৳ {{ number_format($saleExtraCosts->sum('amount'), 0) }}
+        </span>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table sale-detail-table">
+            <thead>
+                <tr>
+                    <th class="tc">চালান নং</th>
+                    <th>কাস্টমার</th>
+                    <th class="tc">তারিখ</th>
+                    <th>ক্যাটাগরি</th>
+                    <th class="tr">পরিমাণ (৳)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($saleExtraCosts as $ec)
+                <tr>
+                    <td class="tc mono">
+                        <a href="{{ route('sales.show', $ec->sale_id) }}" class="link-primary">
+                            {{ str_pad($ec->sale_id, 6, '0', STR_PAD_LEFT) }}
+                        </a>
+                    </td>
+                    <td>
+                        @if($ec->customer_name)
+                            {{ $ec->customer_name }}
+                        @else
+                            <span style="color:#94a3b8">ওয়াক-ইন</span>
+                        @endif
+                    </td>
+                    <td class="tc" style="font-size:.8rem;color:#64748b;white-space:nowrap">
+                        {{ \Carbon\Carbon::parse($ec->sale_date)->format('d/m/Y') }}
+                    </td>
+                    <td>
+                        <span style="display:inline-flex;align-items:center;gap:5px;background:#ede9fe;color:#6d28d9;
+                                     padding:2px 10px;border-radius:20px;font-size:.78rem;font-weight:600">
+                            <i class="fas fa-tag" style="font-size:.65rem"></i>
+                            {{ $ec->category_name }}
+                        </span>
+                    </td>
+                    <td class="tr" style="color:#7c3aed;font-weight:700">
+                        + ৳ {{ number_format($ec->amount, 0) }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                    <td class="tr" style="color:#7c3aed;font-weight:800">৳ {{ number_format($saleExtraCosts->sum('amount'), 0) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+@endif
+
 @endif
 
 {{-- ══ ইউজার ভিত্তিক বিক্রয় — সবার জন্য (cash reconciliation) ══ --}}
@@ -1047,6 +1243,18 @@ function setReportView(type) {
 
 var savedReportView = localStorage.getItem('reportView') || 'detail';
 setReportView(savedReportView);
+
+// Date snap: first calendar snaps both dates, second extends range, both auto-submit
+(function () {
+    var fromEl = document.getElementById('rptDateFrom');
+    var toEl   = document.getElementById('rptDateTo');
+    if (!fromEl || !toEl) return;
+    function submit() { fromEl.form.requestSubmit ? fromEl.form.requestSubmit() : fromEl.form.submit(); }
+    fromEl.addEventListener('change', function () { if (fromEl.value) toEl.value = fromEl.value; submit(); });
+    fromEl.addEventListener('input',  function () { if (fromEl.value) toEl.value = fromEl.value; submit(); });
+    toEl.addEventListener('change', submit);
+    toEl.addEventListener('input',  submit);
+})();
 
 (function () {
     var input   = document.getElementById('rsCustomerSearch');

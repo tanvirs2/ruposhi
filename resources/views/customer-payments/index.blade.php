@@ -2,6 +2,10 @@
 @section('title', 'কাস্টমার পরিশোধ')
 @section('page-title', 'কাস্টমার পরিশোধ')
 
+@push('styles')
+<meta name="turbo-cache-control" content="no-cache">
+@endpush
+
 @section('content')
 @include('partials.page-header', ['title' => 'পরিশোধ তালিকা', 'createRoute' => route('customer-payments.create'), 'createLabel' => 'নতুন পরিশোধ'])
 
@@ -17,11 +21,11 @@
             </div>
             <div class="form-group-field">
                 <label>শুরু</label>
-                <input type="date" name="from" value="{{ request('from') }}">
+                <input type="date" name="from" id="pcDateFrom" value="{{ $from }}">
             </div>
             <div class="form-group-field">
                 <label>শেষ</label>
-                <input type="date" name="to" value="{{ request('to') }}">
+                <input type="date" name="to" id="pcDateTo" value="{{ $to }}">
             </div>
             @include('partials.date-range-buttons')
             <button type="submit" class="btn btn-secondary" style="align-self:flex-end">ফিল্টার</button>
@@ -178,6 +182,24 @@
     document.addEventListener('click', function (e) {
         if (!input.contains(e.target) && !drop.contains(e.target)) hide();
     });
+})();
+
+// Date snap: selecting from-date snaps to-date to same day and submits
+(function () {
+    var fromEl = document.getElementById('pcDateFrom');
+    var toEl   = document.getElementById('pcDateTo');
+    if (!fromEl || !toEl) return;
+    function onFromChange() {
+        if (fromEl.value) toEl.value = fromEl.value;
+        fromEl.form.requestSubmit ? fromEl.form.requestSubmit() : fromEl.form.submit();
+    }
+    function onToChange() {
+        fromEl.form.requestSubmit ? fromEl.form.requestSubmit() : fromEl.form.submit();
+    }
+    fromEl.addEventListener('change', onFromChange);
+    fromEl.addEventListener('input',  onFromChange);
+    toEl.addEventListener('change', onToChange);
+    toEl.addEventListener('input',  onToChange);
 })();
 </script>
 @endpush

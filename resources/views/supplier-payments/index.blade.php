@@ -2,6 +2,10 @@
 @section('title', 'সরবরাহকারী পরিশোধ তালিকা')
 @section('page-title', 'সরবরাহকারী পরিশোধ তালিকা')
 
+@push('styles')
+<meta name="turbo-cache-control" content="no-cache">
+@endpush
+
 @section('content')
 @include('partials.page-header', ['title' => 'পরিশোধ তালিকা', 'createRoute' => route('supplier-payments.create'), 'createLabel' => 'নতুন পরিশোধ'])
 
@@ -34,10 +38,10 @@
                 </select>
             </div>
             <div class="form-group-field">
-                <input type="date" name="from" value="{{ request('from') }}" class="form-select">
+                <input type="date" name="from" id="spDateFrom" value="{{ $from }}" class="form-select">
             </div>
             <div class="form-group-field">
-                <input type="date" name="to" value="{{ request('to') }}" class="form-select">
+                <input type="date" name="to" id="spDateTo" value="{{ $to }}" class="form-select">
             </div>
             @include('partials.date-range-buttons')
             <button type="submit" class="btn btn-secondary">ফিল্টার</button>
@@ -137,4 +141,25 @@
     </div>
     <div class="pagination-wrap">{{ $payments->withQueryString()->links() }}</div>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    var fromEl = document.getElementById('spDateFrom');
+    var toEl   = document.getElementById('spDateTo');
+    if (!fromEl || !toEl) return;
+    function onFromChange() {
+        if (fromEl.value) toEl.value = fromEl.value;
+        fromEl.form.requestSubmit ? fromEl.form.requestSubmit() : fromEl.form.submit();
+    }
+    function onToChange() {
+        fromEl.form.requestSubmit ? fromEl.form.requestSubmit() : fromEl.form.submit();
+    }
+    fromEl.addEventListener('change', onFromChange);
+    fromEl.addEventListener('input',  onFromChange);
+    toEl.addEventListener('change', onToChange);
+    toEl.addEventListener('input',  onToChange);
+})();
+</script>
+@endpush
 @endsection

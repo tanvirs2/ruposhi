@@ -630,6 +630,22 @@ document.addEventListener('turbo:load', function() {
         if (!el._animated) { el._animated = true; animateValue(el); }
     });
 
+    // Auto-snap date filter forms — opt-in via data-date-snap on <form>
+    // From-date change: snaps to-date to same day then submits.
+    // To-date change: submits (extends range). Guard prevents double-bind on Turbo.
+    document.querySelectorAll('form[data-date-snap]').forEach(function(form) {
+        if (form._dateSnap) return;
+        form._dateSnap = true;
+        var fromEl = form.querySelector('input[type="date"][name="from"]');
+        var toEl   = form.querySelector('input[type="date"][name="to"]');
+        if (!fromEl || !toEl) return;
+        function dsSubmit() { form.requestSubmit ? form.requestSubmit() : form.submit(); }
+        fromEl.addEventListener('change', function() { if (fromEl.value) toEl.value = fromEl.value; dsSubmit(); });
+        fromEl.addEventListener('input',  function() { if (fromEl.value) toEl.value = fromEl.value; dsSubmit(); });
+        toEl.addEventListener('change', dsSubmit);
+        toEl.addEventListener('input',  dsSubmit);
+    });
+
     // Module card ripples
     document.querySelectorAll('.module-card').forEach(function(card) {
         if (card._rippleWired) return;

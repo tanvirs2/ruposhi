@@ -8,7 +8,7 @@
 {{-- Filter ──────────────────────────────────────────────────── --}}
 <div class="card no-print" style="margin-bottom:20px">
     <div class="card-filter">
-        <form method="GET" class="filter-form" id="ledgerFilterForm">
+        <form method="GET" class="filter-form" id="ledgerFilterForm" data-date-snap>
             <div class="form-group-field">
                 <label>শুরুর তারিখ</label>
                 <input type="date" name="from" value="{{ $from }}">
@@ -408,6 +408,7 @@
 @endsection
 
 @push('styles')
+<meta name="turbo-cache-control" content="no-cache">
 <style>
 /* ── KPI row ──────────────────────────────────────────── */
 .pl-kpi-row {

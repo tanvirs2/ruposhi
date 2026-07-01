@@ -54,6 +54,7 @@
 </div>
 
 @push('styles')
+<meta name="turbo-cache-control" content="no-cache">
 <style>
 .view-toggle-group {
     display: flex;
@@ -169,8 +170,22 @@ setView(savedView);
         t = setTimeout(function () { load(buildUrl(), { keepFocus: true }); }, 300);
     });
 
-    dateFrom.addEventListener('change', function () { load(buildUrl()); });
-    dateTo.addEventListener('change', function () { load(buildUrl()); });
+    var dtTimer;
+    function onDateFromChange() {
+        clearTimeout(dtTimer);
+        dtTimer = setTimeout(function () {
+            dateTo.value = dateFrom.value;
+            load(buildUrl());
+        }, 300);
+    }
+    function onDateToChange() {
+        clearTimeout(dtTimer);
+        dtTimer = setTimeout(function () { load(buildUrl()); }, 300);
+    }
+    dateFrom.addEventListener('change', onDateFromChange);
+    dateFrom.addEventListener('input',  onDateFromChange);
+    dateTo.addEventListener('change', onDateToChange);
+    dateTo.addEventListener('input',  onDateToChange);
 
     form.addEventListener('submit', function (e) {
         e.preventDefault();

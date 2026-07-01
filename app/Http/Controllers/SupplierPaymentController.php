@@ -15,13 +15,17 @@ class SupplierPaymentController extends Controller
 {
     public function index(Request $request)
     {
+        $today = now()->toDateString();
+        $from  = $request->from ?: $today;
+        $to    = $request->to   ?: $today;
+
         // Purchase rows (paid_amount > 0)
         $purchaseRows = Purchase::with(['supplier', 'user'])
             ->withCount('items')
             ->where('paid_amount', '>', 0)
             ->when($request->supplier_id, fn($q) => $q->where('supplier_id', $request->supplier_id))
-            ->when($request->from, fn($q) => $q->whereDate('purchase_date', '>=', $request->from))
-            ->when($request->to,   fn($q) => $q->whereDate('purchase_date', '<=', $request->to))
+            ->whereDate('purchase_date', '>=', $from)
+            ->whereDate('purchase_date', '<=', $to)
             ->get()
             ->map(fn($p) => ['type' => 'purchase', 'row' => $p]);
 
@@ -29,10 +33,10 @@ class SupplierPaymentController extends Controller
 
         // Deposit rows from purchases (জমা entries)
         $depositRows = PurchaseDeposit::with(['purchase.supplier', 'purchase.user'])
-            ->whereHas('purchase', function ($q) use ($request) {
+            ->whereHas('purchase', function ($q) use ($from, $to, $request) {
                 $q->when($request->supplier_id, fn($q2) => $q2->where('supplier_id', $request->supplier_id))
-                  ->when($request->from, fn($q2) => $q2->whereDate('purchase_date', '>=', $request->from))
-                  ->when($request->to,   fn($q2) => $q2->whereDate('purchase_date', '<=', $request->to));
+                  ->whereDate('purchase_date', '>=', $from)
+                  ->whereDate('purchase_date', '<=', $to);
             })
             ->get()
             ->map(fn($d) => ['type' => 'deposit', 'row' => $d]);
@@ -65,7 +69,7 @@ class SupplierPaymentController extends Controller
 
         $suppliers = Supplier::orderBy('name')->get();
 
-        return view('supplier-payments.index', compact('payments', 'suppliers', 'totalPaid', 'totalDeposit'));
+        return view('supplier-payments.index', compact('payments', 'suppliers', 'totalPaid', 'totalDeposit', 'from', 'to'));
     }
 
     public function create(Request $request)

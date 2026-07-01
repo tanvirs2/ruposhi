@@ -23,8 +23,8 @@ class SaleController extends Controller
     public function index(Request $request)
     {
         $today    = now()->toDateString();
-        $dateFrom = $request->date_from ?: null;
-        $dateTo   = $request->date_to   ?: null;
+        $dateFrom = $request->date_from ?: $today;
+        $dateTo   = $request->date_to   ?: $today;
 
         $isStaff = auth()->user()->role === 'staff';
 

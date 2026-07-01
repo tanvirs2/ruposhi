@@ -9,33 +9,34 @@ class ExtraExpenseController extends Controller
 {
     public function index(Request $request)
     {
+        $today = now()->toDateString();
+        $from  = $request->from ?: $today;
+        $to    = $request->to   ?: $today;
+
         $query = ExtraExpense::when($request->search, fn($q) =>
                 $q->where('title', 'like', "%{$request->search}%")
             )
             ->when($request->type,     fn($q) => $q->where('type',     $request->type))
             ->when($request->category, fn($q) => $q->where('category', $request->category))
-            ->when($request->from,     fn($q) => $q->whereDate('expense_date', '>=', $request->from))
-            ->when($request->to,       fn($q) => $q->whereDate('expense_date', '<=', $request->to))
+            ->whereDate('expense_date', '>=', $from)
+            ->whereDate('expense_date', '<=', $to)
             ->latest('expense_date');
 
         $expenses   = $query->paginate(20)->withQueryString();
         $categories = ExtraExpense::distinct()->pluck('category')->filter();
-        $totalExpense = (clone $query->getQuery())->where('type', 'expense')->sum('amount');
-        $totalDeposit = (clone $query->getQuery())->where('type', 'deposit')->sum('amount');
 
-        // Recalculate totals from filtered result
-        $allFiltered  = ExtraExpense::when($request->search, fn($q) =>
+        $allFiltered = ExtraExpense::when($request->search, fn($q) =>
                 $q->where('title', 'like', "%{$request->search}%")
             )
             ->when($request->type,     fn($q) => $q->where('type',     $request->type))
             ->when($request->category, fn($q) => $q->where('category', $request->category))
-            ->when($request->from,     fn($q) => $q->whereDate('expense_date', '>=', $request->from))
-            ->when($request->to,       fn($q) => $q->whereDate('expense_date', '<=', $request->to));
+            ->whereDate('expense_date', '>=', $from)
+            ->whereDate('expense_date', '<=', $to);
 
         $totalExpense = $allFiltered->clone()->where('type', 'expense')->sum('amount');
         $totalDeposit = $allFiltered->clone()->where('type', 'deposit')->sum('amount');
 
-        return view('expenses.index', compact('expenses', 'categories', 'totalExpense', 'totalDeposit'));
+        return view('expenses.index', compact('expenses', 'categories', 'totalExpense', 'totalDeposit', 'from', 'to'));
     }
 
     public function create()

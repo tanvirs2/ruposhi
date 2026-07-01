@@ -2,6 +2,10 @@
 @section('title', 'পেমেন্ট ইতিহাস')
 @section('page-title', 'সব পেমেন্ট')
 
+@push('styles')
+<meta name="turbo-cache-control" content="no-cache">
+@endpush
+
 @section('content')
 
 {{-- Stats --}}
@@ -18,7 +22,7 @@
 
 {{-- Filters --}}
 <div class="rt-card" style="margin-bottom:16px">
-    <form method="GET" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+    <form method="GET" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end" data-date-snap>
         <div>
             <label style="font-size:.78rem;color:#64748b;display:block;margin-bottom:4px">ক্লায়েন্ট</label>
             <select name="user_id" class="rt-select" style="min-width:180px">
@@ -41,11 +45,11 @@
         </div>
         <div>
             <label style="font-size:.78rem;color:#64748b;display:block;margin-bottom:4px">তারিখ থেকে</label>
-            <input type="date" name="from" class="rt-input" value="{{ request('from') }}" style="width:150px">
+            <input type="date" name="from" class="rt-input" value="{{ $from }}" style="width:150px">
         </div>
         <div>
             <label style="font-size:.78rem;color:#64748b;display:block;margin-bottom:4px">তারিখ পর্যন্ত</label>
-            <input type="date" name="to" class="rt-input" value="{{ request('to') }}" style="width:150px">
+            <input type="date" name="to" class="rt-input" value="{{ $to }}" style="width:150px">
         </div>
         <button type="submit" class="rt-btn rt-btn-primary"><i class="fas fa-search"></i> খুঁজুন</button>
         @if(request()->hasAny(['user_id','method','from','to']))

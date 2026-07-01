@@ -3,6 +3,10 @@
 @section('page-title', 'সরবরাহকারী লেজার রিপোর্ট')
 @section('no-print-header', '1')
 
+@push('styles')
+<meta name="turbo-cache-control" content="no-cache">
+@endpush
+
 @section('content')
 
 {{-- ── Print header ────────────────────────────────────────────── --}}
@@ -43,7 +47,7 @@
 {{-- ── Filter ────────────────────────────────────────────────────── --}}
 <div class="card no-print" style="margin-bottom:20px">
     <div class="card-filter">
-        <form method="GET" class="filter-form" id="ledgerFilterForm">
+        <form method="GET" class="filter-form" id="ledgerFilterForm" data-date-snap>
             <div class="form-group-field">
                 <label>শুরুর তারিখ</label>
                 <input type="date" name="from" value="{{ $from }}">

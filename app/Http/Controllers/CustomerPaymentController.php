@@ -17,11 +17,15 @@ class CustomerPaymentController extends Controller
     {
         // Customer payments are now stored as no-item sales (previous-due
         // payments), so this list shows those no-item Sale records.
+        $today = now()->toDateString();
+        $from  = $request->from ?: $today;
+        $to    = $request->to   ?: $today;
+
         $base = Sale::with('customer', 'user')
             ->doesntHave('items')
             ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
-            ->when($request->from, fn($q) => $q->whereDate('sale_date', '>=', $request->from))
-            ->when($request->to,   fn($q) => $q->whereDate('sale_date', '<=', $request->to));
+            ->whereDate('sale_date', '>=', $from)
+            ->whereDate('sale_date', '<=', $to);
 
         $totalPaid = (clone $base)->sum('paid_amount');
         $payments  = $base->latest('sale_date')->latest('id')->paginate(20);
@@ -31,7 +35,7 @@ class CustomerPaymentController extends Controller
         // grow into the thousands.
         $selectedCustomer = $request->customer_id ? Customer::find($request->customer_id) : null;
 
-        return view('customer-payments.index', compact('payments', 'selectedCustomer', 'totalPaid'));
+        return view('customer-payments.index', compact('payments', 'selectedCustomer', 'totalPaid', 'from', 'to'));
     }
 
     public function create(Request $request)

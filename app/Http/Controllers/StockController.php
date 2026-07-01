@@ -15,7 +15,8 @@ class StockController extends Controller
     public function index(Request $request)
     {
         // updated_date filter: show only stock updated on this date, sorted by most recent
-        $updatedDate = $request->updated_date ?: null;
+        // Defaults to today — shows what was received/sold today
+        $updatedDate = $request->updated_date ?: now()->toDateString();
 
         $stock = Stock::with(['item.category'])
             ->where('quantity', '!=', 0)   // hide exactly-zero stock; show negative & positive

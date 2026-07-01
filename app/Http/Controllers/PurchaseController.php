@@ -22,8 +22,9 @@ class PurchaseController extends Controller
 {
     public function index(Request $request)
     {
-        $dateFrom = $request->date_from ?: null;
-        $dateTo   = $request->date_to   ?: null;
+        $today    = now()->toDateString();
+        $dateFrom = $request->date_from ?: $today;
+        $dateTo   = $request->date_to   ?: $today;
         $query = Purchase::with('supplier', 'items.item', 'user:id,name')
             ->has('items')
             ->when($request->search, fn($q) =>

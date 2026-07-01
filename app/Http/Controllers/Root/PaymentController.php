@@ -26,20 +26,19 @@ class PaymentController extends Controller
             $query->where('payment_method', $request->method);
         }
 
-        // Filter by date range
-        if ($request->filled('from')) {
-            $query->whereDate('payment_date', '>=', $request->from);
-        }
-        if ($request->filled('to')) {
-            $query->whereDate('payment_date', '<=', $request->to);
-        }
+        // Filter by date range — defaults to today
+        $today = now()->toDateString();
+        $from  = $request->from ?: $today;
+        $to    = $request->to   ?: $today;
+        $query->whereDate('payment_date', '>=', $from)
+              ->whereDate('payment_date', '<=', $to);
 
         $totalAmount = $query->sum('amount');          // compute BEFORE paginate
         $payments    = $query->paginate(30)->withQueryString();
 
         $superAdmins = User::where('role', 'super_admin')->orderBy('name')->get();
 
-        return view('root.payments.index', compact('payments', 'totalAmount', 'superAdmins'));
+        return view('root.payments.index', compact('payments', 'totalAmount', 'superAdmins', 'from', 'to'));
     }
 
     /** Record a new payment for a super_admin */

@@ -21,7 +21,7 @@
                 <i class="fas fa-rotate" style="color:#0d9488"></i>
                 <input type="date" name="updated_date" value="{{ $updatedDate }}" id="stockUpdatedDateInput"
                     title="এই তারিখে স্টক আপডেট হয়েছে এমন পণ্য"
-                    style="height:38px;padding:0 10px;border:1.5px solid {{ $updatedDate ? '#0d9488' : 'var(--border)' }};border-radius:6px;font-family:inherit;font-size:.85rem;{{ $updatedDate ? 'color:#0d9488;font-weight:600' : '' }}">
+                    style="height:38px;padding:0 10px;border:1.5px solid #0d9488;border-radius:6px;font-family:inherit;font-size:.85rem;color:#0d9488;font-weight:600">
             </div>
             <button type="submit" class="btn btn-secondary">খুঁজুন</button>
             {{-- Quick: today's stock updates --}}
@@ -32,7 +32,7 @@
                 </a>
             @endif
             <a href="{{ route('stock.index') }}" class="btn btn-ghost" id="stockClearBtn"
-               style="{{ (request('search') || request('date') || $updatedDate) ? '' : 'display:none' }}">পরিষ্কার</a>
+               style="{{ (request('search') || request('date') || request('updated_date')) ? '' : 'display:none' }}">পরিষ্কার</a>
         </form>
     </div>
     <div id="stockResults">
@@ -56,17 +56,21 @@
     var clearBtn     = document.getElementById('stockClearBtn');
     var todayBtn     = document.getElementById('stockTodayUpdateBtn');
 
+    var today = "{{ now()->toDateString() }}";
+
     function syncClearBtn() {
-        var active = input.value.trim() || dateInput.value !== "{{ now()->toDateString() }}" || updatedInput.value;
+        var active = input.value.trim()
+            || dateInput.value !== today
+            || updatedInput.value !== today;
         clearBtn.style.display = active ? '' : 'none';
-        if (todayBtn) todayBtn.style.display = (updatedInput.value !== "{{ now()->toDateString() }}") ? '' : 'none';
+        if (todayBtn) todayBtn.style.display = (updatedInput.value !== today) ? '' : 'none';
     }
 
     function buildUrl() {
         var params = new URLSearchParams();
         if (input.value.trim()) params.set('search', input.value.trim());
-        if (dateInput.value) params.set('date', dateInput.value);
-        if (updatedInput.value) params.set('updated_date', updatedInput.value);
+        if (dateInput.value    && dateInput.value    !== today) params.set('date', dateInput.value);
+        if (updatedInput.value && updatedInput.value !== today) params.set('updated_date', updatedInput.value);
         var qs = params.toString();
         return form.action + (qs ? '?' + qs : '');
     }
@@ -95,7 +99,9 @@
     });
 
     dateInput.addEventListener('change', function () { load(buildUrl()); });
+    dateInput.addEventListener('input',  function () { load(buildUrl()); });
     updatedInput.addEventListener('change', function () { load(buildUrl()); });
+    updatedInput.addEventListener('input',  function () { load(buildUrl()); });
 
     form.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -113,7 +119,7 @@
 
         e.preventDefault();
         load(link.href);
-        if (isClear) { input.value = ''; dateInput.value = "{{ now()->toDateString() }}"; updatedInput.value = ''; }
+        if (isClear) { input.value = ''; dateInput.value = today; updatedInput.value = today; }
         if (isToday) { updatedInput.value = "{{ now()->toDateString() }}"; }
     });
 })();
@@ -121,6 +127,7 @@
 @endpush
 
 @push('styles')
+<meta name="turbo-cache-control" content="no-cache">
 <style>
 .stock-updated-today { background: #f0fdfa !important; }
 .badge-new-stock {

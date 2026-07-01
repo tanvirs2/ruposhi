@@ -2,6 +2,10 @@
 @section('title', 'খরচ ও জমা')
 @section('page-title', 'খরচ ও জমা')
 
+@push('styles')
+<meta name="turbo-cache-control" content="no-cache">
+@endpush
+
 @section('content')
 
 <div class="page-header-bar">
@@ -36,7 +40,7 @@
 
 <div class="card">
     <div class="card-filter">
-        <form method="GET" class="filter-form">
+        <form method="GET" class="filter-form" data-date-snap>
             <div class="search-box"><i class="fas fa-search"></i>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="শিরোনাম...">
             </div>
@@ -51,8 +55,8 @@
                     <option value="{{ $cat }}" @selected(request('category')===$cat)>{{ $cat }}</option>
                 @endforeach
             </select>
-            <input type="date" name="from" value="{{ request('from') }}" title="শুরুর তারিখ">
-            <input type="date" name="to"   value="{{ request('to') }}"   title="শেষ তারিখ">
+            <input type="date" name="from" value="{{ $from }}" title="শুরুর তারিখ">
+            <input type="date" name="to"   value="{{ $to }}"   title="শেষ তারিখ">
             @include('partials.date-range-buttons')
             <button type="submit" class="btn btn-secondary">ফিল্টার</button>
             @if(request()->hasAny(['search','type','category','from','to']))

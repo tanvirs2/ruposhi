@@ -2,17 +2,21 @@
 @section('title', 'দৈনিক পরিশোধ রিপোর্ট')
 @section('page-title', 'দৈনিক পরিশোধ রিপোর্ট')
 
+@push('styles')
+<meta name="turbo-cache-control" content="no-cache">
+@endpush
+
 @section('content')
 <div class="card" style="margin-bottom:20px">
     <div class="card-filter">
-        <form method="GET" class="filter-form">
+        <form method="GET" class="filter-form" id="dpForm">
             <div class="form-group-field">
                 <label>শুরু</label>
-                <input type="date" name="from" value="{{ $from }}">
+                <input type="date" name="from" id="dpDateFrom" value="{{ $from }}">
             </div>
             <div class="form-group-field">
                 <label>শেষ</label>
-                <input type="date" name="to" value="{{ $to }}">
+                <input type="date" name="to" id="dpDateTo" value="{{ $to }}">
             </div>
             @include('partials.date-range-buttons')
             <button type="submit" class="btn btn-primary" style="align-self:flex-end">রিপোর্ট দেখুন</button>
@@ -88,4 +92,19 @@
 @empty
 <div class="card"><div class="empty-row">এই সময়কালে কোনো পরিশোধ নেই</div></div>
 @endforelse
+
+@push('scripts')
+<script>
+(function () {
+    var fromEl = document.getElementById('dpDateFrom');
+    var toEl   = document.getElementById('dpDateTo');
+    if (!fromEl || !toEl) return;
+    function submit() { var f = fromEl.form; f.requestSubmit ? f.requestSubmit() : f.submit(); }
+    fromEl.addEventListener('change', function () { if (fromEl.value) toEl.value = fromEl.value; submit(); });
+    fromEl.addEventListener('input',  function () { if (fromEl.value) toEl.value = fromEl.value; submit(); });
+    toEl.addEventListener('change', submit);
+    toEl.addEventListener('input',  submit);
+})();
+</script>
+@endpush
 @endsection

@@ -1502,13 +1502,19 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
 .inv-total { font-weight: 700; font-size: 1rem; padding-top: 8px; border-top: 1px solid var(--border); }
 
 /* ─── Select custom arrow ───────────────────────────────────── */
-.form-select,
+.form-select:not(input[type="date"]):not(input[type="time"]):not(input[type="datetime-local"]),
 .form-group-field select {
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
     padding-right: 34px;
+}
+input[type="date"].form-select,
+input[type="time"].form-select {
+    appearance: auto;
+    background-image: none;
+    padding-right: 10px;
 }
 
 /* ─── Button loading state ──────────────────────────────────── */
