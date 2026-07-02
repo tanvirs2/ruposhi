@@ -106,7 +106,7 @@
             <span class="stat-value">{{ $shopGrandCount }}</span>
         </div>
     </div>
-    @if(auth()->user()->canManageShop() && ($grandExtraCost > 0 || $grandDiscount > 0))
+    @if($grandExtraCost > 0 || $grandDiscount > 0)
     <div class="stat-card" style="border-left:4px solid #8b5cf6;background:linear-gradient(135deg,#faf5ff,#ede9fe)">
         <div class="stat-icon" style="background:#ddd6fe;color:#7c3aed"><i class="fas fa-coins"></i></div>
         <div class="stat-body">
