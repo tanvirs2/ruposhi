@@ -641,6 +641,7 @@ document.addEventListener('turbo:load', function() {
         if (!fromEl || !toEl) return;
         function dsSubmit() { form.requestSubmit ? form.requestSubmit() : form.submit(); }
         if (fromEl.value) toEl.min = fromEl.value;
+        if (fromEl.value && toEl.value && toEl.value < fromEl.value) { toEl.value = fromEl.value; dsSubmit(); }
         fromEl.addEventListener('change', function() { if (fromEl.value) { toEl.min = fromEl.value; toEl.value = fromEl.value; } dsSubmit(); });
         fromEl.addEventListener('input',  function() { if (fromEl.value) { toEl.min = fromEl.value; toEl.value = fromEl.value; } dsSubmit(); });
         toEl.addEventListener('change', dsSubmit);

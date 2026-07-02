@@ -840,7 +840,7 @@
 {{-- ══ Staff: নিজের transaction detail ══════════════════════════ --}}
 @if(!auth()->user()->canManageShop())
 @php
-    $staffItemsByDate = $saleItems->groupBy('date')->sortKeys();
+    $staffItemsByDate = $namedItems->groupBy('date')->sortKeys();
 @endphp
 @if($staffItemsByDate->isNotEmpty())
 <div class="card" style="margin-bottom:20px">

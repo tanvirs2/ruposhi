@@ -128,6 +128,7 @@ setView(savedView);
     var dateFrom = document.getElementById('purchasesDateFrom');
     var dateTo   = document.getElementById('purchasesDateTo');
     if (dateFrom.value) dateTo.min = dateFrom.value;
+    if (dateFrom.value && dateTo.value && dateTo.value < dateFrom.value) { dateTo.value = dateFrom.value; }
     var results  = document.getElementById('purchasesResults');
     var clearBtn = document.getElementById('purchasesClearBtn');
 
