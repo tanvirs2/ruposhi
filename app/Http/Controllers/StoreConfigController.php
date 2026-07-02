@@ -94,9 +94,11 @@ class StoreConfigController extends Controller
         $multimediaFiles     = self::getMultimediaFiles();
         $multimediaEnabled   = StoreConfig::get('multimedia_enabled',  '0') === '1';
         $multimediaInterval  = (int) StoreConfig::get('multimedia_interval', '5');
+        $currentFont         = StoreConfig::get('font_family', 'hind_siliguri');
         return view('store-config.index', compact(
             'config', 'methods', 'groups',
-            'multimediaFiles', 'multimediaEnabled', 'multimediaInterval'
+            'multimediaFiles', 'multimediaEnabled', 'multimediaInterval',
+            'currentFont'
         ));
     }
 
@@ -200,5 +202,13 @@ class StoreConfigController extends Controller
         $filename = basename($request->filename); // Prevent path traversal
         Storage::disk('public')->delete('multimedia/' . $filename);
         return response()->json(['success' => true, 'files' => self::getMultimediaFiles()]);
+    }
+
+    public function updateFont(Request $request)
+    {
+        $allowed = ['hind_siliguri', 'noto_sans', 'baloo_da_2', 'tiro_bangla'];
+        $key = in_array($request->font, $allowed) ? $request->font : 'hind_siliguri';
+        StoreConfig::set('font_family', $key);
+        return response()->json(['success' => true]);
     }
 }

@@ -57,7 +57,6 @@
     @include('partials.font-loader')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
-    <style>:root { --bn-font: 'Hind Siliguri', sans-serif; }</style>
     <script src="https://js.pusher.com/8.2.0/pusher.min.js" defer></script>
     {{-- Turbo Drive — SPA-like navigation without full page reloads --}}
     <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8/dist/turbo.es2017-umd.js"></script>

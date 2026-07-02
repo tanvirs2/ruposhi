@@ -193,6 +193,7 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
         Route::post('/store-config/multimedia/interval',   [StoreConfigController::class, 'updateMultimediaInterval'])->name('store-config.multimedia.interval');
         Route::post('/store-config/multimedia/upload',     [StoreConfigController::class, 'uploadMultimedia'])->name('store-config.multimedia.upload');
         Route::delete('/store-config/multimedia',          [StoreConfigController::class, 'deleteMultimedia'])->name('store-config.multimedia.delete');
+        Route::post('/store-config/font',                  [StoreConfigController::class, 'updateFont'])->name('store-config.font');
     });
 
     /* Extra Cost Categories — admin only */

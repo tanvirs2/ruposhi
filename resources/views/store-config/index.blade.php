@@ -3,6 +3,8 @@
 @section('page-title', 'স্টোর কনফিগারেশন')
 
 @section('content')
+{{-- Load all Google Font options for the font-picker tab preview --}}
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&family=Baloo+Da+2:wght@400;500;600;700;800&family=Tiro+Bangla&display=swap" rel="stylesheet">
 
 {{-- ── Tabs ─────────────────────────────────────────────────── --}}
 <div class="config-tabs">
@@ -16,6 +18,9 @@
     <button class="config-tab" onclick="switchTab('multimedia', this)">
         <i class="fas fa-photo-film"></i> মাল্টিমিডিয়া
         @if($multimediaEnabled)<span class="tab-count" style="background:#16a34a">চালু</span>@endif
+    </button>
+    <button class="config-tab" onclick="switchTab('font', this)">
+        <i class="fas fa-font"></i> ফন্ট
     </button>
 </div>
 
@@ -237,6 +242,68 @@
     </div>
 </div>
 
+{{-- ══ TAB 4: Font ════════════════════════════════════════════ --}}
+<div id="tab-font" class="tab-panel" style="display:none">
+    <div class="form-card">
+        <div style="padding:20px 20px 0">
+            <div style="font-size:.82rem;font-weight:700;color:var(--text-secondary);
+                text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px">
+                <i class="fas fa-font" style="color:var(--accent)"></i> ফন্ট নির্বাচন করুন
+            </div>
+
+            {{-- Font option cards --}}
+            @php
+            $fontOptions = [
+                ['key'=>'hind_siliguri','name'=>'Hind Siliguri',    'label'=>'হিন্দ সিলিগুড়ি','desc'=>'ডিফল্ট · পরিষ্কার ও আধুনিক'],
+                ['key'=>'noto_sans',    'name'=>'Noto Sans Bengali', 'label'=>'নটো সান্স বাংলা', 'desc'=>'Google · অত্যন্ত পরিষ্কার'],
+                ['key'=>'baloo_da_2',   'name'=>'Baloo Da 2',        'label'=>'বালু দা ২',        'desc'=>'Google · গোলাকার ও বন্ধুত্বপূর্ণ'],
+                ['key'=>'tiro_bangla',  'name'=>'Tiro Bangla',       'label'=>'তিরো বাংলা',       'desc'=>'Google · ঐতিহ্যবাহী ও মার্জিত'],
+            ];
+            @endphp
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px" id="fontPickerGrid">
+                @foreach($fontOptions as $opt)
+                <div class="font-card {{ $currentFont === $opt['key'] ? 'active' : '' }}"
+                     data-font-key="{{ $opt['key'] }}" data-font-css="{{ $opt['name'] }}"
+                     onclick="selectFont('{{ $opt['key'] }}','{{ $opt['name'] }}',this)">
+                    <div class="font-card-sample" style="font-family:'{{ $opt['name'] }}',sans-serif">
+                        আমার দোকান
+                    </div>
+                    <div class="font-card-nums" style="font-family:'{{ $opt['name'] }}',sans-serif">
+                        ক্রয় ৳১,২৫০ &nbsp;·&nbsp; বিক্রয় ৳১,৪৫০
+                    </div>
+                    <div class="font-card-meta">
+                        <span class="font-card-name">{{ $opt['name'] }}</span>
+                        <span class="font-card-desc">{{ $opt['desc'] }}</span>
+                    </div>
+                    <div class="font-card-check"><i class="fas fa-check-circle"></i> নির্বাচিত</div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- Live preview --}}
+        <div style="margin:20px;border:1px dashed var(--border);border-radius:10px;
+            padding:20px;background:var(--bg)" id="fontPreviewBox">
+            <div style="font-size:.75rem;font-weight:700;color:var(--text-secondary);
+                text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px">
+                <i class="fas fa-eye"></i> লাইভ প্রিভিউ
+            </div>
+            <div id="fontPreview" style="font-family:var(--bn-font),sans-serif">
+                <div style="font-size:1.15rem;font-weight:700;margin-bottom:3px">রূপসী বাংলা ট্রেডার্স</div>
+                <div style="font-size:.85rem;color:#64748b;margin-bottom:14px">পাইকারী চাউল বিক্রয় ও কমিশন এজেন্ট</div>
+                <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:.88rem">
+                    <div><span style="color:#94a3b8">মোট বিক্রয়:</span> <strong>৳ ৪৫,৫০০</strong></div>
+                    <div><span style="color:#94a3b8">বাকী:</span> <strong style="color:#dc2626">৳ ৮,২৫০</strong></div>
+                    <div><span style="color:#94a3b8">পরিশোধ:</span> <strong style="color:#16a34a">৳ ৩৭,২৫০</strong></div>
+                </div>
+                <div style="margin-top:12px;font-size:.83rem;color:#64748b;border-top:1px solid var(--border);padding-top:12px">
+                    কাস্টমার: মোঃ আব্দুর রহমান &nbsp;·&nbsp; তারিখ: ০২ জুলাই, ২০২৬ &nbsp;·&nbsp; নগদ পরিশোধ
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('styles')
 <style>
 /* ── Tabs ─────────────────────────────────────────── */
@@ -322,6 +389,49 @@
     font-weight: 500;
     color: var(--text);
 }
+
+/* ── Font picker ──────────────────────────────────── */
+.font-card {
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+    position: relative;
+    background: var(--surface);
+}
+.font-card:hover { border-color: var(--accent); background: var(--accent-light); }
+.font-card.active { border-color: var(--accent); background: var(--accent-light); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
+.font-card-sample {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    line-height: 1.35;
+    color: var(--text);
+}
+.font-card-nums {
+    font-size: .8rem;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+.font-card-meta { display: flex; flex-direction: column; gap: 2px; }
+.font-card-name { font-size: .72rem; font-weight: 700; color: #94a3b8; }
+.font-card-desc { font-size: .7rem; color: #94a3b8; }
+.font-card-check {
+    display: none;
+    position: absolute;
+    top: 10px; right: 10px;
+    font-size: .7rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--surface);
+    border: 1.5px solid var(--accent);
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+.font-card.active .font-card-check { display: inline-flex; align-items: center; gap: 4px; }
 
 /* ── Multimedia tab ───────────────────────────────── */
 .mm-header-row {
@@ -501,9 +611,25 @@ function switchTab(name, btn) {
     btn.classList.add('active');
 }
 
-var payAddUrl    = '{{ route("store-config.payment-method.add") }}';
-var payDeleteUrl = '{{ route("store-config.payment-method.delete") }}';
-var csrfToken    = '{{ csrf_token() }}';
+var payAddUrl     = '{{ route("store-config.payment-method.add") }}';
+var payDeleteUrl  = '{{ route("store-config.payment-method.delete") }}';
+var fontUpdateUrl = '{{ route("store-config.font") }}';
+var csrfToken     = '{{ csrf_token() }}';
+
+async function selectFont(key, cssName, card) {
+    document.querySelectorAll('.font-card').forEach(function(c) { c.classList.remove('active'); });
+    card.classList.add('active');
+    var val = "'" + cssName + "'";
+    document.documentElement.style.setProperty('--bn-font', val);
+    var preview = document.getElementById('fontPreview');
+    if (preview) preview.style.fontFamily = cssName + ',sans-serif';
+    await fetch(fontUpdateUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        body: JSON.stringify({ font: key })
+    });
+    showToast('✓ ফন্ট পরিবর্তন হয়েছে — পেজ রিলোডে সম্পূর্ণ কার্যকর', 'success');
+}
 
 async function addPayMethod() {
     const nameEl  = document.getElementById('newPayName');
