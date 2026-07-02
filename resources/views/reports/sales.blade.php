@@ -866,7 +866,9 @@
                 </tr>
             </thead>
             <tbody>
+                @php $staffLastSaleId = null; @endphp
                 @foreach($rows as $row)
+                @php $staffIsNew = ($row->sale_id !== $staffLastSaleId); $staffLastSaleId = $row->sale_id; @endphp
                 <tr>
                     <td class="mono"><a href="{{ route('sales.show', $row->sale_id) }}" style="color:#0d9488">#{{ str_pad($row->sale_id,6,'0',STR_PAD_LEFT) }}</a></td>
                     <td>{{ $row->customer_name ?? 'ওয়াক-ইন' }}</td>
@@ -874,20 +876,23 @@
                     <td style="text-align:right">{{ number_format($row->qty, 0) }}</td>
                     <td style="text-align:right">৳ {{ number_format($row->rate, 0) }}</td>
                     <td style="text-align:right;font-weight:700">৳ {{ number_format($row->amount, 0) }}</td>
-                    <td style="text-align:right;color:#16a34a">৳ {{ number_format($row->paid_amount, 0) }}</td>
-                    <td style="text-align:right;color:{{ $row->due_amount > 0 ? '#dc2626' : '#94a3b8' }}">
-                        {{ $row->due_amount > 0 ? '৳ '.number_format($row->due_amount,0) : '—' }}
+                    <td style="text-align:right;color:#16a34a">
+                        @if($staffIsNew) ৳ {{ number_format($row->paid_amount, 0) }} @else — @endif
+                    </td>
+                    <td style="text-align:right;color:{{ $staffIsNew && $row->due_amount > 0 ? '#dc2626' : '#94a3b8' }}">
+                        @if($staffIsNew && $row->due_amount > 0) ৳ {{ number_format($row->due_amount,0) }} @else — @endif
                     </td>
                     <td style="font-size:.8rem;color:#94a3b8">{{ \Carbon\Carbon::parse($row->sale_time)->format('h:i a') }}</td>
                 </tr>
                 @endforeach
             </tbody>
+            @php $staffUniq = $rows->unique('sale_id'); @endphp
             <tfoot>
                 <tr class="tfoot-summary">
                     <td colspan="5" style="text-align:right;font-weight:700">সর্বমোট</td>
                     <td style="text-align:right;font-weight:800">৳ {{ number_format($rows->sum('amount'), 0) }}</td>
-                    <td style="text-align:right;font-weight:800;color:#16a34a">৳ {{ number_format($rows->sum('paid_amount'), 0) }}</td>
-                    <td style="text-align:right;font-weight:800;color:#dc2626">৳ {{ number_format($rows->sum('due_amount'), 0) }}</td>
+                    <td style="text-align:right;font-weight:800;color:#16a34a">৳ {{ number_format($staffUniq->sum('paid_amount'), 0) }}</td>
+                    <td style="text-align:right;font-weight:800;color:#dc2626">৳ {{ number_format($staffUniq->sum('due_amount'), 0) }}</td>
                     <td></td>
                 </tr>
             </tfoot>
