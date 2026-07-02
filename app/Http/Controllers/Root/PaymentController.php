@@ -30,7 +30,6 @@ class PaymentController extends Controller
         $today = now()->toDateString();
         $from  = $request->from ?: $today;
         $to    = $request->to   ?: $today;
-        if ($from > $to) [$from, $to] = [$to, $from];
         $query->whereDate('payment_date', '>=', $from)
               ->whereDate('payment_date', '<=', $to);
 

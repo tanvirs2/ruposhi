@@ -202,7 +202,6 @@ class CustomerController extends Controller
     {
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
-        if ($from > $to) [$from, $to] = [$to, $from];
 
         // ── Opening balance (before $from) — use total_amount (after discount) ──
         $openingSales    = Sale::where('customer_id', $customer->id)

@@ -130,6 +130,7 @@ setView(savedView);
     var status   = document.getElementById('salesStatusSelect');
     var dateFrom = document.getElementById('salesDateFrom');
     var dateTo   = document.getElementById('salesDateTo');
+    if (dateFrom.value) dateTo.min = dateFrom.value;
     var results  = document.getElementById('salesResults');
     var clearBtn = document.getElementById('salesClearBtn');
 
@@ -177,7 +178,7 @@ setView(savedView);
     function onDateFromChange() {
         clearTimeout(dtTimer);
         dtTimer = setTimeout(function () {
-            // Snap to-date to same day so it acts as single-day filter
+            if (dateFrom.value) dateTo.min = dateFrom.value;
             dateTo.value = dateFrom.value;
             load(buildUrl());
         }, 300);

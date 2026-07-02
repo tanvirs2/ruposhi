@@ -640,8 +640,9 @@ document.addEventListener('turbo:load', function() {
         var toEl   = form.querySelector('input[type="date"][name="to"]');
         if (!fromEl || !toEl) return;
         function dsSubmit() { form.requestSubmit ? form.requestSubmit() : form.submit(); }
-        fromEl.addEventListener('change', function() { if (fromEl.value) toEl.value = fromEl.value; dsSubmit(); });
-        fromEl.addEventListener('input',  function() { if (fromEl.value) toEl.value = fromEl.value; dsSubmit(); });
+        if (fromEl.value) toEl.min = fromEl.value;
+        fromEl.addEventListener('change', function() { if (fromEl.value) { toEl.min = fromEl.value; toEl.value = fromEl.value; } dsSubmit(); });
+        fromEl.addEventListener('input',  function() { if (fromEl.value) { toEl.min = fromEl.value; toEl.value = fromEl.value; } dsSubmit(); });
         toEl.addEventListener('change', dsSubmit);
         toEl.addEventListener('input',  dsSubmit);
     });

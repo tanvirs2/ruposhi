@@ -46,7 +46,6 @@ class SupplierController extends Controller
     {
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
-        if ($from > $to) [$from, $to] = [$to, $from];
 
         // Opening balance: purchases before $from minus paid, deposits and payments
         $openingPurchaseIds        = $supplier->purchases()->where('purchase_date', '<', $from)->pluck('id');

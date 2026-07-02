@@ -127,6 +127,7 @@ setView(savedView);
     var input    = document.getElementById('purchasesSearchInput');
     var dateFrom = document.getElementById('purchasesDateFrom');
     var dateTo   = document.getElementById('purchasesDateTo');
+    if (dateFrom.value) dateTo.min = dateFrom.value;
     var results  = document.getElementById('purchasesResults');
     var clearBtn = document.getElementById('purchasesClearBtn');
 
@@ -174,6 +175,7 @@ setView(savedView);
     function onDateFromChange() {
         clearTimeout(dtTimer);
         dtTimer = setTimeout(function () {
+            if (dateFrom.value) dateTo.min = dateFrom.value;
             dateTo.value = dateFrom.value;
             load(buildUrl());
         }, 300);
