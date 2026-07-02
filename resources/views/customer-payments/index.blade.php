@@ -11,7 +11,7 @@
 
 <div class="card" style="margin-bottom:20px">
     <div class="card-filter">
-        <form method="GET" class="filter-form">
+        <form method="GET" class="filter-form" data-date-snap>
             <div class="form-group-field" style="position:relative;min-width:220px">
                 <label>কাস্টমার</label>
                 <input type="hidden" name="customer_id" id="pcCustomerId" value="{{ $selectedCustomer?->id }}">

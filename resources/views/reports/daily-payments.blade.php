@@ -9,7 +9,7 @@
 @section('content')
 <div class="card" style="margin-bottom:20px">
     <div class="card-filter">
-        <form method="GET" class="filter-form" id="dpForm">
+        <form method="GET" class="filter-form" id="dpForm" data-date-snap>
             <div class="form-group-field">
                 <label>শুরু</label>
                 <input type="date" name="from" id="dpDateFrom" value="{{ $from }}">

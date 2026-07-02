@@ -28,7 +28,7 @@
 
 <div class="card">
     <div class="card-filter">
-        <form method="GET" class="filter-form">
+        <form method="GET" class="filter-form" data-date-snap>
             <div class="form-group-field">
                 <select name="supplier_id" class="form-select">
                     <option value="">সব সরবরাহকারী</option>
