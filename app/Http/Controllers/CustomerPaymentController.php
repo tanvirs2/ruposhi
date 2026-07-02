@@ -20,6 +20,7 @@ class CustomerPaymentController extends Controller
         $today = now()->toDateString();
         $from  = $request->from ?: $today;
         $to    = $request->to   ?: $today;
+        if ($from > $to) [$from, $to] = [$to, $from];
 
         $base = Sale::with('customer', 'user')
             ->doesntHave('items')

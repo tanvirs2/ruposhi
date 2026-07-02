@@ -18,6 +18,7 @@ class SupplierPaymentController extends Controller
         $today = now()->toDateString();
         $from  = $request->from ?: $today;
         $to    = $request->to   ?: $today;
+        if ($from > $to) [$from, $to] = [$to, $from];
 
         // Purchase rows (paid_amount > 0)
         $purchaseRows = Purchase::with(['supplier', 'user'])

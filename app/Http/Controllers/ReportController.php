@@ -150,6 +150,7 @@ class ReportController extends Controller
     {
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
+        if ($from > $to) [$from, $to] = [$to, $from];
 
         $sales = Sale::whereBetween('sale_date', [$from, $to])
             ->selectRaw('DATE(sale_date) as date, SUM(total_amount) as total, COUNT(*) as count')
@@ -216,6 +217,7 @@ class ReportController extends Controller
     {
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
+        if ($from > $to) [$from, $to] = [$to, $from];
 
         // Customer payments are now stored as no-item sales
         $daily = \App\Models\Sale::with('customer')
@@ -240,6 +242,7 @@ class ReportController extends Controller
     {
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
+        if ($from > $to) [$from, $to] = [$to, $from];
 
         // Supplier payments are now stored as no-item advance purchases
         $daily = \App\Models\Purchase::with(['supplier', 'user'])
@@ -257,8 +260,10 @@ class ReportController extends Controller
     // ── বিক্রয় রিপোর্ট — detailed sales with customer filter ───
     public function salesReport(Request $request)
     {
-        $from      = $request->from ?? now()->toDateString();
-        $to        = $request->to   ?? now()->toDateString();
+        $from = $request->from ?? now()->toDateString();
+        $to   = $request->to   ?? now()->toDateString();
+        if ($from > $to) [$from, $to] = [$to, $from];
+        if ($from > $to) [$from, $to] = [$to, $from]; // swap if inverted
         $selectedCustomer = $request->customer_id ? Customer::find($request->customer_id) : null;
 
         $isStaff = auth()->user()->role === 'staff';
@@ -442,6 +447,7 @@ class ReportController extends Controller
     {
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
+        if ($from > $to) [$from, $to] = [$to, $from];
 
         $daily = Purchase::with(['supplier', 'user', 'items.item'])
             ->whereBetween('purchase_date', [$from, $to])
@@ -473,6 +479,7 @@ class ReportController extends Controller
     {
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
+        if ($from > $to) [$from, $to] = [$to, $from];
 
         $rows = DB::table('sale_items')
             ->join('items', 'sale_items.item_id', '=', 'items.id')
@@ -695,6 +702,7 @@ class ReportController extends Controller
 
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
+        if ($from > $to) [$from, $to] = [$to, $from];
 
         // ── Revenue ───────────────────────────────────────────────
         $grossSales = Sale::whereBetween('sale_date', [$from, $to])->sum('total_amount');
@@ -840,6 +848,7 @@ class ReportController extends Controller
 
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
+        if ($from > $to) [$from, $to] = [$to, $from];
 
         $grossSales    = Sale::whereBetween('sale_date', [$from, $to])->sum('total_amount');
         $discounts     = Sale::whereBetween('sale_date', [$from, $to])->sum('discount');
@@ -897,6 +906,7 @@ class ReportController extends Controller
     {
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
+        if ($from > $to) [$from, $to] = [$to, $from];
 
         // Each sale_item becomes one row (সব বিক্রয়ের আইটেম)
         $rows = DB::table('sale_items')
@@ -929,6 +939,7 @@ class ReportController extends Controller
     {
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
+        if ($from > $to) [$from, $to] = [$to, $from];
 
         $rows = DB::table('sale_items')
             ->join('items',    'sale_items.item_id',  '=', 'items.id')
@@ -978,6 +989,7 @@ class ReportController extends Controller
     {
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
+        if ($from > $to) [$from, $to] = [$to, $from];
 
         $rows = DB::table('sale_items')
             ->join('items', 'sale_items.item_id', '=', 'items.id')

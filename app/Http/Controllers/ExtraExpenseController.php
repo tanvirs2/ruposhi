@@ -12,6 +12,7 @@ class ExtraExpenseController extends Controller
         $today = now()->toDateString();
         $from  = $request->from ?: $today;
         $to    = $request->to   ?: $today;
+        if ($from > $to) [$from, $to] = [$to, $from];
 
         $query = ExtraExpense::when($request->search, fn($q) =>
                 $q->where('title', 'like', "%{$request->search}%")
