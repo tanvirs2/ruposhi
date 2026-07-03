@@ -146,6 +146,52 @@
     $walkinDisc  = $walkinUniqSales->sum('discount');
 @endphp
 
+{{-- ইউজার ভিত্তিক বিক্রয় — সবার জন্য দৃশ্যমান (দিন শেষে ক্যাশ মিলাতে) ── --}}
+@php $uSummaryRows = collect($userSummary)->values(); @endphp
+@if($uSummaryRows->isNotEmpty())
+<div class="card" style="margin-bottom:20px">
+    <div class="card-header" style="display:flex;align-items:center;gap:8px">
+        <i class="fas fa-users" style="color:#0d9488"></i>
+        <strong>ইউজার ভিত্তিক বিক্রয়</strong>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ইউজার</th>
+                    <th style="text-align:right">বিক্রয় সংখ্যা</th>
+                    <th style="text-align:right">মোট বিক্রয়</th>
+                    <th style="text-align:right">পরিশোধ</th>
+                    <th style="text-align:right">বাকী</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($uSummaryRows as $row)
+                <tr>
+                    <td><strong>{{ $row['name'] }}</strong></td>
+                    <td style="text-align:right">{{ $row['count'] }}</td>
+                    <td style="text-align:right;font-weight:700">৳ {{ number_format($row['total'], 0) }}</td>
+                    <td style="text-align:right;color:#16a34a;font-weight:700">৳ {{ number_format($row['paid'], 0) }}</td>
+                    <td style="text-align:right;color:{{ $row['due'] > 0 ? '#dc2626' : '#94a3b8' }};font-weight:{{ $row['due'] > 0 ? '700' : '400' }}">
+                        {{ $row['due'] > 0 ? '৳ '.number_format($row['due'], 0) : '—' }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td><strong>মোট</strong></td>
+                    <td style="text-align:right;font-weight:700">{{ $uSummaryRows->sum('count') }}</td>
+                    <td style="text-align:right;font-weight:800">৳ {{ number_format($uSummaryRows->sum('total'), 0) }}</td>
+                    <td style="text-align:right;font-weight:800;color:#16a34a">৳ {{ number_format($uSummaryRows->sum('paid'), 0) }}</td>
+                    <td style="text-align:right;font-weight:800;color:#dc2626">৳ {{ number_format($uSummaryRows->sum('due'), 0) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+@endif
+
 {{-- Tab switcher + full detail (admin only) ─────────────────── --}}
 @if(auth()->user()->canManageShop())
 <div class="no-print" style="display:flex;gap:0;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;width:fit-content;margin-bottom:20px">
@@ -213,50 +259,6 @@
         </div>
     </div>
 </div>
-
-{{-- User-wise sales summary ────────────────────────────────── --}}
-@if($userSummary->count() > 1)
-<div class="card no-print" style="margin-bottom:20px">
-    <div class="card-header">
-        <h3><i class="fas fa-users" style="color:var(--accent)"></i> ইউজার ভিত্তিক বিক্রয়</h3>
-    </div>
-    <div class="table-wrap">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>ইউজার</th>
-                    <th style="text-align:right">বিক্রয় সংখ্যা</th>
-                    <th style="text-align:right">মোট বিক্রয়</th>
-                    <th style="text-align:right">পরিশোধ</th>
-                    <th style="text-align:right">বাকী</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($userSummary as $row)
-                <tr>
-                    <td style="font-weight:600">{{ $row['name'] }}</td>
-                    <td style="text-align:right">{{ $row['count'] }}</td>
-                    <td style="text-align:right;font-weight:700">৳ {{ number_format($row['total'],0) }}</td>
-                    <td style="text-align:right;color:#16a34a">৳ {{ number_format($row['paid'],0) }}</td>
-                    <td style="text-align:right;color:{{ $row['due'] > 0 ? '#dc2626' : 'var(--text-secondary)' }}">
-                        {{ $row['due'] > 0 ? '৳ '.number_format($row['due'],0) : '—' }}
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-            <tfoot>
-                <tr class="tfoot-summary">
-                    <td style="font-weight:700">মোট</td>
-                    <td style="text-align:right;font-weight:700">{{ $userSummary->sum('count') }}</td>
-                    <td style="text-align:right;font-weight:800">৳ {{ number_format($shopGrandTotal,0) }}</td>
-                    <td style="text-align:right;font-weight:800;color:#16a34a">৳ {{ number_format($userSummary->sum('paid'),0) }}</td>
-                    <td style="text-align:right;font-weight:800;color:#dc2626">৳ {{ number_format($userSummary->sum('due'),0) }}</td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-</div>
-@endif
 
 {{-- Per-item detail table — named customers ────────────────── --}}
 <div class="card">
@@ -709,52 +711,6 @@
         ->values();
 @endphp
 <div id="reportUserView" style="display:none">
-
-{{-- Summary table FIRST ──────────────────────────────────── --}}
-@php $uSummaryRows = collect($userSummary)->values(); @endphp
-@if($uSummaryRows->isNotEmpty())
-<div class="card" style="margin-bottom:20px">
-    <div class="card-header" style="display:flex;align-items:center;gap:8px">
-        <i class="fas fa-users" style="color:#0d9488"></i>
-        <strong>ইউজার ভিত্তিক বিক্রয়</strong>
-    </div>
-    <div class="table-wrap">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>ইউজার</th>
-                    <th style="text-align:right">বিক্রয় সংখ্যা</th>
-                    <th style="text-align:right">মোট বিক্রয়</th>
-                    <th style="text-align:right">পরিশোধ</th>
-                    <th style="text-align:right">বাকী</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($uSummaryRows as $row)
-                <tr>
-                    <td><strong>{{ $row['name'] }}</strong></td>
-                    <td style="text-align:right">{{ $row['count'] }}</td>
-                    <td style="text-align:right;font-weight:700">৳ {{ number_format($row['total'], 0) }}</td>
-                    <td style="text-align:right;color:#16a34a;font-weight:700">৳ {{ number_format($row['paid'], 0) }}</td>
-                    <td style="text-align:right;color:{{ $row['due'] > 0 ? '#dc2626' : '#94a3b8' }};font-weight:{{ $row['due'] > 0 ? '700' : '400' }}">
-                        {{ $row['due'] > 0 ? '৳ '.number_format($row['due'], 0) : '—' }}
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-            <tfoot>
-                <tr class="tfoot-summary">
-                    <td><strong>মোট</strong></td>
-                    <td style="text-align:right;font-weight:700">{{ $uSummaryRows->sum('count') }}</td>
-                    <td style="text-align:right;font-weight:800">৳ {{ number_format($uSummaryRows->sum('total'), 0) }}</td>
-                    <td style="text-align:right;font-weight:800;color:#16a34a">৳ {{ number_format($uSummaryRows->sum('paid'), 0) }}</td>
-                    <td style="text-align:right;font-weight:800;color:#dc2626">৳ {{ number_format($uSummaryRows->sum('due'), 0) }}</td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-</div>
-@endif
 
     @forelse($allUserNames as $uName)
     @php
