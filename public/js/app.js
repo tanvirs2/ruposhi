@@ -379,6 +379,8 @@ function animateValue(el, duration = 900) {
         'KeyD':  () => go('a[href$="/dashboard"]',       '/dashboard'),
         'KeyK':  () => go('a[href$="/stock"]',           '/stock'),
         'KeyT':  () => go('a[href*="reports/sales"]',    '/reports/sales'),
+        'KeyL':  () => go('a[href$="/purchases"]',            '/purchases'),
+        'KeyM':  () => go('a[href$="/supplier-payments"]',    '/supplier-payments'),
         'Slash': () => toggleShortcutsHelp(),
     };
 

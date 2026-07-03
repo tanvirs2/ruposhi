@@ -90,7 +90,7 @@
             $inCustomer = in_array($_seg, ['customers','customer-payments','customer-areas']) || $_path === 'customers-ledger';
             $inItems    = in_array($_seg, ['items','categories']);
             $inStock    = $_seg === 'stock';
-            $inSupplier = in_array($_seg, ['suppliers','supplier-payments']) || in_array($_path, ['suppliers-due-report','suppliers-ledger']);
+            $inSupplier = in_array($_seg, ['suppliers','supplier-payments','purchases']) || in_array($_path, ['suppliers-due-report','suppliers-ledger']);
             $inReports  = $_seg === 'reports';
         @endphp
 
@@ -205,6 +205,11 @@
                         <span class="nav-label">সরবরাহকারী তালিকা</span>
                         <button type="button" class="info-btn" data-info="সকল সরবরাহকারীর তথ্য — নাম, ফোন, ঠিকানা ও মোট বকেয়া। নতুন সরবরাহকারী যোগ করুন।">i</button>
                     </a>
+                    <a href="{{ route('purchases.index') }}" class="nav-item nav-child {{ $_seg==='purchases' ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fas fa-truck-ramp-box"></i></span>
+                        <span class="nav-label">পণ্য রিসিভ লিস্ট</span>
+                        <button type="button" class="info-btn" data-info="সরবরাহকারীর কাছ থেকে মালামাল গ্রহণ করুন। পরিমাণ ও মূল্য লিখলে স্টক স্বয়ংক্রিয়ভাবে আপডেট হবে এবং বকেয়া হিসাব হবে।">i</button>
+                    </a>
                     <a href="{{ route('supplier-payments.create') }}" class="nav-item nav-child {{ $_path==='supplier-payments/create' ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-plus-circle"></i></span>
                         <span class="nav-label">সরবরাহকারী পরিশোধ</span>
@@ -236,11 +241,6 @@
 
         <div class="nav-section">
             <span class="nav-section-label">লেনদেন</span>
-            <a href="{{ route('purchases.index') }}" class="nav-item {{ $_seg==='purchases' ? 'active' : '' }}">
-                <span class="nav-icon"><i class="fas fa-truck-ramp-box"></i></span>
-                <span class="nav-label">পণ্য রিসিভ লিস্ট</span>
-                <button type="button" class="info-btn" data-info="সরবরাহকারীর কাছ থেকে মালামাল গ্রহণ করুন। পরিমাণ ও মূল্য লিখলে স্টক স্বয়ংক্রিয়ভাবে আপডেট হবে এবং বকেয়া হিসাব হবে।">i</button>
-            </a>
             <a href="{{ route('sales.index') }}" class="nav-item {{ $_seg==='sales' ? 'active' : '' }}">
                 <span class="nav-icon"><i class="fas fa-receipt"></i></span>
                 <span class="nav-label">বিক্রয় লিস্ট</span>
@@ -675,6 +675,8 @@
     <div class="shortcuts-overlay" id="shortcutsOverlay">
         <div class="shortcuts-card">
             <h3><i class="fas fa-keyboard" style="color:var(--accent)"></i> কীবোর্ড শর্টকাট</h3>
+
+            <div class="shortcut-group-title">লেনদেন</div>
             <div class="shortcut-row">
                 <a href="{{ route('sales.create') }}" onclick="toggleShortcutsHelp()" style="color:var(--accent);text-decoration:none;font-weight:600">
                     <i class="fas fa-plus" style="font-size:.7rem;margin-right:4px"></i>নতুন বিক্রয়
@@ -687,6 +689,22 @@
                 </a>
                 <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">P</kbd></span>
             </div>
+
+            <div class="shortcut-group-title">তালিকা</div>
+            <div class="shortcut-row">
+                <a href="{{ route('purchases.index') }}" onclick="toggleShortcutsHelp()" style="color:var(--text-primary);text-decoration:none">
+                    <i class="fas fa-truck-ramp-box" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>পণ্য রিসিভ লিস্ট
+                </a>
+                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">L</kbd></span>
+            </div>
+            <div class="shortcut-row">
+                <a href="{{ route('supplier-payments.index') }}" onclick="toggleShortcutsHelp()" style="color:var(--text-primary);text-decoration:none">
+                    <i class="fas fa-money-bill-wave" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>পরিশোধ তালিকা
+                </a>
+                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">M</kbd></span>
+            </div>
+
+            <div class="shortcut-group-title">নেভিগেশন</div>
             <div class="shortcut-row">
                 <a href="{{ route('dashboard') }}" onclick="toggleShortcutsHelp()" style="color:var(--text-primary);text-decoration:none">
                     <i class="fas fa-gauge" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>ড্যাশবোর্ড
@@ -705,6 +723,8 @@
                 </a>
                 <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">T</kbd></span>
             </div>
+
+            <div class="shortcut-group-title">সিস্টেম</div>
             <div class="shortcut-row">
                 <span>ডার্ক/লাইট মোড</span>
                 <span style="color:var(--text-secondary);font-size:.8rem">টপবারে 🌙 বোতাম</span>
