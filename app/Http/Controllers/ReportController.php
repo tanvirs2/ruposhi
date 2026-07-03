@@ -384,10 +384,11 @@ class ReportController extends Controller
             ->orderBy('sale_items.id')
             ->get();
 
-        $grandExtraCost = $itemSales->sum('extra_cost');
-        $grandDiscount  = $itemSales->sum('discount');
+        // Full-shop (unfiltered) — stat card shows the same figure for every user
+        $grandExtraCost = $allShopItemSales->sum('extra_cost');
+        $grandDiscount  = $allShopItemSales->sum('discount');
 
-        // Extra cost breakdown (categorised rows) for the separate table
+        // Extra cost breakdown (categorised rows) for the separate table (staff's own only)
         $saleExtraCosts = DB::table('sale_extra_costs')
             ->join('sales',          'sale_extra_costs.sale_id', '=', 'sales.id')
             ->leftJoin('customers',  'sales.customer_id',        '=', 'customers.id')
@@ -408,8 +409,15 @@ class ReportController extends Controller
             ->orderBy('sale_extra_costs.id')
             ->get();
 
-        // Category-level summary for the stat card
-        $extraCostByCategory = $saleExtraCosts->groupBy('category_name')
+        // Category-level summary for the stat card — always full-shop, unfiltered
+        $extraCostByCategory = DB::table('sale_extra_costs')
+            ->join('sales', 'sale_extra_costs.sale_id', '=', 'sales.id')
+            ->whereBetween('sales.sale_date', [$from, $to])
+            ->where('sales.shop_id', auth()->user()->shop_id)
+            ->when($request->customer_id, fn($q) => $q->where('sales.customer_id', $request->customer_id))
+            ->select('sale_extra_costs.category_name', 'sale_extra_costs.amount')
+            ->get()
+            ->groupBy('category_name')
             ->map(fn($rows) => $rows->sum('amount'));
 
         // 7-day trend for the chart (always last 7 days, not filtered)
