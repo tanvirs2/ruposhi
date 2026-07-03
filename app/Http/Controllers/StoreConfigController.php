@@ -95,10 +95,14 @@ class StoreConfigController extends Controller
         $multimediaEnabled   = StoreConfig::get('multimedia_enabled',  '0') === '1';
         $multimediaInterval  = (int) StoreConfig::get('multimedia_interval', '5');
         $currentFont         = StoreConfig::get('font_family', 'hind_siliguri');
+        $receiptProfiles     = \App\Models\ReceiptProfile::with('users:id,name,receipt_profile_id')->latest()->get();
+        $shopUsers           = \App\Models\User::where('shop_id', auth()->user()->shop_id)
+                                    ->where('role', '!=', 'super_admin')
+                                    ->orderBy('name')->get(['id', 'name', 'role', 'receipt_profile_id']);
         return view('store-config.index', compact(
             'config', 'methods', 'groups',
             'multimediaFiles', 'multimediaEnabled', 'multimediaInterval',
-            'currentFont'
+            'currentFont', 'receiptProfiles', 'shopUsers'
         ));
     }
 

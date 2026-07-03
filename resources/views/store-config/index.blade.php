@@ -22,6 +22,10 @@
     <button class="config-tab" onclick="switchTab('font', this)">
         <i class="fas fa-font"></i> ফন্ট
     </button>
+    <button class="config-tab" onclick="switchTab('receipt', this)">
+        <i class="fas fa-id-card"></i> রিসিট প্রোফাইল
+        @if($receiptProfiles->count())<span class="tab-count">{{ $receiptProfiles->count() }}</span>@endif
+    </button>
 </div>
 
 {{-- ══ TAB 1: Store info ══════════════════════════════════════ --}}
@@ -299,6 +303,77 @@
                 <div style="margin-top:12px;font-size:.83rem;color:#64748b;border-top:1px solid var(--border);padding-top:12px">
                     কাস্টমার: মোঃ আব্দুর রহমান &nbsp;·&nbsp; তারিখ: ০২ জুলাই, ২০২৬ &nbsp;·&nbsp; নগদ পরিশোধ
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ══ TAB 5: Receipt profiles ══════════════════════════════════ --}}
+<div id="tab-receipt" class="tab-panel" style="display:none">
+    <div class="form-card" style="padding:20px">
+        <div style="font-size:.82rem;font-weight:700;color:var(--text-secondary);
+            text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">
+            <i class="fas fa-id-card" style="color:var(--accent)"></i> রিসিট প্রোফাইল
+        </div>
+        <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:18px">
+            স্টাফ ভিত্তিক আলাদা কাশ মেমো তথ্য — যে স্টাফের বিক্রয়ে এই প্রোফাইল assign করা থাকবে,
+            তার রিসিটে এখানকার তথ্য দেখাবে। কোনো প্রোফাইল assign না থাকলে "স্টোর তথ্য" ট্যাবের ডিফল্ট তথ্য দেখাবে।
+        </p>
+
+        @forelse($receiptProfiles as $rp)
+        <div style="border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;
+                        padding:12px 16px;background:var(--bg);cursor:pointer;flex-wrap:wrap"
+                 onclick="toggleRpEdit({{ $rp->id }})">
+                <div>
+                    <strong>{{ $rp->name }}</strong>
+                    <span style="color:var(--text-secondary);font-size:.82rem;margin-left:8px">{{ $rp->store_name }}</span>
+                </div>
+                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                    @forelse($rp->users as $u)
+                        <span class="badge" style="background:#eff6ff;color:#1d4ed8">{{ $u->name }}</span>
+                    @empty
+                        <span style="color:var(--text-secondary);font-size:.78rem">কেউ assign করা নেই</span>
+                    @endforelse
+                    <i class="fas fa-chevron-down" style="font-size:.75rem;color:var(--text-secondary)"></i>
+                </div>
+            </div>
+            <div id="rpEdit{{ $rp->id }}" style="display:none;padding:16px;border-top:1px solid var(--border)">
+                @include('partials.receipt-profile-form', [
+                    'action'      => route('receipt-profiles.update', $rp),
+                    'method'      => 'PUT',
+                    'rp'          => $rp,
+                    'shopUsers'   => $shopUsers,
+                    'submitLabel' => 'সংরক্ষণ করুন',
+                ])
+                <form method="POST" action="{{ route('receipt-profiles.destroy', $rp) }}"
+                      onsubmit="return confirm('এই প্রোফাইল মুছে ফেলবেন? Assign করা ইউজাররা ডিফল্ট স্টোর তথ্যে ফিরে যাবে।')"
+                      style="margin-top:8px">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn btn-ghost btn-sm" style="color:#dc2626">
+                        <i class="fas fa-trash"></i> প্রোফাইল মুছে ফেলুন
+                    </button>
+                </form>
+            </div>
+        </div>
+        @empty
+        <div style="text-align:center;padding:24px;color:var(--text-secondary)">
+            কোনো প্রোফাইল তৈরি করা হয়নি
+        </div>
+        @endforelse
+
+        <div style="margin-top:20px;padding-top:20px;border-top:1px dashed var(--border)">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleRpNew()">
+                <i class="fas fa-plus"></i> নতুন প্রোফাইল
+            </button>
+            <div id="rpNewForm" style="display:none;margin-top:14px">
+                @include('partials.receipt-profile-form', [
+                    'action'      => route('receipt-profiles.store'),
+                    'method'      => 'POST',
+                    'rp'          => null,
+                    'shopUsers'   => $shopUsers,
+                    'submitLabel' => 'তৈরি করুন',
+                ])
             </div>
         </div>
     </div>
@@ -609,6 +684,15 @@ function switchTab(name, btn) {
     document.querySelectorAll('.config-tab').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + name).style.display = 'block';
     btn.classList.add('active');
+}
+
+function toggleRpEdit(id) {
+    var el = document.getElementById('rpEdit' + id);
+    if (el) el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+}
+function toggleRpNew() {
+    var el = document.getElementById('rpNewForm');
+    if (el) el.style.display = (el.style.display === 'none') ? 'block' : 'none';
 }
 
 var payAddUrl     = '{{ route("store-config.payment-method.add") }}';

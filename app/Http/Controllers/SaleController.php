@@ -205,14 +205,17 @@ class SaleController extends Controller
 
     public function show(Sale $sale)
     {
-        $sale->load('items.item', 'customer', 'user', 'extraCosts');
+        $sale->load('items.item', 'customer', 'user.receiptProfile', 'extraCosts');
+        // Cash memo shows the profile assigned to the staff who made the sale,
+        // if any — otherwise the shop's default store info.
+        $profile = $sale->user?->receiptProfile;
         $store = [
-            'name'    => \App\Models\StoreConfig::get('store_name', 'আমার চালের দোকান'),
-            'owner'   => \App\Models\StoreConfig::get('store_owner', ''),
-            'tagline' => \App\Models\StoreConfig::get('store_tagline', ''),
-            'phone'   => \App\Models\StoreConfig::get('store_phone', ''),
-            'phone2'  => \App\Models\StoreConfig::get('store_phone2', ''),
-            'address' => \App\Models\StoreConfig::get('store_address', ''),
+            'name'    => $profile->store_name    ?? \App\Models\StoreConfig::get('store_name', 'আমার চালের দোকান'),
+            'owner'   => $profile->store_owner   ?? \App\Models\StoreConfig::get('store_owner', ''),
+            'tagline' => $profile->store_tagline ?? \App\Models\StoreConfig::get('store_tagline', ''),
+            'phone'   => $profile->store_phone   ?? \App\Models\StoreConfig::get('store_phone', ''),
+            'phone2'  => $profile->store_phone2  ?? \App\Models\StoreConfig::get('store_phone2', ''),
+            'address' => $profile->store_address ?? \App\Models\StoreConfig::get('store_address', ''),
         ];
         return view('sales.show', compact('sale', 'store'));
     }

@@ -24,6 +24,7 @@ class User extends Authenticatable
         'password',
         'role',
         'shop_id',
+        'receipt_profile_id',
     ];
 
     /* ── Role helpers ──────────────────────────────────────── */
@@ -87,6 +88,12 @@ class User extends Authenticatable
     public function shop()
     {
         return $this->belongsTo(Shop::class);
+    }
+
+    /** Receipt (cash memo) profile assigned to this user, if any */
+    public function receiptProfile()
+    {
+        return $this->belongsTo(ReceiptProfile::class);
     }
 
     /** All shops owned by this super_admin */

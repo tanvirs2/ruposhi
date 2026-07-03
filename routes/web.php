@@ -16,6 +16,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\ExtraExpenseController;
 use App\Http\Controllers\StoreConfigController;
+use App\Http\Controllers\ReceiptProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ExtraCostCategoryController;
@@ -194,6 +195,9 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
         Route::post('/store-config/multimedia/upload',     [StoreConfigController::class, 'uploadMultimedia'])->name('store-config.multimedia.upload');
         Route::delete('/store-config/multimedia',          [StoreConfigController::class, 'deleteMultimedia'])->name('store-config.multimedia.delete');
         Route::post('/store-config/font',                  [StoreConfigController::class, 'updateFont'])->name('store-config.font');
+        Route::post('/receipt-profiles',                   [ReceiptProfileController::class, 'store'])->name('receipt-profiles.store');
+        Route::put('/receipt-profiles/{receiptProfile}',    [ReceiptProfileController::class, 'update'])->name('receipt-profiles.update');
+        Route::delete('/receipt-profiles/{receiptProfile}', [ReceiptProfileController::class, 'destroy'])->name('receipt-profiles.destroy');
     });
 
     /* Extra Cost Categories — admin only */
