@@ -21,7 +21,7 @@
                 <i class="fas fa-rotate" style="color:#0d9488"></i>
                 <input type="date" name="updated_date" value="{{ $updatedDate }}" id="stockUpdatedDateInput"
                     title="এই তারিখে স্টক আপডেট হয়েছে এমন পণ্য"
-                    style="height:38px;padding:0 10px;border:1.5px solid #0d9488;border-radius:6px;font-family:inherit;font-size:.85rem;color:#0d9488;font-weight:600">
+                    style="height:38px;padding:0 10px;border:1.5px solid {{ $updatedDate ? '#0d9488' : 'var(--border)' }};border-radius:6px;font-family:inherit;font-size:.85rem;{{ $updatedDate ? 'color:#0d9488;font-weight:600' : '' }}">
             </div>
             <button type="submit" class="btn btn-secondary">খুঁজুন</button>
             {{-- Quick: today's stock updates --}}
@@ -31,7 +31,7 @@
                 <i class="fas fa-rotate"></i> আজ আপডেট
             </a>
             {{-- Quick: full stock list (no updated_date filter) --}}
-            <a href="{{ route('stock.index', array_merge(request()->except('updated_date', 'page'), ['updated_date' => 'all'])) }}"
+            <a href="{{ route('stock.index', request()->except('updated_date', 'page')) }}"
                class="btn btn-ghost" id="stockAllBtn"
                style="white-space:nowrap;{{ $updatedDate ? '' : 'display:none' }}">
                 <i class="fas fa-list"></i> সব স্টক
@@ -67,7 +67,7 @@
     function syncClearBtn() {
         var active = input.value.trim()
             || dateInput.value !== today
-            || updatedInput.value !== today;
+            || updatedInput.value;
         clearBtn.style.display = active ? '' : 'none';
         if (todayBtn) todayBtn.style.display = (updatedInput.value !== today) ? '' : 'none';
         if (allBtn)   allBtn.style.display   = updatedInput.value ? '' : 'none';
@@ -76,9 +76,8 @@
     function buildUrl() {
         var params = new URLSearchParams();
         if (input.value.trim()) params.set('search', input.value.trim());
-        if (dateInput.value    && dateInput.value    !== today) params.set('date', dateInput.value);
-        // Empty date input = show all stock ('all'); otherwise filter by the picked date
-        params.set('updated_date', updatedInput.value || 'all');
+        if (dateInput.value    && dateInput.value !== today) params.set('date', dateInput.value);
+        if (updatedInput.value) params.set('updated_date', updatedInput.value);
         var qs = params.toString();
         return form.action + (qs ? '?' + qs : '');
     }
@@ -102,9 +101,6 @@
 
     var t;
     input.addEventListener('input', function () {
-        // Searching with the default "today" filter would hide almost everything —
-        // drop it so search covers the full stock (an explicitly picked date is kept)
-        if (input.value.trim() && updatedInput.value === today) updatedInput.value = '';
         clearTimeout(t);
         t = setTimeout(function () { load(buildUrl(), { keepFocus: true }); }, 300);
     });
@@ -130,7 +126,7 @@
         if (!isClear && !isToday && !isAll && !isPage) return;
 
         e.preventDefault();
-        if (isClear) { input.value = ''; dateInput.value = today; updatedInput.value = today; }
+        if (isClear) { input.value = ''; dateInput.value = today; updatedInput.value = ''; }
         if (isToday) { updatedInput.value = today; }
         if (isAll)   { updatedInput.value = ''; }
         load(isPage ? link.href : buildUrl());

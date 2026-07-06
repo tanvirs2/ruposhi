@@ -15,13 +15,10 @@ class StockController extends Controller
     public function index(Request $request)
     {
         // updated_date filter: show only stock updated on this date, sorted by most recent
-        // Defaults to today — shows what was received/sold today
-        // 'all' (or searching without an explicit date) shows the full stock list
+        // Default (empty or 'all') = full stock list; আজ আপডেট button passes today's date
         $updatedDate = $request->input('updated_date');
-        if ($updatedDate === 'all') {
+        if (!$updatedDate || $updatedDate === 'all') {
             $updatedDate = null;
-        } elseif (!$updatedDate) {
-            $updatedDate = $request->search ? null : now()->toDateString();
         }
 
         $stock = Stock::with(['item.category'])
