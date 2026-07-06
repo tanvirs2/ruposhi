@@ -25,12 +25,17 @@
             </div>
             <button type="submit" class="btn btn-secondary">খুঁজুন</button>
             {{-- Quick: today's stock updates --}}
-            @if($updatedDate !== now()->toDateString())
-                <a href="{{ route('stock.index', array_merge(request()->all(), ['updated_date' => now()->toDateString()])) }}"
-                   class="btn btn-ghost" id="stockTodayUpdateBtn" style="color:#0d9488;border-color:#0d9488;white-space:nowrap">
-                    <i class="fas fa-rotate"></i> আজ আপডেট
-                </a>
-            @endif
+            <a href="{{ route('stock.index', array_merge(request()->except('updated_date', 'page'), ['updated_date' => now()->toDateString()])) }}"
+               class="btn btn-ghost" id="stockTodayUpdateBtn"
+               style="color:#0d9488;border-color:#0d9488;white-space:nowrap;{{ $updatedDate !== now()->toDateString() ? '' : 'display:none' }}">
+                <i class="fas fa-rotate"></i> আজ আপডেট
+            </a>
+            {{-- Quick: full stock list (no updated_date filter) --}}
+            <a href="{{ route('stock.index', array_merge(request()->except('updated_date', 'page'), ['updated_date' => 'all'])) }}"
+               class="btn btn-ghost" id="stockAllBtn"
+               style="white-space:nowrap;{{ $updatedDate ? '' : 'display:none' }}">
+                <i class="fas fa-list"></i> সব স্টক
+            </a>
             <a href="{{ route('stock.index') }}" class="btn btn-ghost" id="stockClearBtn"
                style="{{ (request('search') || request('date') || request('updated_date')) ? '' : 'display:none' }}">পরিষ্কার</a>
         </form>
@@ -55,6 +60,7 @@
     var results      = document.getElementById('stockResults');
     var clearBtn     = document.getElementById('stockClearBtn');
     var todayBtn     = document.getElementById('stockTodayUpdateBtn');
+    var allBtn       = document.getElementById('stockAllBtn');
 
     var today = "{{ now()->toDateString() }}";
 
@@ -64,13 +70,15 @@
             || updatedInput.value !== today;
         clearBtn.style.display = active ? '' : 'none';
         if (todayBtn) todayBtn.style.display = (updatedInput.value !== today) ? '' : 'none';
+        if (allBtn)   allBtn.style.display   = updatedInput.value ? '' : 'none';
     }
 
     function buildUrl() {
         var params = new URLSearchParams();
         if (input.value.trim()) params.set('search', input.value.trim());
         if (dateInput.value    && dateInput.value    !== today) params.set('date', dateInput.value);
-        if (updatedInput.value && updatedInput.value !== today) params.set('updated_date', updatedInput.value);
+        // Empty date input = show all stock ('all'); otherwise filter by the picked date
+        params.set('updated_date', updatedInput.value || 'all');
         var qs = params.toString();
         return form.action + (qs ? '?' + qs : '');
     }
@@ -94,6 +102,9 @@
 
     var t;
     input.addEventListener('input', function () {
+        // Searching with the default "today" filter would hide almost everything —
+        // drop it so search covers the full stock (an explicitly picked date is kept)
+        if (input.value.trim() && updatedInput.value === today) updatedInput.value = '';
         clearTimeout(t);
         t = setTimeout(function () { load(buildUrl(), { keepFocus: true }); }, 300);
     });
@@ -114,13 +125,15 @@
         var withinResults = results.contains(link);
         var isClear  = link.id === 'stockClearBtn';
         var isToday  = link.id === 'stockTodayUpdateBtn';
+        var isAll    = link.id === 'stockAllBtn';
         var isPage   = withinResults && link.closest('.pagination-wrap');
-        if (!isClear && !isToday && !isPage) return;
+        if (!isClear && !isToday && !isAll && !isPage) return;
 
         e.preventDefault();
-        load(link.href);
         if (isClear) { input.value = ''; dateInput.value = today; updatedInput.value = today; }
-        if (isToday) { updatedInput.value = "{{ now()->toDateString() }}"; }
+        if (isToday) { updatedInput.value = today; }
+        if (isAll)   { updatedInput.value = ''; }
+        load(isPage ? link.href : buildUrl());
     });
 })();
 </script>

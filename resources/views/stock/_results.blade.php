@@ -114,7 +114,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="13" class="empty-row">কোনো স্টক পাওয়া যায়নি</td></tr>
+                <tr><td colspan="12" class="empty-row">কোনো স্টক পাওয়া যায়নি</td></tr>
                 @endforelse
             </tbody>
             @if($stock->total() > 0)
