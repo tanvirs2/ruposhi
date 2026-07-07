@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title', 'গ্রহণ সংশোধন — #RCV-' . str_pad($purchase->id, 4, '0', STR_PAD_LEFT))
 @section('page-title', 'গ্রহণ সংশোধন')
-@section('breadcrumb', 'পণ্য গ্রহণ সংশোধন করুন')
 
 @section('content')
 <form method="POST" action="{{ route('purchases.update', $purchase) }}" id="receiveForm">

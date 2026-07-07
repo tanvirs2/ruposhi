@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title', 'কাস্টমার পরিশোধ')
 @section('page-title', 'কাস্টমার পরিশোধ')
-@section('breadcrumb', 'কাস্টমারের বাকী টাকা আদায় করুন')
 
 @section('content')
 <div class="form-card" style="max-width:560px">

@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title', 'সরবরাহকারী পরিশোধ')
 @section('page-title', 'সরবরাহকারী পরিশোধ')
-@section('breadcrumb', 'বকেয়া টাকা সরবরাহকারীকে পরিশোধ করুন')
 
 @section('content')
 <div class="form-card" style="max-width:560px">

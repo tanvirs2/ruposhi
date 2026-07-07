@@ -1,7 +1,6 @@
 ﻿@extends('layouts.app')
 @section('title', 'পণ্য গ্রহণ')
 @section('page-title', 'পণ্য গ্রহণ')
-@section('breadcrumb', 'সরবরাহকারী থেকে আইটেম গ্রহণ ও স্টক আপডেট')
 @push('styles')<meta name="turbo-cache-control" content="no-cache">@endpush
 
 @section('content')
