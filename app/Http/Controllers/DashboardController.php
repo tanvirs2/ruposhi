@@ -15,10 +15,17 @@ class DashboardController extends Controller
     {
         $shopId = auth()->user()->shop_id;
 
+        // NOTE: no caching anywhere — every value below is read fresh from the
+        // DB on each load. sale_date is a DATE column, so plain equality is
+        // used instead of whereDate() (date(col)=? defeats the index).
+        $todayAgg = Sale::where('sale_date', today()->toDateString())
+            ->selectRaw('COALESCE(SUM(total_amount),0) as total, COALESCE(SUM(paid_amount),0) as paid, COALESCE(SUM(due_amount),0) as due')
+            ->first();
+
         $stats = [
-            'today_sales'      => Sale::whereDate('sale_date', today())->sum('total_amount'),
-            'today_paid'       => Sale::whereDate('sale_date', today())->sum('paid_amount'),
-            'today_due'        => Sale::whereDate('sale_date', today())->sum('due_amount'),
+            'today_sales'      => $todayAgg->total,
+            'today_paid'       => $todayAgg->paid,
+            'today_due'        => $todayAgg->due,
             'total_customer_due' => \App\Models\Customer::where('due_amount', '>', 0)->sum('due_amount'),
             'low_stock_count'  => Stock::whereRaw('quantity <= min_quantity AND quantity >= 0')->count(),
             'out_stock_count'  => Stock::where('quantity', '<=', 0)->count(),
@@ -26,14 +33,21 @@ class DashboardController extends Controller
             'items'            => Item::count(),
         ];
 
-        // 7-day sales trend
-        $sevenDayTrend = collect(range(6, 0))->map(function ($daysAgo) {
+        // 7-day sales trend — one grouped query instead of 14 separate ones
+        $trendRaw = Sale::where('sale_date', '>=', today()->subDays(6)->toDateString())
+            ->groupBy('sale_date')
+            ->selectRaw('sale_date, SUM(total_amount) as total, SUM(paid_amount) as paid')
+            ->get()
+            ->keyBy(fn($r) => \Carbon\Carbon::parse($r->sale_date)->toDateString());
+
+        $sevenDayTrend = collect(range(6, 0))->map(function ($daysAgo) use ($trendRaw) {
             $date = today()->subDays($daysAgo);
+            $row  = $trendRaw->get($date->toDateString());
             return [
                 'date'  => $date->format('d/m'),
                 'label' => $date->locale('bn')->isoFormat('ddd'),
-                'total' => Sale::whereDate('sale_date', $date)->sum('total_amount'),
-                'paid'  => Sale::whereDate('sale_date', $date)->sum('paid_amount'),
+                'total' => $row->total ?? 0,
+                'paid'  => $row->paid ?? 0,
             ];
         });
 
@@ -57,7 +71,7 @@ class DashboardController extends Controller
 
         $rows = Sale::with('user:id,name')
             ->has('items')
-            ->whereDate('sale_date', $today)
+            ->where('sale_date', $today)
             ->get()
             ->groupBy('user_id')
             ->map(fn($grp) => [

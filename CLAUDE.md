@@ -19,12 +19,15 @@
 ```bash
 cd ~/domains/pos.numaanhussain.com/pos_app && git pull origin main && php artisan migrate
 ```
-After pulling, also run:
+After pulling, also run (rebuilds framework caches — old clear-only left the app uncached and slow):
 ```bash
-php artisan config:clear && php artisan route:clear && php artisan view:clear
+php artisan config:cache && php artisan route:cache && php artisan view:cache
 ```
 - `git pull origin main` — NOT bare `git pull` (doesn't work on production)
 - User runs SSH commands themselves — NEVER ask for passwords or initiate SSH
+- ⚠️ These cache ONLY framework internals (config files, route table, compiled Blade) —
+  never business data. due_amount/stock/prices still hit the DB fresh on every request.
+- ⚠️ After config:cache, `.env` changes on the server require re-running `php artisan config:cache`.
 
 ## First-Time Production Setup (seeders)
 After initial deploy of v2, run once on server:

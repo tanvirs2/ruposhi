@@ -1988,7 +1988,7 @@ body.txn-summary-active  #miniChatFab { bottom: 158px; }
         document.getElementById('mcMessages').innerHTML = '<div class="mc-loading"><i class="fas fa-spinner fa-spin"></i></div>';
         mcFetchGroupHistory();
         clearInterval(mcGroupPollTimer);
-        mcGroupPollTimer = setInterval(mcGroupPoll, 3000);
+        mcGroupPollTimer = setInterval(mcGroupPoll, 8000);
         setTimeout(() => document.getElementById('mcInput').focus(), 100);
     };
 
@@ -2008,6 +2008,7 @@ body.txn-summary-active  #miniChatFab { bottom: 158px; }
     }
 
     function mcGroupPoll() {
+        if (document.hidden) return; // tab in background — skip the server hit
         fetch(`${GROUP_POLL_URL}?last_id=${mcGroupLastId}`, { headers:{ 'Accept':'application/json', 'X-CSRF-TOKEN': CSRF } })
         .then(r => r.json()).then(data => {
             data.messages.forEach(m => {
@@ -2099,6 +2100,7 @@ body.txn-summary-active  #miniChatFab { bottom: 158px; }
         clearInterval(mcPollTimer);
         if (!mcActiveUser) return;
         mcPollTimer = setInterval(function () {
+            if (document.hidden) return; // tab in background — skip the server hit
             fetch(`${POLL_URL}?with=${mcActiveUser.id}&last_id=${mcLastId}`, {
                 headers: { 'Accept':'application/json', 'X-CSRF-TOKEN': CSRF }
             })
@@ -2112,7 +2114,7 @@ body.txn-summary-active  #miniChatFab { bottom: 158px; }
                 });
                 if (data.messages.length) updateBadge(data.total_unread);
             }).catch(function(){});
-        }, 3000);
+        }, 8000);
     }
 
     function updateBadge_fetch() {

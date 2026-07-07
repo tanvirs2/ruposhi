@@ -41,9 +41,8 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('guest');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 /* ── Subscription expired page ─────────────────────────────── */
-Route::get('/subscription-expired', function () {
-    return view('subscription.expired');
-})->name('subscription.expired')->middleware('auth');
+Route::view('/subscription-expired', 'subscription.expired')
+    ->name('subscription.expired')->middleware('auth');
 
 /* ── Root Admin routes ─────────────────────────────────────── */
 Route::middleware(['auth', 'root'])->prefix('root')->name('root.')->group(function () {
@@ -51,7 +50,7 @@ Route::middleware(['auth', 'root'])->prefix('root')->name('root.')->group(functi
     Route::resource('super-admins', \App\Http\Controllers\Root\SuperAdminController::class);
     Route::post('/super-admins/{user}/extend-license', [\App\Http\Controllers\Root\SuperAdminController::class, 'extendLicense'])->name('super-admins.extend-license');
     Route::post('/super-admins/{user}/expire-license',  [\App\Http\Controllers\Root\SuperAdminController::class, 'expireLicense'])->name('super-admins.expire-license');
-    Route::resource('resellers', \App\Http\Controllers\Root\ResellerController::class);
+    Route::resource('resellers', \App\Http\Controllers\Root\ResellerController::class)->except('show');
     // Reseller detail + payout tracking
     Route::get('/resellers/{reseller}/show',               [\App\Http\Controllers\Root\ResellerPayoutController::class, 'show'])->name('resellers.show');
     Route::post('/resellers/{reseller}/payouts',           [\App\Http\Controllers\Root\ResellerPayoutController::class, 'store'])->name('resellers.payouts.store');
@@ -79,7 +78,7 @@ Route::middleware(['auth', 'reseller'])->prefix('reseller')->name('reseller.')->
 /* ── Super Admin routes ────────────────────────────────────── */
 Route::middleware(['auth', 'super_admin', 'check.subscription'])->prefix('super')->name('super.')->group(function () {
     Route::get('/dashboard', [SuperDashboard::class, 'index'])->name('dashboard');
-    Route::resource('shops', ShopController::class);
+    Route::resource('shops', ShopController::class)->except('destroy');
     Route::post('/shops/{shop}/enter', [ShopController::class, 'enter'])->name('shops.enter');
     Route::post('/exit-shop',          [ShopController::class, 'exitShop'])->name('shops.exit');
     Route::get('/reports', [SuperReportController::class, 'index'])->name('reports');
@@ -91,7 +90,7 @@ Route::middleware(['auth', 'super_admin', 'check.subscription'])->prefix('super'
 /* ── Protected (shop users) ────────────────────────────────── */
 Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function () {
 
-    Route::get('/', fn() => redirect()->route('dashboard'));
+    Route::redirect('/', '/dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/user-summary', [DashboardController::class, 'userSummary'])->name('dashboard.user-summary');
 
@@ -221,19 +220,6 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
     Route::put('/profile',          [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'changePassword'])->name('profile.password');
 
-    /* JSON API for POS dropdowns */
-    Route::get('/api/items',     fn() => \App\Models\Item::with('stock')->get(['id','name','sale_price','purchase_price','unit']));
-    Route::get('/api/customers', fn() => \App\Models\Customer::get(['id','name','phone','due_amount']));
-    Route::get('/api/suppliers', fn() => \App\Models\Supplier::get(['id','name','phone','due_amount']));
-
-    /* Global search */
-    Route::get('/search', function (\Illuminate\Http\Request $r) {
-        $q = trim($r->get('q', ''));
-        if (mb_strlen($q) < 1) return response()->json(['items' => [], 'customers' => [], 'suppliers' => []]);
-        return response()->json([
-            'items'     => \App\Models\Item::where('name', 'like', "%{$q}%")->limit(6)->get(['id', 'name']),
-            'customers' => \App\Models\Customer::where('name', 'like', "%{$q}%")->orWhere('phone', 'like', "%{$q}%")->limit(5)->get(['id', 'name', 'phone']),
-            'suppliers' => \App\Models\Supplier::where('name', 'like', "%{$q}%")->orWhere('phone', 'like', "%{$q}%")->limit(5)->get(['id', 'name', 'phone']),
-        ]);
-    })->name('search');
+    /* Global search (topbar) */
+    Route::get('/search', \App\Http\Controllers\GlobalSearchController::class)->name('search');
 });
