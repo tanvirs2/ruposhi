@@ -74,77 +74,66 @@
     </div>
 </div>
 
-{{-- ── P&L Statement (formal layout) ─────────────────────────── --}}
-<div class="pl-statement">
-
-    <div class="pl-statement-title">
-        লাভ-লোকসান বিবরণী
-        <span style="font-size:.8rem;font-weight:500;color:#64748b;margin-left:8px">
-            {{ \Carbon\Carbon::parse($from)->format('d M Y') }} — {{ \Carbon\Carbon::parse($to)->format('d M Y') }}
-        </span>
+{{-- ══ ইউজার ভিত্তিক পারফরম্যান্স ══════════════════════════════════ --}}
+@if($userPerformance->isNotEmpty())
+<div class="card" style="margin-top:24px">
+    <div class="card-header" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-bottom:1px solid #bfdbfe;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <h3 style="font-size:.95rem;color:#1d4ed8;margin:0">
+            <i class="fas fa-users" style="margin-right:6px"></i> ইউজার ভিত্তিক পারফরম্যান্স
+        </h3>
+        <span style="font-size:.78rem;color:#64748b">{{ $userPerformance->count() }} জন ইউজার</span>
     </div>
-
-    {{-- Revenue section --}}
-    <div class="pl-section-head">আয় (Revenue)</div>
-    <div class="pl-row">
-        <span>মোট বিক্রয় (Gross Sales)</span>
-        <span>৳ {{ number_format($grossSales, 2) }}</span>
-    </div>
-    @if($discounts > 0)
-    <div class="pl-row pl-row-sub">
-        <span>বাদ: ছাড় (Discounts)</span>
-        <span style="color:#dc2626">− ৳ {{ number_format($discounts, 2) }}</span>
-    </div>
-    @endif
-    @if(($extraCost ?? 0) > 0)
-    <div class="pl-row pl-row-sub">
-        <span>বাদ: অতিরিক্ত খরচ (pass-through)</span>
-        <span style="color:#dc2626">− ৳ {{ number_format($extraCost, 2) }}</span>
-    </div>
-    @endif
-    <div class="pl-row pl-row-total">
-        <span>নিট বিক্রয় আয়</span>
-        <span>৳ {{ number_format($netRevenue, 2) }}</span>
-    </div>
-
-    {{-- COGS --}}
-    <div class="pl-section-head">বিক্রিত পণ্যের খরচ (COGS)</div>
-    <div class="pl-row">
-        <span>পণ্যের ক্রয় মূল্য (বিক্রিত পরিমাণ অনুযায়ী)</span>
-        <span style="color:#dc2626">− ৳ {{ number_format($cogs, 2) }}</span>
-    </div>
-    <div class="pl-row pl-row-total {{ $grossProfit >= 0 ? 'pl-positive' : 'pl-negative' }}">
-        <span>গ্রস লাভ (Gross Profit)</span>
-        <span>{{ $grossProfit >= 0 ? '+' : '' }}৳ {{ number_format($grossProfit, 2) }}
-            <small style="font-weight:500;font-size:.8rem;opacity:.75">({{ $grossMargin }}%)</small>
-        </span>
-    </div>
-
-    {{-- Operating expenses --}}
-    <div class="pl-section-head">পরিচালনা ব্যয় (Operating Expenses)</div>
-    @forelse($expenseCategories as $exp)
-    <div class="pl-row pl-row-sub">
-        <span>{{ $exp->category }}</span>
-        <span style="color:#dc2626">− ৳ {{ number_format($exp->total, 2) }}</span>
-    </div>
-    @empty
-    <div class="pl-row pl-row-sub" style="color:#94a3b8">
-        <span>এই সময়কালে কোনো খরচ নেই</span><span>৳ 0.00</span>
-    </div>
-    @endforelse
-    <div class="pl-row pl-row-total">
-        <span>মোট পরিচালনা ব্যয়</span>
-        <span style="color:#dc2626">− ৳ {{ number_format($totalExpenses, 2) }}</span>
-    </div>
-
-    {{-- Net profit --}}
-    <div class="pl-net {{ $netProfit >= 0 ? 'pl-net-profit' : 'pl-net-loss' }}">
-        <span>নিট {{ $netProfit >= 0 ? 'লাভ' : 'লোকসান' }} (Net {{ $netProfit >= 0 ? 'Profit' : 'Loss' }})</span>
-        <span>{{ $netProfit >= 0 ? '+' : '' }}৳ {{ number_format($netProfit, 2) }}
-            <small style="font-size:.82rem;font-weight:500;opacity:.8">({{ $netMargin }}%)</small>
-        </span>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>ইউজার</th>
+                    <th class="tc">বিক্রয় সংখ্যা</th>
+                    <th class="tr">বিক্রয় মূল্য</th>
+                    <th class="tr">ক্রয় মূল্য (খরচ)</th>
+                    <th class="tr">লাভ</th>
+                    <th class="tc">মার্জিন</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($userPerformance as $i => $u)
+                @php
+                    $uMargin = $u->margin ?? 0;
+                    $badgeClass = $uMargin >= 8 ? 'good' : ($uMargin >= 4 ? 'med' : 'poor');
+                @endphp
+                <tr>
+                    <td style="color:#94a3b8;font-size:.8rem">{{ $i + 1 }}</td>
+                    <td style="font-weight:600">
+                        <i class="fas fa-user" style="font-size:.75rem;color:#94a3b8;margin-right:5px"></i>
+                        {{ $u->user_name }}
+                    </td>
+                    <td class="tc">{{ number_format($u->sale_count, 0) }}টি</td>
+                    <td class="tr" style="font-weight:600">৳ {{ number_format($u->revenue, 0) }}</td>
+                    <td class="tr" style="color:#94a3b8">৳ {{ number_format($u->cost, 0) }}</td>
+                    <td class="tr" style="font-weight:700;color:{{ $u->profit >= 0 ? '#16a34a' : '#dc2626' }}">
+                        {{ $u->profit >= 0 ? '' : '− ' }}৳ {{ number_format(abs($u->profit), 0) }}
+                    </td>
+                    <td class="tc">
+                        <span class="margin-badge {{ $badgeClass }}">{{ $uMargin }}%</span>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="tfoot-summary">
+                    <td colspan="2" style="font-weight:700;text-align:right;padding-right:16px">মোট</td>
+                    <td class="tc" style="font-weight:700">{{ number_format($userPerformance->sum('sale_count'), 0) }}টি</td>
+                    <td class="tr" style="font-weight:800">৳ {{ number_format($userPerformance->sum('revenue'), 0) }}</td>
+                    <td class="tr" style="color:#94a3b8;font-weight:700">৳ {{ number_format($userPerformance->sum('cost'), 0) }}</td>
+                    <td class="tr" style="font-weight:800;color:#16a34a">৳ {{ number_format($userPerformance->sum('profit'), 0) }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
     </div>
 </div>
+@endif
 
 {{-- ── Monthly Breakdown ───────────────────────────────────────── --}}
 @if(count($monthly) > 1)
@@ -345,66 +334,77 @@
     </div>
 </div>
 
-{{-- ══ ইউজার ভিত্তিক পারফরম্যান্স ══════════════════════════════════ --}}
-@if($userPerformance->isNotEmpty())
-<div class="card" style="margin-top:24px">
-    <div class="card-header" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-bottom:1px solid #bfdbfe;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <h3 style="font-size:.95rem;color:#1d4ed8;margin:0">
-            <i class="fas fa-users" style="margin-right:6px"></i> ইউজার ভিত্তিক পারফরম্যান্স
-        </h3>
-        <span style="font-size:.78rem;color:#64748b">{{ $userPerformance->count() }} জন ইউজার</span>
+{{-- ── P&L Statement (formal layout) ─────────────────────────── --}}
+<div class="pl-statement" style="margin-top:24px">
+
+    <div class="pl-statement-title">
+        লাভ-লোকসান বিবরণী
+        <span style="font-size:.8rem;font-weight:500;color:#64748b;margin-left:8px">
+            {{ \Carbon\Carbon::parse($from)->format('d M Y') }} — {{ \Carbon\Carbon::parse($to)->format('d M Y') }}
+        </span>
     </div>
-    <div class="table-wrap">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>ইউজার</th>
-                    <th class="tc">বিক্রয় সংখ্যা</th>
-                    <th class="tr">বিক্রয় মূল্য</th>
-                    <th class="tr">ক্রয় মূল্য (খরচ)</th>
-                    <th class="tr">লাভ</th>
-                    <th class="tc">মার্জিন</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($userPerformance as $i => $u)
-                @php
-                    $uMargin = $u->margin ?? 0;
-                    $badgeClass = $uMargin >= 8 ? 'good' : ($uMargin >= 4 ? 'med' : 'poor');
-                @endphp
-                <tr>
-                    <td style="color:#94a3b8;font-size:.8rem">{{ $i + 1 }}</td>
-                    <td style="font-weight:600">
-                        <i class="fas fa-user" style="font-size:.75rem;color:#94a3b8;margin-right:5px"></i>
-                        {{ $u->user_name }}
-                    </td>
-                    <td class="tc">{{ number_format($u->sale_count, 0) }}টি</td>
-                    <td class="tr" style="font-weight:600">৳ {{ number_format($u->revenue, 0) }}</td>
-                    <td class="tr" style="color:#94a3b8">৳ {{ number_format($u->cost, 0) }}</td>
-                    <td class="tr" style="font-weight:700;color:{{ $u->profit >= 0 ? '#16a34a' : '#dc2626' }}">
-                        {{ $u->profit >= 0 ? '' : '− ' }}৳ {{ number_format(abs($u->profit), 0) }}
-                    </td>
-                    <td class="tc">
-                        <span class="margin-badge {{ $badgeClass }}">{{ $uMargin }}%</span>
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-            <tfoot>
-                <tr class="tfoot-summary">
-                    <td colspan="2" style="font-weight:700;text-align:right;padding-right:16px">মোট</td>
-                    <td class="tc" style="font-weight:700">{{ number_format($userPerformance->sum('sale_count'), 0) }}টি</td>
-                    <td class="tr" style="font-weight:800">৳ {{ number_format($userPerformance->sum('revenue'), 0) }}</td>
-                    <td class="tr" style="color:#94a3b8;font-weight:700">৳ {{ number_format($userPerformance->sum('cost'), 0) }}</td>
-                    <td class="tr" style="font-weight:800;color:#16a34a">৳ {{ number_format($userPerformance->sum('profit'), 0) }}</td>
-                    <td></td>
-                </tr>
-            </tfoot>
-        </table>
+
+    {{-- Revenue section --}}
+    <div class="pl-section-head">আয় (Revenue)</div>
+    <div class="pl-row">
+        <span>মোট বিক্রয় (Gross Sales)</span>
+        <span>৳ {{ number_format($grossSales, 2) }}</span>
+    </div>
+    @if($discounts > 0)
+    <div class="pl-row pl-row-sub">
+        <span>বাদ: ছাড় (Discounts)</span>
+        <span style="color:#dc2626">− ৳ {{ number_format($discounts, 2) }}</span>
+    </div>
+    @endif
+    @if(($extraCost ?? 0) > 0)
+    <div class="pl-row pl-row-sub">
+        <span>বাদ: অতিরিক্ত খরচ (pass-through)</span>
+        <span style="color:#dc2626">− ৳ {{ number_format($extraCost, 2) }}</span>
+    </div>
+    @endif
+    <div class="pl-row pl-row-total">
+        <span>নিট বিক্রয় আয়</span>
+        <span>৳ {{ number_format($netRevenue, 2) }}</span>
+    </div>
+
+    {{-- COGS --}}
+    <div class="pl-section-head">বিক্রিত পণ্যের খরচ (COGS)</div>
+    <div class="pl-row">
+        <span>পণ্যের ক্রয় মূল্য (বিক্রিত পরিমাণ অনুযায়ী)</span>
+        <span style="color:#dc2626">− ৳ {{ number_format($cogs, 2) }}</span>
+    </div>
+    <div class="pl-row pl-row-total {{ $grossProfit >= 0 ? 'pl-positive' : 'pl-negative' }}">
+        <span>গ্রস লাভ (Gross Profit)</span>
+        <span>{{ $grossProfit >= 0 ? '+' : '' }}৳ {{ number_format($grossProfit, 2) }}
+            <small style="font-weight:500;font-size:.8rem;opacity:.75">({{ $grossMargin }}%)</small>
+        </span>
+    </div>
+
+    {{-- Operating expenses --}}
+    <div class="pl-section-head">পরিচালনা ব্যয় (Operating Expenses)</div>
+    @forelse($expenseCategories as $exp)
+    <div class="pl-row pl-row-sub">
+        <span>{{ $exp->category }}</span>
+        <span style="color:#dc2626">− ৳ {{ number_format($exp->total, 2) }}</span>
+    </div>
+    @empty
+    <div class="pl-row pl-row-sub" style="color:#94a3b8">
+        <span>এই সময়কালে কোনো খরচ নেই</span><span>৳ 0.00</span>
+    </div>
+    @endforelse
+    <div class="pl-row pl-row-total">
+        <span>মোট পরিচালনা ব্যয়</span>
+        <span style="color:#dc2626">− ৳ {{ number_format($totalExpenses, 2) }}</span>
+    </div>
+
+    {{-- Net profit --}}
+    <div class="pl-net {{ $netProfit >= 0 ? 'pl-net-profit' : 'pl-net-loss' }}">
+        <span>নিট {{ $netProfit >= 0 ? 'লাভ' : 'লোকসান' }} (Net {{ $netProfit >= 0 ? 'Profit' : 'Loss' }})</span>
+        <span>{{ $netProfit >= 0 ? '+' : '' }}৳ {{ number_format($netProfit, 2) }}
+            <small style="font-size:.82rem;font-weight:500;opacity:.8">({{ $netMargin }}%)</small>
+        </span>
     </div>
 </div>
-@endif
 @endsection
 
 @push('styles')
