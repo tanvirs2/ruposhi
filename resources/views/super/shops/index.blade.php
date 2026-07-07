@@ -113,13 +113,6 @@
                                 <i class="fas fa-pen"></i>
                             </a>
                         @endif
-                        <form method="POST" action="{{ route('super.shops.destroy', $shop) }}"
-                              onsubmit="return confirm('এই শাখা মুছে ফেলবেন? সব ডেটা স্থায়ীভাবে মুছে যাবে!')" style="margin:0">
-                            @csrf @method('DELETE')
-                            <button class="sa-btn sa-btn-danger sa-btn-sm" title="মুছুন">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </form>
                     </div>
                 </td>
             </tr>

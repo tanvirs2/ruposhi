@@ -131,14 +131,8 @@ class ShopController extends Controller
                          ->with('success', "'{$shop->name}' আপডেট হয়েছে।");
     }
 
-    public function destroy(Shop $shop)
-    {
-        abort_unless($shop->super_admin_id === auth()->id(), 403);
-
-        $shop->delete();
-        return redirect()->route('super.shops.index')
-                         ->with('success', 'শাখা মুছে ফেলা হয়েছে।');
-    }
+    // No destroy() — shop data is never permanently deleted, only locked via
+    // license limits (see Shop::is_locked / syncShopLocks()).
 
     /**
      * Create a new staff/admin user directly for one of this super_admin's shops.
