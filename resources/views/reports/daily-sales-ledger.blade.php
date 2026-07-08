@@ -132,7 +132,7 @@
                 </tr>
                 @endif
                 <tr class="{{ $isNewSale && !$loop->first ? 'dsl-new-sale' : '' }}">
-                    <td style="white-space:nowrap;color:#64748b;font-size:.82rem">
+                    <td style="white-space:nowrap;color:#334155;font-size:.82rem">
                         {{ \Carbon\Carbon::parse($row->date)->format('d/m/Y') }}
                     </td>
                     <td>

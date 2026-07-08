@@ -8,7 +8,7 @@
     <div class="invoice-header">
         <div>
             <h2><i class="fas fa-truck-ramp-box" style="color:#0d9488;margin-right:8px"></i>রিসিভ #RCV-{{ str_pad($purchase->id,4,'0',STR_PAD_LEFT) }}</h2>
-            <p style="color:#64748b;margin-top:4px">তারিখ: {{ $purchase->purchase_date->format('d F Y') }}</p>
+            <p style="color:#334155;margin-top:4px">তারিখ: {{ $purchase->purchase_date->format('d F Y') }}</p>
         </div>
         <div style="text-align:right">
             <span class="badge badge-green"><i class="fas fa-boxes-stacked"></i> স্টক আপডেট হয়েছে</span>

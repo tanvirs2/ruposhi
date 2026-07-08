@@ -34,7 +34,7 @@
                         <td>{{ $purchase->supplier?->name ?? '—' }}</td>
                         <td style="max-width:220px">
                             @if($purchase->items->isEmpty())
-                                <span style="color:#94a3b8;font-size:.8rem">— অগ্রিম পরিশোধ</span>
+                                <span style="color:#94a3b8;font-size:.8rem">— পরিশোধ (পণ্য ছাড়া)</span>
                             @else
                                 <span class="item-preview" style="font-size:.8rem;color:#475569">{{ $preview }}</span>
                                 @if($hasMore)
@@ -49,7 +49,7 @@
                         </td>
                         <td>
                             {{ $purchase->purchase_date->format('d M Y') }}
-                            <br><small style="color:#94a3b8;font-size:.75rem">{{ $purchase->created_at->format('h:i a') }}</small>
+                            <br><small style="color:#475569;font-size:.75rem">{{ $purchase->created_at->format('h:i a') }}</small>
                         </td>
                         <td>৳ {{ number_format($purchase->total_amount,0) }}</td>
                         <td>৳ {{ number_format($purchase->paid_amount,0) }}</td>
@@ -198,7 +198,7 @@
                                 <td style="text-align:right;font-weight:600">৳ {{ number_format($pi->subtotal, 0) }}</td>
                                 <td>
                                     {{ $purchase->purchase_date->format('d M Y') }}
-                                    <br><small style="color:#94a3b8;font-size:.75rem">{{ $purchase->created_at->format('h:i a') }}</small>
+                                    <br><small style="color:#475569;font-size:.75rem">{{ $purchase->created_at->format('h:i a') }}</small>
                                 </td>
                             </tr>
                         @endforeach

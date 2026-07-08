@@ -229,7 +229,7 @@
                         {{ number_format($s->paid_amount, 0) }}
                     </td>
                     <td class="tc" style="font-size:.78rem;color:#64748b">{{ $s->user?->name ?? '—' }}</td>
-                    <td class="tc" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                    <td class="tc" style="font-size:.78rem;color:#334155;white-space:nowrap">
                         {{ \Carbon\Carbon::parse($s->created_at)->format('h:i:s a') }}
                     </td>
                 </tr>
@@ -282,7 +282,7 @@
                     <td class="tr" style="color:#16a34a;font-weight:600">
                         {{ number_format($s->paid_amount, 0) }}
                     </td>
-                    <td class="tc" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                    <td class="tc" style="font-size:.78rem;color:#334155;white-space:nowrap">
                         {{ \Carbon\Carbon::parse($s->created_at)->format('h:i:s a') }}
                     </td>
                 </tr>
@@ -420,7 +420,7 @@
                             {{ str_pad($row->sale_id, 6, '0', STR_PAD_LEFT) }}
                         </a>
                     </td>
-                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#334155;white-space:nowrap">
                         @if($isNewSale) {{ \Carbon\Carbon::parse($row->date)->format('d/m/Y') }} @else — @endif
                     </td>
                     <td>{{ $row->customer_name }}</td>
@@ -449,7 +449,7 @@
                         @else — @endif
                     </td>
                     <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b">{{ $row->user_name ?? '—' }}</td>
-                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#334155;white-space:nowrap">
                         {{ \Carbon\Carbon::parse($row->sale_time)->format('h:i:s a') }}
                     </td>
                 </tr>
@@ -531,7 +531,7 @@
                             {{ str_pad($row->sale_id, 6, '0', STR_PAD_LEFT) }}
                         </a>
                     </td>
-                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#334155;white-space:nowrap">
                         @if($wIsNew) {{ \Carbon\Carbon::parse($row->date)->format('d/m/Y') }} @else — @endif
                     </td>
                     <td>{{ $row->item_name }}</td>
@@ -559,7 +559,7 @@
                         @else — @endif
                     </td>
                     <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b">{{ $row->user_name ?? '—' }}</td>
-                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#334155;white-space:nowrap">
                         {{ \Carbon\Carbon::parse($row->sale_time)->format('h:i:s a') }}
                     </td>
                 </tr>
@@ -625,7 +625,7 @@
                             <span style="color:#94a3b8">ওয়াক-ইন</span>
                         @endif
                     </td>
-                    <td class="tc" style="font-size:.8rem;color:#64748b;white-space:nowrap">
+                    <td class="tc" style="font-size:.8rem;color:#334155;white-space:nowrap">
                         {{ \Carbon\Carbon::parse($ec->sale_date)->format('d/m/Y') }}
                     </td>
                     <td>
@@ -701,7 +701,7 @@
                     <td class="tr" style="color:#16a34a;font-weight:600">
                         {{ number_format($p->amount, 0) }}
                     </td>
-                    <td class="tc" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                    <td class="tc" style="font-size:.78rem;color:#334155;white-space:nowrap">
                         {{ \Carbon\Carbon::parse($p->created_at)->format('h:i:s a') }}
                     </td>
                 </tr>
@@ -846,7 +846,7 @@
                             @endif
                         </td>
                         <td>{{ $obj->customer?->name ?? ($type === 'sale' ? '— ওয়াক-ইন' : '—') }}</td>
-                        <td class="tc col-hide-tablet" style="font-size:.8rem;color:#64748b;white-space:nowrap">
+                        <td class="tc col-hide-tablet" style="font-size:.8rem;color:#334155;white-space:nowrap">
                             {{ \Carbon\Carbon::parse($row['date'])->format('d/m/Y') }}
                         </td>
                         <td class="tr" style="font-weight:600">
@@ -866,7 +866,7 @@
                                 <span style="color:#94a3b8">—</span>
                             @endif
                         </td>
-                        <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                        <td class="tc col-hide-tablet" style="font-size:.78rem;color:#334155;white-space:nowrap">
                             {{ \Carbon\Carbon::parse($obj->created_at)->format('h:i a') }}
                         </td>
                     </tr>
@@ -938,7 +938,7 @@
                     <td style="text-align:right;color:{{ $staffIsNew && $row->due_amount > 0 ? '#dc2626' : '#94a3b8' }}">
                         @if($staffIsNew && $row->due_amount > 0) ৳ {{ number_format($row->due_amount,0) }} @else — @endif
                     </td>
-                    <td style="font-size:.8rem;color:#94a3b8">{{ \Carbon\Carbon::parse($row->sale_time)->format('h:i a') }}</td>
+                    <td style="font-size:.8rem;color:#334155">{{ \Carbon\Carbon::parse($row->sale_time)->format('h:i a') }}</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -995,7 +995,7 @@
                             {{ str_pad($row->sale_id, 6, '0', STR_PAD_LEFT) }}
                         </a>
                     </td>
-                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#334155;white-space:nowrap">
                         @if($swIsNew) {{ \Carbon\Carbon::parse($row->date)->format('d/m/Y') }} @else — @endif
                     </td>
                     <td>{{ $row->item_name }}</td>
@@ -1012,7 +1012,7 @@
                             @endif
                         @else — @endif
                     </td>
-                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b;white-space:nowrap">
+                    <td class="tc col-hide-tablet" style="font-size:.78rem;color:#334155;white-space:nowrap">
                         {{ \Carbon\Carbon::parse($row->sale_time)->format('h:i:s a') }}
                     </td>
                 </tr>
@@ -1069,7 +1069,7 @@
                             <span style="color:#94a3b8">ওয়াক-ইন</span>
                         @endif
                     </td>
-                    <td class="tc" style="font-size:.8rem;color:#64748b;white-space:nowrap">
+                    <td class="tc" style="font-size:.8rem;color:#334155;white-space:nowrap">
                         {{ \Carbon\Carbon::parse($ec->sale_date)->format('d/m/Y') }}
                     </td>
                     <td>

@@ -148,7 +148,7 @@
 
                 {{-- Opening balance row --}}
                 <tr class="sl-opening-row">
-                    <td style="color:#64748b;font-size:.82rem">
+                    <td style="color:#334155;font-size:.82rem">
                         {{ \Carbon\Carbon::parse($from)->format('d M Y') }}
                     </td>
                     <td colspan="5">
@@ -187,7 +187,7 @@
                 <tr class="{{ $rowClass }} {{ $isNewGroup ? 'sl-new-group' : '' }}">
 
                     {{-- Date --}}
-                    <td style="white-space:nowrap;font-size:.83rem;color:#64748b">
+                    <td style="white-space:nowrap;font-size:.83rem;color:#334155">
                         {{ \Carbon\Carbon::parse($row->date)->format('d M Y') }}
                     </td>
 

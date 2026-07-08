@@ -46,7 +46,7 @@
                         </td>
                         <td>
                             {{ $sale->sale_date->format('d M Y') }}
-                            <br><small style="color:#94a3b8;font-size:.75rem">{{ $sale->created_at->format('h:i a') }}</small>
+                            <br><small style="color:#475569;font-size:.75rem">{{ $sale->created_at->format('h:i a') }}</small>
                         </td>
                         <td>৳ {{ number_format($sale->total_amount,2) }}</td>
                         <td style="color:#16a34a">৳ {{ number_format($sale->paid_amount,2) }}</td>
@@ -168,7 +168,7 @@
                                 <td style="text-align:right;font-weight:600">৳ {{ number_format($si->subtotal, 0) }}</td>
                                 <td>
                                     {{ $sale->sale_date->format('d M Y') }}
-                                    <br><small style="color:#94a3b8;font-size:.75rem">{{ $sale->created_at->format('h:i a') }}</small>
+                                    <br><small style="color:#475569;font-size:.75rem">{{ $sale->created_at->format('h:i a') }}</small>
                                 </td>
                             </tr>
                         @endforeach

@@ -637,7 +637,10 @@ a { text-decoration: none; color: inherit; }
 /* ─── Content ───────────────────────────────────────────────── */
 .content {
     flex: 1;
-    padding: 28px 28px 40px;
+    /* Bottom padding kept larger than the fixed chat FAB's footprint (~76px
+       from viewport bottom) so the page always has room to scroll the last
+       row/card clear of the button instead of being covered by it. */
+    padding: 28px 28px 100px;
     width: 100%;
     min-width: 0;
 }
@@ -1082,7 +1085,7 @@ a { text-decoration: none; color: inherit; }
 @media (max-width: 640px) {
     .stats-grid { grid-template-columns: 1fr 1fr; }
     .module-grid { grid-template-columns: 1fr 1fr; }
-    .content { padding: 14px; }
+    .content { padding: 14px 14px 90px; }
     .stat-value { font-size: 1.15rem; }
     .data-table th { padding: 0 12px; height: 36px; }
     .data-table td { padding: 0 12px; height: 42px; }
@@ -1454,7 +1457,7 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
     :root { --submit-bar-w: 290px; }
     .pos-grid { grid-template-columns: 1fr 290px; gap: 14px; }
     .sale-submit-bar { width: 290px; }
-    .content { padding: 18px 20px 40px; }
+    .content { padding: 18px 20px 100px; }
 }
 
 /* Floating sale submit bar — right panel on desktop, full-width on mobile */

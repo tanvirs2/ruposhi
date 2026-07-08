@@ -48,9 +48,9 @@
                             @if($isToday)
                                 <span style="color:#0d9488;font-weight:600">আজ {{ $updatedAt->format('h:ia') }}</span>
                             @elseif($isYesterday)
-                                <span style="color:#64748b">গতকাল {{ $updatedAt->format('h:ia') }}</span>
+                                <span style="color:#334155">গতকাল {{ $updatedAt->format('h:ia') }}</span>
                             @else
-                                <span style="color:#94a3b8">{{ $updatedAt->format('d M, h:ia') }}</span>
+                                <span style="color:#334155">{{ $updatedAt->format('d M, h:ia') }}</span>
                             @endif
                         @else
                             <span style="color:#cbd5e1">—</span>

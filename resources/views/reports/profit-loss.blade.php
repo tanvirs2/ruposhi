@@ -236,7 +236,7 @@
                 @endphp
                 <tr>
                     <td style="text-align:center;color:#94a3b8">{{ $i + 1 }}</td>
-                    <td style="color:#64748b;font-size:.82rem">{{ $row->sale_date }}</td>
+                    <td style="color:#334155;font-size:.82rem">{{ $row->sale_date }}</td>
                     <td>{{ $row->name }}</td>
                     <td style="text-align:right">{{ number_format($row->qty, 0) }}</td>
                     <td style="text-align:right">{{ number_format($row->unit_price, 0) }}</td>
@@ -339,7 +339,7 @@
 
     <div class="pl-statement-title">
         লাভ-লোকসান বিবরণী
-        <span style="font-size:.8rem;font-weight:500;color:#64748b;margin-left:8px">
+        <span style="font-size:.8rem;font-weight:500;color:#475569;margin-left:8px">
             {{ \Carbon\Carbon::parse($from)->format('d M Y') }} — {{ \Carbon\Carbon::parse($to)->format('d M Y') }}
         </span>
     </div>

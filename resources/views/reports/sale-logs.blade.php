@@ -72,7 +72,7 @@
                 @forelse($logs as $log)
                 @php $snap = $log->snapshot; $items = $snap['items'] ?? []; @endphp
                 <tr>
-                    <td class="tc" style="font-size:.78rem;white-space:nowrap;color:#64748b">
+                    <td class="tc" style="font-size:.78rem;white-space:nowrap;color:#334155">
                         {{ $log->created_at->format('d/m/Y h:i a') }}
                     </td>
                     <td class="tc mono">

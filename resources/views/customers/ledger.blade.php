@@ -300,7 +300,7 @@
 
 .cl-payment-row td { background: #f0fdf4; }
 
-.cl-date  { color: #475569; font-size: .78rem; white-space: nowrap; }
+.cl-date  { color: #334155; font-size: .78rem; white-space: nowrap; }
 .cl-time  { font-size: .72rem; color: #94a3b8; margin-top:1px; }
 
 .cl-item-name    { font-weight: 600; font-size: .85rem; word-break: break-word; }
