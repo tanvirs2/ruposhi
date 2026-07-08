@@ -240,7 +240,7 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 | `sale_items` | Line items per sale (has `shop_id`) |
 | `purchases` | Stock receives with `shop_id`, `extra_cost`, `labor_cost` |
 | `purchase_items` | Line items per purchase (has `shop_id`) |
-| `customers` | `shop_id`, `due_amount` can be negative (credit) |
+| `customers` | `shop_id`, `due_amount` can be negative (credit), `credit_limit` nullable (null = no limit, warning-only) |
 | `suppliers` | `shop_id`, `due_amount` can be negative (credit) |
 | `stock` | `shop_id`, one row per item per shop, `quantity` can be negative |
 | `sale_logs` | Edit/delete audit log with JSON snapshot |
@@ -539,10 +539,24 @@ Accessed via `\App\Models\StoreConfig::get('key', 'default')`:
 72. **Searchable area combobox** — `partials/area-combobox.blade.php` partial (search input + hidden id input + embedded JSON); `initAreaComboboxes()` in `app.js` wires all `.area-combobox:not([data-ac-ready])` on every `turbo:load`; applied to `customers/index`, `customers/ledger-select`, `customers/create`, `customers/edit`, `customer-payments/create`; `CustomerController::search()` accepts `area_id` filter param
 73. **Renamed "মাল রিসিভ" → "পণ্য গ্রহণ"** throughout all views, controllers, and config — "মাল" → "পণ্য" everywhere standalone; "মালামাল" and "মালপত্র" preserved (different compound words); "মালের বিবরণ" → "পণ্যের বিবরণ", "মাল ফেরত" → "পণ্য ফেরত", "ক্রটিপূর্ণ মাল" → "ক্রটিপূর্ণ পণ্য"
 
+### Session 9 — তাগাদা লিস্ট, ক্রেডিট লিমিট, দিনশেষ রিপোর্ট, ক্যালকুলেটর, WhatsApp, ব্যাকআপ
+74. **পরিশোধ তালিকা combined totals** — supplier-payments index: new purple "সর্বমোট (ফিল্টার)" stat card + third tfoot row (পরিশোধ + জমা) so it reconciles at a glance with the supplier ledger's জমা figure
+75. **Searchable supplier dropdown** — reused `partials/area-combobox.blade.php` on supplier-payments index (`acName: supplier_id`); the partial is generic — works for ANY id/name collection, zero new JS
+76. **Floating mini calculator** — `#miniCalcRoot` in app layout (`data-turbo-permanent`); topbar button + Alt+C (works inside inputs); select any number on any page → bubble "যোগ করুন" appends it to the expression; safe evaluator in `app.js` (char whitelist + `Function`), handles Bengali digits/৳/commas/`%`; history 10 rows, click restores; copy button
+77. **তাগাদা লিস্ট (collections)** — `/collections` + `CollectionController`; customers with due > 0, area filter, ৩০/৬০/৯০+ aging chips (anchor = last payment activity, fallback first sale; `never_paid` flagged); per-row SMS + WhatsApp + tel: link; checkbox bulk SMS (max 50/batch, `collections.sms`); print-friendly; sidebar link in কাস্টমার group
+78. **ক্রেডিট লিমিট** — `customers.credit_limit` (nullable decimal; null = no limit; **warning-only, never blocks a sale**); field in customer create/edit; live amber warning on sales/create (3 states: already-over / would-exceed-after-sale / hidden when transaction settles); red "লিমিট ছাড়ানো" badge in collections + warning triangle in customer search results
+79. **দিনশেষ রিপোর্ট** — `/reports/day-close` (shop.admin only); `ReportController::dayCloseData()` aggregates sales/payments/purchases/expenses/deposits for one date; ক্যাশ হিসাব card (cash in − cash out = নীট) + দিনের সারাংশ card; "মালিকের ফোনে SMS" sends compact Bangla summary to `store_phone` (`dayCloseSms()`); sidebar link in রিপোর্ট group
+80. **WhatsApp share (free)** — `openWhatsApp(phone, msg)` + `waNormalizeBD()` in `app.js` (normalizes বাংলা digits/+880/01x → 880…, opens `wa.me`); green button on sale invoice (pre-filled memo summary) and per-row WhatsApp তাগাদা icon on collections (needs FA brands — already in all.min.css)
+81. **Daily DB backup** — `php artisan app:backup-db` (`app/Console/Commands/BackupDatabase.php`): pure-PHP dump (no mysqldump dependency — shared-hosting safe), all tables structure+data, gzip to `storage/app/backups/`, keeps newest 14 (`--keep=N`); scheduled daily 03:00 in `routes/console.php`; **production needs one cron:** `* * * * * cd ~/domains/pos.numaanhussain.com/pos_app && php artisan schedule:run >> /dev/null 2>&1`; restore verified round-trip (counts + Bengali text intact)
+82. **Concurrency hardening** — all money mutations were already `DB::transaction` + atomic `increment()/decrement()`; closed the last gap: `previous_due` reads now use `lockForUpdate()` (SaleController store/update/approveEdit + CustomerPaymentController store) so simultaneous saves on the same customer serialize and can't print the same পূর্বের বাকী
+83. **ক্যাশ মেলানো (cash reconciliation)** — `day_closings` table (unique `(shop_id, close_date)`, `HasShopScope`); form on `/reports/day-close`: opening cash (prefilled from previous day's counted) + hand-counted cash → expected = opening + cashNet, discrepancy saved (can be negative = short); `ReportController::dayCloseReconcile()` via `reports.day-close.reconcile` (shop.admin); saved card shows breakdown + "আবার মেলান" re-opens form (updateOrCreate); গরমিল হিস্ট্রি card shows last 7 days with links
+84. **PWA (installable app)** — `public/manifest.json` (name Ruposhi POS, standalone, theme #0d9488, bn) + icons `public/icons/icon-192/512.png` (generated via PowerShell GDI+: teal rounded square, white ৳ in Nirmala UI); `public/sw.js` is **install-only — NO caching** (fetch = network passthrough; business data must stay live); SW registered in `app.js`; manifest+theme-color+apple-touch-icon links in app layout head AND login page head
+
 ---
 
 ## Backup
-Pre-clean DB backup: `storage/backup_before_clean_20260530_073214.sql`
+- **Automated:** `php artisan app:backup-db` — daily 03:00 via scheduler → `storage/app/backups/backup_*.sql.gz` (keeps 14). Same-server only; download periodically for off-server safety.
+- Pre-clean DB backup: `storage/backup_before_clean_20260530_073214.sql`
 
 ## Test Accounts (local dev)
 | Email | Password | Role | Notes |
