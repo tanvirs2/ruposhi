@@ -73,7 +73,9 @@ class CustomerPaymentController extends Controller
         //  - reduces customer due exactly once
         $sale = null;
         DB::transaction(function () use ($request, &$sale) {
-            $cust        = Customer::find($request->customer_id);
+            // Row lock so a concurrent sale/payment can't read the same
+            // previous_due before this payment lands.
+            $cust        = Customer::whereKey($request->customer_id)->lockForUpdate()->first();
             $previousDue = $cust->due_amount;
 
             $sale = Sale::create([
