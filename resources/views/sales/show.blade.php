@@ -15,6 +15,21 @@
 <div class="form-actions no-print" style="max-width:720px;margin-bottom:16px">
     <a href="{{ route('sales.index') }}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> বিক্রয় তালিকা</a>
     <button onclick="window.print()" class="btn btn-primary"><i class="fas fa-print"></i> প্রিন্ট / PDF</button>
+    @if($sale->customer && $sale->customer->phone)
+    @php
+        $waMsg = $store['name'] . "\n"
+            . "ক্যাশ মেমো #" . str_pad($sale->id, 6, '0', STR_PAD_LEFT) . " — " . $sale->sale_date->format('d/m/Y') . "\n"
+            . ($sale->previous_due != 0 ? "বিক্রয়: ৳" . number_format($sale->total_amount, 0) . "\nপূর্বের বাকী: ৳" . number_format($sale->previous_due, 0) . "\n" : '')
+            . "সর্বমোট: ৳" . number_format($grandTotal, 0) . "\n"
+            . "পরিশোধ: ৳" . number_format($sale->paid_amount, 0) . "\n"
+            . "বাকী: ৳" . number_format($remaining, 0)
+            . ($store['phone'] ? "\nযোগাযোগ: " . $store['phone'] : '');
+    @endphp
+    <button type="button" class="btn" style="background:#dcfce7;color:#15803d;border:1px solid #86efac"
+            onclick="openWhatsApp(@js($sale->customer->phone), @js($waMsg))">
+        <i class="fab fa-whatsapp"></i> WhatsApp
+    </button>
+    @endif
     <a href="{{ route('sales.edit', $sale) }}" class="btn" style="background:#fef9c3;color:#92400e;border:1px solid #fde68a">
         <i class="fas fa-pen-to-square"></i> সংশোধন করুন
     </a>

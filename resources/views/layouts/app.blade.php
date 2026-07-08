@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- PWA: installable app (manifest + icons). SW registered in app.js — no caching, install-only. --}}
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0d9488">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
     {{-- ── Global JS error catcher (loaded first, before any other script) ──
          Captures uncaught script errors — including inline-script SyntaxErrors
          that break Turbo re-navigation ("buttons dead until refresh"). Logs the
@@ -87,7 +91,7 @@
             $_seg  = explode('/', $_path)[0];  // first segment only
 
             // Accordion open states
-            $inCustomer = in_array($_seg, ['customers','customer-payments','customer-areas']) || $_path === 'customers-ledger';
+            $inCustomer = in_array($_seg, ['customers','customer-payments','customer-areas','collections']) || $_path === 'customers-ledger';
             $inItems    = in_array($_seg, ['items','categories']);
             $inStock    = $_seg === 'stock';
             $inSupplier = in_array($_seg, ['suppliers','supplier-payments','purchases']) || in_array($_path, ['suppliers-due-report','suppliers-ledger']);
@@ -115,6 +119,11 @@
                         <span class="nav-icon"><i class="fas fa-list"></i></span>
                         <span class="nav-label">কাস্টমার তালিকা</span>
                         <button type="button" class="info-btn" data-info="সকল কাস্টমারের তথ্য দেখুন — নাম, ফোন, মোট বাকী। নতুন কাস্টমার যোগ করুন বা তথ্য সম্পাদনা করুন।">i</button>
+                    </a>
+                    <a href="{{ route('collections.index') }}" class="nav-item nav-child {{ $_seg==='collections' ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fas fa-hand-holding-dollar"></i></span>
+                        <span class="nav-label">তাগাদা লিস্ট</span>
+                        <button type="button" class="info-btn" data-info="বাকী আদায়ের কর্মতালিকা — এলাকা ধরে বাকীদার কাস্টমার, বাকীর বয়স (৩০/৬০/৯০+ দিন) ও SMS তাগাদা এক জায়গায়।">i</button>
                     </a>
                     <a href="{{ route('customer-payments.create') }}" class="nav-item nav-child {{ $_path==='customer-payments/create' ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-plus-circle"></i></span>
@@ -315,6 +324,11 @@
                         <span class="nav-icon"><i class="fas fa-scale-balanced"></i></span>
                         <span class="nav-label">লাভ-লোকসান</span>
                         <button type="button" class="info-btn" data-info="নির্দিষ্ট সময়কালের বিক্রয় আয়, পণ্য খরচ, পরিচালনা ব্যয় ও নিট লাভ-লোকসানের পূর্ণ বিবরণ।">i</button>
+                    </a>
+                    <a href="{{ route('reports.day-close') }}" class="nav-item nav-child {{ $_path==='reports/day-close' ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fas fa-cash-register"></i></span>
+                        <span class="nav-label">দিনশেষ রিপোর্ট</span>
+                        <button type="button" class="info-btn" data-info="দিনের সারাংশ এক নজরে — বিক্রয়, নগদ আদায়, খরচ, নতুন বাকী ও ক্যাশ হিসাব। মালিকের ফোনে SMS-ও পাঠানো যায়।">i</button>
                     </a>
                     @endif
                     <a href="{{ route('reports.sale-logs') }}" class="nav-item nav-child {{ $_path==='reports/sale-logs' ? 'active' : '' }}">
@@ -660,6 +674,13 @@
 
             <div class="topbar-divider"></div>
 
+            {{-- Calculator --}}
+            <button class="ctrl-btn" onclick="miniCalcToggle()" title="ক্যালকুলেটর (Alt+C)">
+                <i class="fas fa-calculator"></i>
+            </button>
+
+            <div class="topbar-divider"></div>
+
             <div class="search-box">
                 <i class="fas fa-search"></i>
                 <input type="text" placeholder="অনুসন্ধান করুন..." id="globalSearch">
@@ -736,6 +757,12 @@
                 <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">B</kbd></span>
             </div>
             <div class="shortcut-row">
+                <a href="#" onclick="toggleShortcutsHelp();miniCalcToggle();return false;" style="color:var(--text-primary);text-decoration:none">
+                    <i class="fas fa-calculator" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>ক্যালকুলেটর
+                </a>
+                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">C</kbd></span>
+            </div>
+            <div class="shortcut-row">
                 <span>এই উইন্ডো</span>
                 <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">/</kbd></span>
             </div>
@@ -744,6 +771,115 @@
             </div>
         </div>
     </div>
+
+    {{-- ══ Mini Calculator — persists across Turbo navigations ══ --}}
+    <div id="miniCalcRoot" data-turbo-permanent>
+        {{-- Selection bubble: appears near any selected number on the page --}}
+        <button type="button" id="calcSelBubble" style="display:none">
+            <i class="fas fa-calculator"></i> <span id="calcSelNum"></span> যোগ করুন
+        </button>
+
+        <div id="miniCalcWin" style="display:none">
+            <div class="calc-head">
+                <span style="font-weight:700;font-size:.86rem;display:flex;align-items:center;gap:7px">
+                    <i class="fas fa-calculator" style="color:var(--accent)"></i> ক্যালকুলেটর
+                </span>
+                <div style="display:flex;gap:4px">
+                    <button type="button" class="calc-head-btn" onclick="calcCopy(this)" title="ফলাফল কপি"><i class="fas fa-copy"></i></button>
+                    <button type="button" class="calc-head-btn" onclick="miniCalcToggle()" title="বন্ধ করুন"><i class="fas fa-xmark"></i></button>
+                </div>
+            </div>
+            <input type="text" id="calcExpr" placeholder="যেমন: 50000 + 14000 - 500" autocomplete="off" spellcheck="false">
+            <div id="calcResult">&nbsp;</div>
+            <div class="calc-keys">
+                <button type="button" class="calc-k calc-k-fn" onclick="calcClear()">C</button>
+                <button type="button" class="calc-k calc-k-fn" onclick="calcKey('(')">(</button>
+                <button type="button" class="calc-k calc-k-fn" onclick="calcKey(')')">)</button>
+                <button type="button" class="calc-k calc-k-fn" onclick="calcBack()"><i class="fas fa-delete-left"></i></button>
+                <button type="button" class="calc-k" onclick="calcKey('7')">7</button>
+                <button type="button" class="calc-k" onclick="calcKey('8')">8</button>
+                <button type="button" class="calc-k" onclick="calcKey('9')">9</button>
+                <button type="button" class="calc-k calc-k-op" onclick="calcKey('÷')">÷</button>
+                <button type="button" class="calc-k" onclick="calcKey('4')">4</button>
+                <button type="button" class="calc-k" onclick="calcKey('5')">5</button>
+                <button type="button" class="calc-k" onclick="calcKey('6')">6</button>
+                <button type="button" class="calc-k calc-k-op" onclick="calcKey('×')">×</button>
+                <button type="button" class="calc-k" onclick="calcKey('1')">1</button>
+                <button type="button" class="calc-k" onclick="calcKey('2')">2</button>
+                <button type="button" class="calc-k" onclick="calcKey('3')">3</button>
+                <button type="button" class="calc-k calc-k-op" onclick="calcKey('-')">−</button>
+                <button type="button" class="calc-k" onclick="calcKey('0')">0</button>
+                <button type="button" class="calc-k" onclick="calcKey('.')">.</button>
+                <button type="button" class="calc-k calc-k-op" onclick="calcKey('%')">%</button>
+                <button type="button" class="calc-k calc-k-op" onclick="calcKey('+')">+</button>
+                <button type="button" class="calc-k calc-k-eq" onclick="calcEquals()">=</button>
+            </div>
+            <div class="calc-hint"><i class="fas fa-hand-pointer" style="font-size:.65rem"></i> যেকোনো পেজে সংখ্যা সিলেক্ট করলে "যোগ করুন" বাবল আসবে</div>
+            <div id="calcHist"></div>
+        </div>
+    </div>
+
+    <style>
+    /* ══ Mini Calculator ══════════════════════════════════════════ */
+    #calcSelBubble {
+        position: fixed; z-index: 9500; display: none;
+        background: var(--accent, #0f9489); color: #fff; border: none; cursor: pointer;
+        border-radius: 999px; padding: 6px 14px; font-size: .78rem; font-weight: 700;
+        font-family: 'Hind Siliguri', sans-serif;
+        box-shadow: 0 4px 16px rgba(15,148,137,.4);
+        display: none; align-items: center; gap: 6px; white-space: nowrap;
+    }
+    #calcSelBubble:hover { filter: brightness(1.08); }
+    #miniCalcWin {
+        position: fixed; bottom: 86px; right: 88px; width: 288px; z-index: 8000;
+        background: var(--surface, #fff); border: 1.5px solid var(--border, #e2e8f0);
+        border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,.18);
+        display: none; flex-direction: column; padding: 12px;
+        font-family: 'Hind Siliguri', sans-serif;
+    }
+    .calc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .calc-head-btn {
+        background: var(--surface-2, #f1f5f9); border: none; cursor: pointer;
+        width: 26px; height: 26px; border-radius: 8px; color: var(--text-secondary, #64748b);
+        font-size: .75rem; display: flex; align-items: center; justify-content: center;
+    }
+    .calc-head-btn:hover { background: var(--border, #e2e8f0); color: var(--text-primary, #1e293b); }
+    #calcExpr {
+        width: 100%; border: 1.5px solid var(--border, #e2e8f0); border-radius: 10px;
+        padding: 9px 12px; font-size: 1rem; font-weight: 600; text-align: right;
+        background: var(--surface-2, #f8fafc); color: var(--text-primary, #1e293b);
+        font-family: inherit; outline: none;
+    }
+    #calcExpr:focus { border-color: var(--accent, #0f9489); }
+    #calcResult {
+        text-align: right; font-size: 1.2rem; font-weight: 800; color: var(--accent, #0f9489);
+        padding: 6px 4px 8px; min-height: 34px;
+    }
+    .calc-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .calc-k {
+        border: none; border-radius: 9px; padding: 9px 0; font-size: .95rem; font-weight: 700;
+        background: var(--surface-2, #f1f5f9); color: var(--text-primary, #1e293b);
+        cursor: pointer; font-family: inherit;
+    }
+    .calc-k:hover { background: var(--border, #e2e8f0); }
+    .calc-k-op { background: #e0f2f1; color: #0f766e; }
+    .calc-k-fn { background: #fef3c7; color: #92400e; font-size: .85rem; }
+    .calc-k-eq { grid-column: 1 / -1; background: var(--accent, #0f9489); color: #fff; font-size: 1.05rem; }
+    .calc-k-eq:hover { filter: brightness(1.06); }
+    .calc-hint { font-size: .68rem; color: var(--text-secondary, #94a3b8); margin: 9px 2px 0; }
+    #calcHist { margin-top: 6px; max-height: 120px; overflow-y: auto; }
+    .calc-hist-row {
+        display: flex; justify-content: space-between; gap: 8px; cursor: pointer;
+        font-size: .76rem; padding: 5px 6px; border-radius: 7px; color: var(--text-secondary, #64748b);
+    }
+    .calc-hist-row:hover { background: var(--surface-2, #f1f5f9); }
+    .calc-hist-row b { color: var(--text-primary, #1e293b); white-space: nowrap; }
+    [data-theme="dark"] .calc-k-op { background: #134e4a; color: #5eead4; }
+    [data-theme="dark"] .calc-k-fn { background: #451a03; color: #fbbf24; }
+    @media (max-width: 640px) {
+        #miniCalcWin { right: 12px; left: 12px; width: auto; bottom: 92px; }
+    }
+    </style>
 
     {{-- Offline / Sync banner — persists across Turbo navigations --}}
     <div id="offlineSyncBanner" data-turbo-permanent style="display:none;

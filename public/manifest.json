@@ -1,0 +1,26 @@
+{
+    "name": "Ruposhi POS",
+    "short_name": "Ruposhi",
+    "description": "দোকানের বিক্রয়, স্টক ও বাকী হিসাবের সফটওয়্যার",
+    "lang": "bn",
+    "start_url": "/dashboard",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#ffffff",
+    "theme_color": "#0d9488",
+    "icons": [
+        {
+            "src": "/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

@@ -397,6 +397,13 @@ function animateValue(el, duration = 900) {
             return;
         }
 
+        // Alt+C toggles the calculator. Like Alt+B, works inside inputs too —
+        // that's exactly where you'd want to close/open it while typing a sum.
+        if (e.code === 'KeyC') {
+            if (typeof window.miniCalcToggle === 'function') { e.preventDefault(); window.miniCalcToggle(); }
+            return;
+        }
+
         const fn = map[e.code];
         if (!fn) return;
         // Don't hijack typing inside a field (Alt+letter could discard input)
@@ -500,6 +507,212 @@ function animateValue(el, duration = 900) {
     };
 
     document.addEventListener('turbo:load', window.initAreaComboboxes);
+})();
+
+/* ── Mini calculator ─────────────────────────────────────────────────
+   Floating panel (#miniCalcRoot in the layout, data-turbo-permanent).
+   Select any number anywhere on a page → a "যোগ করুন" bubble appears →
+   click to append it to the running expression. Manual typing, +−×÷%(),
+   Bengali digits and ৳/comma formatting all handled. */
+(function () {
+    var win, input, resultEl, histEl, bubble, bubbleNum, pendingNum = null;
+
+    function evalExpr(raw) {
+        var s = toEnglishDigits(raw)
+            .replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-')
+            .replace(/,/g, '').replace(/৳/g, '');
+        if (!/[0-9]/.test(s) || !/^[0-9+\-*/().%\s]+$/.test(s)) return null;
+        // 50% → (50/100) so "1000 - 10%" style percentages work
+        s = s.replace(/(\d+(?:\.\d+)?)\s*%/g, '($1/100)');
+        try {
+            var v = Function('"use strict";return (' + s + ')')();
+            return (typeof v === 'number' && isFinite(v)) ? v : null;
+        } catch (e) { return null; }
+    }
+
+    function fmt(n) {
+        return Number(n.toFixed(4)).toLocaleString('en-US', { maximumFractionDigits: 4 });
+    }
+
+    function refresh() {
+        var v = evalExpr(input.value);
+        resultEl.textContent = v === null ? (input.value.trim() ? '…' : ' ') : '= ' + fmt(v);
+        resultEl.dataset.val = v === null ? '' : String(v);
+    }
+
+    // First number in the selected text: handles ৳, Bengali digits and both
+    // 3-digit (50,000) and lakh-style (5,00,000) comma grouping. Matched on
+    // the raw text (not stripped) so adjacent numbers/dates don't merge.
+    function extractNumber(text) {
+        var t = toEnglishDigits(text);
+        var m = t.match(/-?\d{1,3}(?:,\d{2,3})+(?:\.\d+)?|-?\d+(?:\.\d+)?/);
+        if (!m) return null;
+        var v = parseFloat(m[0].replace(/,/g, ''));
+        return isFinite(v) ? v : null;
+    }
+
+    function hideBubble() {
+        if (bubble) { bubble.style.display = 'none'; pendingNum = null; }
+    }
+
+    window.miniCalcToggle = function () {
+        if (!win) return;
+        var open = win.style.display !== 'none';
+        win.style.display = open ? 'none' : 'flex';
+        if (!open) { refresh(); input.focus(); }
+    };
+
+    window.calcKey = function (t) {
+        input.value += t;
+        refresh(); input.focus();
+    };
+    window.calcClear = function () { input.value = ''; refresh(); input.focus(); };
+    window.calcBack = function () { input.value = input.value.slice(0, -1); refresh(); input.focus(); };
+
+    window.calcEquals = function () {
+        var v = evalExpr(input.value);
+        if (v === null) return;
+        var row = document.createElement('div');
+        row.className = 'calc-hist-row';
+        row.innerHTML = '<span></span><b></b>';
+        row.firstChild.textContent = input.value.trim();
+        row.lastChild.textContent = '= ' + fmt(v);
+        row.addEventListener('click', function () { input.value = String(v); refresh(); input.focus(); });
+        histEl.insertBefore(row, histEl.firstChild);
+        while (histEl.children.length > 10) histEl.removeChild(histEl.lastChild);
+        input.value = String(v);
+        refresh(); input.focus();
+    };
+
+    window.calcCopy = function (btn) {
+        var v = resultEl.dataset.val || input.value.trim();
+        if (!v) return;
+        navigator.clipboard && navigator.clipboard.writeText(v).then(function () {
+            var ic = btn.querySelector('i');
+            if (ic) { ic.className = 'fas fa-check'; setTimeout(function () { ic.className = 'fas fa-copy'; }, 1200); }
+        });
+    };
+
+    function insertNumber(num) {
+        var cur = input.value.trim();
+        if (cur === '') input.value = String(num);
+        else if (/[+\-*/×÷−(]$/.test(cur)) input.value = cur + ' ' + num;
+        else input.value = cur + ' + ' + num;
+        refresh();
+        if (win.style.display === 'none') window.miniCalcToggle();
+    }
+
+    function init() {
+        win      = document.getElementById('miniCalcWin');
+        input    = document.getElementById('calcExpr');
+        resultEl = document.getElementById('calcResult');
+        histEl   = document.getElementById('calcHist');
+        bubble   = document.getElementById('calcSelBubble');
+        bubbleNum = document.getElementById('calcSelNum');
+        if (!win || win._wired) return;
+        win._wired = true;
+
+        input.addEventListener('input', refresh);
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); window.calcEquals(); }
+            if (e.key === 'Escape') window.miniCalcToggle();
+        });
+
+        bubble.addEventListener('mousedown', function (e) { e.preventDefault(); e.stopPropagation(); });
+        bubble.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (pendingNum !== null) insertNumber(pendingNum);
+            hideBubble();
+        });
+
+        document.addEventListener('mouseup', function (e) {
+            if (bubble.contains(e.target)) return;
+            setTimeout(function () {
+                var sel = window.getSelection();
+                if (!sel || sel.isCollapsed || sel.rangeCount === 0) { hideBubble(); return; }
+                // Ignore selections made inside the calculator itself
+                var anchor = sel.anchorNode && sel.anchorNode.parentElement;
+                if (anchor && anchor.closest && anchor.closest('#miniCalcRoot')) { hideBubble(); return; }
+                var num = extractNumber(sel.toString());
+                if (num === null) { hideBubble(); return; }
+                var rect = sel.getRangeAt(0).getBoundingClientRect();
+                pendingNum = num;
+                bubbleNum.textContent = fmt(num);
+                bubble.style.display = 'flex';
+                bubble.style.top = Math.max(8, rect.top - 38) + 'px';
+                bubble.style.left = Math.max(8, Math.min(window.innerWidth - 180, rect.left)) + 'px';
+            }, 0);
+        });
+
+        document.addEventListener('scroll', hideBubble, true);
+        document.addEventListener('turbo:load', hideBubble);
+
+        wireDrag();
+    }
+
+    /* Drag the calculator by its header. Pointer events cover both mouse
+       and touch; position is remembered in localStorage. */
+    function clampPos(x, y) {
+        var w = win.offsetWidth || 288, h = win.offsetHeight || 200;
+        return {
+            x: Math.max(4, Math.min(window.innerWidth  - w - 4, x)),
+            y: Math.max(4, Math.min(window.innerHeight - h - 4, y)),
+        };
+    }
+    function applyPos(x, y) {
+        var p = clampPos(x, y);
+        win.style.left   = p.x + 'px';
+        win.style.top    = p.y + 'px';
+        win.style.right  = 'auto';
+        win.style.bottom = 'auto';
+    }
+    function wireDrag() {
+        var head = win.querySelector('.calc-head');
+        if (!head) return;
+        head.style.cursor = 'move';
+        head.style.touchAction = 'none';
+
+        // Restore last position (ignore if saved for a different viewport size)
+        try {
+            var saved = JSON.parse(localStorage.getItem('calcPos') || 'null');
+            if (saved && typeof saved.x === 'number') applyPos(saved.x, saved.y);
+        } catch (e) { /* corrupted value — keep default position */ }
+
+        var drag = null;
+        head.addEventListener('pointerdown', function (e) {
+            if (e.target.closest('.calc-head-btn')) return; // copy/close buttons
+            var r = win.getBoundingClientRect();
+            drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+            head.setPointerCapture(e.pointerId);
+            e.preventDefault();
+        });
+        head.addEventListener('pointermove', function (e) {
+            if (!drag) return;
+            applyPos(e.clientX - drag.dx, e.clientY - drag.dy);
+        });
+        function endDrag(e) {
+            if (!drag) return;
+            drag = null;
+            try {
+                var r = win.getBoundingClientRect();
+                localStorage.setItem('calcPos', JSON.stringify({ x: r.left, y: r.top }));
+            } catch (e2) { /* storage full/blocked — position just won't persist */ }
+        }
+        head.addEventListener('pointerup', endDrag);
+        head.addEventListener('pointercancel', endDrag);
+
+        // Keep the window on-screen if the viewport shrinks
+        window.addEventListener('resize', function () {
+            if (win.style.left) {
+                var r = win.getBoundingClientRect();
+                applyPos(r.left, r.top);
+            }
+        });
+    }
+
+    document.addEventListener('turbo:load', init);
+    if (document.readyState !== 'loading') init();
+    else document.addEventListener('DOMContentLoaded', init);
 })();
 
 /* ── Info tooltip (ⓘ button) — permanent so Turbo doesn't remove it ── */
@@ -732,3 +945,31 @@ function bnWatchTakaWords(inputId, targetId) {
 window.bnNumWords       = bnNumWords;
 window.bnTakaWords      = bnTakaWords;
 window.bnWatchTakaWords = bnWatchTakaWords;
+
+/* ── WhatsApp share ─────────────────────────────────────────────
+   openWhatsApp('01712...', 'message') → opens wa.me chat.
+   Normalizes BD numbers (Bengali digits, 01..., +880..., 880...) to 880XXXXXXXXXX. */
+function waNormalizeBD(phone) {
+    var p = toEnglishDigits(String(phone || '')).replace(/\D/g, '');
+    if (!p) return '';
+    if (p.indexOf('880') === 0) return p;
+    if (p.charAt(0) === '0')    return '88' + p;
+    if (p.charAt(0) === '1' && p.length === 10) return '880' + p;
+    return p;
+}
+function openWhatsApp(phone, msg) {
+    var p = waNormalizeBD(phone);
+    if (!p) { alert('এই কাস্টমারের ফোন নম্বর নেই।'); return; }
+    window.open('https://wa.me/' + p + '?text=' + encodeURIComponent(msg || ''), '_blank');
+}
+window.waNormalizeBD = waNormalizeBD;
+window.openWhatsApp  = openWhatsApp;
+
+/* ── PWA: register install-only service worker ─────────────────
+   sw.js does NO caching (business data must stay live) — it only
+   makes the app installable on phone home screens. */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function () {});
+    });
+}
