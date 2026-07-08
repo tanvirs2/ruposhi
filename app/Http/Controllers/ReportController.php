@@ -1019,4 +1019,129 @@ class ReportController extends Controller
             }
         );
     }
+
+    // ── দিনশেষ রিপোর্ট — owner's end-of-day snapshot ────────────────────
+    private function dayCloseData(string $date): array
+    {
+        $sales = Sale::where('sale_date', $date)
+            ->selectRaw('COALESCE(SUM(total_amount),0) as total,
+                         COALESCE(SUM(paid_amount),0)  as paid,
+                         COUNT(*)                       as cnt')
+            ->first();
+
+        $standalonePayments = CustomerPayment::where('payment_date', $date)->sum('amount');
+        $purchases          = Purchase::where('purchase_date', $date)
+            ->selectRaw('COALESCE(SUM(total_amount),0) as total, COALESCE(SUM(paid_amount),0) as paid, COUNT(*) as cnt')
+            ->first();
+        $supplierPayments   = SupplierPayment::where('payment_date', $date)->sum('amount');
+        $expenses           = ExtraExpense::where('type', 'expense')->where('expense_date', $date)->sum('amount');
+        $deposits           = ExtraExpense::where('type', 'deposit')->where('expense_date', $date)->sum('amount');
+
+        $cashIn  = $sales->paid + $standalonePayments + $deposits;
+        $cashOut = $purchases->paid + $supplierPayments + $expenses;
+
+        return [
+            'salesTotal'         => (float) $sales->total,
+            'salesCount'         => (int) $sales->cnt,
+            'salesPaid'          => (float) $sales->paid,
+            'standalonePayments' => (float) $standalonePayments,
+            'purchaseTotal'      => (float) $purchases->total,
+            'purchasePaid'       => (float) $purchases->paid,
+            'purchaseCount'      => (int) $purchases->cnt,
+            'supplierPayments'   => (float) $supplierPayments,
+            'expenses'           => (float) $expenses,
+            'deposits'           => (float) $deposits,
+            'newDue'             => (float) $sales->total - (float) $sales->paid,
+            'cashIn'             => (float) $cashIn,
+            'cashOut'            => (float) $cashOut,
+            'cashNet'            => (float) ($cashIn - $cashOut),
+        ];
+    }
+
+    public function dayClose(Request $request)
+    {
+        $date = $request->get('date', now()->toDateString());
+        $d    = $this->dayCloseData($date);
+        $ownerPhone = \App\Models\StoreConfig::get('store_phone', '');
+
+        // Cash reconciliation: today's entry (if saved) + recent history.
+        $reconciliation = \App\Models\DayClosing::whereDate('close_date', $date)->first();
+        $recentClosings = \App\Models\DayClosing::with('user:id,name')
+            ->orderByDesc('close_date')->limit(7)->get();
+
+        // Prefill opening cash from the most recent earlier reconciliation:
+        // yesterday's counted drawer is today's natural starting cash.
+        $suggestedOpening = null;
+        if (!$reconciliation) {
+            $prev = \App\Models\DayClosing::whereDate('close_date', '<', $date)
+                ->orderByDesc('close_date')->first();
+            $suggestedOpening = $prev?->counted_cash;
+        }
+
+        return view('reports.day-close', array_merge($d, compact(
+            'date', 'ownerPhone', 'reconciliation', 'recentClosings', 'suggestedOpening'
+        )));
+    }
+
+    public function dayCloseReconcile(Request $request)
+    {
+        $request->validate([
+            'date'         => 'required|date',
+            'opening_cash' => 'nullable|numeric|min:0',
+            'counted_cash' => 'required|numeric|min:0',
+            'note'         => 'nullable|string|max:255',
+        ]);
+
+        $date    = $request->date;
+        $d       = $this->dayCloseData($date);
+        $opening = (float) ($request->opening_cash ?? 0);
+        $counted = (float) $request->counted_cash;
+        // Expected drawer = opening cash + today's net cash movement.
+        // Discrepancy can be negative (short) or positive (over) — never capped.
+        $discrepancy = $counted - ($opening + $d['cashNet']);
+
+        \App\Models\DayClosing::updateOrCreate(
+            ['close_date' => $date],   // shop_id auto-filled + scoped by HasShopScope
+            [
+                'opening_cash' => $opening,
+                'system_net'   => $d['cashNet'],
+                'counted_cash' => $counted,
+                'discrepancy'  => $discrepancy,
+                'note'         => $request->note,
+                'user_id'      => auth()->id(),
+            ]
+        );
+
+        $msg = $discrepancy == 0.0
+            ? 'ক্যাশ মিলে গেছে ✓ — কোনো গরমিল নেই।'
+            : 'ক্যাশ মেলানো সেভ হয়েছে — গরমিল ৳' . number_format(abs($discrepancy), 2) . ($discrepancy < 0 ? ' (কম)' : ' (বেশি)');
+
+        return redirect()->route('reports.day-close', ['date' => $date])->with('success', $msg);
+    }
+
+    public function dayCloseSms(Request $request, \App\Services\SmsService $sms)
+    {
+        $date  = $request->get('date', now()->toDateString());
+        $phone = trim(\App\Models\StoreConfig::get('store_phone', ''));
+        if (!$phone) {
+            return back()->with('error', 'দোকানের ফোন নম্বর সেট করা নেই (সেটিংস → store_phone)।');
+        }
+
+        $d = $this->dayCloseData($date);
+        $storeName = \App\Models\StoreConfig::get('store_name', 'দোকান');
+
+        $msg = "{$storeName} — দিনশেষ ({$date})\n"
+             . 'বিক্রয়: ৳' . number_format($d['salesTotal'], 0) . " ({$d['salesCount']}টি)\n"
+             . 'নগদ আদায়: ৳' . number_format($d['salesPaid'] + $d['standalonePayments'], 0) . "\n"
+             . 'খরচ+পরিশোধ: ৳' . number_format($d['cashOut'], 0) . "\n"
+             . 'নতুন বাকী: ৳' . number_format($d['newDue'], 0) . "\n"
+             . 'ক্যাশ নীট: ৳' . number_format($d['cashNet'], 0);
+
+        $result = $sms->send($phone, $msg, 'মালিক');
+
+        return back()->with(
+            $result['success'] ? 'success' : 'error',
+            $result['success'] ? "দিনশেষ সারাংশ {$phone} নম্বরে পাঠানো হয়েছে।" : "SMS ব্যর্থ: {$result['response']}"
+        );
+    }
 }
