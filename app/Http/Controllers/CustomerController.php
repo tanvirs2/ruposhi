@@ -98,7 +98,7 @@ class CustomerController extends Controller
             ->when($areaId, fn($query) => $query->where('area_id', $areaId))
             ->orderBy('name')
             ->limit(30)
-            ->get(['id', 'name', 'proprietor', 'phone', 'due_amount', 'area_id']);
+            ->get(['id', 'name', 'proprietor', 'phone', 'due_amount', 'credit_limit', 'area_id']);
 
         return response()->json($customers);
     }
@@ -106,11 +106,12 @@ class CustomerController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name'  => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
+            'name'         => 'required|string|max:255',
+            'phone'        => 'nullable|string|max:20',
+            'credit_limit' => 'nullable|numeric|min:0',
         ]);
 
-        $customer = Customer::create($request->only('name', 'proprietor', 'phone', 'address', 'area_id'));
+        $customer = Customer::create($request->only('name', 'proprietor', 'phone', 'address', 'area_id', 'credit_limit'));
 
         // AJAX (popup from sale form) — return the new customer as JSON
         if ($request->expectsJson() || $request->ajax()) {
@@ -140,11 +141,12 @@ class CustomerController extends Controller
     public function update(Request $request, Customer $customer)
     {
         $request->validate([
-            'name'  => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
+            'name'         => 'required|string|max:255',
+            'phone'        => 'nullable|string|max:20',
+            'credit_limit' => 'nullable|numeric|min:0',
         ]);
 
-        $customer->update($request->only('name', 'proprietor', 'phone', 'address', 'area_id'));
+        $customer->update($request->only('name', 'proprietor', 'phone', 'address', 'area_id', 'credit_limit'));
 
         return redirect()->route('customers.index')->with('success', 'কাস্টমার সফলভাবে আপডেট করা হয়েছে।');
     }

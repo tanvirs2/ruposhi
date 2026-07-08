@@ -50,6 +50,9 @@
                 <td>
                     @if($customer->due_amount > 0)
                         <span class="badge badge-red">৳ {{ number_format($customer->due_amount, 0) }}</span>
+                        @if($customer->credit_limit > 0 && $customer->due_amount > $customer->credit_limit)
+                            <i class="fas fa-triangle-exclamation" style="color:#dc2626;font-size:.72rem;margin-left:3px" title="ক্রেডিট লিমিট ৳{{ number_format($customer->credit_limit, 0) }} ছাড়িয়ে গেছে"></i>
+                        @endif
                     @elseif($customer->due_amount < 0)
                         <span class="badge" style="background:#eff6ff;color:#1d4ed8">অগ্রিম ৳ {{ number_format(abs($customer->due_amount), 0) }}</span>
                     @else

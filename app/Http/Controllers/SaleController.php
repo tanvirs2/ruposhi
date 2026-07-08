@@ -87,7 +87,7 @@ class SaleController extends Controller
         // Only the pre-selected customer (e.g. "নতুন বিক্রয়" from a ledger) is sent.
         $preCustomer = request('customer_id')
             ? Customer::with('area:id,name')
-                ->select('id','name','proprietor','phone','due_amount','area_id')
+                ->select('id','name','proprietor','phone','due_amount','credit_limit','area_id')
                 ->find(request('customer_id'))
             : null;
 
@@ -132,9 +132,11 @@ class SaleController extends Controller
             $net        = $total - $discount + $extraCost;
             $due        = max(0, $net - $request->paid_amount);
 
-            // Capture the customer's outstanding balance before this sale
+            // Capture the customer's outstanding balance before this sale.
+            // lockForUpdate serializes concurrent sales on the same customer so
+            // two simultaneous saves can't both read the same previous_due.
             $previousDue = $request->customer_id
-                ? Customer::find($request->customer_id)->due_amount
+                ? Customer::whereKey($request->customer_id)->lockForUpdate()->value('due_amount')
                 : 0;
 
             $sale = Sale::create([
@@ -225,7 +227,7 @@ class SaleController extends Controller
         $sale->load('items.item', 'customer.area', 'extraCosts');
         // Server-side customer search — only seed the sale's existing customer
         $preCustomer = $sale->customer
-            ? $sale->customer->only(['id','name','proprietor','phone','due_amount','area_id'])
+            ? $sale->customer->only(['id','name','proprietor','phone','due_amount','credit_limit','area_id'])
                 + ['area' => $sale->customer->area ? ['id' => $sale->customer->area->id, 'name' => $sale->customer->area->name] : null]
             : null;
         $items           = Item::with('stock:id,item_id,quantity')
@@ -289,7 +291,7 @@ class SaleController extends Controller
 
             // ── 5. Capture previous_due AFTER reversing old effects ─
             $previousDue = $request->customer_id
-                ? Customer::find($request->customer_id)->due_amount
+                ? Customer::whereKey($request->customer_id)->lockForUpdate()->value('due_amount')
                 : 0;
 
             // ── 6. Update the sale record ───────────────────────────
@@ -462,7 +464,7 @@ class SaleController extends Controller
             $due        = max(0, $net - (float) $d['paid_amount']);
 
             $previousDue = isset($d['customer_id']) && $d['customer_id']
-                ? Customer::find($d['customer_id'])?->due_amount ?? 0
+                ? Customer::whereKey($d['customer_id'])->lockForUpdate()->value('due_amount') ?? 0
                 : 0;
 
             $sale->update([

@@ -148,6 +148,12 @@
                     <span style="font-size:1rem;font-weight:800;color:#b45309" id="prevDueDisplay">৳ 0</span>
                 </div>
 
+                {{-- Credit limit warning — shown when projected due exceeds the customer's limit --}}
+                <div id="creditLimitWarn" style="display:none;padding:10px 14px;background:#fef3c7;border:1.5px solid #f59e0b;border-radius:8px;font-size:.83rem;font-weight:600;color:#92400e;line-height:1.6">
+                    <i class="fas fa-triangle-exclamation" style="color:#d97706"></i>
+                    <span id="creditLimitWarnText"></span>
+                </div>
+
                 <div class="summary-row">
                     <span>মোট বিক্রয়:</span>
                     <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
@@ -560,6 +566,7 @@ var customerDrop    = document.createElement('div');
 var cDrop           = makeFloatingDropdown(customerSearch, customerDrop);
 var currentPrevDue = 0;
 var prevDuePay     = 0;   // how much of prev due customer will pay this time
+var currentCreditLimit = 0;   // selected customer's credit limit (0 = none set)
 
 var _custSearchTimer = null;
 customerSearch.addEventListener('input', function() {
@@ -571,6 +578,8 @@ customerSearch.addEventListener('input', function() {
         prevDueRow.style.display = 'none';
         resetPrevDuePay();
         currentPrevDue = 0;
+        currentCreditLimit = 0;
+        document.getElementById('creditLimitWarn').style.display = 'none';
         document.getElementById('walkinWarning').style.display = 'none';
         return;
     }
@@ -669,10 +678,12 @@ function selectCustomer(id) {
     // Reset partial pay input whenever customer changes
     resetPrevDuePay();
     currentPrevDue = due;
+    currentCreditLimit = parseFloat(c.credit_limit) || 0;   // 0 = no limit set
 
     customerSelected.innerHTML = html;
     customerSelected.style.display = 'block';
     cDrop.hide();
+    updateSummary();   // refresh credit-limit warning for the new customer
 }
 
 // ── Items ────────────────────────────────────────────────────
@@ -1059,6 +1070,25 @@ function updateSummary() {
     // Hide the standalone "এই বিক্রয়ে বাকী" row when there's nothing to show
     const saleDueRow = document.getElementById('saleDueRow');
     if (saleDueRow) saleDueRow.style.display = (cart.length && due > 0) ? 'flex' : 'none';
+
+    // ── Credit limit warning (never blocks — just informs) ─────
+    const clWarn = document.getElementById('creditLimitWarn');
+    if (clWarn) {
+        // resultBal = projected due after this transaction
+        if (currentCreditLimit > 0 && resultBal > currentCreditLimit && (cart.length || paid > 0)) {
+            document.getElementById('creditLimitWarnText').innerHTML =
+                `ক্রেডিট লিমিট ছাড়িয়ে যাচ্ছে! এই বিক্রয়ের পর বাকী দাঁড়াবে <b>৳ ${resultBal.toLocaleString('en', {maximumFractionDigits:0})}</b>` +
+                ` — লিমিট <b>৳ ${currentCreditLimit.toLocaleString('en', {maximumFractionDigits:0})}</b>`;
+            clWarn.style.display = 'block';
+        } else if (currentCreditLimit > 0 && currentPrevDue > currentCreditLimit && !(cart.length || paid > 0)) {
+            document.getElementById('creditLimitWarnText').innerHTML =
+                `এই কাস্টমারের বাকী <b>৳ ${currentPrevDue.toLocaleString('en', {maximumFractionDigits:0})}</b> ইতিমধ্যে` +
+                ` লিমিট <b>৳ ${currentCreditLimit.toLocaleString('en', {maximumFractionDigits:0})}</b> ছাড়িয়ে আছে`;
+            clWarn.style.display = 'block';
+        } else {
+            clWarn.style.display = 'none';
+        }
+    }
 
     // ── Post-transaction summary above the submit CTA ─────────
     // total_due_after = (previous_due + net) − total_collected

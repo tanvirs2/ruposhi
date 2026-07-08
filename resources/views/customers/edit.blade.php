@@ -27,6 +27,11 @@
                     'acAllLabel' => '— এরিয়া নেই —',
                 ])
             </div>
+            <div class="form-group-field">
+                <label>ক্রেডিট লিমিট (৳)</label>
+                <input type="number" name="credit_limit" value="{{ old('credit_limit', $customer->credit_limit ? $customer->credit_limit + 0 : '') }}" min="0" step="any" placeholder="খালি = লিমিট নেই">
+                <small style="color:#64748b;font-size:.75rem">বাকী এই সীমা ছাড়ালে বিক্রয়ের সময় সতর্কবার্তা দেখাবে</small>
+            </div>
             <div class="form-group-field form-full">
                 <label>ঠিকানা</label>
                 <textarea name="address" rows="2">{{ old('address', $customer->address) }}</textarea>
