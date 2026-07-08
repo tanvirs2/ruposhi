@@ -9,7 +9,14 @@
 @section('content')
 @include('partials.page-header', ['title' => 'পরিশোধ তালিকা', 'createRoute' => route('supplier-payments.create'), 'createLabel' => 'নতুন পরিশোধ'])
 
-<div class="stats-grid" style="margin-bottom:20px;grid-template-columns:repeat(2,1fr)">
+<div class="stats-grid" style="margin-bottom:20px;grid-template-columns:repeat(3,1fr)">
+    <div class="stat-card" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe)">
+        <div class="stat-icon" style="background:#7c3aed"><i class="fas fa-coins"></i></div>
+        <div class="stat-body">
+            <span class="stat-label">সর্বমোট (ফিল্টার)</span>
+            <span class="stat-value" style="color:#7c3aed">৳ {{ number_format($totalPaid + $totalDeposit, 0) }}</span>
+        </div>
+    </div>
     <div class="stat-card stat-green">
         <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
         <div class="stat-body">
@@ -29,13 +36,14 @@
 <div class="card">
     <div class="card-filter">
         <form method="GET" class="filter-form" data-date-snap>
-            <div class="form-group-field">
-                <select name="supplier_id" class="form-select">
-                    <option value="">সব সরবরাহকারী</option>
-                    @foreach($suppliers as $s)
-                        <option value="{{ $s->id }}" @selected(request('supplier_id') == $s->id)>{{ $s->name }}</option>
-                    @endforeach
-                </select>
+            <div class="form-group-field" style="min-width:220px">
+                @include('partials.area-combobox', [
+                    'areas'         => $suppliers,
+                    'acName'        => 'supplier_id',
+                    'acValue'       => request('supplier_id'),
+                    'acPlaceholder' => 'সব সরবরাহকারী (খুঁজুন)',
+                    'acAllLabel'    => '— সব সরবরাহকারী —',
+                ])
             </div>
             <div class="form-group-field">
                 <input type="date" name="from" id="spDateFrom" value="{{ $from }}" class="form-select">
@@ -89,7 +97,7 @@
                         @elseif($row->items_count > 0)
                             <span class="badge" style="background:#ccfbf1;color:#0f766e">পণ্য গ্রহণ</span>
                         @else
-                            <span class="badge" style="background:#eff6ff;color:#1d4ed8">অগ্রিম</span>
+                            <span class="badge" style="background:#dcfce7;color:#15803d">পরিশোধ</span>
                         @endif
                     </td>
                     <td>
@@ -132,6 +140,11 @@
                 <tr class="tfoot-summary">
                     <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট জমা</td>
                     <td style="font-weight:800;color:#1d4ed8">৳ {{ number_format($totalDeposit, 2) }}</td>
+                    <td colspan="5"></td>
+                </tr>
+                <tr class="tfoot-summary">
+                    <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট (পরিশোধ + জমা)</td>
+                    <td style="font-weight:800;color:#7c3aed">৳ {{ number_format($totalPaid + $totalDeposit, 2) }}</td>
                     <td colspan="5"></td>
                 </tr>
                 @endif
