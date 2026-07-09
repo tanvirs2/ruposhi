@@ -1631,21 +1631,35 @@ input[type="time"].form-select {
 /* ─── Print styles for report pages ────────────────────────── */
 @media print {
     /* ── Page setup — tight margins, more rows per sheet ── */
-    @page { margin: 8mm 10mm; size: A4 portrait; }
+    @page { margin: 6mm 8mm; size: A4 portrait; }
+
+    /* The screen font-size buttons set html[data-fontsize] zoom (0.9/1/1.08).
+       Without this reset the browser scales the whole printout by that zoom,
+       so print output changed with the UI font choice. Print must be fixed. */
+    html { zoom: 1 !important; font-size: 15px !important; }
 
     .sidebar, .topbar, .quick-actions, .ui-controls, .ctrl-btn,
     .btn-export, .btn-export-print, .card-filter, .filter-form,
     .shortcuts-overlay, .confirm-modal, .no-print, .pagination-wrap,
     .action-btns, .btn-icon-sm, .col-hide-print, .btn, .fab,
     .floating-submit, .form-actions, .alert,
+    #miniChatRoot, #miniCalcRoot, #calcSelBubble, #info-popover,
     #globalSearch, .topbar-time { display: none !important; }
 
     .main-wrapper { margin-left: 0 !important; }
     .content { padding: 0 !important; background: #fff !important; }
     body { background: #fff !important; font-size: 11px !important; }
 
-    /* Print colours faithfully (badges, coloured totals) */
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    /* Ink-saving print: every background white, every font dark.
+       Coloured badges/totals lose their colour on paper by design —
+       readability and cheap printing beat colour coding here. */
+    * {
+        background: transparent !important;
+        background-image: none !important;
+        color: #000 !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
 
     /* ── Cards — strip chrome, no wasted padding ── */
     .card { box-shadow: none !important; border: none !important;
@@ -1657,15 +1671,15 @@ input[type="time"].form-select {
     .data-table th {
         height: auto !important; padding: 3px 6px !important;
         font-size: 8.5px !important; letter-spacing: 0 !important;
-        background: #f1f5f9 !important; color: #000 !important;
-        border: 0.5px solid #cbd5e1 !important;
+        background: #fff !important; color: #000 !important;
+        border: 0.5px solid #999 !important;
     }
     .data-table td {
         height: auto !important; padding: 2px 6px !important;
         max-width: none !important; line-height: 1.25 !important;
-        border: 0.5px solid #cbd5e1 !important;
+        border: 0.5px solid #999 !important;
     }
-    .tfoot-summary td { background: #f1f5f9 !important; }
+    .tfoot-summary td { background: #fff !important; border-top: 1.5px solid #000 !important; }
 
     /* ── Stats — one compact strip, not big cards ── */
     .stats-grid, .sales-stats-grid {
@@ -1675,7 +1689,7 @@ input[type="time"].form-select {
     .stat-card {
         break-inside: avoid; flex: 1 1 auto !important;
         padding: 5px 10px !important; box-shadow: none !important;
-        border: 0.5px solid #cbd5e1 !important; min-width: 0 !important;
+        border: 0.5px solid #999 !important; min-width: 0 !important;
     }
     .stat-card .stat-icon { display: none !important; }
     .stat-label { font-size: 8px !important; }
