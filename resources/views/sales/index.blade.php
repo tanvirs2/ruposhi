@@ -36,6 +36,9 @@
             <button type="submit" class="btn btn-secondary">ফিল্টার</button>
             <a href="{{ route('sales.index') }}" class="btn btn-outline" id="salesClearBtn" title="ক্লিয়ার করুন"
                style="{{ ($dateFrom || $dateTo || request('search') || request('status')) ? '' : 'display:none' }}"><i class="fas fa-xmark"></i></a>
+            <button type="button" class="btn-export-print no-print" onclick="window.print()">
+                <i class="fas fa-print"></i> প্রিন্ট
+            </button>
         </form>
 
         {{-- View toggle --}}
@@ -87,6 +90,18 @@
 .view-toggle-btn:last-child { border-right: none; }
 .view-toggle-btn:hover { background: var(--bg); color: var(--text); }
 .view-toggle-btn.active { background: var(--accent); color: #fff; }
+
+@media print {
+    /* Compact rows — hide the time line and "+N আরো" toggle so each row is one line */
+    #salesCard .sd-cell br, #salesCard .sd-cell small { display: none !important; }
+    #salesCard .si-cell .item-full, #salesCard .si-cell button { display: none !important; }
+    #salesCard .data-table td {
+        padding: 1px 6px !important; line-height: 1.3 !important; font-size: 9.5px !important;
+    }
+    #salesCard .badge {
+        padding: 0 !important; border-radius: 0 !important; font-size: 9px !important;
+    }
+}
 </style>
 @endpush
 

@@ -38,6 +38,9 @@
             </a>
             <a href="{{ route('stock.index') }}" class="btn btn-ghost" id="stockClearBtn"
                style="{{ (request('search') || request('date') || request('updated_date')) ? '' : 'display:none' }}">পরিষ্কার</a>
+            <button type="button" class="btn-export-print no-print" onclick="window.print()">
+                <i class="fas fa-print"></i> প্রিন্ট
+            </button>
         </form>
     </div>
     <div id="stockResults">

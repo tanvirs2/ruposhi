@@ -32,7 +32,7 @@
                             </a>
                         </td>
                         <td>{{ $purchase->supplier?->name ?? '—' }}</td>
-                        <td style="max-width:220px">
+                        <td style="max-width:220px" class="si-cell">
                             @if($purchase->items->isEmpty())
                                 <span style="color:#94a3b8;font-size:.8rem">— পরিশোধ (পণ্য ছাড়া)</span>
                             @else
@@ -47,7 +47,7 @@
                                 @endif
                             @endif
                         </td>
-                        <td>
+                        <td class="sd-cell">
                             {{ $purchase->purchase_date->format('d M Y') }}
                             <br><small style="color:#475569;font-size:.75rem">{{ $purchase->created_at->format('h:i a') }}</small>
                         </td>
@@ -196,7 +196,7 @@
                                 <td style="text-align:right">{{ number_format($pi->quantity, 0) }}</td>
                                 <td style="text-align:right">৳ {{ number_format($pi->price, 2) }}</td>
                                 <td style="text-align:right;font-weight:600">৳ {{ number_format($pi->subtotal, 0) }}</td>
-                                <td>
+                                <td class="sd-cell">
                                     {{ $purchase->purchase_date->format('d M Y') }}
                                     <br><small style="color:#475569;font-size:.75rem">{{ $purchase->created_at->format('h:i a') }}</small>
                                 </td>

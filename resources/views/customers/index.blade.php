@@ -27,6 +27,9 @@
                style="{{ ($search || request('area_id') || $status !== 'active') ? '' : 'display:none' }}">
                 <i class="fas fa-xmark"></i> পরিষ্কার
             </a>
+            <button type="button" class="btn-export-print no-print" onclick="window.print()">
+                <i class="fas fa-print"></i> প্রিন্ট
+            </button>
         </form>
     </div>
 

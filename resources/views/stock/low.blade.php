@@ -33,6 +33,9 @@
             @if(request('date'))
                 <a href="{{ route('stock.low') }}" class="btn btn-ghost">পরিষ্কার</a>
             @endif
+            <button type="button" class="btn-export-print no-print" onclick="window.print()">
+                <i class="fas fa-print"></i> প্রিন্ট
+            </button>
         </form>
     </div>
     <div class="table-wrap">

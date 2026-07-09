@@ -29,7 +29,7 @@
                     <tr @if($pendingDelete) style="background:#fff7ed;opacity:.85" @elseif($pendingEdit) style="background:#fefce8" @endif>
                         <td><a href="{{ route('sales.show', $sale) }}" class="link-primary mono">#INV-{{ str_pad($sale->id,4,'0',STR_PAD_LEFT) }}</a></td>
                         <td>{{ $sale->customer?->name ?? 'ওয়াক-ইন' }}</td>
-                        <td style="max-width:220px">
+                        <td style="max-width:220px" class="si-cell">
                             @if($sale->items->isEmpty())
                                 <span style="color:#94a3b8;font-size:.8rem">— পণ্য নেই</span>
                             @else
@@ -44,7 +44,7 @@
                                 @endif
                             @endif
                         </td>
-                        <td>
+                        <td class="sd-cell">
                             {{ $sale->sale_date->format('d M Y') }}
                             <br><small style="color:#475569;font-size:.75rem">{{ $sale->created_at->format('h:i a') }}</small>
                         </td>
@@ -166,7 +166,7 @@
                                 <td style="text-align:right">{{ number_format($si->quantity, 0) }}</td>
                                 <td style="text-align:right">৳ {{ number_format($si->price, 2) }}</td>
                                 <td style="text-align:right;font-weight:600">৳ {{ number_format($si->subtotal, 0) }}</td>
-                                <td>
+                                <td class="sd-cell">
                                     {{ $sale->sale_date->format('d M Y') }}
                                     <br><small style="color:#475569;font-size:.75rem">{{ $sale->created_at->format('h:i a') }}</small>
                                 </td>

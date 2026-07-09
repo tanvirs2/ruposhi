@@ -29,6 +29,9 @@
             </div>
             @include('partials.date-range-buttons')
             <button type="submit" class="btn btn-secondary" style="align-self:flex-end">ফিল্টার</button>
+            <button type="button" class="btn-export-print no-print" onclick="window.print()" style="align-self:flex-end">
+                <i class="fas fa-print"></i> প্রিন্ট
+            </button>
         </form>
     </div>
 </div>
