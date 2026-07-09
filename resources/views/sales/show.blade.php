@@ -484,9 +484,12 @@
 
 /* ══ Print ════════════════════════════════════════════════════════ */
 @media print {
+    /* NO fixed @page size — a hardcoded size that differs from the paper chosen in
+       the print dialog makes Chrome center the smaller page on the larger sheet,
+       creating a huge top gap. Like the old phppos memo, let the dialog's paper
+       size win; the container padding below keeps content off the red border. */
     @page {
-        size: A4 portrait;
-        margin: 14mm 14mm 14mm 14mm;
+        margin: 0;
     }
 
     /* ── Step 1: hide the entire page ── */
@@ -496,17 +499,21 @@
     #cashMemo,
     #cashMemo * { visibility: visible; }
 
-    /* ── Step 3: pin invoice to top-left corner ── */
+    /* ── Step 3: pin invoice to the top, centered horizontally ──
+       left:0 + right:0 + margin:auto centers the fixed-width memo on
+       whatever paper the dialog picked (matches the old phppos memo). */
     #cashMemo {
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
-        width: 100% !important;
-        min-height: 268mm !important;   /* fill A4 printable area (297 − 14×2 margins) */
+        right: 0 !important;
+        width: 165mm !important;
+        min-height: 222mm !important;   /* full 1/4 Demy sheet — @page margin is 0, padding below keeps content off the red border */
+        box-sizing: border-box !important;
+        padding: 15mm !important;       /* border sits ~12mm in — 15mm clears it with a 3mm safety gap; usable area ≈ 135mm × 192mm */
         display: flex !important;
         flex-direction: column !important;
-        margin: 0 !important;
-        padding: 0 !important;
+        margin: 0 auto !important;
         max-width: 100% !important;
         box-shadow: none !important;
         font-size: .82rem !important;
@@ -530,25 +537,27 @@
     /* ── Table ── */
     .memo-table        { font-size: .78rem !important; }
     .memo-table th     { padding: 3px 5px !important; }
-    .memo-table tbody td { padding: 3px 5px !important; border-color: #ddd !important; }
-    .memo-table tbody tr:nth-child(even) { background: #f8f8f8 !important; }
+    .memo-table tbody td { padding: 3px 5px !important; border-color: #bbb !important; }
+    .memo-table tbody tr:nth-child(even) { background: #fff !important; }
 
     /* ── Tfoot ── */
     .tfoot-qty td  { padding: 3px 5px !important; font-size: .78rem !important; border-color: #ddd !important; }
     .tfoot-row td  { padding: 3px 5px !important; font-size: .78rem !important; border-color: #ddd !important; }
     .tfoot-grand   { font-size: .86rem !important; }
     .tfoot-remaining { font-size: .90rem !important; }
-    .tfoot-balance-row td { background: #fff7ed !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .tfoot-grand-row td { border-top: 1.5px solid #888 !important; border-bottom: 1.5px solid #888 !important; }
+    /* Ink-saving: white background, dark text — the highlighted rows keep
+       their emphasis with borders/weight instead of tinted fills */
+    .tfoot-balance-row td { background: #fff !important; }
+    .tfoot-grand-row td { border-top: 1.5px solid #555 !important; border-bottom: 1.5px solid #555 !important; }
 
-    /* ── Red header: force color print ── */
-    .memo-table thead tr { background: #475569 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .memo-table th        { border-color: #334155 !important; }
+    .memo-table thead tr { background: #fff !important; color: #000 !important; }
+    .memo-table th        { border-color: #999 !important; border-bottom: 1.5px solid #000 !important; }
 
     tfoot { page-break-inside: avoid; }
 
     /* ── Footer ── */
-    .memo-footer       { margin-top: auto !important; padding-top: 10px !important; page-break-inside: avoid; }
+    .memo-footer       { margin-top: auto !important; padding-top: 10px !important; page-break-inside: avoid;
+                         position: relative !important; top: 70px !important; }  /* nudge the tear-off block 70px further down per owner's print test */
     .memo-footer-note  { font-size: .7rem !important; margin-bottom: 0 !important; }
     .memo-footer-name  { font-size: 1rem !important; }
     .memo-cut-line     { margin: 7px 0 4px !important; border-top-color: #999 !important; }
