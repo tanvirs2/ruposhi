@@ -11,7 +11,7 @@
 
 {{-- ── Print header ──────────────────────────────────────────── --}}
 <div class="ledger-print-header" style="display:none">
-    @include('partials.store-name-arc', ['name' => \App\Models\StoreConfig::get('store_name','আমার দোকান'), 'size' => 26])
+    <div style="font-size:1.1rem;font-weight:800;color:#000">{{ \App\Models\StoreConfig::get('store_name','আমার দোকান') }}</div>
     <div style="font-size:.85rem;color:#555;margin-top:2px">কাস্টমার লেজার রিপোর্ট</div>
     <div style="font-size:.8rem;color:#777">
         {{ \Carbon\Carbon::parse($from)->format('d M Y') }} — {{ \Carbon\Carbon::parse($to)->format('d M Y') }}
@@ -76,8 +76,11 @@
             <td><strong>প্রতিষ্ঠানের নামঃ</strong> {{ $customer->proprietor ?? '—' }}</td>
         </tr>
         <tr>
+            <td><strong>ফোনঃ</strong> {{ $customer->phone ?? '—' }}</td>
             <td><strong>ঠিকানাঃ</strong> {{ $customer->address ?? '—' }}</td>
-            <td><strong>লেজার রিপোর্ট -</strong> {{ \Carbon\Carbon::parse($from)->format('Y-m-d') }} থেকে {{ \Carbon\Carbon::parse($to)->format('Y-m-d') }} পর্যন্ত</td>
+        </tr>
+        <tr>
+            <td colspan="2"><strong>লেজার রিপোর্ট -</strong> {{ \Carbon\Carbon::parse($from)->format('Y-m-d') }} থেকে {{ \Carbon\Carbon::parse($to)->format('Y-m-d') }} পর্যন্ত</td>
         </tr>
     </table>
 </div>
@@ -325,19 +328,33 @@
     border-top: 2px solid var(--border);
 }
 
-/* ── Print ───────────────────────────────────────────────── */
+/* ── Print — ink-saving: white backgrounds, dark text, tight header ── */
 @media print {
     .sidebar, .topbar, .no-print { display: none !important; }
     .main-wrapper { margin-left: 0 !important; }
-    .content { padding: 8px !important; }
-    .ledger-print-header  { display: block !important; text-align: center; margin-bottom: 12px; }
-    .ledger-customer-card { display: block !important; margin-bottom: 12px; }
-    .ledger-kpi-row { grid-template-columns: repeat(4,1fr); gap:8px; }
-    .ledger-kpi { padding: 8px 10px; }
-    .ledger-kpi-value { font-size: 1rem; }
-    .card { box-shadow: none !important; border: 1px solid #ccc !important; }
-    .cl-payment-row td { background: #f6fff8 !important; -webkit-print-color-adjust: exact; }
-    .cl-opening-row td { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; }
+    .content { padding: 0 !important; }
+    .ledger-print-header  { display: block !important; text-align: center; margin-bottom: 4px; }
+    .ledger-print-header > div { margin-top: 0 !important; line-height: 1.3; }
+    .ledger-customer-card { display: block !important; margin-bottom: 6px; }
+    .ledger-kpi-row { grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 8px; }
+    .ledger-kpi { padding: 4px 8px; border: 0.5px solid #999 !important; }
+    .ledger-kpi-value { font-size: .95rem; }
+    .ledger-kpi-sub { display: none; }
+    .card { box-shadow: none !important; border: none !important; }
+    /* White rows — keep structure with borders instead of tinted backgrounds */
+    .cl-payment-row td, .cl-opening-row td, .cl-discount-row td,
+    .cl-extracost-row td, .cl-laborcost-row td, .cl-tfoot td { background: #fff !important; }
+    .cl-opening-row td { border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; }
+    .cl-tfoot td { border-top: 1.5px solid #000; }
+
+    /* Compact rows: inline rem font sizes on cells beat the global 10px
+       table rule; stylesheet !important beats inline styles. */
+    .cl-table td, .cl-table td span, .cl-table td small,
+    .cl-table td a, .cl-table td strong, .cl-table td div { font-size: 9.5px !important; }
+    .cl-table td { padding: 1px 5px !important; line-height: 1.3 !important; }
+    .cl-table td br { display: none; }
+    .cl-time { font-size: 7.5px !important; }
+    .cl-table td i { display: none; }
 }
 
 /* ── Print info table ────────────────────────────────────── */

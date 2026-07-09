@@ -7,7 +7,7 @@
 
 {{-- ── Print header ────────────────────────────────────────────── --}}
 <div class="dsl-print-header" style="display:none">
-    @include('partials.store-name-arc', ['name' => \App\Models\StoreConfig::get('store_name','আমার দোকান'), 'size' => 26])
+    <div style="font-size:1.1rem;font-weight:800;color:#000">{{ \App\Models\StoreConfig::get('store_name','আমার দোকান') }}</div>
     <div style="font-size:.85rem;color:#555;margin-top:2px">দৈনিক বিক্রয় লেজার রিপোর্ট</div>
     <div style="font-size:.8rem;color:#777">
         লেজার রিপোর্ট — {{ \Carbon\Carbon::parse($from)->format('d M Y') }}

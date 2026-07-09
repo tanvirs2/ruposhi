@@ -40,7 +40,7 @@
 
 {{-- Report header (print only) ──────────────────────────────── --}}
 <div class="print-header" style="display:none">
-    @include('partials.store-name-arc', ['name' => \App\Models\StoreConfig::get('store_name','আমার দোকান'), 'size' => 28])
+    <div style="font-size:1.1rem;font-weight:800;color:#000">{{ \App\Models\StoreConfig::get('store_name','আমার দোকান') }}</div>
     <div style="font-size:.85rem;color:#555;margin-top:2px">লাভ-লোকসান হিসাব</div>
     <div style="font-size:.8rem;color:#777">{{ \Carbon\Carbon::parse($from)->format('d M Y') }} — {{ \Carbon\Carbon::parse($to)->format('d M Y') }}</div>
 </div>

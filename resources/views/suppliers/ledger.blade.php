@@ -11,7 +11,7 @@
 
 {{-- ── Print header ────────────────────────────────────────────── --}}
 <div class="sl-print-header" style="display:none">
-    @include('partials.store-name-arc', ['name' => \App\Models\StoreConfig::get('store_name','আমার দোকান'), 'size' => 26])
+    <div style="font-size:1.1rem;font-weight:800;color:#000">{{ \App\Models\StoreConfig::get('store_name','আমার দোকান') }}</div>
     <div style="font-size:.85rem;color:#555;margin-top:2px">সরবরাহকারী লেজার রিপোর্ট</div>
     <div style="font-size:.8rem;color:#777">
         {{ \Carbon\Carbon::parse($from)->format('d M Y') }} — {{ \Carbon\Carbon::parse($to)->format('d M Y') }}
@@ -417,20 +417,32 @@
 .sl-info-table td { padding: 5px 10px; border: 1px solid #ddd; }
 .sl-info-table td:nth-child(odd) { background: #f8fafc; font-weight: 600; width: 15%; }
 
-/* ── Print ────────────────────────────────────────────────── */
+/* ── Print — ink-saving: white backgrounds, dark text, tight header ── */
 @media print {
     .sidebar, .topbar, .no-print { display: none !important; }
     .main-wrapper { margin-left: 0 !important; }
-    .content { padding: 8px !important; }
-    .sl-print-header  { display: block !important; text-align: center; margin-bottom: 12px; }
-    .sl-info-card     { display: block !important; margin-bottom: 16px; }
-    .sl-kpi-row       { grid-template-columns: repeat(4, 1fr); gap: 8px; }
-    .sl-kpi           { padding: 10px 12px; }
-    .sl-kpi-value     { font-size: 1rem; }
-    .card             { box-shadow: none !important; border: 1px solid #ccc !important; }
-    .sl-payment-row   { background: #f0fdf4 !important; -webkit-print-color-adjust: exact; }
-    .sl-opening-row   { background: #f8fafc !important; -webkit-print-color-adjust: exact; }
-    .sl-new-group td  { border-top: 2px dashed #ccc !important; }
+    .content { padding: 0 !important; }
+    .sl-print-header  { display: block !important; text-align: center; margin-bottom: 4px; }
+    .sl-print-header > div { margin-top: 0 !important; line-height: 1.3; }
+    .sl-info-card     { display: block !important; margin-bottom: 6px; }
+    .sl-kpi-row       { grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+    .sl-kpi           { padding: 4px 8px; border: 0.5px solid #999 !important; }
+    .sl-kpi-value     { font-size: .95rem; }
+    .card             { box-shadow: none !important; border: none !important; }
+    .sl-payment-row, .sl-opening-row, .sl-tfoot td { background: #fff !important; }
+    .sl-opening-row td { border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; }
+    .sl-new-group td  { border-top: 1px dashed #999 !important; }
+
+    /* Compact rows: inline rem font sizes on cells beat the global 10px
+       table rule, and the two-line অবশিষ্ট cell (৳ + দেনা tag) doubled
+       every row's height on paper. Stylesheet !important beats inline. */
+    .sl-ledger-table td, .sl-ledger-table td span, .sl-ledger-table td small,
+    .sl-ledger-table td a, .sl-ledger-table td strong { font-size: 9.5px !important; }
+    .sl-ledger-table td { padding: 1px 5px !important; line-height: 1.3 !important; }
+    .sl-ledger-table td br { display: none; }
+    .sl-bal-tag { font-size: 7.5px !important; margin-left: 2px; }
+    .sl-ref-tag, .sl-ref-link { font-size: 8px !important; padding: 0 3px !important; }
+    .sl-ledger-table td i { display: none; }
 }
 </style>
 @endpush

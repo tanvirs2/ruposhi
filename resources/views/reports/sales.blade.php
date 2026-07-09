@@ -51,7 +51,7 @@
 
 {{-- Print header ────────────────────────────────────────────── --}}
 <div class="print-header" style="display:none;text-align:center;margin-bottom:14px">
-    @include('partials.store-name-arc', ['name' => \App\Models\StoreConfig::get('store_name','আমার দোকান'), 'size' => 26])
+    <div style="font-size:1.1rem;font-weight:800;color:#000">{{ \App\Models\StoreConfig::get('store_name','আমার দোকান') }}</div>
     <div style="font-size:.85rem;color:#555">দৈনিক বিক্রয় রিপোর্ট</div>
     <div style="font-size:.8rem;color:#777">
         তারিখ: {{ \Carbon\Carbon::parse($from)->format('d/m/Y') }}
