@@ -4,30 +4,40 @@
 @section('no-print-header', '1')
 
 @section('content')
+{{-- Hind Siliguri faces must exist on this page even when the shop uses another
+     font: the print CSS forces the memo's DATA sections (meta/table/footer) to
+     Hind Siliguri so the one-page fit calibration holds for every shop font. --}}
+@include('partials.base-fonts')
+<script>
+// Force-download the print faces NOW. @font-face fetches lazily on first USE —
+// when the shop font isn't Hind Siliguri, print is the first use, so the first
+// Ctrl+P rendered invisible text (font-display:block) until the dialog was
+// reopened. The load() text has Bengali + digits so both unicode-range subsets
+// (bengali + latin) fetch. Cached after first visit; no-op when already loaded.
+(function () {
+    if (!document.fonts || !document.fonts.load) return;
+    ['400', '600', '700'].forEach(function (w) {
+        document.fonts.load(w + ' 1rem "Hind Siliguri"', 'বাকী মোট ০১২৩ 0123 ৳');
+    });
+})();
+</script>
 @php
     $totalQty      = $sale->items->sum('quantity');
     $itemsSubtotal = $sale->items->sum('subtotal');
     $grandTotal    = $sale->total_amount + $sale->previous_due;
     $remaining     = $grandTotal - $sale->paid_amount;
 
-    /* ── Dynamic print density ──────────────────────────────────────────
-       Fewer line items → bigger font & taller rows so the memo fills the
-       1/4 Demy sheet instead of leaving a big blank bottom; more items →
-       shrink so everything still fits on one page. The values below feed
-       CSS vars on #cashMemo, consumed by the @media print rules.        */
-    /* Font is capped at 1.0rem — beyond that the long Bengali item names wrap to
-       two lines and blow the row height out. Values below were print-simulated
-       across 3–40 items: no overflow, no wrapping, one page throughout. */
+    /* ── Print density — ONE fixed size, owner's directive ─────────────
+       No dynamic scaling: staff read the same size every day. 0.80rem rows
+       are 4.45mm → 25 rows need ~111mm of the ~121mm row budget (measured
+       on real data with a full 7-row tfoot). Owner capped one-page memos at
+       25 rows: beyond that the text would get too small to read, so >25
+       flows to 2 pages instead (same layout, slightly bigger font since
+       there's room). CSS vars consumed by the @media print rules. */
     $itemCount = $sale->items->count();
-    if     ($itemCount <= 6)  { $mFont='1.00'; $mPad='3'; $mLh='1.3'; }
-    elseif ($itemCount <= 9)  { $mFont='0.95'; $mPad='3'; $mLh='1.3'; }
-    elseif ($itemCount <= 12) { $mFont='0.90'; $mPad='2'; $mLh='1.25'; }
-    elseif ($itemCount <= 16) { $mFont='0.84'; $mPad='2'; $mLh='1.2'; }
-    elseif ($itemCount <= 20) { $mFont='0.80'; $mPad='1'; $mLh='1.15'; }
-    elseif ($itemCount <= 24) { $mFont='0.76'; $mPad='1'; $mLh='1.1'; }
-    elseif ($itemCount <= 28) { $mFont='0.72'; $mPad='0'; $mLh='1.1'; }
-    elseif ($itemCount <= 33) { $mFont='0.68'; $mPad='0'; $mLh='1.05'; }
-    else                      { $mFont='0.64'; $mPad='0'; $mLh='1.0'; }
+    $memoMulti = $itemCount > 25;
+    if ($memoMulti) { $mFont = '0.95'; $mPad = '2'; $mLh = '1.25'; }
+    else            { $mFont = '0.80'; $mPad = '1'; $mLh = '1.15'; }
 @endphp
 
 {{-- Action buttons (no-print) --}}
@@ -61,7 +71,7 @@
     </form>
 </div>
 
-<div class="cash-memo" id="cashMemo" style="--m-font:{{ $mFont }}rem; --m-pad:{{ $mPad }}px; --m-lh:{{ $mLh }};">
+<div class="cash-memo{{ $memoMulti ? ' memo-multi' : '' }}" id="cashMemo" style="--m-font:{{ $mFont }}rem; --m-pad:{{ $mPad }}px; --m-lh:{{ $mLh }};">
 
     {{-- ── STORE HEADER ─────────────────────────────────────────── --}}
     <div class="memo-header">
@@ -244,19 +254,21 @@
         {{-- Tear-off cut line --}}
         <div class="memo-cut-line"><span>✂ ছিঁড়ে নিন</span></div>
 
-        {{-- Blank counterfoil stub (handwritten) --}}
+        {{-- Counterfoil stub — challan no + customer/date (like the old system's tear-off) --}}
         <div class="memo-stub">
             <div class="memo-stub-challan"><strong>চালান নং -</strong> {{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</div>
-            <table class="memo-stub-table">
+            <table class="memo-stub-cust">
                 <thead>
                     <tr>
-                        <th class="stub-qty">পরিমাণ</th>
-                        <th class="stub-desc">আইটেম বিবরণ</th>
+                        <th class="stub-cust-name">কাস্টমার নাম</th>
+                        <th>তারিখ</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td></td><td></td></tr>
-                    <tr><td></td><td></td></tr>
+                    <tr>
+                        <td class="stub-cust-name">{{ $sale->customer->name ?? 'ওয়াক-ইন কাস্টমার' }}</td>
+                        <td>{{ $sale->sale_date->format('Y-m-d') }} - {{ $sale->created_at->format('h:i:sa') }}</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -473,25 +485,24 @@
 /* Blank counterfoil stub */
 .memo-stub { text-align: left; }
 .memo-stub-challan { font-size: .76rem; margin-bottom: 3px; }
-.memo-stub-table {
+/* Customer name + date on the stub (mirrors the old system's tear-off) */
+.memo-stub-cust {
     width: 100%;
     border-collapse: collapse;
     font-size: .8rem;
+    margin-bottom: 4px;
 }
-.memo-stub-table th {
+.memo-stub-cust th {
     padding: 2px 8px;
     font-weight: 700;
     text-align: center;
     border: 1px solid #bbb;
     color: #333;
+    background: #f1f5f9;
 }
-.memo-stub-table td {
-    height: 20px;
-    border: 1px solid #ccc;
-    border-style: dotted;
-}
-.stub-qty  { width: 90px; }
-.stub-desc { }
+.memo-stub-cust td { padding: 2px 8px; border: 1px solid #ccc; }
+.stub-cust-name { width: 45%; text-align: center; }
+/* (blank পরিমাণ/আইটেম বিবরণ counterfoil table removed per owner) */
 
 /* Our credit line */
 .memo-credit {
@@ -529,7 +540,7 @@
         left: 0 !important;
         right: 0 !important;
         width: 165mm !important;
-        min-height: 222mm !important;   /* full 1/4 Demy sheet — @page margin is 0, padding below keeps content off the red border */
+        min-height: 230mm !important;   /* owner-calibrated: real paper is 1/4 Demy 165×222mm but dialog uses A4 — 230mm puts the tear-off at the paper's true bottom edge (printer feed offset). Tune this single value to move the stub up/down. */
         box-sizing: border-box !important;
         padding: 8mm 15mm 15mm !important;  /* top trimmed to 8mm (owner's print test — minimal gap above "ক্যাশ মেমো"); sides/bottom stay 15mm to clear the red border */
         display: flex !important;
@@ -544,12 +555,49 @@
         background: #fff !important;
     }
 
+    /* ── Multi-page mode (>25 items) — a position:fixed box clips everything
+       past one sheet, so switch to normal block flow: rows continue onto
+       page 2 (block layout fragments reliably; flex doesn't always). The memo
+       is exactly 2 sheets tall (444mm) and the tear-off footer is absolutely
+       pinned to the BOTTOM of page 2, matching the single-page look.
+       thead repeats per page; rows never split mid-line. ── */
+    #cashMemo.memo-multi {
+        position: relative !important;      /* anchor for the abs-pos footer */
+        min-height: 444mm !important;       /* 2 × 222mm sheets */
+        display: block !important;
+        padding: 8mm 15mm 15mm !important;
+    }
+    .memo-multi .memo-footer {
+        position: absolute !important;
+        left: 15mm !important; right: 15mm !important;
+        bottom: 15mm !important;            /* same clearance as the sheet padding */
+    }
+    /* Collapse hidden ancestors' ghost space so the memo starts at the sheet top
+       and no blank trailing pages print */
+    body:has(#cashMemo.memo-multi) { height: auto !important; }
+    body:has(#cashMemo.memo-multi) .main-wrapper,
+    body:has(#cashMemo.memo-multi) .content {
+        min-height: 0 !important; height: auto !important;
+        padding: 0 !important; margin: 0 !important;
+    }
+    .memo-multi .memo-table tr { page-break-inside: avoid; }
+
+    /* ── Data sections always print in Hind Siliguri ──
+       Decorative shop fonts (Sonali Borno etc.) have taller vertical metrics —
+       rows grew ~50% and broke the one-page calibration. The HEADER keeps the
+       shop's chosen font (branding); the data below it prints in the stable
+       font the tiers were calibrated for. ── */
+    #cashMemo .memo-meta,
+    #cashMemo .memo-table,
+    #cashMemo .memo-words,
+    #cashMemo .memo-footer { font-family: 'Hind Siliguri', sans-serif !important; }
+
     /* ── Typography scale-down + tight header.
        Bengali fonts carry extra internal leading, so the store name / label boxes
        print taller than the glyphs need. Pulling line-height to ~1.0 collapses that
        top/bottom gap around "ক্যাশ মেমো" and the store name. ── */
     .memo-header       { padding-bottom: 2px !important; margin-bottom: 2px !important; }
-    .memo-store-name   { font-size: 1.45rem !important; line-height: 1.05 !important; }
+    .memo-store-name   { font-size: 1.7rem !important; line-height: 1.05 !important; }
     .memo-owner        { font-size: .70rem !important; margin-top: 0 !important; line-height: 1.05 !important; }
     .memo-tagline      { font-size: .66rem !important; line-height: 1.05 !important; }
     .memo-phones-right { font-size: .70rem !important; line-height: 1.25 !important; }
@@ -591,18 +639,28 @@
     /* ── কথায় / মন্তব্য lines ── */
     .memo-words        { margin-top: 3px !important; font-size: .72rem !important; }
 
-    /* ── Footer — margin-top:auto pins it to the bottom of the sheet; with the
-       dynamic item sizing the content now fills the page, so the old fixed 70px
-       downward nudge is gone (it would push the tear-off off the sheet). ── */
-    .memo-footer       { margin-top: auto !important; padding-top: 4px !important; page-break-inside: avoid; }
+    /* ── Footer — pinned at a FIXED DISTANCE FROM THE SHEET TOP, not from the
+       page-box bottom. The owner prints with A4 selected in the dialog while
+       the real paper is 1/4 Demy (165×222mm): pinning to the A4 bottom (297mm)
+       pushed the tear-off past the real paper entirely. Instead the memo box
+       is 240mm tall (owner-calibrated) and the footer sits at its bottom —
+       tune #cashMemo's min-height below if the stub needs to move up/down.
+       Single page only; the multi-page rule above overrides for >25 items. ── */
+    .memo-footer       {
+        position: absolute !important;   /* anchored inside the fixed memo box */
+        bottom: 2mm !important;
+        left: 15mm !important; right: 15mm !important;
+        padding-top: 4px !important;
+        page-break-inside: avoid;
+    }
     .memo-footer-note  { font-size: .64rem !important; margin-bottom: 0 !important; line-height: 1.2 !important; }
     .memo-footer-name  { font-size: .85rem !important; }
     .memo-cut-line     { margin: 4px 0 2px !important; border-top-color: #999 !important; }
     .memo-cut-line span { font-size: .56rem !important; }
     .memo-stub-challan { font-size: .64rem !important; margin-bottom: 1px !important; }
-    .memo-stub-table   { font-size: .66rem !important; }
-    .memo-stub-table th { padding: 1px 6px !important; border-color: #999 !important; }
-    .memo-stub-table td { height: 12px !important; border-color: #aaa !important; }
+    .memo-stub-cust    { font-size: .68rem !important; margin-bottom: 2px !important; }
+    .memo-stub-cust th { padding: 1px 6px !important; border-color: #999 !important; }
+    .memo-stub-cust td { padding: 1px 6px !important; border-color: #aaa !important; }
     .memo-credit       { font-size: .58rem !important; border-top-color: #ddd !important; margin-top: 2px !important; padding-top: 1px !important; }
 }
 
