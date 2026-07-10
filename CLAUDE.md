@@ -38,9 +38,17 @@ php artisan db:seed --class=RootUserSeeder      # creates root@system.com accoun
 
 ## Tech Stack
 - Laravel 12, PHP 8.2, MySQL 8, Blade templating
-- Bengali UI (`Hind Siliguri` font)
+- Bengali UI — per-shop font picker (default `Hind Siliguri`), 14 fonts total, all self-hosted woff2 in `public/fonts/`
 - CSS: `public/css/app.css` (custom, no Tailwind)
 - No npm/Vite build step needed — CSS/JS are static files
+
+### ⚠️ RULE — ALL front-end assets self-hosted (user directive, strict)
+- **NEVER add a Google Fonts / CDN / external `<link>` or `<script>`.** Zero runtime requests to external hosts — the app must work offline and print fast on flaky shop internet.
+- Fonts → `public/fonts/*.woff2` (subset: bengali+latin only; use fontTools to convert/subset TTF→woff2)
+- JS libs → `public/js/vendor/` (turbo.min.js, pusher.min.js, chart.umd.min.js)
+- Font Awesome → `public/vendor/fontawesome/` (css + webfonts)
+- Font loading: shop pages use `partials/font-loader.blade.php` (per-shop font); root/reseller/super/login/expired/errors use `partials/base-fonts.blade.php` (Hind Siliguri + Inter)
+- Inter is latin-subset variable woff2 (`fonts/inter-latin.woff2`) — covers all weights in one face; only renders ASCII digits/labels
 
 ---
 
@@ -407,7 +415,7 @@ Stored in `sale_logs.snapshot` (JSON) with: id, sale_date, customer_name, total_
 
 ### Turbo Drive (Hotwire Turbo 8) — SPA-like navigation
 - Turbo intercepts links, AJAX-fetches the page, swaps `<body>`, fires `turbo:load` (NOT `DOMContentLoaded`).
-- Loaded via CDN `<script>` in `layouts/app.blade.php`; CSRF token injected on `turbo:before-fetch-request`.
+- Self-hosted at `public/js/vendor/turbo.min.js`, loaded in `layouts/app.blade.php`; CSRF token injected on `turbo:before-fetch-request`.
 - `data-turbo-permanent` keeps DOM elements across navigations (sidebar `#sidebar`, chat `#miniChatRoot`, backdrop `#sidebarBackdrop`, search dropdown `#gSearchDrop`, info popover).
 - All page init moved from `DOMContentLoaded` → `turbo:load`. Per-page one-time setup guarded with flags (`_autoHide`, `_animated`, etc.) since `turbo:load` fires on every visit.
 - Form pages (sales/purchases create) have `<meta name="turbo-cache-control" content="no-cache">` via `@push('styles')` to disable Turbo's cached preview.
@@ -551,6 +559,17 @@ Accessed via `\App\Models\StoreConfig::get('key', 'default')`:
 82. **Concurrency hardening** — all money mutations were already `DB::transaction` + atomic `increment()/decrement()`; closed the last gap: `previous_due` reads now use `lockForUpdate()` (SaleController store/update/approveEdit + CustomerPaymentController store) so simultaneous saves on the same customer serialize and can't print the same পূর্বের বাকী
 83. **ক্যাশ মেলানো (cash reconciliation)** — `day_closings` table (unique `(shop_id, close_date)`, `HasShopScope`); form on `/reports/day-close`: opening cash (prefilled from previous day's counted) + hand-counted cash → expected = opening + cashNet, discrepancy saved (can be negative = short); `ReportController::dayCloseReconcile()` via `reports.day-close.reconcile` (shop.admin); saved card shows breakdown + "আবার মেলান" re-opens form (updateOrCreate); গরমিল হিস্ট্রি card shows last 7 days with links
 84. **PWA (installable app)** — `public/manifest.json` (name Ruposhi POS, standalone, theme #0d9488, bn) + icons `public/icons/icon-192/512.png` (generated via PowerShell GDI+: teal rounded square, white ৳ in Nirmala UI); `public/sw.js` is **install-only — NO caching** (fetch = network passthrough; business data must stay live); SW registered in `app.js`; manifest+theme-color+apple-touch-icon links in app layout head AND login page head
+
+### Session 10 — মেমো প্রিন্ট ফিট, ১০ নতুন ফন্ট, Self-host সব asset, লাভ/দাম সতর্কতা
+85. **Sidebar highlight** — "বিক্রয় লিস্ট" nav link gets `.nav-item-highlight` (amber tint + left border; solid amber when active) — classes in `app.css`
+86. **10 new Bangla fonts** — Bornomala, Kazi Typo, Potro Sans, FN Shorif Lalon, B52 Udayan, FN Mamun Turio, Ruhul Amin, Shorif Borsha, FN Kornofuli, Sonali Borno; TTF→woff2 via Python fontTools (`f.flavor='woff2'`); only Unicode variants (Bijoy/ANSI skipped — legacy encoding renders broken); files `public/fonts/{slug}-{weight}.woff2`; wired in `font-loader` ('file'+'weights' keys), picker cards in `store-config/index`, whitelist in `StoreConfigController::updateFont()`
+87. **Cash memo fits 1/4 Demy paper (165×222mm)** — `sales/show.blade.php` print CSS: `#cashMemo` fixed-position 165mm wide, `padding: 8mm 15mm 15mm`, no fixed `@page size` (Chrome gotcha — only `@page{margin:0}`); header compacted (tagline+address one line, প্রতিষ্ঠান+প্রোপ্রাইটর one line, no "টাকা" suffix); store-name print size 1.45rem; header bottom border removed
+88. **Dynamic memo density** — PHP computes `--m-font/--m-pad/--m-lh` CSS vars from `$sale->items->count()` (9 tiers: ≤6 items → 1.00rem/3px/1.3 … >33 → 0.64rem/0/1.0); `@media print` table/tfoot rules consume via `var()`; font capped 1.0rem so long Bengali names never wrap to 2 lines; verified 3–40 items all fit one page
+89. **Self-host ALL assets** (see Tech Stack RULE) — Inter 35 Google faces→1 local latin variable; Noto/Baloo/Tiro→local bengali+latin subsets; FA/Turbo/Pusher/Chart.js vendored; new `partials/base-fonts.blade.php` for non-shop layouts; @font-face count on invoice page 60→13, external requests→0; page load AND print-preview much faster (Chrome resolves fewer faces, waits on no network)
+90. **"অতিরিক্ত লাভ!" threshold 25%→10%** — sales/create, 3 spots (row badge render, updateRow toggle, submit confirm). ⚠️ PARKED for later: user says rice profit is flat ৳/bag (~200–300) regardless of bag price, so % is wrong at both ends — likely future change to flat per-bag taka threshold (option: store-config per-shop limit)
+91. **"দাম বেড়েছে!" warning on পণ্য গ্রহণ** — purchases/create: `priceJump(c)` helper — entered price >5% above `c.lastPrice` (previous purchase price) → amber row badge, title shows %; only warns on increase, hidden when price lowered/equal; toggled in `updateRowTotal()`
+92. **"নতুন পণ্য গ্রহণ" button** — purchases/show action row: green btn-primary → `purchases.create` (rapid consecutive receives)
+93. **.gitignore reference artifacts** — `/print.html` + `/*_files/` ignored (old-system reference pages kept on disk, never committed)
 
 ---
 
