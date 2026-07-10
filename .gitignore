@@ -23,3 +23,7 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 .claude/
+
+# Local reference artifacts — kept on disk for reference, never committed
+/print.html
+/*_files/
