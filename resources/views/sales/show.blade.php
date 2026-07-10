@@ -9,6 +9,25 @@
     $itemsSubtotal = $sale->items->sum('subtotal');
     $grandTotal    = $sale->total_amount + $sale->previous_due;
     $remaining     = $grandTotal - $sale->paid_amount;
+
+    /* ── Dynamic print density ──────────────────────────────────────────
+       Fewer line items → bigger font & taller rows so the memo fills the
+       1/4 Demy sheet instead of leaving a big blank bottom; more items →
+       shrink so everything still fits on one page. The values below feed
+       CSS vars on #cashMemo, consumed by the @media print rules.        */
+    /* Font is capped at 1.0rem — beyond that the long Bengali item names wrap to
+       two lines and blow the row height out. Values below were print-simulated
+       across 3–40 items: no overflow, no wrapping, one page throughout. */
+    $itemCount = $sale->items->count();
+    if     ($itemCount <= 6)  { $mFont='1.00'; $mPad='3'; $mLh='1.3'; }
+    elseif ($itemCount <= 9)  { $mFont='0.95'; $mPad='3'; $mLh='1.3'; }
+    elseif ($itemCount <= 12) { $mFont='0.90'; $mPad='2'; $mLh='1.25'; }
+    elseif ($itemCount <= 16) { $mFont='0.84'; $mPad='2'; $mLh='1.2'; }
+    elseif ($itemCount <= 20) { $mFont='0.80'; $mPad='1'; $mLh='1.15'; }
+    elseif ($itemCount <= 24) { $mFont='0.76'; $mPad='1'; $mLh='1.1'; }
+    elseif ($itemCount <= 28) { $mFont='0.72'; $mPad='0'; $mLh='1.1'; }
+    elseif ($itemCount <= 33) { $mFont='0.68'; $mPad='0'; $mLh='1.05'; }
+    else                      { $mFont='0.64'; $mPad='0'; $mLh='1.0'; }
 @endphp
 
 {{-- Action buttons (no-print) --}}
@@ -42,7 +61,7 @@
     </form>
 </div>
 
-<div class="cash-memo" id="cashMemo">
+<div class="cash-memo" id="cashMemo" style="--m-font:{{ $mFont }}rem; --m-pad:{{ $mPad }}px; --m-lh:{{ $mLh }};">
 
     {{-- ── STORE HEADER ─────────────────────────────────────────── --}}
     <div class="memo-header">
@@ -67,11 +86,9 @@
             @if($store['owner'])
             <div class="memo-owner">প্রোঃ {{ $store['owner'] }}</div>
             @endif
-            @if($store['tagline'])
-            <div class="memo-tagline">{{ $store['tagline'] }}</div>
-            @endif
-            @if($store['address'])
-            <div class="memo-address">{{ $store['address'] }}</div>
+            @if($store['tagline'] || $store['address'])
+            {{-- tagline + address on ONE line — saves a full header row on the small memo paper --}}
+            <div class="memo-tagline">{{ $store['tagline'] }}@if($store['tagline'] && $store['address'])<span class="memo-tagline-sep">, </span>@endif{{ $store['address'] }}</div>
             @endif
         </div>
 
@@ -86,10 +103,13 @@
         @if($sale->customer)
             <div class="memo-customer-row">
                 <div class="memo-customer-left">
-                    <div class="memo-meta-line"><span class="memo-meta-key">প্রতিষ্ঠানঃ</span> {{ $sale->customer->name }}</div>
-                    @if($sale->customer->proprietor)
-                    <div class="memo-meta-line"><span class="memo-meta-key">প্রোপ্রাইটরঃ</span> {{ $sale->customer->proprietor }}</div>
-                    @endif
+                    {{-- প্রতিষ্ঠান + প্রোপ্রাইটর on one line — 3 lines → 2 on the small memo paper --}}
+                    <div class="memo-meta-line">
+                        <span class="memo-meta-key">প্রতিষ্ঠানঃ</span> {{ $sale->customer->name }}
+                        @if($sale->customer->proprietor)
+                        <span class="memo-meta-key" style="margin-left:12px;min-width:0">প্রোপ্রাইটরঃ</span> {{ $sale->customer->proprietor }}
+                        @endif
+                    </div>
                     <div class="memo-meta-line"><span class="memo-meta-key">ঠিকানাঃ</span> {{ $sale->customer->address ?? '' }}</div>
                 </div>
                 @if($sale->customer->phone)
@@ -99,8 +119,10 @@
                 @endif
             </div>
         @else
-            <div class="memo-meta-line"><span class="memo-meta-key">প্রতিষ্ঠানঃ</span> ওয়াক-ইন কাস্টমার</div>
-            <div class="memo-meta-line"><span class="memo-meta-key">প্রোপ্রাইটরঃ</span></div>
+            <div class="memo-meta-line">
+                <span class="memo-meta-key">প্রতিষ্ঠানঃ</span> ওয়াক-ইন কাস্টমার
+                <span class="memo-meta-key" style="margin-left:12px;min-width:0">প্রোপ্রাইটরঃ</span>
+            </div>
             <div class="memo-meta-line"><span class="memo-meta-key">ঠিকানাঃ</span></div>
         @endif
     </div>
@@ -127,7 +149,7 @@
                 <td>{{ $si->item->name }}</td>
                 <td class="tc">{{ $kg }}</td>
                 <td class="tr">{{ number_format($si->price, 0) }}</td>
-                <td class="tr">{{ number_format($si->subtotal, 0) }} টাকা</td>
+                <td class="tr">{{ number_format($si->subtotal, 0) }}</td>
             </tr>
             @empty
             <tr>
@@ -196,7 +218,7 @@
     </table>
 
     @if(\App\Support\BanglaWords::taka($sale->paid_amount) !== '')
-    <div style="margin-top:6px;font-size:.85rem;color:#333">
+    <div class="memo-words" style="margin-top:6px;font-size:.85rem;color:#333">
         <strong>কথায় (পরিশোধ):</strong> {{ \App\Support\BanglaWords::taka($sale->paid_amount) }} মাত্র
     </div>
     @endif
@@ -275,7 +297,6 @@
 .memo-header {
     position: relative;
     text-align: center;
-    border-bottom: 2px solid #111;
     padding-bottom: 8px;
     margin-bottom: 7px;
 }
@@ -510,41 +531,53 @@
         width: 165mm !important;
         min-height: 222mm !important;   /* full 1/4 Demy sheet — @page margin is 0, padding below keeps content off the red border */
         box-sizing: border-box !important;
-        padding: 15mm !important;       /* border sits ~12mm in — 15mm clears it with a 3mm safety gap; usable area ≈ 135mm × 192mm */
+        padding: 8mm 15mm 15mm !important;  /* top trimmed to 8mm (owner's print test — minimal gap above "ক্যাশ মেমো"); sides/bottom stay 15mm to clear the red border */
         display: flex !important;
         flex-direction: column !important;
         margin: 0 auto !important;
         max-width: 100% !important;
         box-shadow: none !important;
-        font-size: .82rem !important;
+        font-size: .78rem !important;
+        line-height: 1.3 !important;
         font-family: var(--bn-font, 'Hind Siliguri'), sans-serif !important;
         color: #111 !important;
         background: #fff !important;
     }
 
-    /* ── Typography scale-down ── */
-    .memo-store-name   { font-size: 1.3rem !important; }
-    .memo-owner        { font-size: .76rem !important; }
-    .memo-tagline      { font-size: .72rem !important; }
-    .memo-address      { font-size: .70rem !important; }
-    .memo-phones-right { font-size: .74rem !important; line-height: 1.6 !important; }
-    .memo-title-label  { font-size: .70rem !important; }
+    /* ── Typography scale-down + tight header.
+       Bengali fonts carry extra internal leading, so the store name / label boxes
+       print taller than the glyphs need. Pulling line-height to ~1.0 collapses that
+       top/bottom gap around "ক্যাশ মেমো" and the store name. ── */
+    .memo-header       { padding-bottom: 2px !important; margin-bottom: 2px !important; }
+    .memo-store-name   { font-size: 1.45rem !important; line-height: 1.05 !important; }
+    .memo-owner        { font-size: .70rem !important; margin-top: 0 !important; line-height: 1.05 !important; }
+    .memo-tagline      { font-size: .66rem !important; line-height: 1.05 !important; }
+    .memo-phones-right { font-size: .70rem !important; line-height: 1.25 !important; }
+    /* "ক্যাশ মেমো" label moves to the top-LEFT corner (mirror of the phones on the
+       right) — frees a full line above the store name */
+    .memo-title-label  { position: absolute !important; top: 0 !important; left: 0 !important;
+                         font-size: .62rem !important; margin-bottom: 0 !important; line-height: 1.0 !important; }
 
-    .memo-meta         { font-size: .78rem !important; line-height: 1.55 !important; }
-    .memo-meta-row-top { font-size: .78rem !important; }
-    .memo-meta-key     { min-width: 80px !important; }
+    .memo-meta         { font-size: .72rem !important; line-height: 1.3 !important;
+                         padding-bottom: 2px !important; margin-bottom: 2px !important; }
+    .memo-meta-row-top { font-size: .72rem !important; margin-bottom: 0 !important; }
+    .memo-meta-key     { min-width: 0 !important; }
+    .memo-customer-phone { font-size: .72rem !important; padding-top: 0 !important; }
 
-    /* ── Table ── */
-    .memo-table        { font-size: .78rem !important; }
-    .memo-table th     { padding: 3px 5px !important; }
-    .memo-table tbody td { padding: 3px 5px !important; border-color: #bbb !important; }
+    /* ── Table — font/row-height driven by the dynamic --m-* vars set on
+       #cashMemo (PHP picks them from the item count). Fewer items → bigger;
+       more items → smaller. Left/right padding stays 4px so text keeps off
+       the borders; only the vertical padding scales. Fallbacks = tight. ── */
+    .memo-table        { font-size: var(--m-font, .70rem) !important; line-height: var(--m-lh, 1.0) !important; }
+    .memo-table th     { padding: var(--m-pad, 1px) 4px !important; line-height: var(--m-lh, 1.0) !important; }
+    .memo-table tbody td { padding: var(--m-pad, 0px) 4px !important; line-height: var(--m-lh, 1.0) !important; border-color: #bbb !important; }
     .memo-table tbody tr:nth-child(even) { background: #fff !important; }
 
-    /* ── Tfoot ── */
-    .tfoot-qty td  { padding: 3px 5px !important; font-size: .78rem !important; border-color: #ddd !important; }
-    .tfoot-row td  { padding: 3px 5px !important; font-size: .78rem !important; border-color: #ddd !important; }
-    .tfoot-grand   { font-size: .86rem !important; }
-    .tfoot-remaining { font-size: .90rem !important; }
+    /* ── Tfoot — same dynamic scale so the summary matches the items ── */
+    .tfoot-qty td  { padding: var(--m-pad, 0px) 4px !important; line-height: var(--m-lh, 1.0) !important; font-size: var(--m-font, .72rem) !important; border-color: #ddd !important; }
+    .tfoot-row td  { padding: var(--m-pad, 0px) 4px !important; line-height: var(--m-lh, 1.0) !important; font-size: var(--m-font, .72rem) !important; border-color: #ddd !important; }
+    .tfoot-grand   { font-size: calc(var(--m-font, .72rem) + .08rem) !important; }
+    .tfoot-remaining { font-size: calc(var(--m-font, .72rem) + .12rem) !important; }
     /* Ink-saving: white background, dark text — the highlighted rows keep
        their emphasis with borders/weight instead of tinted fills */
     .tfoot-balance-row td { background: #fff !important; }
@@ -555,18 +588,22 @@
 
     tfoot { page-break-inside: avoid; }
 
-    /* ── Footer ── */
-    .memo-footer       { margin-top: auto !important; padding-top: 10px !important; page-break-inside: avoid;
-                         position: relative !important; top: 70px !important; }  /* nudge the tear-off block 70px further down per owner's print test */
-    .memo-footer-note  { font-size: .7rem !important; margin-bottom: 0 !important; }
-    .memo-footer-name  { font-size: 1rem !important; }
-    .memo-cut-line     { margin: 7px 0 4px !important; border-top-color: #999 !important; }
-    .memo-cut-line span { font-size: .6rem !important; }
-    .memo-stub-challan { font-size: .7rem !important; margin-bottom: 2px !important; }
-    .memo-stub-table   { font-size: .72rem !important; }
-    .memo-stub-table th { padding: 2px 6px !important; border-color: #999 !important; }
-    .memo-stub-table td { height: 18px !important; border-color: #aaa !important; }
-    .memo-credit       { font-size: .62rem !important; border-top-color: #ddd !important; margin-top: 4px !important; padding-top: 2px !important; }
+    /* ── কথায় / মন্তব্য lines ── */
+    .memo-words        { margin-top: 3px !important; font-size: .72rem !important; }
+
+    /* ── Footer — margin-top:auto pins it to the bottom of the sheet; with the
+       dynamic item sizing the content now fills the page, so the old fixed 70px
+       downward nudge is gone (it would push the tear-off off the sheet). ── */
+    .memo-footer       { margin-top: auto !important; padding-top: 4px !important; page-break-inside: avoid; }
+    .memo-footer-note  { font-size: .64rem !important; margin-bottom: 0 !important; line-height: 1.2 !important; }
+    .memo-footer-name  { font-size: .85rem !important; }
+    .memo-cut-line     { margin: 4px 0 2px !important; border-top-color: #999 !important; }
+    .memo-cut-line span { font-size: .56rem !important; }
+    .memo-stub-challan { font-size: .64rem !important; margin-bottom: 1px !important; }
+    .memo-stub-table   { font-size: .66rem !important; }
+    .memo-stub-table th { padding: 1px 6px !important; border-color: #999 !important; }
+    .memo-stub-table td { height: 12px !important; border-color: #aaa !important; }
+    .memo-credit       { font-size: .58rem !important; border-top-color: #ddd !important; margin-top: 2px !important; padding-top: 1px !important; }
 }
 
 /* ══ Mobile view (screen only) ══════════════════════════════════ */

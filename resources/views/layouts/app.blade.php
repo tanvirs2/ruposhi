@@ -56,14 +56,12 @@
     })();
     </script>
     <title>@yield('title', 'ড্যাশবোর্ড') — Inventory</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     @include('partials.font-loader')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
-    <script src="https://js.pusher.com/8.2.0/pusher.min.js" defer></script>
-    {{-- Turbo Drive — SPA-like navigation without full page reloads --}}
-    <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8/dist/turbo.es2017-umd.js"></script>
+    <script src="{{ asset('js/vendor/pusher.min.js') }}" defer></script>
+    {{-- Turbo Drive — SPA-like navigation without full page reloads (self-hosted) --}}
+    <script src="{{ asset('js/vendor/turbo.min.js') }}"></script>
     <script>
     // Pass CSRF token on every Turbo fetch so Laravel doesn't reject non-GET requests
     document.addEventListener('turbo:before-fetch-request', function(e) {
@@ -250,7 +248,7 @@
 
         <div class="nav-section">
             <span class="nav-section-label">লেনদেন</span>
-            <a href="{{ route('sales.index') }}" class="nav-item {{ $_seg==='sales' ? 'active' : '' }}">
+            <a href="{{ route('sales.index') }}" class="nav-item nav-item-highlight {{ $_seg==='sales' ? 'active' : '' }}">
                 <span class="nav-icon"><i class="fas fa-receipt"></i></span>
                 <span class="nav-label">বিক্রয় লিস্ট</span>
                 <button type="button" class="info-btn" data-info="নতুন বিক্রয় এন্ট্রি করুন। পণ্য নির্বাচন করুন, কাস্টমার সেট করুন, পরিশোধ ও বাকী রেকর্ড করুন। বিক্রয়ে স্টক স্বয়ংক্রিয়ভাবে কমবে।">i</button>

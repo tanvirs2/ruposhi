@@ -210,7 +210,11 @@ class StoreConfigController extends Controller
 
     public function updateFont(Request $request)
     {
-        $allowed = ['hind_siliguri', 'noto_sans', 'baloo_da_2', 'tiro_bangla'];
+        $allowed = [
+            'hind_siliguri', 'noto_sans', 'baloo_da_2', 'tiro_bangla', 'bornomala',
+            'kazi_typo', 'potro_sans', 'fn_shorif_lalon', 'b52_udayan', 'fn_mamun_turio',
+            'ruhul_amin', 'shorif_borsha', 'fn_kornofuli', 'sonali_borno',
+        ];
         $key = in_array($request->font, $allowed) ? $request->font : 'hind_siliguri';
         StoreConfig::set('font_family', $key);
         return response()->json(['success' => true]);

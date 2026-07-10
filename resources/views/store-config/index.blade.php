@@ -3,8 +3,39 @@
 @section('page-title', 'স্টোর কনফিগারেশন')
 
 @section('content')
-{{-- Load all Google Font options for the font-picker tab preview --}}
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&family=Baloo+Da+2:wght@400;500;600;700;800&family=Tiro+Bangla&display=swap" rel="stylesheet">
+{{-- Ex-Google fonts (Noto/Baloo/Tiro) — now self-hosted, bengali+latin subset — for picker preview --}}
+<style>
+@php $bnR='U+0980-09FE,U+0951-0952,U+0964-0965,U+200C-200D,U+25CC'; @endphp
+@foreach([['Noto Sans Bengali','noto_sans'],['Baloo Da 2','baloo_da'],['Tiro Bangla','tiro_bangla']] as $ef)
+@font-face { font-family:'{{ $ef[0] }}'; font-weight:400; font-display:swap;
+    src:url('{{ asset('fonts/' . $ef[1] . '-bengali.woff2') }}') format('woff2'); unicode-range:{{ $bnR }}; }
+@font-face { font-family:'{{ $ef[0] }}'; font-weight:400; font-display:swap;
+    src:url('{{ asset('fonts/' . $ef[1] . '-latin.woff2') }}') format('woff2'); unicode-range:U+0000-00FF; }
+@endforeach
+</style>
+{{-- Fonts not on Google Fonts — self-hosted so their picker cards preview correctly too --}}
+@php
+$selfHostedFonts = [
+    ['css' => 'Bornomala',       'file' => 'bornomala',       'weights' => [400, 700]],
+    ['css' => 'Kazi Typo',       'file' => 'kazi_typo',       'weights' => [400, 700]],
+    ['css' => 'Potro Sans Bangla', 'file' => 'potro_sans',    'weights' => [400, 700]],
+    ['css' => 'FN Shorif Lalon', 'file' => 'fn_shorif_lalon', 'weights' => [400]],
+    ['css' => 'B52 Udayan',      'file' => 'b52_udayan',      'weights' => [400]],
+    ['css' => 'FN Mamun Turio',  'file' => 'fn_mamun_turio',  'weights' => [400, 700]],
+    ['css' => 'Ruhul Amin',      'file' => 'ruhul_amin',      'weights' => [400]],
+    ['css' => 'Shorif Borsha',   'file' => 'shorif_borsha',   'weights' => [400]],
+    ['css' => 'FN Kornofuli',    'file' => 'fn_kornofuli',    'weights' => [400]],
+    ['css' => 'Sonali Borno',    'file' => 'sonali_borno',    'weights' => [400]],
+];
+@endphp
+<style>
+@foreach($selfHostedFonts as $sf)
+@foreach($sf['weights'] as $w)
+@font-face { font-family:'{{ $sf['css'] }}'; font-style:normal; font-weight:{{ $w }}; font-display:swap;
+    src:url('{{ asset('fonts/' . $sf['file'] . '-' . $w . '.woff2') }}') format('woff2'); }
+@endforeach
+@endforeach
+</style>
 
 {{-- ── Tabs ─────────────────────────────────────────────────── --}}
 <div class="config-tabs">
@@ -262,6 +293,16 @@
                 ['key'=>'noto_sans',    'name'=>'Noto Sans Bengali', 'label'=>'নটো সান্স বাংলা', 'desc'=>'Google · অত্যন্ত পরিষ্কার'],
                 ['key'=>'baloo_da_2',   'name'=>'Baloo Da 2',        'label'=>'বালু দা ২',        'desc'=>'Google · গোলাকার ও বন্ধুত্বপূর্ণ'],
                 ['key'=>'tiro_bangla',  'name'=>'Tiro Bangla',       'label'=>'তিরো বাংলা',       'desc'=>'Google · ঐতিহ্যবাহী ও মার্জিত'],
+                ['key'=>'bornomala',    'name'=>'Bornomala',         'label'=>'বর্ণমালা',         'desc'=>'স্বতন্ত্র বাংলা ফন্ট'],
+                ['key'=>'kazi_typo',       'name'=>'Kazi Typo',         'label'=>'কাজী টাইপো',       'desc'=>'বোল্ড ও শক্তিশালী'],
+                ['key'=>'potro_sans',      'name'=>'Potro Sans Bangla', 'label'=>'পত্র সান্স বাংলা', 'desc'=>'পরিষ্কার ও আধুনিক'],
+                ['key'=>'fn_shorif_lalon', 'name'=>'FN Shorif Lalon',   'label'=>'শরীফ লালন',        'desc'=>'ঐতিহ্যবাহী হাতের লেখা'],
+                ['key'=>'b52_udayan',      'name'=>'B52 Udayan',        'label'=>'উদয়ন',            'desc'=>'ক্লাসিক বাংলা'],
+                ['key'=>'fn_mamun_turio',  'name'=>'FN Mamun Turio',    'label'=>'মামুন তুরিও',      'desc'=>'নজরকাড়া ও স্বতন্ত্র'],
+                ['key'=>'ruhul_amin',      'name'=>'Ruhul Amin',        'label'=>'রুহুল আমিন',       'desc'=>'সাদামাটা ও পরিষ্কার'],
+                ['key'=>'shorif_borsha',   'name'=>'Shorif Borsha',     'label'=>'শরীফ বর্ষা',       'desc'=>'হাতের লেখার ধাঁচ'],
+                ['key'=>'fn_kornofuli',    'name'=>'FN Kornofuli',      'label'=>'কর্ণফুলী',         'desc'=>'সাবলীল ও কমপ্যাক্ট'],
+                ['key'=>'sonali_borno',    'name'=>'Sonali Borno',      'label'=>'সোনালী বর্ণ',      'desc'=>'উজ্জ্বল ও বিশদ'],
             ];
             @endphp
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px" id="fontPickerGrid">

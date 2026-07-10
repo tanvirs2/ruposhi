@@ -232,6 +232,23 @@ a { text-decoration: none; color: inherit; }
     box-shadow: 0 4px 12px rgba(13,148,136,.4);
 }
 
+/* বিক্রয় লিস্ট — always-on warm highlight so this frequently-used link stands out from the rest */
+.nav-item-highlight {
+    background: rgba(245,158,11,.14);
+    color: #fcd34d;
+    border-left: 3px solid #f59e0b;
+    padding-left: 7px;
+}
+.nav-item-highlight:hover {
+    background: rgba(245,158,11,.22);
+    color: #fde68a;
+}
+.nav-item-highlight.active {
+    background: #f59e0b;
+    color: #1a1207;
+    box-shadow: 0 4px 12px rgba(245,158,11,.4);
+}
+
 .nav-icon {
     width: 20px;
     text-align: center;
