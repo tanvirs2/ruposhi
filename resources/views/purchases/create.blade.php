@@ -719,6 +719,12 @@ function useLastPrice(id) {
     updateSummary();
 }
 
+// Price-jump warning: entered purchase price is >5% above the previous purchase price
+function priceJump(c) {
+    const PRICE_JUMP_PCT = 5;
+    return c.priceEntered && c.lastPrice > 0 && (c.price - c.lastPrice) / c.lastPrice * 100 > PRICE_JUMP_PCT;
+}
+
 // Update only affected cells — no full re-render, focus stays intact
 function updateRowTotal(id) {
     const item = cart.find(c => c.id === id);
@@ -732,6 +738,13 @@ function updateRowTotal(id) {
     if (newStockCell) newStockCell.textContent = newStock + ' বস্তা';
     if (scNew)        scNew.textContent        = newStock + ' বস্তা';
     if (scDelta)      scDelta.textContent      = '(+' + item.qty + ')';
+    // Price-jump warning badge
+    const pw = document.getElementById('price-warn-' + id);
+    if (pw) {
+        const j = priceJump(item);
+        pw.style.display = j ? 'inline-flex' : 'none';
+        if (j) pw.title = `আগের চেয়ে ${((item.price - item.lastPrice) / item.lastPrice * 100).toFixed(1)}% বেশি`;
+    }
 }
 
 function renderCart() {
@@ -771,6 +784,13 @@ function renderCart() {
                 <input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.priceEntered ? c.price : ''}"
                     style="width:100px"
                     oninput="updatePrice(${c.id},this.value)" class="inline-input">
+                ${(()=>{ const j=priceJump(c); return `<span id="price-warn-${c.id}"
+                    title="${j?`আগের চেয়ে ${((c.price-c.lastPrice)/c.lastPrice*100).toFixed(1)}% বেশি`:''}"
+                    style="display:${j?'inline-flex':'none'};align-items:center;gap:3px;margin-left:5px;
+                           font-size:.72rem;font-weight:700;color:#92400e;
+                           background:#fef9c3;border:1px solid #fde68a;
+                           border-radius:20px;padding:1px 7px;vertical-align:middle;white-space:nowrap">
+                    ⚠ দাম বেড়েছে!</span>`; })()}
                 ${hint}
             </td>
             <td id="row-newstock-${c.id}" class="new-stock-cell">${newStock} বস্তা</td>

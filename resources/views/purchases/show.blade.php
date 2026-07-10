@@ -225,6 +225,7 @@
 
     <div class="form-actions no-print" style="margin-top:20px">
         <a href="{{ route('purchases.index') }}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> ফিরে যান</a>
+        <a href="{{ route('purchases.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> নতুন পণ্য গ্রহণ</a>
         <button onclick="window.print()" class="btn btn-secondary"><i class="fas fa-print"></i> প্রিন্ট</button>
         <a href="{{ route('purchases.edit', $purchase) }}" class="btn" style="background:#fef9c3;color:#92400e;border:1px solid #fde68a">
             <i class="fas fa-pen-to-square"></i> সংশোধন

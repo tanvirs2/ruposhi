@@ -875,8 +875,8 @@ function updateRowTotal(id) {
         lossWarn.style.display = isLoss ? 'inline-flex' : 'none';
     }
 
-    // ── Excessive profit warning per row (>25% margin) ────────
-    const EXCESS_PCT = 25;
+    // ── Excessive profit warning per row (>10% margin) ────────
+    const EXCESS_PCT = 10;
     const excessWarn = document.getElementById('excess-warn-' + id);
     if (excessWarn) {
         const pct = item.cost > 0 ? (item.price - item.cost) / item.cost * 100 : 0;
@@ -967,7 +967,7 @@ function renderCart() {
                            border-radius:20px;padding:1px 7px;vertical-align:middle;white-space:nowrap">
                     ⚠ লোকসান!
                 </span>
-                ${(()=>{ const pct=c.cost>0?(c.price-c.cost)/c.cost*100:0; const isEx=c.priceEntered&&c.cost>0&&pct>25; return `<span id="excess-warn-${c.id}"
+                ${(()=>{ const pct=c.cost>0?(c.price-c.cost)/c.cost*100:0; const isEx=c.priceEntered&&c.cost>0&&pct>10; return `<span id="excess-warn-${c.id}"
                     title="${isEx?`লাভ: ${pct.toFixed(1)}%`:''}"
                     style="display:${isEx?'inline-flex':'none'};
                            align-items:center;gap:3px;margin-left:5px;
@@ -1355,7 +1355,7 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
     _lossConfirmPending = false;
 
     // ── Excessive profit warning on submit ───────────────────
-    const EXCESS_PCT = 25;
+    const EXCESS_PCT = 10;
     const excessItems = cart.filter(c => c.priceEntered && c.cost > 0 && (c.price - c.cost) / c.cost * 100 > EXCESS_PCT);
     if (excessItems.length && !_excessConfirmPending) {
         e.preventDefault();
