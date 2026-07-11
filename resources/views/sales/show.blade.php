@@ -536,7 +536,15 @@
         left: 0 !important;
         right: 0 !important;
         width: 165mm !important;
-        min-height: 230mm !important;   /* owner-calibrated: real paper is 1/4 Demy 165×222mm but dialog uses A4 — 230mm puts the tear-off at the paper's true bottom edge (printer feed offset). Tune this single value to move the stub up/down. */
+        /* EXPLICIT height (not min-height): a position:fixed box collapses to its
+           content height in real print, so with min-height the footer floated up
+           for short memos (few items) but sat at the bottom for full ones (20+).
+           A fixed height forces the box to always be 230mm → the absolute-pinned
+           tear-off lands at the paper's bottom for ANY item count. Content is
+           always ≤20 items (< 230mm) so nothing is clipped. Tune this single
+           value to move the whole tear-off up/down. */
+        height: 230mm !important;
+        min-height: 230mm !important;
         box-sizing: border-box !important;
         padding: 8mm 15mm 15mm !important;  /* top trimmed to 8mm (owner's print test — minimal gap above "ক্যাশ মেমো"); sides/bottom stay 15mm to clear the red border */
         display: flex !important;
