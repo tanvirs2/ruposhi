@@ -8,6 +8,12 @@
      font: the print CSS forces the memo's DATA sections (meta/table/footer) to
      Hind Siliguri so the one-page fit calibration holds for every shop font. --}}
 @include('partials.base-fonts')
+{{-- Shobuj Bhulua — self-hosted, used ONLY for the store-name heading on this memo --}}
+<link rel="preload" href="{{ asset('fonts/shobuj_bhulua.woff2') }}" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face { font-family:'Shobuj Bhulua'; font-style:normal; font-weight:400 900; font-display:block;
+    src:url('{{ asset('fonts/shobuj_bhulua.woff2') }}') format('woff2'); }
+</style>
 <script>
 // Force-download the print faces NOW. @font-face fetches lazily on first USE —
 // when the shop font isn't Hind Siliguri, print is the first use, so the first
@@ -19,6 +25,7 @@
     ['400', '600', '700'].forEach(function (w) {
         document.fonts.load(w + ' 1rem "Hind Siliguri"', 'বাকী মোট ০১২৩ 0123 ৳');
     });
+    document.fonts.load('700 1rem "Shobuj Bhulua"', 'মেসার্স রূপসী বাংলা ট্রেডার্স');
 })();
 </script>
 @php
@@ -28,16 +35,16 @@
     $remaining     = $grandTotal - $sale->paid_amount;
 
     /* ── Print density — ONE fixed size, owner's directive ─────────────
-       No dynamic scaling: staff read the same size every day. 0.80rem rows
-       are 4.45mm → 25 rows need ~111mm of the ~121mm row budget (measured
-       on real data with a full 7-row tfoot). Owner capped one-page memos at
-       25 rows: beyond that the text would get too small to read, so >25
-       flows to 2 pages instead (same layout, slightly bigger font since
-       there's room). CSS vars consumed by the @media print rules. */
+       No dynamic scaling: staff read the same size every day. Owner capped
+       one-page memos at 20 rows (was 25 — 25 printed too small/tight). With
+       only 20 rows the fixed font is 0.90rem (bigger, easier to read; ~5mm
+       rows × 20 ≈ 100mm, well inside the ~121mm row budget with a full 7-row
+       tfoot). >20 rows flows to 2 pages (same layout, still readable font).
+       CSS vars consumed by the @media print rules. */
     $itemCount = $sale->items->count();
-    $memoMulti = $itemCount > 25;
-    if ($memoMulti) { $mFont = '0.95'; $mPad = '2'; $mLh = '1.25'; }
-    else            { $mFont = '0.80'; $mPad = '1'; $mLh = '1.15'; }
+    $memoMulti = $itemCount > 20;
+    if ($memoMulti) { $mFont = '0.92'; $mPad = '2'; $mLh = '1.2'; }
+    else            { $mFont = '0.92'; $mPad = '2'; $mLh = '1.2'; }
 @endphp
 
 {{-- Action buttons (no-print) --}}
@@ -107,7 +114,10 @@
     {{-- ── INVOICE META ─────────────────────────────────────────── --}}
     <div class="memo-meta">
         <div class="memo-meta-row-top">
-            <span><strong>চালান নং -</strong> {{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</span>
+            <span>
+                <strong>চালান নং -</strong> {{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}
+                <span class="memo-operator"><strong>বিক্রেতাঃ</strong> {{ $sale->user?->name ?? '—' }}</span>
+            </span>
             <span><strong>তারিখঃ</strong> {{ $sale->sale_date->format('Y-m-d') }} - {{ $sale->created_at->format('h:i:sa') }}</span>
         </div>
         @if($sale->customer)
@@ -248,29 +258,19 @@
         {{-- N.B. note --}}
         <div class="memo-footer-note">বিঃ দ্রঃ ক্রটিপূর্ণ পণ্য ফেরৎযোগ্য।</div>
 
-        {{-- Store name repeated, big & bold --}}
-        <div class="memo-footer-name">{{ $store['name'] }}</div>
-
         {{-- Tear-off cut line --}}
         <div class="memo-cut-line"><span>✂ ছিঁড়ে নিন</span></div>
 
-        {{-- Counterfoil stub — challan no + customer/date (like the old system's tear-off) --}}
+        {{-- Store name repeated, big & bold — BELOW the cut line, on the kept stub --}}
+        <div class="memo-footer-name">{{ $store['name'] }}</div>
+
+        {{-- Counterfoil stub — challan no + customer/date on ONE line (saves a line vs the old 2-row table) --}}
         <div class="memo-stub">
-            <div class="memo-stub-challan"><strong>চালান নং -</strong> {{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</div>
-            <table class="memo-stub-cust">
-                <thead>
-                    <tr>
-                        <th class="stub-cust-name">কাস্টমার নাম</th>
-                        <th>তারিখ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="stub-cust-name">{{ $sale->customer->name ?? 'ওয়াক-ইন কাস্টমার' }}</td>
-                        <td>{{ $sale->sale_date->format('Y-m-d') }} - {{ $sale->created_at->format('h:i:sa') }}</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="memo-stub-line">
+                <span><strong>চালান নং -</strong> {{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</span>
+                <span><strong>কাস্টমারঃ</strong> {{ $sale->customer->name ?? 'ওয়াক-ইন কাস্টমার' }}</span>
+                <span><strong>তারিখঃ</strong> {{ $sale->sale_date->format('Y-m-d') }} - {{ $sale->created_at->format('h:i:sa') }}</span>
+            </div>
         </div>
 
         {{-- Our credit line --}}
@@ -351,6 +351,7 @@
     vertical-align: middle;
 }
 .memo-store-name {
+    font-family: 'Shobuj Bhulua', var(--bn-font, 'Hind Siliguri'), sans-serif;   /* dedicated heading font (owner) */
     font-size: 1.65rem;
     font-weight: 900;
     color: #111;
@@ -375,6 +376,7 @@
     font-size: .83rem;
     margin-bottom: 1px;
 }
+.memo-operator { margin-left: 16px; }   /* operator (বিক্রেতা) inline after চালান নং — no extra row */
 .memo-meta-line { display: block; }
 .memo-meta-key {
     font-weight: 700;
@@ -463,6 +465,7 @@
     color: #111;
     line-height: 1.15;
     letter-spacing: .01em;
+    margin-bottom: 10px;   /* clear the "✂ ছিঁড়ে নিন" line — Bengali descenders were touching it */
 }
 
 /* Tear-off cut line */
@@ -471,6 +474,7 @@
     text-align: center;
     border-top: 1.5px dashed #888;
     margin: 8px 0 5px;
+    top: 6px;   /* nudge the dashed line down (owner request) — position shift only, doesn't change spacing */
 }
 .memo-cut-line span {
     position: relative;
@@ -484,25 +488,17 @@
 
 /* Blank counterfoil stub */
 .memo-stub { text-align: left; }
-.memo-stub-challan { font-size: .76rem; margin-bottom: 3px; }
-/* Customer name + date on the stub (mirrors the old system's tear-off) */
-.memo-stub-cust {
-    width: 100%;
-    border-collapse: collapse;
+/* Challan + customer + date on ONE line (tear-off stub) — bordered box */
+.memo-stub-line {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px 14px;
     font-size: .8rem;
-    margin-bottom: 4px;
+    border: 1px solid #ccc;
+    padding: 4px 8px;
+    border-radius: 4px;
 }
-.memo-stub-cust th {
-    padding: 2px 8px;
-    font-weight: 700;
-    text-align: center;
-    border: 1px solid #bbb;
-    color: #333;
-    background: #f1f5f9;
-}
-.memo-stub-cust td { padding: 2px 8px; border: 1px solid #ccc; }
-.stub-cust-name { width: 45%; text-align: center; }
-/* (blank পরিমাণ/আইটেম বিবরণ counterfoil table removed per owner) */
 
 /* Our credit line */
 .memo-credit {
@@ -597,8 +593,8 @@
        print taller than the glyphs need. Pulling line-height to ~1.0 collapses that
        top/bottom gap around "ক্যাশ মেমো" and the store name. ── */
     .memo-header       { padding-bottom: 2px !important; margin-bottom: 2px !important; }
-    .memo-store-name   { font-size: 1.7rem !important; line-height: 1.05 !important; }
-    .memo-owner        { font-size: .70rem !important; margin-top: 0 !important; line-height: 1.05 !important; }
+    .memo-store-name   { font-family: 'Shobuj Bhulua', 'Hind Siliguri', sans-serif !important; font-size: 1.85rem !important; line-height: 1.05 !important; margin-top: 20px !important; }
+    .memo-owner        { font-size: .78rem !important; font-weight: 700 !important; margin-top: 0 !important; line-height: 1.05 !important; }
     .memo-tagline      { font-size: .66rem !important; line-height: 1.05 !important; }
     .memo-phones-right { font-size: .70rem !important; line-height: 1.25 !important; }
     /* "ক্যাশ মেমো" label moves to the top-LEFT corner (mirror of the phones on the
@@ -637,7 +633,8 @@
     tfoot { page-break-inside: avoid; }
 
     /* ── কথায় / মন্তব্য lines ── */
-    .memo-words        { margin-top: 3px !important; font-size: .72rem !important; }
+    /* কথায় (পরিশোধ) line hidden in print — owner: the numeric amount is enough, saves a line */
+    .memo-words        { display: none !important; }
 
     /* ── Footer — pinned at a FIXED DISTANCE FROM THE SHEET TOP, not from the
        page-box bottom. The owner prints with A4 selected in the dialog while
@@ -654,13 +651,10 @@
         page-break-inside: avoid;
     }
     .memo-footer-note  { font-size: .64rem !important; margin-bottom: 0 !important; line-height: 1.2 !important; }
-    .memo-footer-name  { font-size: .85rem !important; }
-    .memo-cut-line     { margin: 4px 0 2px !important; border-top-color: #999 !important; }
-    .memo-cut-line span { font-size: .56rem !important; }
-    .memo-stub-challan { font-size: .64rem !important; margin-bottom: 1px !important; }
-    .memo-stub-cust    { font-size: .68rem !important; margin-bottom: 2px !important; }
-    .memo-stub-cust th { padding: 1px 6px !important; border-color: #999 !important; }
-    .memo-stub-cust td { padding: 1px 6px !important; border-color: #aaa !important; }
+    .memo-footer-name  { font-size: .85rem !important; margin-bottom: 6px !important; }
+    .memo-cut-line     { margin: 2px 0 1px !important; border-top-color: #999 !important; top: 6px !important; }   /* nudge dashed line down */
+    .memo-cut-line span { font-size: .56rem !important; top: -5px !important; }   /* smaller pull than screen's -9px — keeps the label off the store name's descenders */
+    .memo-stub-line    { font-size: .66rem !important; padding: 2px 6px !important; border-color: #999 !important; gap: 2px 10px !important; }
     .memo-credit       { font-size: .58rem !important; border-top-color: #ddd !important; margin-top: 2px !important; padding-top: 1px !important; }
 }
 

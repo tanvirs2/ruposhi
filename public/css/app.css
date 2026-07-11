@@ -34,14 +34,15 @@
     --transition: 0.22s cubic-bezier(.4,0,.2,1);
 }
 
-html { font-size: 15px; }
+html { font-size: 16px; }   /* base bumped 15→16px (owner's client found the old system's larger Bengali text easier to read; whole UI is rem-based so this scales everything). Print resets to 15px separately — cash memo unaffected. */
 
 /* ─── Font size presets ─────────────────────────────────────── */
 /* zoom scales the whole UI (padding, buttons, icons, tables) proportionally —
-   not just text — so "ছোট লেখা" actually makes everything more compact */
-html[data-fontsize="sm"] { font-size: 13px; zoom: 0.9; }
-html[data-fontsize="md"] { font-size: 15px; zoom: 1; }
-html[data-fontsize="lg"] { font-size: 17px; zoom: 1.08; }
+   not just text — so "ছোট লেখা" actually makes everything more compact.
+   Default (md) raised to 16px; sm/lg re-spaced around it. */
+html[data-fontsize="sm"] { font-size: 14px; zoom: 0.92; }
+html[data-fontsize="md"] { font-size: 16px; zoom: 1; }
+html[data-fontsize="lg"] { font-size: 18px; zoom: 1.1; }
 
 /* ─── Dark mode variables ───────────────────────────────────── */
 html[data-theme="dark"] {
@@ -932,7 +933,7 @@ a { text-decoration: none; color: inherit; }
 .data-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.83rem;
+    font-size: 0.92rem;   /* raised 0.83→0.92rem — data tables are the shop's main read surface; the old system's table text was larger/easier to read */
     border: 1px solid var(--border);
     border-radius: 6px;
     overflow: hidden;
@@ -941,7 +942,7 @@ a { text-decoration: none; color: inherit; }
     background: var(--surface-2);
     color: var(--text-secondary);
     font-weight: 600;
-    font-size: 0.72rem;
+    font-size: 0.8rem;   /* raised 0.72→0.8rem */
     text-transform: uppercase;
     letter-spacing: .05em;
     padding: 0 20px;
@@ -955,6 +956,7 @@ a { text-decoration: none; color: inherit; }
     height: 46px;
     border: 1px solid var(--border);
     color: var(--text-primary);
+    font-weight: 500;   /* medium weight — the old system's data text was bold; 500 keeps it readable without looking heavy */
     vertical-align: middle;
     max-width: 240px;
     word-break: break-word;
@@ -984,7 +986,8 @@ a { text-decoration: none; color: inherit; }
 
 .mono {
     font-family: 'Inter', monospace;
-    font-size: 0.8rem;
+    font-size: 0.88rem;   /* raised 0.8→0.88rem — mono holds IDs/phones/money amounts in tables; keep it readable alongside the larger table text */
+    font-weight: 500;     /* medium weight so money amounts read clearly, like the old system */
     color: var(--text-secondary);
 }
 
