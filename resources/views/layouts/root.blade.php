@@ -177,6 +177,9 @@
             <a href="{{ route('root.database.index') }}" class="{{ str_starts_with($r, 'root.database') ? 'active' : '' }}">
                 <i class="fas fa-database"></i> ডেটাবেজ ব্যাকআপ
             </a>
+            <a href="{{ route('root.cleanup.index') }}" class="{{ str_starts_with($r, 'root.cleanup') ? 'active' : '' }}">
+                <i class="fas fa-broom"></i> ডেটা ক্লিনআপ
+            </a>
         </nav>
 
         <div class="rt-foot">

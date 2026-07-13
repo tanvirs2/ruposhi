@@ -415,9 +415,9 @@
     border: 1px solid #334155;
     text-align: center;
 }
-.col-bosta { width: 50px; }
+.col-bosta { width: 40px; }
 .col-desc  { }
-.col-kg    { width: 48px; }
+.col-kg    { width: 44px; }
 .col-rate  { width: 68px; }
 .col-taka  { width: 100px; }
 
@@ -602,7 +602,7 @@
        top/bottom gap around "ক্যাশ মেমো" and the store name. ── */
     .memo-header       { padding-bottom: 2px !important; margin-bottom: 2px !important; }
     .memo-store-name   { font-family: 'Shobuj Bhulua', 'Hind Siliguri', sans-serif !important; font-size: 1.85rem !important; line-height: 1.05 !important; margin-top: 20px !important; }
-    .memo-owner        { font-size: .78rem !important; font-weight: 700 !important; margin-top: 0 !important; line-height: 1.05 !important; }
+    .memo-owner        { font-size: .92rem !important; font-weight: 700 !important; margin: 4px 0 5px !important; line-height: 1.2 !important; }   /* bigger + bold + breathing room (was congested between heading & tagline) */
     .memo-tagline      { font-size: .66rem !important; line-height: 1.05 !important; }
     .memo-phones-right { font-size: .70rem !important; line-height: 1.25 !important; }
     /* "ক্যাশ মেমো" label moves to the top-LEFT corner (mirror of the phones on the
@@ -611,7 +611,8 @@
                          font-size: .62rem !important; margin-bottom: 0 !important; line-height: 1.0 !important; }
 
     .memo-meta         { font-size: .72rem !important; line-height: 1.3 !important;
-                         padding-bottom: 2px !important; margin-bottom: 2px !important; }
+                         padding-bottom: 2px !important; margin-bottom: 2px !important;
+                         border-bottom: none !important; }   /* remove the extra line — the table header's own top border is the separator */
     .memo-meta-row-top { font-size: .72rem !important; margin-bottom: 0 !important; }
     .memo-meta-key     { min-width: 0 !important; }
     .memo-customer-phone { font-size: .72rem !important; padding-top: 0 !important; }

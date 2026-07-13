@@ -66,6 +66,10 @@ Route::middleware(['auth', 'root'])->prefix('root')->name('root.')->group(functi
     Route::get('/database',        [\App\Http\Controllers\Root\DatabaseController::class, 'index'])->name('database.index');
     Route::get('/database/export', [\App\Http\Controllers\Root\DatabaseController::class, 'export'])->name('database.export');
     Route::post('/database/import',[\App\Http\Controllers\Root\DatabaseController::class, 'import'])->name('database.import');
+    // Per-shop data cleanup (smart reset + custom single-table clean)
+    Route::get('/cleanup',        [\App\Http\Controllers\Root\ShopCleanupController::class, 'index'])->name('cleanup.index');
+    Route::post('/cleanup/smart', [\App\Http\Controllers\Root\ShopCleanupController::class, 'smartReset'])->name('cleanup.smart');
+    Route::post('/cleanup/custom',[\App\Http\Controllers\Root\ShopCleanupController::class, 'customClean'])->name('cleanup.custom');
 });
 
 /* ── Reseller routes ───────────────────────────────────────── */

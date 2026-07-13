@@ -250,13 +250,24 @@
             <tfoot>
                 <tr class="cl-tfoot">
                     <td colspan="3" style="font-weight:700">সর্বমোট</td>
-                    <td style="text-align:right">{{ number_format($ledger->sum('qty'), 0) }}</td>
+                    <td style="text-align:right">
+                        <span class="cl-mask-value" onclick="this.classList.toggle('revealed')">
+                            <span class="cl-mask-dots">—</span>
+                            <span class="cl-mask-real">{{ number_format($ledger->sum('qty'), 0) }}</span>
+                        </span>
+                    </td>
                     <td></td>
                     <td style="text-align:right;font-weight:700;color:#dc2626">
-                        {{ number_format($totalSales + $totalDiscount, 0) }}
+                        <span class="cl-mask-value" onclick="this.classList.toggle('revealed')">
+                            <span class="cl-mask-dots">—</span>
+                            <span class="cl-mask-real">{{ number_format($totalSales + $totalDiscount, 0) }}</span>
+                        </span>
                     </td>
                     <td style="text-align:right;font-weight:700;color:#15803d">
-                        {{ number_format($totalCredits + $totalDiscount, 0) }}
+                        <span class="cl-mask-value" onclick="this.classList.toggle('revealed')">
+                            <span class="cl-mask-dots">—</span>
+                            <span class="cl-mask-real">{{ number_format($totalCredits + $totalDiscount, 0) }}</span>
+                        </span>
                     </td>
                     <td style="text-align:right;font-weight:800;color:{{ $running > 0 ? '#b45309' : ($running < 0 ? '#15803d' : '#64748b') }}">
                         {{ number_format(abs($running), 0) }}
@@ -328,18 +339,30 @@
     border-top: 2px solid var(--border);
 }
 
+/* ── তফুতের বিক্রয়/জমা টোটাল — ডিফল্টে মাস্কড, ক্লিকে দেখা যায় ── */
+.cl-mask-value { cursor: pointer; user-select: none; display: inline-block; }
+.cl-mask-value .cl-mask-real { display: none; }
+.cl-mask-value .cl-mask-dots { color: #cbd5e1; }
+.cl-mask-value.revealed .cl-mask-real { display: inline; }
+.cl-mask-value.revealed .cl-mask-dots { display: none; }
+
 /* ── Print — ink-saving: white backgrounds, dark text, tight header ── */
 @media print {
     .sidebar, .topbar, .no-print { display: none !important; }
     .main-wrapper { margin-left: 0 !important; }
     .content { padding: 0 !important; }
-    .ledger-print-header  { display: block !important; text-align: center; margin-bottom: 4px; }
-    .ledger-print-header > div { margin-top: 0 !important; line-height: 1.3; }
-    .ledger-customer-card { display: block !important; margin-bottom: 6px; }
-    .ledger-kpi-row { grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 8px; }
-    .ledger-kpi { padding: 4px 8px; border: 0.5px solid #999 !important; }
-    .ledger-kpi-value { font-size: .95rem; }
+    .ledger-print-header  { display: block !important; text-align: center; margin-bottom: 2px; }
+    .ledger-print-header > div:first-child { font-size: .95rem !important; }
+    .ledger-print-header > div { margin-top: 0 !important; line-height: 1.15; font-size: 8px !important; }
+    .ledger-customer-card { display: block !important; margin-bottom: 3px; }
+    .ledger-info-table    { font-size: 8px !important; }
+    .ledger-info-table td { padding: 1px 6px !important; line-height: 1.25; }
+    .ledger-kpi-row { grid-template-columns: repeat(4,1fr); gap: 4px; margin-bottom: 4px; }
+    .ledger-kpi { padding: 2px 6px; border: 0.5px solid #999 !important; }
+    .ledger-kpi-label { font-size: 7px !important; margin-bottom: 1px !important; }
+    .ledger-kpi-value { font-size: 10px !important; }
     .ledger-kpi-sub { display: none; }
+    .ledger-kpi-label i { display: none; }
     .card { box-shadow: none !important; border: none !important; }
     /* White rows — keep structure with borders instead of tinted backgrounds */
     .cl-payment-row td, .cl-opening-row td, .cl-discount-row td,
@@ -355,6 +378,9 @@
     .cl-table td br { display: none; }
     .cl-time { font-size: 7.5px !important; }
     .cl-table td i { display: none; }
+
+    /* সর্বমোট রো-র বিক্রয়/জমা টোটাল প্রিন্টে সম্পূর্ণ হাইড — শুধু অবশিষ্ট দেখা যাবে */
+    .cl-mask-value { display: none !important; }
 }
 
 /* ── Print info table ────────────────────────────────────── */

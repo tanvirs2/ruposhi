@@ -125,6 +125,7 @@
     <div class="table-wrap">
         <table class="data-table sl-ledger-table">
             <colgroup>
+                <col style="width:90px">   {{-- চালান নং --}}
                 <col style="width:105px">  {{-- তারিখ --}}
                 <col>                      {{-- বিবরণ --}}
                 <col style="width:80px">   {{-- পরিমাণ --}}
@@ -135,6 +136,7 @@
             </colgroup>
             <thead>
                 <tr>
+                    <th class="tc">চালান নং</th>
                     <th>তারিখ</th>
                     <th>বিবরণ</th>
                     <th style="text-align:right">পরিমাণ</th>
@@ -148,6 +150,7 @@
 
                 {{-- Opening balance row --}}
                 <tr class="sl-opening-row">
+                    <td class="tc" style="color:#cbd5e1">—</td>
                     <td style="color:#334155;font-size:.82rem">
                         {{ \Carbon\Carbon::parse($from)->format('d M Y') }}
                     </td>
@@ -186,6 +189,19 @@
                 @endphp
                 <tr class="{{ $rowClass }} {{ $isNewGroup ? 'sl-new-group' : '' }}">
 
+                    {{-- চালান নং (receive/purchase number) — own column, like the customer ledger.
+                         purchase_payment rows have purchase_id but no link (controller sets link=null
+                         for that type), so link (not purchase_id) decides whether it's clickable. --}}
+                    <td class="tc mono" style="font-size:.82rem">
+                        @if($row->link)
+                            <a href="{{ $row->link }}" class="link-primary" title="রিসিভ দেখুন">{{ $row->ref }}</a>
+                        @elseif($row->ref)
+                            <span style="color:#64748b">{{ $row->ref }}</span>
+                        @else
+                            <span style="color:#cbd5e1">—</span>
+                        @endif
+                    </td>
+
                     {{-- Date --}}
                     <td style="white-space:nowrap;font-size:.83rem;color:#334155">
                         {{ \Carbon\Carbon::parse($row->date)->format('d M Y') }}
@@ -195,35 +211,21 @@
                     <td>
                         @if($isItem)
                             <span style="font-weight:600;color:var(--text)">{{ $row->label }}</span>
-                            @if($row->link)
-                                <a href="{{ $row->link }}" class="sl-ref-link" title="রিসিভ দেখুন">{{ $row->ref }}</a>
-                            @endif
                         @elseif($isExtraCost)
                             <span class="sl-extracost-label">
                                 <i class="fas fa-plus-circle" style="font-size:.72rem;margin-right:3px"></i>
                                 {{ $row->label }}
                             </span>
-                            @if($row->link)
-                                <a href="{{ $row->link }}" class="sl-ref-link">{{ $row->ref }}</a>
-                            @endif
                         @elseif($isDeposit)
                             <span class="sl-deposit-label">
                                 <i class="fas fa-piggy-bank" style="font-size:.72rem;margin-right:3px"></i>
                                 {{ $row->label }}
                             </span>
-                            @if($row->link)
-                                <a href="{{ $row->link }}" class="sl-ref-link" title="রিসিভ দেখুন">{{ $row->ref }}</a>
-                            @elseif($row->ref)
-                                <span class="sl-ref-tag">{{ $row->ref }}</span>
-                            @endif
                         @else
                             <span class="sl-pay-label">
                                 <i class="fas fa-circle-check" style="font-size:.72rem"></i>
                                 {{ $row->label }}
                             </span>
-                            @if($row->ref)
-                                <span class="sl-ref-tag">{{ $row->ref }}</span>
-                            @endif
                         @endif
                     </td>
 
@@ -279,7 +281,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="7" class="empty-row">এই সময়কালে কোনো লেনদেন নেই</td></tr>
+                <tr><td colspan="8" class="empty-row">এই সময়কালে কোনো লেনদেন নেই</td></tr>
                 @endforelse
 
             </tbody>
@@ -287,12 +289,18 @@
             @if($ledger->isNotEmpty())
             <tfoot>
                 <tr class="sl-tfoot">
-                    <td colspan="4">সর্বমোট</td>
+                    <td colspan="5">সর্বমোট</td>
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
-                        <span class="sl-debit">৳ {{ number_format($totalDebit, 0) }}</span>
+                        <span class="sl-mask-value" onclick="this.classList.toggle('revealed')">
+                            <span class="sl-mask-dots">—</span>
+                            <span class="sl-debit sl-mask-real">৳ {{ number_format($totalDebit, 0) }}</span>
+                        </span>
                     </td>
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
-                        <span class="sl-credit">৳ {{ number_format($totalCredit, 0) }}</span>
+                        <span class="sl-mask-value" onclick="this.classList.toggle('revealed')">
+                            <span class="sl-mask-dots">—</span>
+                            <span class="sl-credit sl-mask-real">৳ {{ number_format($totalCredit, 0) }}</span>
+                        </span>
                     </td>
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
                         @php $finalBal = $ledger->last()->balance ?? $openingBalance; @endphp
@@ -417,17 +425,30 @@
 .sl-info-table td { padding: 5px 10px; border: 1px solid #ddd; }
 .sl-info-table td:nth-child(odd) { background: #f8fafc; font-weight: 600; width: 15%; }
 
+/* ── তফুতের বাকি/জমা টোটাল — ডিফল্টে মাস্কড, ক্লিকে দেখা যায় ── */
+.sl-mask-value { cursor: pointer; user-select: none; display: inline-block; }
+.sl-mask-value .sl-mask-real { display: none; }
+.sl-mask-value .sl-mask-dots { color: #cbd5e1; }
+.sl-mask-value.revealed .sl-mask-real { display: inline; }
+.sl-mask-value.revealed .sl-mask-dots { display: none; }
+
 /* ── Print — ink-saving: white backgrounds, dark text, tight header ── */
 @media print {
     .sidebar, .topbar, .no-print { display: none !important; }
     .main-wrapper { margin-left: 0 !important; }
     .content { padding: 0 !important; }
-    .sl-print-header  { display: block !important; text-align: center; margin-bottom: 4px; }
-    .sl-print-header > div { margin-top: 0 !important; line-height: 1.3; }
-    .sl-info-card     { display: block !important; margin-bottom: 6px; }
-    .sl-kpi-row       { grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
-    .sl-kpi           { padding: 4px 8px; border: 0.5px solid #999 !important; }
-    .sl-kpi-value     { font-size: .95rem; }
+    .sl-print-header  { display: block !important; text-align: center; margin-bottom: 2px; }
+    .sl-print-header > div:first-child { font-size: .95rem !important; }
+    .sl-print-header > div { margin-top: 0 !important; line-height: 1.15; font-size: 8px !important; }
+    .sl-info-card     { display: block !important; margin-bottom: 3px; }
+    .sl-info-table    { font-size: 8px !important; margin-bottom: 0 !important; }
+    .sl-info-table td { padding: 1px 6px !important; line-height: 1.25; }
+    .sl-kpi-row       { grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 4px; }
+    .sl-kpi           { padding: 2px 6px; border: 0.5px solid #999 !important; }
+    .sl-kpi-label     { font-size: 7px !important; margin-bottom: 1px !important; }
+    .sl-kpi-value     { font-size: 10px !important; }
+    .sl-kpi-sub       { font-size: 6.5px !important; margin-top: 0 !important; }
+    .sl-kpi-label i, .sl-kpi-sub i { display: none; }
     .card             { box-shadow: none !important; border: none !important; }
     .sl-payment-row, .sl-opening-row, .sl-tfoot td { background: #fff !important; }
     .sl-opening-row td { border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; }
@@ -443,6 +464,9 @@
     .sl-bal-tag { font-size: 7.5px !important; margin-left: 2px; }
     .sl-ref-tag, .sl-ref-link { font-size: 8px !important; padding: 0 3px !important; }
     .sl-ledger-table td i { display: none; }
+
+    /* সর্বমোট রো-র বাকি/জমা টোটাল প্রিন্টে সম্পূর্ণ হাইড — শুধু অবশিষ্ট দেখা যাবে */
+    .sl-mask-value { display: none !important; }
 }
 </style>
 @endpush
