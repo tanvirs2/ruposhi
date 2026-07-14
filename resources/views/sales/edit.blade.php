@@ -486,6 +486,28 @@ function updateRowTotal(id) {
     const item = cart.find(c => c.id === id); if (!item) return;
     const cell = document.getElementById('row-total-' + id);
     if (cell) cell.textContent = '৳ ' + (item.qty * item.price).toFixed(0);
+
+    // Live profit cell (price changes after render → update separately)
+    const profitCell = document.getElementById('row-profit-' + id);
+    if (profitCell) {
+        const profitPerUnit = item.price - item.cost;
+        profitCell.className     = `col-secret ${profitClass(profitPerUnit, item.cost)}`;
+        profitCell.style.display = profitVisible ? '' : 'none';
+        profitCell.textContent   = (profitPerUnit >= 0 ? '+' : '') + '৳' + profitPerUnit.toFixed(0);
+    }
+
+    // ── Loss warning per row ──────────────────────────────────
+    const lossWarn = document.getElementById('loss-warn-' + id);
+    if (lossWarn) lossWarn.style.display = (item.cost > 0 && item.price > 0 && item.price < item.cost) ? 'inline-flex' : 'none';
+
+    // ── Excessive profit warning per row (>10% margin) ────────
+    const excessWarn = document.getElementById('excess-warn-' + id);
+    if (excessWarn) {
+        const pct = item.cost > 0 ? (item.price - item.cost) / item.cost * 100 : 0;
+        const isExcess = item.cost > 0 && item.price > 0 && pct > 10;
+        excessWarn.style.display = isExcess ? 'inline-flex' : 'none';
+        if (isExcess) excessWarn.title = `লাভ: ${pct.toFixed(1)}%`;
+    }
 }
 
 function profitClass(profit, cost) {
@@ -546,8 +568,19 @@ function renderCart() {
             </td>
             <td><input type="text" inputmode="decimal" name="items[${idx}][qty]" value="${c.qty}" style="width:70px" oninput="updateQty(${c.id},this.value)" class="inline-input"></td>
             <td class="col-secret" style="color:#94a3b8;font-size:.88rem;${secretDisplay}">৳ ${c.cost.toLocaleString()}</td>
-            <td><input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.price}" style="width:100px" oninput="updatePrice(${c.id},this.value)" class="inline-input"></td>
-            <td class="col-secret ${pClass}" style="${secretDisplay}">${profitStr}</td>
+            <td>
+                <input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.price}" style="width:100px" oninput="updatePrice(${c.id},this.value)" class="inline-input">
+                <span id="loss-warn-${c.id}"
+                    style="display:${c.cost>0 && c.price>0 && c.price < c.cost ? 'inline-flex':'none'};align-items:center;gap:3px;margin-left:5px;font-size:.72rem;font-weight:700;color:#b91c1c;background:#fee2e2;border:1px solid #fca5a5;border-radius:20px;padding:1px 7px;vertical-align:middle;white-space:nowrap">
+                    ⚠ লোকসান!
+                </span>
+                ${(()=>{ const pct=c.cost>0?(c.price-c.cost)/c.cost*100:0; const isEx=c.cost>0&&c.price>0&&pct>10; return `<span id="excess-warn-${c.id}"
+                    title="${isEx?`লাভ: ${pct.toFixed(1)}%`:''}"
+                    style="display:${isEx?'inline-flex':'none'};align-items:center;gap:3px;margin-left:5px;font-size:.72rem;font-weight:700;color:#92400e;background:#fef9c3;border:1px solid #fde68a;border-radius:20px;padding:1px 7px;vertical-align:middle;white-space:nowrap">
+                    ⚠ অতিরিক্ত লাভ!
+                </span>`; })()}
+            </td>
+            <td id="row-profit-${c.id}" class="col-secret ${pClass}" style="${secretDisplay}">${profitStr}</td>
             <td id="row-total-${c.id}">৳ ${(c.qty * c.price).toFixed(0)}</td>
             <td><button type="button" onclick="removeItem(${c.id})" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button></td>
         </tr>`;

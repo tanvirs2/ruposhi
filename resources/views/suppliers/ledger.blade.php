@@ -101,7 +101,7 @@
     <div class="sl-kpi sl-kpi-green">
         <div class="sl-kpi-label"><i class="fas fa-money-bill-wave"></i> মোট পরিশোধ</div>
         <div class="sl-kpi-value">৳ {{ number_format($totalCredit, 0) }}</div>
-        <div class="sl-kpi-sub">{{ $ledger->where('credit','>',0)->count() }}টি পরিশোধ</div>
+        <div class="sl-kpi-sub">{{ $deposits->count() }}টি পরিশোধ</div>
     </div>
     @if($openingBalance != 0)
     <div class="sl-kpi {{ $openingBalance > 0 ? 'sl-kpi-orange' : 'sl-kpi-green' }}">
@@ -117,6 +117,19 @@
     </div>
 </div>
 
+{{-- ── View toggle: পুরনো (এক টেবিল) ↔ নতুন (দুই টেবিল) ── --}}
+<div class="sl-view-toggle no-print">
+    <span style="font-size:.82rem;color:#64748b;font-weight:600">ভিউ:</span>
+    <button type="button" id="slViewBtnOld" class="sl-view-btn" onclick="slSetView('old')">
+        <i class="fas fa-table-list"></i> এক টেবিল
+    </button>
+    <button type="button" id="slViewBtnNew" class="sl-view-btn" onclick="slSetView('new')">
+        <i class="fas fa-table-columns"></i> দুই টেবিল
+    </button>
+</div>
+
+{{-- ══════════ OLD VIEW — single combined table (default) ══════════ --}}
+<div id="supplierViewOld">
 {{-- ── Ledger Table ──────────────────────────────────────────────── --}}
 <div class="card">
     <div class="card-header">
@@ -148,7 +161,10 @@
             </thead>
             <tbody>
 
-                {{-- Opening balance row --}}
+                {{-- Opening balance row — only shown when there's an actual carryover
+                     (matches customer ledger's behaviour; skips a meaningless ৳0 row
+                     when the filter range covers all history) --}}
+                @if($openingBalance != 0)
                 <tr class="sl-opening-row">
                     <td class="tc" style="color:#cbd5e1">—</td>
                     <td style="color:#334155;font-size:.82rem">
@@ -161,19 +177,16 @@
                         </span>
                     </td>
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
-                        @if($openingBalance == 0)
-                            <span style="color:#64748b">৳ 0</span>
-                        @else
-                            <span class="{{ $openingBalance > 0 ? 'sl-debit' : 'sl-credit' }}">
-                                ৳ {{ number_format(abs($openingBalance), 0) }}
-                                <br><small class="sl-bal-tag">{{ $openingBalance > 0 ? 'দেনা' : 'পাওনা' }}</small>
-                            </span>
-                        @endif
+                        <span class="{{ $openingBalance > 0 ? 'sl-debit' : 'sl-credit' }}">
+                            ৳ {{ number_format(abs($openingBalance), 0) }}
+                            <br><small class="sl-bal-tag">{{ $openingBalance > 0 ? 'দেনা' : 'পাওনা' }}</small>
+                        </span>
                     </td>
                 </tr>
+                @endif
 
                 @php $prevPurchaseId = null; @endphp
-                @forelse($ledger as $row)
+                @forelse($combined as $row)
                 @php
                     $isItem      = $row->type === 'item';
                     $isPay       = $row->type === 'payment' || $row->type === 'purchase_payment';
@@ -286,7 +299,7 @@
 
             </tbody>
 
-            @if($ledger->isNotEmpty())
+            @if($combined->isNotEmpty())
             <tfoot>
                 <tr class="sl-tfoot">
                     <td colspan="5">সর্বমোট</td>
@@ -303,7 +316,7 @@
                         </span>
                     </td>
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
-                        @php $finalBal = $ledger->last()->balance ?? $openingBalance; @endphp
+                        @php $finalBal = $combined->last()->balance ?? $openingBalance; @endphp
                         @if($finalBal == 0)
                             <span style="color:#64748b;font-weight:700">৳ 0</span>
                         @else
@@ -321,6 +334,219 @@
         </table>
     </div>
 </div>
+</div>{{-- /#supplierViewOld --}}
+
+{{-- ══════════ NEW VIEW — জমা তালিকা + লেনদেনের বিবরণ (bills only) ══════════ --}}
+<div id="supplierViewNew" style="display:none">
+
+{{-- ── জমা তালিকা (payments — kept in its OWN table) ─────────────── --}}
+<div class="card sl-deposit-card">
+    <div class="card-header">
+        <h3><i class="fas fa-money-bill-wave" style="color:#16a34a"></i> জমা তালিকা</h3>
+        <span style="font-size:.78rem;color:#64748b;margin-left:auto">{{ $deposits->count() }}টি জমা</span>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table sl-deposit-table">
+            <colgroup>
+                <col style="width:150px">  {{-- তারিখ --}}
+                <col style="width:120px">  {{-- পদ্ধতি --}}
+                <col>                      {{-- সূত্র / মন্তব্য --}}
+                <col style="width:130px">  {{-- পরিমাণ --}}
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>তারিখ</th>
+                    <th>পদ্ধতি / বিবরণ</th>
+                    <th>সূত্র</th>
+                    <th style="text-align:right">পরিমাণ (৳)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($deposits as $d)
+                <tr class="sl-deposit-row">
+                    <td style="white-space:nowrap;font-size:.83rem;color:#334155">
+                        {{ \Carbon\Carbon::parse($d->date)->format('d M Y') }}
+                    </td>
+                    <td>
+                        @if($d->type === 'deposit')
+                            <span class="sl-deposit-label"><i class="fas fa-piggy-bank" style="font-size:.72rem;margin-right:3px"></i> {{ $d->label }}</span>
+                        @else
+                            <span class="sl-pay-label"><i class="fas fa-circle-check" style="font-size:.72rem"></i> {{ $d->label }}</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($d->link)
+                            <a href="{{ $d->link }}" class="link-primary mono" style="font-size:.82rem">{{ $d->ref }}</a>
+                        @elseif($d->ref)
+                            <span style="color:#64748b">{{ $d->ref }}</span>
+                        @else
+                            <span style="color:#475569">সরাসরি পরিশোধ</span>
+                        @endif
+                    </td>
+                    <td style="text-align:right;font-variant-numeric:tabular-nums">
+                        <span class="sl-credit">৳ {{ number_format($d->credit, 0) }}</span>
+                    </td>
+                </tr>
+                @empty
+                <tr><td colspan="4" class="empty-row">এই সময়কালে কোনো জমা নেই</td></tr>
+                @endforelse
+            </tbody>
+            @if($deposits->count())
+            <tfoot>
+                <tr class="sl-tfoot">
+                    <td colspan="3" style="font-weight:700">মোট জমা</td>
+                    <td style="text-align:right;font-weight:700;color:#16a34a">
+                        <span class="sl-mask-value" onclick="this.classList.toggle('revealed')">
+                            <span class="sl-mask-dots">—</span>
+                            <span class="sl-mask-real">৳ {{ number_format($totalDeposits, 0) }}</span>
+                        </span>
+                    </td>
+                </tr>
+                <tr class="sl-tfoot sl-netdue-row">
+                    <td colspan="3" style="font-weight:800">নিট বকেয়া <span style="font-weight:500;color:#64748b;font-size:.8rem">(অবশিষ্ট ক্রয় − মোট জমা)</span></td>
+                    @php $netDue = ($openingBalance + $bills->sum('debit')) - $totalDeposits; @endphp
+                    <td style="text-align:right;font-weight:800;color:{{ $netDue > 0 ? '#b45309' : ($netDue < 0 ? '#15803d' : '#64748b') }}">
+                        ৳ {{ number_format(abs($netDue), 0) }}
+                        @if($netDue < 0) <div style="font-size:.7rem;color:#15803d">(অতিরিক্ত)</div> @endif
+                    </td>
+                </tr>
+            </tfoot>
+            @endif
+        </table>
+    </div>
+</div>
+
+{{-- ── Ledger Table (লেনদেনের বিবরণ — purchases only) ──────────────────── --}}
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-truck-ramp-box" style="color:#1d4ed8"></i> লেনদেনের বিবরণ (ক্রয়)</h3>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table sl-ledger-table">
+            <colgroup>
+                <col style="width:90px">   {{-- চালান নং --}}
+                <col style="width:105px">  {{-- তারিখ --}}
+                <col>                      {{-- বিবরণ --}}
+                <col style="width:80px">   {{-- পরিমাণ --}}
+                <col style="width:100px">  {{-- দর --}}
+                <col style="width:130px">  {{-- বাকি --}}
+                <col style="width:150px">  {{-- অবশিষ্ট --}}
+            </colgroup>
+            <thead>
+                <tr>
+                    <th class="tc">চালান নং</th>
+                    <th>তারিখ</th>
+                    <th>বিবরণ</th>
+                    <th style="text-align:right">পরিমাণ</th>
+                    <th style="text-align:right">দর</th>
+                    <th style="text-align:right">বাকি (৳)</th>
+                    <th style="text-align:right">অবশিষ্ট (৳)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if($openingBalance != 0)
+                <tr class="sl-opening-row">
+                    <td class="tc" style="color:#cbd5e1">—</td>
+                    <td style="color:#334155;font-size:.82rem">{{ \Carbon\Carbon::parse($from)->format('d M Y') }}</td>
+                    <td colspan="4">
+                        <span style="font-style:italic;color:#64748b;font-size:.88rem">
+                            <i class="fas fa-clock-rotate-left" style="font-size:.75rem;margin-right:4px"></i> পূর্বের অবশিষ্ট
+                        </span>
+                    </td>
+                    <td style="text-align:right;font-variant-numeric:tabular-nums">
+                        <span class="{{ $openingBalance > 0 ? 'sl-debit' : 'sl-credit' }}">
+                            ৳ {{ number_format(abs($openingBalance), 0) }}
+                            <br><small class="sl-bal-tag">{{ $openingBalance > 0 ? 'দেনা' : 'পাওনা' }}</small>
+                        </span>
+                    </td>
+                </tr>
+                @endif
+                @php $prevPurchaseId3 = null; @endphp
+                @forelse($bills as $row)
+                @php
+                    $isItem3      = $row->type === 'item';
+                    $isExtraCost3 = $row->type === 'extra_cost';
+                    $isNewGroup3  = $row->purchase_id && $row->purchase_id !== $prevPurchaseId3;
+                    if ($row->purchase_id) $prevPurchaseId3 = $row->purchase_id;
+                @endphp
+                <tr class="{{ $isExtraCost3 ? 'sl-extracost-row' : 'sl-item-row' }} {{ $isNewGroup3 ? 'sl-new-group' : '' }}">
+                    <td class="tc mono" style="font-size:.82rem">
+                        @if($row->link)
+                            <a href="{{ $row->link }}" class="link-primary" title="রিসিভ দেখুন">{{ $row->ref }}</a>
+                        @else
+                            <span style="color:#64748b">{{ $row->ref }}</span>
+                        @endif
+                    </td>
+                    <td style="white-space:nowrap;font-size:.83rem;color:#334155">{{ \Carbon\Carbon::parse($row->date)->format('d M Y') }}</td>
+                    <td>
+                        @if($isItem3)
+                            <span style="font-weight:600;color:var(--text)">{{ $row->label }}</span>
+                        @else
+                            <span class="sl-extracost-label"><i class="fas fa-plus-circle" style="font-size:.72rem;margin-right:3px"></i> {{ $row->label }}</span>
+                        @endif
+                    </td>
+                    <td style="text-align:right;font-size:.88rem">
+                        @if($row->qty > 0)<span style="font-weight:600">{{ number_format($row->qty, 0) }}</span>@else<span style="color:#cbd5e1">—</span>@endif
+                    </td>
+                    <td style="text-align:right;font-size:.88rem">
+                        @if($row->rate > 0)<span>{{ number_format($row->rate, 0) }}</span>@else<span style="color:#cbd5e1">—</span>@endif
+                    </td>
+                    <td style="text-align:right;font-variant-numeric:tabular-nums">
+                        <span class="sl-debit">৳ {{ number_format($row->debit, 0) }}</span>
+                    </td>
+                    <td style="text-align:right;font-variant-numeric:tabular-nums">
+                        <span class="sl-debit">৳ {{ number_format($row->balance, 0) }}</span>
+                    </td>
+                </tr>
+                @empty
+                <tr><td colspan="7" class="empty-row">এই সময়কালে কোনো ক্রয় নেই</td></tr>
+                @endforelse
+            </tbody>
+            @if($bills->count())
+            <tfoot>
+                <tr class="sl-tfoot">
+                    <td colspan="5" style="font-weight:700">সর্বমোট</td>
+                    <td style="text-align:right;font-weight:700;color:#dc2626">
+                        <span class="sl-mask-value" onclick="this.classList.toggle('revealed')">
+                            <span class="sl-mask-dots">—</span>
+                            <span class="sl-mask-real">৳ {{ number_format($bills->sum('debit'), 0) }}</span>
+                        </span>
+                    </td>
+                    <td style="text-align:right;font-weight:800">
+                        @php $billsFinal = $bills->last()->balance ?? $openingBalance; @endphp
+                        ৳ {{ number_format($billsFinal, 0) }}
+                    </td>
+                </tr>
+            </tfoot>
+            @endif
+        </table>
+    </div>
+</div>
+
+</div>{{-- /#supplierViewNew --}}
+
+<script>
+// Toggle between the classic single-table view and the split two-table view.
+// Default = old (single table); choice remembered in localStorage.
+function slSetView(mode) {
+    var isNew = mode === 'new';
+    var vOld = document.getElementById('supplierViewOld');
+    var vNew = document.getElementById('supplierViewNew');
+    if (vOld) vOld.style.display = isNew ? 'none' : '';
+    if (vNew) vNew.style.display = isNew ? '' : 'none';
+    var bOld = document.getElementById('slViewBtnOld');
+    var bNew = document.getElementById('slViewBtnNew');
+    if (bOld) bOld.classList.toggle('active', !isNew);
+    if (bNew) bNew.classList.toggle('active', isNew);
+    try { localStorage.setItem('sl_ledger_view', mode); } catch (e) {}
+    if (window.setupCompactTables) window.setupCompactTables(isNew ? vNew : vOld);
+}
+(function () {
+    var saved = 'old';
+    try { saved = localStorage.getItem('sl_ledger_view') || 'old'; } catch (e) {}
+    slSetView(saved);
+})();
+</script>
 
 @endsection
 
@@ -432,6 +658,24 @@
 .sl-mask-value.revealed .sl-mask-real { display: inline; }
 .sl-mask-value.revealed .sl-mask-dots { display: none; }
 
+/* ── ভিউ টগল (এক টেবিল / দুই টেবিল) ── */
+.sl-view-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+.sl-view-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: .82rem; font-weight: 600; padding: 6px 14px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-secondary);
+    cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+}
+.sl-view-btn:hover { background: var(--surface-2); }
+.sl-view-btn.active { background: var(--accent, #0d9488); color: #fff; border-color: var(--accent, #0d9488); }
+
+/* ── জমা তালিকা (আলাদা টেবিল) ── */
+.sl-deposit-card { margin-bottom: 18px; }
+.sl-deposit-table td, .sl-deposit-table th { white-space: nowrap; }
+.sl-deposit-row td { background: #f0fdf4; }
+.sl-netdue-row td { border-top: 2px solid var(--border) !important; font-size: .95rem; }
+
 /* ── Print — ink-saving: white backgrounds, dark text, tight header ── */
 @media print {
     .sidebar, .topbar, .no-print { display: none !important; }
@@ -450,7 +694,8 @@
     .sl-kpi-sub       { font-size: 6.5px !important; margin-top: 0 !important; }
     .sl-kpi-label i, .sl-kpi-sub i { display: none; }
     .card             { box-shadow: none !important; border: none !important; }
-    .sl-payment-row, .sl-opening-row, .sl-tfoot td { background: #fff !important; }
+    .sl-payment-row, .sl-opening-row, .sl-tfoot td,
+    .sl-deposit-row td { background: #fff !important; }
     .sl-opening-row td { border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; }
     .sl-new-group td  { border-top: 1px dashed #999 !important; }
 
@@ -458,12 +703,13 @@
        table rule, and the two-line অবশিষ্ট cell (৳ + দেনা tag) doubled
        every row's height on paper. Stylesheet !important beats inline. */
     .sl-ledger-table td, .sl-ledger-table td span, .sl-ledger-table td small,
-    .sl-ledger-table td a, .sl-ledger-table td strong { font-size: 9.5px !important; }
-    .sl-ledger-table td { padding: 1px 5px !important; line-height: 1.3 !important; }
+    .sl-ledger-table td a, .sl-ledger-table td strong,
+    .sl-deposit-table td, .sl-deposit-table td span, .sl-deposit-table td a { font-size: 9.5px !important; }
+    .sl-ledger-table td, .sl-deposit-table td { padding: 1px 5px !important; line-height: 1.3 !important; }
     .sl-ledger-table td br { display: none; }
     .sl-bal-tag { font-size: 7.5px !important; margin-left: 2px; }
     .sl-ref-tag, .sl-ref-link { font-size: 8px !important; padding: 0 3px !important; }
-    .sl-ledger-table td i { display: none; }
+    .sl-ledger-table td i, .sl-deposit-table td i { display: none; }
 
     /* সর্বমোট রো-র বাকি/জমা টোটাল প্রিন্টে সম্পূর্ণ হাইড — শুধু অবশিষ্ট দেখা যাবে */
     .sl-mask-value { display: none !important; }

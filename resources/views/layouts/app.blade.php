@@ -1316,14 +1316,31 @@ function drRange(fromName, toName, formSel, type) {
     }
 })();
 
-// ── Compact table toggle — re-runs on every Turbo navigation ──
-document.addEventListener('turbo:load', function () {
-    document.querySelectorAll('.card').forEach(function (card) {
+// ── Compact table toggle — re-runs on every Turbo navigation.
+//    Exposed as window.setupCompactTables(root) so pages that toggle between
+//    hidden/visible sections (e.g. a view switcher with display:none) can
+//    re-run it on a subtree AFTER making it visible — tables measured while
+//    hidden report offsetHeight=0 and never get the expand button otherwise. ──
+window.setupCompactTables = function (root) {
+    (root || document).querySelectorAll('.card').forEach(function (card) {
         const header = card.querySelector('.card-header');
         const wrap   = card.querySelector('.table-wrap');
         if (!header || !wrap) return;
         const table = wrap.querySelector('table');
         if (!table) return;
+        // Already processed (re-invocation on the same subtree) — skip.
+        if (wrap.querySelector(':scope > .tbl-y-scroll')) return;
+
+        const COMPACT_MAX = 340; // keep in sync with .tbl-y-scroll.tbl-compact max-height
+
+        // Only apply compact behaviour to tables that actually overflow.
+        // Small tables that already fit stay normal — no scroll, no button.
+        // IMPORTANT: check BEFORE wrapping — a table inside a display:none
+        // ancestor reports offsetHeight=0 here, so it's left unwrapped
+        // (no marker), meaning a later re-run (after it becomes visible)
+        // still gets a fair, correctly-measured pass instead of being
+        // permanently skipped by the "already processed" guard above.
+        if (table.offsetHeight <= COMPACT_MAX) return;
 
         // Wrap table in inner scroll container.
         // When compact: wrap.overflow=visible so it's not a scroll container,
@@ -1332,12 +1349,6 @@ document.addEventListener('turbo:load', function () {
         inner.className = 'tbl-y-scroll';
         wrap.insertBefore(inner, table);
         inner.appendChild(table);
-
-        const COMPACT_MAX = 340; // keep in sync with .tbl-y-scroll.tbl-compact max-height
-
-        // Only apply compact behaviour to tables that actually overflow.
-        // Small tables that already fit stay normal — no scroll, no button.
-        if (table.offsetHeight <= COMPACT_MAX) return;
 
         function setCompact(compact) {
             if (compact) {
@@ -1369,7 +1380,8 @@ document.addEventListener('turbo:load', function () {
 
         header.appendChild(btn);
     });
-});
+};
+document.addEventListener('turbo:load', function () { window.setupCompactTables(document); });
 </script>
 
 {{-- ══ Multimedia Popup Player ══════════════════════════════ --}}
@@ -1771,9 +1783,10 @@ document.addEventListener('turbo:load', () => {
 @endauth
 
 {{-- ══ Mini Chat Widget ═══════════════════════════════════════════ --}}
-<div id="miniChatRoot" data-turbo-permanent>
+<div id="miniChatRoot" class="mc-collapsed" data-turbo-permanent>
 
-    {{-- Collapsed FAB --}}
+    {{-- Collapsed FAB — tucked as a thin tab at the right edge; hover slides it
+         out, click opens the chat --}}
     <button id="miniChatFab" onclick="miniChatToggle()" title="চ্যাট খুলুন">
         <i class="fas fa-comments" id="miniChatFabIcon"></i>
         <span class="mc-fab-badge" id="mcFabBadge" style="{{ $chatUnread > 0 ? '' : 'display:none' }}">
@@ -1848,9 +1861,30 @@ document.addEventListener('turbo:load', () => {
     box-shadow: 0 4px 20px rgba(15,148,137,.45);
     z-index: 8000;
     display: flex; align-items: center; justify-content: center;
-    transition: transform .15s, box-shadow .15s;
+    transition: right .22s ease, border-radius .22s ease, padding .22s ease, transform .15s, box-shadow .15s;
 }
 #miniChatFab:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(15,148,137,.55); }
+
+/* ══ Collapsed = thin tab tucked against the right browser edge ═══
+   Keeps the bubble out of the content's way; hover slides it fully out,
+   click opens the chat. `.mc-open` (set while the chat window is up) forces
+   the full bubble regardless of hover. ── */
+#miniChatRoot.mc-collapsed #miniChatFab {
+    right: -30px;                       /* ~30px hides past the edge → thin peeking tab */
+    justify-content: flex-start;
+    padding-left: 6px;
+    border-radius: 26px 0 0 26px;       /* round the left side only — tab look */
+    box-shadow: -3px 4px 16px rgba(15,148,137,.42);
+}
+#miniChatRoot.mc-collapsed #miniChatFab:hover,
+#miniChatRoot.mc-collapsed #miniChatFab:focus-visible,
+#miniChatRoot.mc-open #miniChatFab {
+    right: 16px;
+    justify-content: center;
+    padding-left: 0;
+    border-radius: 50%;
+    box-shadow: 0 6px 28px rgba(15,148,137,.55);
+}
 /* Push FAB above fixed submit bars so it doesn't overlap */
 body:has(.sale-submit-bar) #miniChatFab { bottom: 82px; transition: bottom .2s; }
 body.txn-summary-active  #miniChatFab { bottom: 158px; }
@@ -1862,7 +1896,14 @@ body.txn-summary-active  #miniChatFab { bottom: 158px; }
     display: flex; align-items: center; justify-content: center;
     padding: 0 3px;
     border: 2px solid var(--surface, #fff);
+    transition: left .22s ease, right .22s ease, top .22s ease;
 }
+/* When collapsed, the right side is off-screen — move the unread badge to the
+   visible (left) sliver so the count still shows. Hover/open restores it. */
+#miniChatRoot.mc-collapsed #miniChatFab .mc-fab-badge { right: auto; left: -4px; top: -5px; }
+#miniChatRoot.mc-collapsed #miniChatFab:hover .mc-fab-badge,
+#miniChatRoot.mc-collapsed #miniChatFab:focus-visible .mc-fab-badge,
+#miniChatRoot.mc-open #miniChatFab .mc-fab-badge { left: auto; right: -3px; top: -3px; }
 
 /* ══ Window ═══════════════════════════════════════════════════ */
 #miniChatWin {
@@ -2051,6 +2092,8 @@ body.txn-summary-active  #miniChatFab { bottom: 158px; }
         document.getElementById('miniChatWin').style.display = mcOpen ? 'flex' : 'none';
         document.getElementById('miniChatFab').style.background = mcOpen ? '#475569' : '';
         document.getElementById('miniChatFabIcon').className = mcOpen ? 'fas fa-xmark' : 'fas fa-comments';
+        // While the chat window is open, force the full bubble out (not the tab)
+        document.getElementById('miniChatRoot').classList.toggle('mc-open', mcOpen);
         if (mcOpen && mcUsers.length === 0) mcLoadUsers();
     };
 

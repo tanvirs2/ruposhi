@@ -233,13 +233,17 @@ class CustomerController extends Controller
             ->orderBy('sale_date')->orderBy('id')
             ->get();
 
-        $rows = collect();
+        // ── Two separate ledgers ──────────────────────────────────
+        //  $ledger   → বিক্রয়/বিল সাইড (item, discount, extra_cost)
+        //  $deposits → জমা (payments) — shown in its OWN table, not mixed in
+        $ledger   = collect();
+        $deposits = collect();
 
         foreach ($sales as $sale) {
             $saleTime = $sale->created_at ?? $sale->sale_date;
             // One row per item
             foreach ($sale->items as $si) {
-                $rows->push([
+                $ledger->push([
                     'sort_key' => $saleTime,
                     'datetime' => $saleTime,
                     'sale_id'  => $sale->id,
@@ -251,9 +255,9 @@ class CustomerController extends Controller
                     'credit'   => 0,
                 ]);
             }
-            // Discount row (credit — reduces balance)
+            // Discount row (credit — reduces the bill)
             if ($sale->discount > 0) {
-                $rows->push([
+                $ledger->push([
                     'sort_key' => $saleTime,
                     'datetime' => $saleTime,
                     'sale_id'  => $sale->id,
@@ -268,7 +272,7 @@ class CustomerController extends Controller
             // Extra cost rows (categorized — new system)
             if ($sale->extraCosts->isNotEmpty()) {
                 foreach ($sale->extraCosts as $ec) {
-                    $rows->push([
+                    $ledger->push([
                         'sort_key' => $saleTime,
                         'datetime' => $saleTime,
                         'sale_id'  => $sale->id,
@@ -282,7 +286,7 @@ class CustomerController extends Controller
                 }
             } elseif (($sale->extra_cost ?? 0) > 0) {
                 // Legacy fallback: old record without extraCosts rows
-                $rows->push([
+                $ledger->push([
                     'sort_key' => $saleTime,
                     'datetime' => $saleTime,
                     'sale_id'  => $sale->id,
@@ -294,23 +298,20 @@ class CustomerController extends Controller
                     'credit'   => 0,
                 ]);
             }
-            // Initial payment on the sale (paid_amount > 0)
+            // Initial payment on the sale (paid_amount > 0) → জমা টেবিল
             if ($sale->paid_amount > 0) {
-                $rows->push([
+                $deposits->push([
                     'sort_key' => $saleTime,
                     'datetime' => $saleTime,
                     'sale_id'  => $sale->id,
-                    'type'     => 'payment',
-                    'label'    => $sale->payment_method ?? 'নগদ',
-                    'qty'      => 0,
-                    'rate'     => 0,
-                    'debit'    => 0,
-                    'credit'   => $sale->paid_amount,
+                    'method'   => $sale->payment_method ?? 'নগদ',
+                    'notes'    => null,
+                    'amount'   => $sale->paid_amount,
                 ]);
             }
         }
 
-        // ── Separate customer payments ────────────────────────────
+        // ── Standalone customer payments → জমা টেবিল ───────────────
         $payments = CustomerPayment::where('customer_id', $customer->id)
             ->whereBetween('payment_date', [$from, $to])
             ->orderBy('payment_date')->orderBy('id')
@@ -318,40 +319,59 @@ class CustomerController extends Controller
 
         foreach ($payments as $p) {
             $pt = $p->created_at ?? $p->payment_date;
-            $rows->push([
+            $deposits->push([
                 'sort_key' => $pt,
                 'datetime' => $pt,
                 'sale_id'  => null,
-                'type'     => 'payment',
-                'label'    => $p->payment_method,
-                'qty'      => 0,
-                'rate'     => 0,
-                'debit'    => 0,
-                'credit'   => $p->amount,
+                'method'   => $p->payment_method,
+                'notes'    => $p->notes,
+                'amount'   => $p->amount,
             ]);
         }
 
-        $ledger        = $rows->sortBy('sort_key')->values();
+        $ledger        = $ledger->sortBy('sort_key')->values();
+        $deposits      = $deposits->sortBy('sort_key')->values();
+
+        // ── Combined (old single-table view) — bills + payments interleaved ──
+        //  Users can toggle between this classic one-table layout and the new
+        //  split layout; the running balance here nets payments (বাকি − জমা).
+        $paymentRows = $deposits->map(fn ($d) => [
+            'sort_key' => $d['sort_key'],
+            'datetime' => $d['datetime'],
+            'sale_id'  => $d['sale_id'],
+            'type'     => 'payment',
+            'label'    => $d['method'] ?: 'নগদ',
+            'qty'      => 0,
+            'rate'     => 0,
+            'debit'    => 0,
+            'credit'   => $d['amount'],
+        ]);
+        $combined = $ledger->concat($paymentRows)->sortBy('sort_key')->values();
+
         $totalSales    = $sales->sum('total_amount');          // after discount
         $totalDiscount = $sales->sum('discount');
         $totalCredits  = $sales->sum('paid_amount') + $payments->sum('amount');
+        $totalDeposits = $totalCredits;                        // same figure, clearer name for the জমা table
         $periodBalance = $totalSales - $totalCredits;
 
         // ── CSV export ────────────────────────────────────────────
         if ($request->export === 'csv') {
             $filename = 'ledger_' . $customer->id . '_' . $from . '_' . $to . '.csv';
             $headers  = ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => "attachment; filename={$filename}"];
-            $callback = function () use ($customer, $ledger, $openingBalance, $totalSales, $totalDiscount, $totalCredits, $periodBalance, $from, $to) {
+            $callback = function () use ($customer, $ledger, $deposits, $openingBalance, $totalSales, $totalDiscount, $totalCredits, $totalDeposits, $periodBalance, $from, $to) {
                 $f = fopen('php://output', 'w');
                 fprintf($f, chr(0xEF) . chr(0xBB) . chr(0xBF));
                 fputcsv($f, ['কাস্টমার লেজার রিপোর্ট']);
                 fputcsv($f, ['প্রতিষ্ঠান', $customer->name, 'প্রোপ্রাইটর', $customer->proprietor ?? '']);
                 fputcsv($f, ['ফোন', $customer->phone ?? '', 'সময়কাল', $from . ' থেকে ' . $to]);
                 fputcsv($f, []);
-                fputcsv($f, ['চালান নং', 'তারিখ', 'বিবরণ', 'পরিমাণ', 'দর', 'জমা', 'বাকি', 'অবশিষ্ট']);
+
+                // ── Section 1: বিক্রয় খতিয়ান (bills) ──
+                fputcsv($f, ['বিক্রয় খতিয়ান']);
+                fputcsv($f, ['চালান নং', 'তারিখ', 'বিবরণ', 'পরিমাণ', 'দর', 'বাকি', 'অবশিষ্ট']);
                 $bal = $openingBalance;
                 if ($openingBalance > 0)
-                    fputcsv($f, ['', '', 'পূর্বের অবশিষ্ট', '', '', '', '', $openingBalance]);
+                    fputcsv($f, ['', '', 'পূর্বের অবশিষ্ট', '', '', '', $openingBalance]);
                 foreach ($ledger as $row) {
                     $bal += $row['debit'] - $row['credit'];
                     fputcsv($f, [
@@ -360,21 +380,38 @@ class CustomerController extends Controller
                         $row['label'],
                         $row['qty'] ?: '',
                         $row['rate'] ?: '',
-                        $row['credit'] ?: '',
-                        $row['debit'] ?: '',
+                        $row['debit'] ? $row['debit'] : ($row['credit'] ? -$row['credit'] : ''),
                         $bal,
                     ]);
                 }
+                fputcsv($f, ['', '', '', '', '', 'অবশিষ্ট', $bal]);
                 fputcsv($f, []);
-                fputcsv($f, ['মোট', '', '', '', '', $totalCredits, $totalSales, $bal]);
+
+                // ── Section 2: জমা তালিকা (deposits) ──
+                fputcsv($f, ['জমা তালিকা']);
+                fputcsv($f, ['তারিখ', 'পদ্ধতি', 'সূত্র / মন্তব্য', 'পরিমাণ']);
+                foreach ($deposits as $d) {
+                    $ref = $d['sale_id']
+                        ? 'চালান ' . str_pad($d['sale_id'], 6, '0', STR_PAD_LEFT)
+                        : ($d['notes'] ?: 'পরিশোধ');
+                    fputcsv($f, [
+                        \Carbon\Carbon::parse($d['datetime'])->format('Y-m-d H:i:s'),
+                        $d['method'],
+                        $ref,
+                        $d['amount'],
+                    ]);
+                }
+                fputcsv($f, ['', '', 'মোট জমা', $totalDeposits]);
+                fputcsv($f, []);
+                fputcsv($f, ['', '', 'নিট বাকী (অবশিষ্ট − মোট জমা)', $bal - $totalDeposits]);
                 fclose($f);
             };
             return response()->stream($callback, 200, $headers);
         }
 
         return view('customers.ledger', compact(
-            'customer', 'ledger', 'from', 'to',
-            'openingBalance', 'totalSales', 'totalDiscount', 'totalCredits', 'periodBalance', 'realTotalDue'
+            'customer', 'ledger', 'deposits', 'combined', 'from', 'to',
+            'openingBalance', 'totalSales', 'totalDiscount', 'totalCredits', 'totalDeposits', 'periodBalance', 'realTotalDue'
         ));
     }
 }

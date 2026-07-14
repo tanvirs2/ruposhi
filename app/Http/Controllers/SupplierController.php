@@ -184,6 +184,25 @@ class SupplierController extends Controller
         $totalCredit  = $ledger->sum('credit');
         $receiptCount = $purchases->count();
 
+        // ── Split view (toggle-able) ───────────────────────────────
+        //  $combined → old single-table view (identical to $ledger above)
+        //  $bills    → new view: purchases only (item/extra_cost — debit rows)
+        //  $deposits → new view: all payments (deposit/purchase_payment/standalone) in their own table
+        $combined = $ledger;
+
+        $bills = $rows->filter(fn($r) => in_array($r->type, ['item', 'extra_cost']))
+            ->sortBy('sort_key')->values();
+        $runBillBal = $openingBalance;
+        foreach ($bills as $row) {
+            $runBillBal  += $row->debit;
+            $row->balance = $runBillBal;
+        }
+
+        $deposits = $rows->filter(fn($r) => in_array($r->type, ['deposit', 'purchase_payment']))
+            ->concat($supplierPayments)
+            ->sortBy('sort_key')->values();
+        $totalDeposits = $totalCredit;
+
         // Real total due (all time) — auto-fix stale due_amount (allows negative for credit/advance)
         $allPurchaseIds  = Purchase::where('supplier_id', $supplier->id)->pluck('id');
         $allTimePurchases = Purchase::where('supplier_id', $supplier->id)->sum('total_amount');
@@ -199,7 +218,7 @@ class SupplierController extends Controller
         if ($request->export === 'csv') {
             $filename = 'supplier_ledger_' . $supplier->id . '_' . $from . '_' . $to . '.csv';
             $headers  = ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => "attachment; filename={$filename}"];
-            $callback = function () use ($supplier, $ledger, $openingBalance, $totalDebit, $totalCredit, $from, $to) {
+            $callback = function () use ($supplier, $combined, $openingBalance, $totalDebit, $totalCredit, $from, $to) {
                 $f = fopen('php://output', 'w');
                 fprintf($f, chr(0xEF) . chr(0xBB) . chr(0xBF));
                 fputcsv($f, ['সরবরাহকারী লেজার রিপোর্ট']);
@@ -208,7 +227,7 @@ class SupplierController extends Controller
                 fputcsv($f, []);
                 fputcsv($f, ['তারিখ', 'বিবরণ', 'পরিমাণ', 'দর', 'জমা (Cr)', 'মোট মূল্য (Dr)', 'অবশিষ্ট']);
                 fputcsv($f, ['', 'পূর্বের অবশিষ্ট', '', '', '', '', $openingBalance]);
-                foreach ($ledger as $row) {
+                foreach ($combined as $row) {
                     fputcsv($f, [
                         $row->date,
                         $row->label,
@@ -227,8 +246,8 @@ class SupplierController extends Controller
         }
 
         return view('suppliers.ledger', compact(
-            'supplier', 'ledger', 'from', 'to',
-            'openingBalance', 'totalDebit', 'totalCredit', 'realTotalDue', 'receiptCount'
+            'supplier', 'combined', 'bills', 'deposits', 'from', 'to',
+            'openingBalance', 'totalDebit', 'totalCredit', 'totalDeposits', 'realTotalDue', 'receiptCount'
         ));
     }
 

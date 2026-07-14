@@ -95,7 +95,7 @@
     <div class="ledger-kpi ledger-kpi-green">
         <div class="ledger-kpi-label"><i class="fas fa-money-bill-wave"></i> মোট পরিশোধ</div>
         <div class="ledger-kpi-value">৳ {{ number_format($totalCredits, 0) }}</div>
-        <div class="ledger-kpi-sub">{{ $ledger->where('type','payment')->count() }}টি পরিশোধ</div>
+        <div class="ledger-kpi-sub">{{ $deposits->count() }}টি জমা</div>
     </div>
     <div class="ledger-kpi {{ $periodBalance > 0 ? 'ledger-kpi-red' : 'ledger-kpi-green' }}">
         <div class="ledger-kpi-label"><i class="fas fa-calculator"></i> এই সময়ের বাকী</div>
@@ -117,8 +117,23 @@
     </div>
 </div>
 
-{{-- ── Ledger Table ────────────────────────────────────────────── --}}
+{{-- ── View toggle: পুরনো (এক টেবিল) ↔ নতুন (দুই টেবিল) ── --}}
+<div class="cl-view-toggle no-print">
+    <span style="font-size:.82rem;color:#64748b;font-weight:600">ভিউ:</span>
+    <button type="button" id="clViewBtnOld" class="cl-view-btn" onclick="clSetView('old')">
+        <i class="fas fa-table-list"></i> এক টেবিল
+    </button>
+    <button type="button" id="clViewBtnNew" class="cl-view-btn" onclick="clSetView('new')">
+        <i class="fas fa-table-columns"></i> দুই টেবিল
+    </button>
+</div>
+
+{{-- ══════════ OLD VIEW — single combined table (default) ══════════ --}}
+<div id="ledgerViewOld">
 <div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-book-open" style="color:#1d4ed8"></i> লেনদেনের বিবরণ</h3>
+    </div>
     <div class="table-wrap">
         <table class="data-table cl-table">
             <colgroup>
@@ -144,12 +159,217 @@
                 </tr>
             </thead>
             <tbody>
+                @php $running2 = $openingBalance; $prevSaleId2 = null; @endphp
+                @if($openingBalance != 0)
+                <tr class="cl-opening-row">
+                    <td colspan="7" style="font-weight:700;color:#475569">পূর্বের অবশিষ্ট</td>
+                    <td style="text-align:right;font-weight:800;color:{{ $openingBalance > 0 ? '#b45309' : '#15803d' }}">
+                        {{ number_format(abs($openingBalance), 0) }}
+                    </td>
+                </tr>
+                @endif
+                @forelse($combined as $row)
+                @php
+                    $running2   += $row['debit'] - $row['credit'];
+                    $isNewSale2  = $row['sale_id'] && $row['sale_id'] !== $prevSaleId2 && $row['type'] === 'item';
+                    if ($row['sale_id']) $prevSaleId2 = $row['sale_id'];
+                    $rowClass2 = match($row['type']) {
+                        'payment'    => 'cl-payment-row',
+                        'discount'   => 'cl-discount-row',
+                        'extra_cost' => 'cl-extracost-row',
+                        default      => '',
+                    };
+                @endphp
+                <tr class="{{ $rowClass2 }} {{ $isNewSale2 && !$loop->first ? 'cl-new-sale' : '' }}">
+                    <td class="tc mono" style="font-size:.82rem">
+                        @if($row['sale_id'])
+                            <a href="{{ route('sales.show', $row['sale_id']) }}" class="link-primary">{{ str_pad($row['sale_id'], 6, '0', STR_PAD_LEFT) }}</a>
+                        @else
+                            <span class="cl-dash">—</span>
+                        @endif
+                    </td>
+                    <td class="cl-date" style="white-space:nowrap">
+                        @php $dt2 = \Carbon\Carbon::parse($row['datetime']); @endphp
+                        {{ $dt2->format('Y-m-d') }} <span class="cl-time">{{ $dt2->format('h:i:s a') }}</span>
+                    </td>
+                    <td>
+                        @if($row['type'] === 'payment')
+                            <span class="cl-payment-label"><i class="fas fa-circle-check" style="font-size:.72rem;margin-right:3px"></i> {{ $row['label'] }}</span>
+                        @elseif($row['type'] === 'discount')
+                            <span class="cl-discount-label"><i class="fas fa-tag" style="font-size:.72rem;margin-right:3px"></i> {{ $row['label'] }}</span>
+                        @elseif($row['type'] === 'extra_cost')
+                            <span class="cl-extracost-label"><i class="fas fa-plus-circle" style="font-size:.72rem;margin-right:3px"></i> {{ $row['label'] }}</span>
+                        @else
+                            <span class="cl-item-name">{{ $row['label'] }}</span>
+                        @endif
+                    </td>
+                    <td style="text-align:right;font-variant-numeric:tabular-nums">
+                        @if($row['qty'] > 0)<strong>{{ number_format($row['qty'], 0) }}</strong>@else<span class="cl-dash">-</span>@endif
+                    </td>
+                    <td style="text-align:right;font-variant-numeric:tabular-nums;color:#475569">
+                        @if($row['rate'] > 0){{ number_format($row['rate'], 0) }}@else<span class="cl-dash">-</span>@endif
+                    </td>
+                    <td style="text-align:right;font-variant-numeric:tabular-nums">
+                        @if($row['debit'] > 0)<span class="cl-debit">{{ number_format($row['debit'], 0) }}</span>@else<span class="cl-dash">-</span>@endif
+                    </td>
+                    <td style="text-align:right;font-variant-numeric:tabular-nums">
+                        @if($row['credit'] > 0)<span class="cl-credit">{{ number_format($row['credit'], 0) }}</span>@else<span class="cl-dash">-</span>@endif
+                    </td>
+                    <td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:{{ $running2 > 0 ? '#b45309' : ($running2 < 0 ? '#15803d' : '#64748b') }}">
+                        {{ number_format(abs($running2), 0) }}
+                        @if($running2 < 0)<div style="font-size:.68rem;font-weight:600;color:#15803d;margin-top:1px">(অতিরিক্ত)</div>@endif
+                    </td>
+                </tr>
+                @empty
+                <tr><td colspan="8" class="empty-row">এই সময়কালে কোনো লেনদেন নেই</td></tr>
+                @endforelse
+            </tbody>
+            @if($combined->count())
+            <tfoot>
+                <tr class="cl-tfoot">
+                    <td colspan="3" style="font-weight:700">সর্বমোট</td>
+                    <td style="text-align:right">
+                        <span class="cl-mask-value" onclick="this.classList.toggle('revealed')"><span class="cl-mask-dots">—</span><span class="cl-mask-real">{{ number_format($combined->sum('qty'), 0) }}</span></span>
+                    </td>
+                    <td></td>
+                    <td style="text-align:right;font-weight:700;color:#dc2626">
+                        <span class="cl-mask-value" onclick="this.classList.toggle('revealed')"><span class="cl-mask-dots">—</span><span class="cl-mask-real">{{ number_format($totalSales + $totalDiscount, 0) }}</span></span>
+                    </td>
+                    <td style="text-align:right;font-weight:700;color:#15803d">
+                        <span class="cl-mask-value" onclick="this.classList.toggle('revealed')"><span class="cl-mask-dots">—</span><span class="cl-mask-real">{{ number_format($totalCredits + $totalDiscount, 0) }}</span></span>
+                    </td>
+                    <td style="text-align:right;font-weight:800;color:{{ $running2 > 0 ? '#b45309' : ($running2 < 0 ? '#15803d' : '#64748b') }}">
+                        {{ number_format(abs($running2), 0) }}
+                        @if($running2 < 0) <div style="font-size:.7rem;color:#15803d">(অতিরিক্ত)</div> @endif
+                    </td>
+                </tr>
+            </tfoot>
+            @endif
+        </table>
+    </div>
+</div>
+</div>{{-- /#ledgerViewOld --}}
+
+{{-- ══════════ NEW VIEW — deposits table + bills table ══════════ --}}
+<div id="ledgerViewNew" style="display:none">
+
+@php
+    // Final running bill = opening + all bill movements (payments are NOT
+    // deducted here — they live in the জমা table below); net due subtracts them.
+    $mainFinal = $openingBalance + $ledger->sum('debit') - $ledger->sum('credit');
+    $netDue    = $mainFinal - $totalDeposits;
+@endphp
+
+{{-- ── জমা তালিকা (payments — kept in its OWN table) ─────────────── --}}
+<div class="card cl-deposit-card">
+    <div class="card-header">
+        <h3><i class="fas fa-money-bill-wave" style="color:#16a34a"></i> জমা তালিকা</h3>
+        <span style="font-size:.78rem;color:#64748b;margin-left:auto">{{ $deposits->count() }}টি জমা</span>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table cl-deposit-table">
+            <colgroup>
+                <col style="width:190px">  {{-- তারিখ --}}
+                <col style="width:120px">  {{-- পদ্ধতি --}}
+                <col>                      {{-- সূত্র / মন্তব্য --}}
+                <col style="width:130px">  {{-- পরিমাণ --}}
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>তারিখ</th>
+                    <th>পদ্ধতি</th>
+                    <th>সূত্র / মন্তব্য</th>
+                    <th style="text-align:right">পরিমাণ (৳)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($deposits as $d)
+                @php $ddt = \Carbon\Carbon::parse($d['datetime']); @endphp
+                <tr class="cl-deposit-row">
+                    <td class="cl-date" style="white-space:nowrap">
+                        {{ $ddt->format('Y-m-d') }} <span class="cl-time">{{ $ddt->format('h:i:s a') }}</span>
+                    </td>
+                    <td>
+                        <span class="cl-payment-label">
+                            <i class="fas fa-circle-check" style="font-size:.72rem;margin-right:3px"></i>
+                            {{ $d['method'] ?: 'নগদ' }}
+                        </span>
+                    </td>
+                    <td>
+                        @if($d['sale_id'])
+                            <a href="{{ route('sales.show', $d['sale_id']) }}" class="link-primary mono" style="font-size:.82rem">
+                                চালান {{ str_pad($d['sale_id'], 6, '0', STR_PAD_LEFT) }}
+                            </a>
+                        @else
+                            <span style="color:#475569">{{ $d['notes'] ?: 'সরাসরি পরিশোধ' }}</span>
+                        @endif
+                    </td>
+                    <td style="text-align:right;font-variant-numeric:tabular-nums">
+                        <span class="cl-credit">{{ number_format($d['amount'], 0) }}</span>
+                    </td>
+                </tr>
+                @empty
+                <tr><td colspan="4" class="empty-row">এই সময়কালে কোনো জমা নেই</td></tr>
+                @endforelse
+            </tbody>
+            @if($deposits->count())
+            <tfoot>
+                <tr class="cl-tfoot">
+                    <td colspan="3" style="font-weight:700">মোট জমা</td>
+                    <td style="text-align:right;font-weight:700;color:#15803d">
+                        <span class="cl-mask-value" onclick="this.classList.toggle('revealed')">
+                            <span class="cl-mask-dots">—</span>
+                            <span class="cl-mask-real">{{ number_format($totalDeposits, 0) }}</span>
+                        </span>
+                    </td>
+                </tr>
+                <tr class="cl-tfoot cl-netdue-row">
+                    <td colspan="3" style="font-weight:800">নিট বাকী <span style="font-weight:500;color:#64748b;font-size:.8rem">(অবশিষ্ট − মোট জমা)</span></td>
+                    <td style="text-align:right;font-weight:800;color:{{ $netDue > 0 ? '#b45309' : ($netDue < 0 ? '#15803d' : '#64748b') }}">
+                        {{ number_format(abs($netDue), 0) }}
+                        @if($netDue < 0) <div style="font-size:.7rem;color:#15803d">(অতিরিক্ত)</div> @endif
+                    </td>
+                </tr>
+            </tfoot>
+            @endif
+        </table>
+    </div>
+</div>
+
+{{-- ── Ledger Table (বিক্রয় খতিয়ান — bills only) ──────────────────── --}}
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-book-open" style="color:#1d4ed8"></i> বিক্রয় খতিয়ান</h3>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table cl-table">
+            <colgroup>
+                <col style="width:90px">    {{-- চালান নং --}}
+                <col style="width:120px">   {{-- তারিখ --}}
+                <col style="width:240px">   {{-- বিবরণ --}}
+                <col style="width:70px">    {{-- পরিমাণ --}}
+                <col style="width:70px">    {{-- দর --}}
+                <col style="width:100px">   {{-- বাকি --}}
+                <col style="width:120px">   {{-- অবশিষ্ট --}}
+            </colgroup>
+            <thead>
+                <tr>
+                    <th class="tc">চালান নং</th>
+                    <th>তারিখ</th>
+                    <th>বিবরণ</th>
+                    <th style="text-align:right">পরিমাণ</th>
+                    <th style="text-align:right">দর</th>
+                    <th style="text-align:right">বাকি (৳)</th>
+                    <th style="text-align:right">অবশিষ্ট (৳)</th>
+                </tr>
+            </thead>
+            <tbody>
                 @php $running = $openingBalance; $prevSaleId = null; @endphp
 
                 {{-- Opening balance row --}}
                 @if($openingBalance != 0)
                 <tr class="cl-opening-row">
-                    <td colspan="7" style="font-weight:700;color:#475569">পূর্বের অবশিষ্ট</td>
+                    <td colspan="6" style="font-weight:700;color:#475569">পূর্বের অবশিষ্ট</td>
                     <td style="text-align:right;font-weight:800;color:{{ $openingBalance > 0 ? '#b45309' : '#15803d' }}">
                         {{ number_format(abs($openingBalance), 0) }}
                     </td>
@@ -164,7 +384,6 @@
                 @endphp
                 @php
                     $rowClass = match($row['type']) {
-                        'payment'    => 'cl-payment-row',
                         'discount'   => 'cl-discount-row',
                         'extra_cost' => 'cl-extracost-row',
                         default      => '',
@@ -187,12 +406,7 @@
                         {{ $dt->format('Y-m-d') }} <span class="cl-time">{{ $dt->format('h:i:s a') }}</span>
                     </td>
                     <td>
-                        @if($row['type'] === 'payment')
-                            <span class="cl-payment-label">
-                                <i class="fas fa-circle-check" style="font-size:.72rem;margin-right:3px"></i>
-                                {{ $row['label'] }}
-                            </span>
-                        @elseif($row['type'] === 'discount')
+                        @if($row['type'] === 'discount')
                             <span class="cl-discount-label">
                                 <i class="fas fa-tag" style="font-size:.72rem;margin-right:3px"></i>
                                 {{ $row['label'] }}
@@ -223,13 +437,8 @@
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
                         @if($row['debit'] > 0)
                             <span class="cl-debit">{{ number_format($row['debit'], 0) }}</span>
-                        @else
-                            <span class="cl-dash">-</span>
-                        @endif
-                    </td>
-                    <td style="text-align:right;font-variant-numeric:tabular-nums">
-                        @if($row['credit'] > 0)
-                            <span class="cl-credit">{{ number_format($row['credit'], 0) }}</span>
+                        @elseif($row['credit'] > 0)
+                            <span class="cl-credit">− {{ number_format($row['credit'], 0) }}</span>
                         @else
                             <span class="cl-dash">-</span>
                         @endif
@@ -243,7 +452,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="8" class="empty-row">এই সময়কালে কোনো লেনদেন নেই</td></tr>
+                <tr><td colspan="7" class="empty-row">এই সময়কালে কোনো লেনদেন নেই</td></tr>
                 @endforelse
             </tbody>
             @if($ledger->count())
@@ -260,13 +469,7 @@
                     <td style="text-align:right;font-weight:700;color:#dc2626">
                         <span class="cl-mask-value" onclick="this.classList.toggle('revealed')">
                             <span class="cl-mask-dots">—</span>
-                            <span class="cl-mask-real">{{ number_format($totalSales + $totalDiscount, 0) }}</span>
-                        </span>
-                    </td>
-                    <td style="text-align:right;font-weight:700;color:#15803d">
-                        <span class="cl-mask-value" onclick="this.classList.toggle('revealed')">
-                            <span class="cl-mask-dots">—</span>
-                            <span class="cl-mask-real">{{ number_format($totalCredits + $totalDiscount, 0) }}</span>
+                            <span class="cl-mask-real">{{ number_format($ledger->sum('debit') - $ledger->sum('credit'), 0) }}</span>
                         </span>
                     </td>
                     <td style="text-align:right;font-weight:800;color:{{ $running > 0 ? '#b45309' : ($running < 0 ? '#15803d' : '#64748b') }}">
@@ -279,6 +482,34 @@
         </table>
     </div>
 </div>
+
+</div>{{-- /#ledgerViewNew --}}
+
+<script>
+// Toggle between the classic single-table view and the split two-table view.
+// Default = old (single table); choice remembered in localStorage.
+function clSetView(mode) {
+    var isNew = mode === 'new';
+    var vOld = document.getElementById('ledgerViewOld');
+    var vNew = document.getElementById('ledgerViewNew');
+    if (vOld) vOld.style.display = isNew ? 'none' : '';
+    if (vNew) vNew.style.display = isNew ? '' : 'none';
+    var bOld = document.getElementById('clViewBtnOld');
+    var bNew = document.getElementById('clViewBtnNew');
+    if (bOld) bOld.classList.toggle('active', !isNew);
+    if (bNew) bNew.classList.toggle('active', isNew);
+    try { localStorage.setItem('cl_ledger_view', mode); } catch (e) {}
+    // The expand button is only added to tables measurable at setup time —
+    // a view hidden during that first pass got offsetHeight=0 and no button.
+    // Re-run it now that this view is visible.
+    if (window.setupCompactTables) window.setupCompactTables(isNew ? vNew : vOld);
+}
+(function () {
+    var saved = 'old';
+    try { saved = localStorage.getItem('cl_ledger_view') || 'old'; } catch (e) {}
+    clSetView(saved);
+})();
+</script>
 
 @endsection
 
@@ -339,6 +570,24 @@
     border-top: 2px solid var(--border);
 }
 
+/* ── ভিউ টগল (এক টেবিল / দুই টেবিল) ── */
+.cl-view-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+.cl-view-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: .82rem; font-weight: 600; padding: 6px 14px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-secondary);
+    cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+}
+.cl-view-btn:hover { background: var(--surface-2); }
+.cl-view-btn.active { background: var(--accent, #0d9488); color: #fff; border-color: var(--accent, #0d9488); }
+
+/* ── জমা তালিকা (আলাদা টেবিল) ── */
+.cl-deposit-card { margin-bottom: 18px; }
+.cl-deposit-table td, .cl-deposit-table th { white-space: nowrap; }
+.cl-deposit-row td { background: #f0fdf4; }
+.cl-netdue-row td { border-top: 2px solid var(--border) !important; font-size: .95rem; }
+
 /* ── তফুতের বিক্রয়/জমা টোটাল — ডিফল্টে মাস্কড, ক্লিকে দেখা যায় ── */
 .cl-mask-value { cursor: pointer; user-select: none; display: inline-block; }
 .cl-mask-value .cl-mask-real { display: none; }
@@ -366,18 +615,20 @@
     .card { box-shadow: none !important; border: none !important; }
     /* White rows — keep structure with borders instead of tinted backgrounds */
     .cl-payment-row td, .cl-opening-row td, .cl-discount-row td,
-    .cl-extracost-row td, .cl-laborcost-row td, .cl-tfoot td { background: #fff !important; }
+    .cl-extracost-row td, .cl-laborcost-row td, .cl-tfoot td,
+    .cl-deposit-row td { background: #fff !important; }
     .cl-opening-row td { border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; }
     .cl-tfoot td { border-top: 1.5px solid #000; }
 
     /* Compact rows: inline rem font sizes on cells beat the global 10px
        table rule; stylesheet !important beats inline styles. */
     .cl-table td, .cl-table td span, .cl-table td small,
-    .cl-table td a, .cl-table td strong, .cl-table td div { font-size: 9.5px !important; }
-    .cl-table td { padding: 1px 5px !important; line-height: 1.3 !important; }
+    .cl-table td a, .cl-table td strong, .cl-table td div,
+    .cl-deposit-table td, .cl-deposit-table td span, .cl-deposit-table td a { font-size: 9.5px !important; }
+    .cl-table td, .cl-deposit-table td { padding: 1px 5px !important; line-height: 1.3 !important; }
     .cl-table td br { display: none; }
     .cl-time { font-size: 7.5px !important; }
-    .cl-table td i { display: none; }
+    .cl-table td i, .cl-deposit-table td i { display: none; }
 
     /* সর্বমোট রো-র বিক্রয়/জমা টোটাল প্রিন্টে সম্পূর্ণ হাইড — শুধু অবশিষ্ট দেখা যাবে */
     .cl-mask-value { display: none !important; }
