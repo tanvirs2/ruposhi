@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Ruposhi POS — টেস্টিং শীট</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>">
+<style>
+  /* self-hosted Hind Siliguri — matches the app, zero external requests */
+  @font-face{font-family:"Hind Siliguri";font-weight:400;font-display:swap;
+    src:url("/fonts/hind-siliguri-400-bengali.woff2") format("woff2"),url("/fonts/hind-siliguri-400-latin.woff2") format("woff2");}
+  @font-face{font-family:"Hind Siliguri";font-weight:500;font-display:swap;
+    src:url("/fonts/hind-siliguri-500-bengali.woff2") format("woff2"),url("/fonts/hind-siliguri-500-latin.woff2") format("woff2");}
+  @font-face{font-family:"Hind Siliguri";font-weight:600;font-display:swap;
+    src:url("/fonts/hind-siliguri-600-bengali.woff2") format("woff2"),url("/fonts/hind-siliguri-600-latin.woff2") format("woff2");}
+  @font-face{font-family:"Hind Siliguri";font-weight:700;font-display:swap;
+    src:url("/fonts/hind-siliguri-700-bengali.woff2") format("woff2"),url("/fonts/hind-siliguri-700-latin.woff2") format("woff2");}
+
+  :root{
+    --bg:#f5f8f7; --surface:#ffffff; --surface-2:#eef3f2;
+    --ink:#16211f; --ink-2:#4a5a57; --ink-3:#7d8c89;
+    --line:#dde5e3; --line-2:#c8d3d0;
+    --teal:#0d9488; --teal-d:#0a6d64; --teal-bg:#e2f2f0;
+    --pass:#16a34a; --pass-bg:#e7f6ec; --pass-line:#a7d8b6;
+    --fail:#dc2626; --fail-bg:#fdeaea; --fail-line:#f0b4b4;
+    --pend:#b7791f; --pend-bg:#fbf1dd; --pend-line:#e8cf9a;
+    --shadow:0 1px 2px rgba(16,40,36,.04),0 4px 16px rgba(16,40,36,.05);
+    --font:"Hind Siliguri","Nirmala UI","Noto Sans Bengali",system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0e1615; --surface:#15201e; --surface-2:#1b2825;
+      --ink:#e8efed; --ink-2:#9fb0ad; --ink-3:#6f807d;
+      --line:#26332f; --line-2:#33433f;
+      --teal:#2dd4bf; --teal-d:#5eead4; --teal-bg:#123330;
+      --pass:#46d67f; --pass-bg:#12291b; --pass-line:#265d3a;
+      --fail:#f87171; --fail-bg:#2b1717; --fail-line:#5e2b2b;
+      --pend:#e3b055; --pend-bg:#2a2312; --pend-line:#5c4a22;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0e1615; --surface:#15201e; --surface-2:#1b2825;
+    --ink:#e8efed; --ink-2:#9fb0ad; --ink-3:#6f807d;
+    --line:#26332f; --line-2:#33433f;
+    --teal:#2dd4bf; --teal-d:#5eead4; --teal-bg:#123330;
+    --pass:#46d67f; --pass-bg:#12291b; --pass-line:#265d3a;
+    --fail:#f87171; --fail-bg:#2b1717; --fail-line:#5e2b2b;
+    --pend:#e3b055; --pend-bg:#2a2312; --pend-line:#5c4a22;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --bg:#f5f8f7; --surface:#ffffff; --surface-2:#eef3f2;
+    --ink:#16211f; --ink-2:#4a5a57; --ink-3:#7d8c89;
+    --line:#dde5e3; --line-2:#c8d3d0;
+    --teal:#0d9488; --teal-d:#0a6d64; --teal-bg:#e2f2f0;
+    --pass:#16a34a; --pass-bg:#e7f6ec; --pass-line:#a7d8b6;
+    --fail:#dc2626; --fail-bg:#fdeaea; --fail-line:#f0b4b4;
+    --pend:#b7791f; --pend-bg:#fbf1dd; --pend-line:#e8cf9a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
+    -webkit-font-smoothing:antialiased;line-height:1.5;font-size:15px}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 18px 80px}
+
+  .mast{padding:26px 0 18px;text-align:center}
+  .mast .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--teal-d);font-weight:600;margin:0 0 6px}
+  .mast h1{margin:0;font-size:27px;font-weight:700;letter-spacing:-.01em}
+  .mast p{margin:8px auto 0;max-width:560px;color:var(--ink-2);font-size:14px}
+
+  .bar{position:sticky;top:0;z-index:20;background:var(--surface);
+    border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
+    padding:14px 16px;margin-bottom:20px}
+  .bar-top{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field label{font-size:11px;font-weight:600;color:var(--ink-3);
+    text-transform:uppercase;letter-spacing:.05em}
+  .field input{background:var(--surface-2);border:1px solid var(--line);
+    color:var(--ink);border-radius:8px;padding:7px 10px;font-family:var(--font);
+    font-size:14px;min-width:150px}
+  .field input:focus{outline:2px solid var(--teal);outline-offset:-1px;border-color:transparent}
+  .bar-spacer{flex:1}
+  .btns{display:flex;flex-wrap:wrap;gap:8px}
+  .btn{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+    background:var(--surface-2);border:1px solid var(--line-2);color:var(--ink);
+    border-radius:8px;padding:8px 12px;font-family:var(--font);font-size:13px;
+    font-weight:600;transition:background .12s,border-color .12s}
+  .btn:hover{background:var(--teal-bg);border-color:var(--teal)}
+  .btn svg{width:15px;height:15px}
+
+  .prog{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+  .prog-nums{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;
+    padding:5px 11px;border-radius:20px;border:1px solid transparent;cursor:pointer;
+    transition:transform .1s}
+  .chip:hover{transform:translateY(-1px)}
+  .chip .dot{width:9px;height:9px;border-radius:50%}
+  .chip.total{background:var(--surface-2);border-color:var(--line-2);color:var(--ink-2)}
+  .chip.pass{background:var(--pass-bg);border-color:var(--pass-line);color:var(--pass)}
+  .chip.fail{background:var(--fail-bg);border-color:var(--fail-line);color:var(--fail)}
+  .chip.pend{background:var(--pend-bg);border-color:var(--pend-line);color:var(--pend)}
+  .chip.untest{background:var(--surface-2);border-color:var(--line-2);color:var(--ink-3)}
+  .chip.active{outline:2px solid currentColor;outline-offset:1px}
+  .prog-bar{height:9px;border-radius:6px;background:var(--surface-2);
+    overflow:hidden;display:flex}
+  .prog-bar span{height:100%;transition:width .3s}
+  .seg-pass{background:var(--pass)} .seg-fail{background:var(--fail)}
+  .seg-pend{background:var(--pend)}
+  .prog-pct{font-size:12px;color:var(--ink-3);margin-top:6px;text-align:right;
+    font-variant-numeric:tabular-nums}
+
+  .mod{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+  .mod-head{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;
+    user-select:none}
+  .mod-head:hover{background:var(--surface-2)}
+  .mod-ico{width:34px;height:34px;flex:none;border-radius:9px;background:var(--teal-bg);
+    color:var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:17px}
+  .mod-titles{flex:1;min-width:0}
+  .mod-titles h2{margin:0;font-size:16px;font-weight:700}
+  .mod-titles .sub{font-size:12px;color:var(--ink-3);margin-top:1px}
+  .mod-mini{display:flex;gap:4px;align-items:center;font-size:12px;font-weight:600;
+    font-variant-numeric:tabular-nums;color:var(--ink-3)}
+  .mod-mini b{color:var(--pass)}
+  .mod-caret{color:var(--ink-3);transition:transform .2s}
+  .mod.collapsed .mod-caret{transform:rotate(-90deg)}
+  .mod.collapsed .mod-body{display:none}
+  .mod-body{border-top:1px solid var(--line)}
+
+  .row{display:grid;grid-template-columns:26px 1fr auto;gap:12px;padding:12px 16px;
+    border-bottom:1px solid var(--line);align-items:start}
+  .row:last-child{border-bottom:none}
+  .row.r-pass{background:linear-gradient(90deg,var(--pass-bg),transparent 60%)}
+  .row.r-fail{background:linear-gradient(90deg,var(--fail-bg),transparent 60%)}
+  .row.r-pend{background:linear-gradient(90deg,var(--pend-bg),transparent 60%)}
+  .row-num{font-size:12px;font-weight:600;color:var(--ink-3);
+    font-variant-numeric:tabular-nums;padding-top:3px}
+  .row-main{min-width:0}
+  .row-title{font-size:14.5px;font-weight:600;color:var(--ink)}
+  .row-desc{font-size:12.5px;color:var(--ink-2);margin-top:2px}
+  .row-comment{margin-top:8px;width:100%;background:var(--surface-2);
+    border:1px solid var(--line);color:var(--ink);border-radius:7px;
+    padding:6px 9px;font-family:var(--font);font-size:12.5px;resize:vertical;
+    min-height:0;height:34px;display:none}
+  .row-comment.show{display:block}
+  .row.r-fail .row-comment{display:block;border-color:var(--fail-line)}
+  .cmt-add{font-size:11.5px;color:var(--teal-d);cursor:pointer;font-weight:600;
+    margin-top:6px;display:inline-flex;align-items:center;gap:3px}
+  .cmt-add.hide{display:none}
+  .verdict{display:flex;gap:4px;flex:none}
+  .vbtn{cursor:pointer;border:1px solid var(--line-2);background:var(--surface);
+    color:var(--ink-3);border-radius:7px;padding:6px 9px;font-family:var(--font);
+    font-size:12px;font-weight:700;transition:all .1s;white-space:nowrap}
+  .vbtn:hover{border-color:var(--ink-3)}
+  .vbtn[data-v="pass"].on{background:var(--pass);border-color:var(--pass);color:#fff}
+  .vbtn[data-v="fail"].on{background:var(--fail);border-color:var(--fail);color:#fff}
+  .vbtn[data-v="pend"].on{background:var(--pend);border-color:var(--pend);color:#fff}
+
+  .foot{text-align:center;color:var(--ink-3);font-size:12px;margin-top:24px;
+    padding-top:16px;border-top:1px solid var(--line)}
+  .hidden{display:none!important}
+
+  @media (max-width:640px){
+    .row{grid-template-columns:22px 1fr;grid-template-areas:"num main" ". verd"}
+    .row-num{grid-area:num} .row-main{grid-area:main} .verdict{grid-area:verd;margin-top:2px}
+    .field input{min-width:120px}
+  }
+
+  @media print{
+    body{background:#fff;color:#000;font-size:11px}
+    .wrap{max-width:100%;padding:0}
+    .bar-top .btns,.theme-tog,.chip.untest{display:none!important}
+    .bar{position:static;box-shadow:none;border:none;padding:0 0 8px;
+      border-bottom:2px solid #000;border-radius:0}
+    .mod{box-shadow:none;border:1px solid #999;break-inside:avoid;margin-bottom:8px}
+    .mod.collapsed .mod-body{display:block!important}
+    .mod-caret,.mod-mini{display:none}
+    .row{break-inside:avoid;padding:6px 10px}
+    .cmt-add{display:none!important}
+    .row-comment{display:block!important;min-height:26px;background:#fff;border-color:#bbb}
+    .vbtn{padding:3px 6px}
+    .vbtn:not(.on){opacity:.35}
+    .prog-bar,.prog-pct{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <p class="kicker">Ruposhi POS · Quality Assurance</p>
+    <h1>সফটওয়্যার টেস্টিং শীট</h1>
+    <p>প্রতিটি ফিচার পরীক্ষা করে <b>পাস</b> / <b>ফেল</b> / <b>বাকি</b> চিহ্নিত করুন। সমস্যা থাকলে মন্তব্যে লিখুন। আপনার কাজ এই ব্রাউজারে সংরক্ষিত থাকবে।</p>
+  </header>
+
+  <div class="bar">
+    <div class="bar-top">
+      <div class="field">
+        <label>টেস্টার এর নাম</label>
+        <input id="tester" placeholder="নাম লিখুন" />
+      </div>
+      <div class="field">
+        <label>তারিখ</label>
+        <input id="tdate" type="date" />
+      </div>
+      <div class="field">
+        <label>ভার্সন / বিল্ড</label>
+        <input id="tver" placeholder="যেমন v4.2" />
+      </div>
+      <div class="bar-spacer"></div>
+      <div class="btns">
+        <button class="btn theme-tog" id="themeBtn" title="থিম">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v1M12 20v1M4.2 4.2l.7.7M19.1 19.1l.7.7M3 12h1M20 12h1M4.2 19.8l.7-.7M19.1 4.9l.7-.7"/><circle cx="12" cy="12" r="4"/></svg>
+          থিম
+        </button>
+        <button class="btn" id="expandBtn">সব বন্ধ করুন</button>
+        <button class="btn" id="csvBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          ডাউনলোড
+        </button>
+        <button class="btn" id="importBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9m0 0l-4 4m4-4l4 4M4 7V5a2 2 0 012-2h12a2 2 0 012 2v2"/></svg>
+          আপলোড
+        </button>
+        <input type="file" id="importFile" accept=".csv,text/csv" style="display:none">
+        <button class="btn" id="printBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-4a2 2 0 012-2h16a2 2 0 012 2v4a2 2 0 01-2 2h-2M6 14h12v7H6z"/></svg>
+          প্রিন্ট
+        </button>
+        <button class="btn" id="resetBtn">রিসেট</button>
+      </div>
+    </div>
+
+    <div class="prog">
+      <div class="prog-nums" id="chips">
+        <span class="chip total" data-f="all">মোট <b id="c-total">0</b></span>
+        <span class="chip pass" data-f="pass"><span class="dot" style="background:var(--pass)"></span>পাস <b id="c-pass">0</b></span>
+        <span class="chip fail" data-f="fail"><span class="dot" style="background:var(--fail)"></span>ফেল <b id="c-fail">0</b></span>
+        <span class="chip pend" data-f="pend"><span class="dot" style="background:var(--pend)"></span>বাকি <b id="c-pend">0</b></span>
+        <span class="chip untest" data-f="untest"><span class="dot" style="background:var(--ink-3)"></span>পরীক্ষা হয়নি <b id="c-untest">0</b></span>
+      </div>
+      <div class="prog-bar">
+        <span class="seg-pass" id="seg-pass" style="width:0"></span>
+        <span class="seg-fail" id="seg-fail" style="width:0"></span>
+        <span class="seg-pend" id="seg-pend" style="width:0"></span>
+      </div>
+      <div class="prog-pct" id="pct">০% সম্পন্ন</div>
+    </div>
+  </div>
+
+  <div id="mods"></div>
+
+  <div class="foot">Ruposhi POS টেস্টিং শীট · প্রতিটি রিলিজের আগে সম্পূর্ণ করুন</div>
+</div>
+
+<script>
+var DATA = [
+ {ic:"🔐", t:"লগইন ও অ্যাক্সেস", s:"সব রোলের প্রবেশ ও নিরাপত্তা", tests:[
+   ["সব রোলে লগইন","root, reseller, super_admin, admin, staff — প্রত্যেকে সঠিক পাসওয়ার্ডে লগইন হয়"],
+   ["রোল অনুযায়ী রিডাইরেক্ট","লগইনের পর root→/root, reseller→/reseller, super→/super, admin/staff→/dashboard"],
+   ["ভুল পাসওয়ার্ড","ভুল দিলে এরর দেখায়, লগইন হয় না"],
+   ["ডেমো ক্রেডেনশিয়াল","লগইন পেজে ডেমো বাটনে ক্লিক করলে ফিল্ড অটো-ফিল হয়"],
+   ["লগআউট","লগআউট বাটনে সেশন শেষ হয়, লগইন পেজে ফেরে"],
+   ["এক্সপায়ার্ড লাইসেন্স","মেয়াদ শেষ super_admin লক পেজ দেখে, ঢুকতে পারে না"],
+ ]},
+ {ic:"🛒", t:"বিক্রয় (Sales)", s:"নতুন বিক্রয়, সংশোধন, ইনভয়েস", tests:[
+   ["নতুন বিক্রয় তৈরি","পণ্য যোগ করে বিক্রয় সেভ হয়, ইনভয়েসে রিডাইরেক্ট"],
+   ["কাস্টমার সার্চ","নাম/ফোন দিয়ে কাস্টমার খুঁজে সিলেক্ট করা যায়"],
+   ["পণ্য ও পরিমাণ","পণ্য যোগ, পরিমাণ ও দাম বদল করলে টোটাল ঠিক হিসাব হয়"],
+   ["বাংলা সংখ্যা","বাংলা অঙ্ক টাইপ করলে সঠিক হিসাব হয়"],
+   ["ছাড় / অতিরিক্ত / শ্রমিক খরচ","তিনটি টগল যোগ/বিয়োগ ঠিকমতো সর্বমোটে প্রভাব ফেলে"],
+   ["পূর্বের বাকী","কাস্টমারের আগের বাকী ইনভয়েসে দেখায়"],
+   ["পরিশোধ ও বাকী","পরিশোধ - সর্বমোট = সঠিক বাকী; কম দিলে বাকী থাকে"],
+   ["লোকসান সতর্কতা","বিক্রয় দাম < ক্রয় দাম হলে লাল 'লোকসান!' দেখায়"],
+   ["অতিরিক্ত লাভ সতর্কতা","১০%+ লাভে 'অতিরিক্ত লাভ!' সতর্কতা দেখায়"],
+   ["স্টক কমা","বিক্রয়ের পর ঐ পণ্যের স্টক কমে"],
+   ["কাস্টমার due আপডেট","বিক্রয়ের পর কাস্টমারের বাকী সঠিক বাড়ে"],
+   ["বিক্রয় সংশোধন","এডিট করলে পুরনো প্রভাব বাতিল হয়ে নতুন প্রয়োগ হয়; edit পেজেও লাভ/লোকসান সতর্কতা"],
+   ["বিক্রয় ডিলিট","ডিলিটে স্টক ফেরে, due কমে, audit log-এ ওঠে"],
+   ["ক্রেডিট লিমিট","লিমিট ছাড়ালে অ্যাম্বার সতর্কতা দেখায় (বিক্রয় আটকায় না)"],
+   ["আইটেম-বিহীন বিক্রয়","শুধু আগের বাকী পরিশোধ (পণ্য ছাড়া) কাজ করে"],
+   ["ক্যাশ মেমো প্রিন্ট","১/৪ পেজে ঠিকমতো ফিট হয়; ৩–৪০ আইটেমেও এক পেজ"],
+   ["WhatsApp শেয়ার","সবুজ বাটনে মেমো সারাংশসহ WhatsApp খোলে"],
+ ]},
+ {ic:"📦", t:"পণ্য গ্রহণ (Purchase)", s:"স্টক রিসিভ ও সাপ্লায়ার", tests:[
+   ["নতুন পণ্য গ্রহণ","সাপ্লায়ার+পণ্য দিয়ে সেভ হয়, ইনভয়েসে যায়"],
+   ["সাপ্লায়ার আবশ্যক","সাপ্লায়ার না দিলে সাবমিট আটকায়"],
+   ["আইটেম-বিহীন গ্রহণ","পণ্য ছাড়া অগ্রিম পরিশোধ কাজ করে; হলুদ সতর্কতা দেখায়"],
+   ["দাম বেড়েছে সতর্কতা","আগের দামের ৫%+ বেশি দিলে অ্যাম্বার ব্যাজ"],
+   ["স্টক বাড়া","গ্রহণের পর স্টক বাড়ে"],
+   ["সাপ্লায়ার due আপডেট","সাপ্লায়ারের বাকী সঠিক বাড়ে (নেগেটিভ = অগ্রিম)"],
+   ["সংশোধন / ডিলিট","এডিট/ডিলিটে স্টক ও due সঠিক ফেরে"],
+   ["ইনভয়েস due লজিক","due >0 বকেয়া, =0 পরিশোধিত, <0 অগ্রিম — সঠিক দেখায়"],
+ ]},
+ {ic:"👥", t:"কাস্টমার", s:"তালিকা, লেজার, ক্রেডিট", tests:[
+   ["তৈরি / সংশোধন / ডিলিট","কাস্টমার CRUD ঠিকমতো কাজ করে"],
+   ["এলাকা সার্চ কম্বোবক্স","এলাকা ফিল্ডে টাইপ করে খুঁজে সিলেক্ট করা যায়"],
+   ["ক্রেডিট লিমিট সেট","লিমিট সেভ হয়; খালি = নো লিমিট"],
+   ["লেজার এক/দুই টেবিল টগল","দুই ভিউ টগল হয়, পছন্দ মনে থাকে; expand বাটন দুই ভিউতেই আসে"],
+   ["নেগেটিভ due (অগ্রিম)","অতিরিক্ত পরিশোধে নীল 'অগ্রিম' ব্যাজ দেখায়"],
+   ["due অটো-ফিক্স","লেজার খুললে বাকী নতুন করে সঠিক হিসাব হয়"],
+   ["টোটাল মাস্কিং","সর্বমোট বাকী ডিফল্টে লুকানো, ক্লিকে দেখায়; প্রিন্টে সবসময় লুকানো"],
+   ["CSV এক্সপোর্ট","লেজার CSV সঠিক ডেটা দেয়"],
+ ]},
+ {ic:"🚚", t:"সাপ্লায়ার", s:"তালিকা ও লেজার", tests:[
+   ["তৈরি / সংশোধন / ডিলিট","সাপ্লায়ার CRUD কাজ করে"],
+   ["লেজার এক/দুই টেবিল টগল","টগল কাজ করে, পছন্দ মনে থাকে"],
+   ["পূর্বের অবশিষ্ট","৳০ হলে সারি দেখায় না; বাকী থাকলে দেখায়"],
+   ["অগ্রিম ব্যাজ","credit সাপ্লায়ারে নীল 'অগ্রিম' ব্যাজ"],
+ ]},
+ {ic:"💵", t:"পেমেন্ট", s:"কাস্টমার ও সাপ্লায়ার পরিশোধ", tests:[
+   ["কাস্টমার পেমেন্ট","পরিশোধে due = আগের due - পরিমাণ (নেগেটিভ অনুমোদিত)"],
+   ["সাপ্লায়ার পেমেন্ট","সঠিক due হিসাব, ক্যাপ ছাড়া"],
+   ["পরিশোধ তালিকা + জমা","জমা এন্ট্রি নীল ব্যাজে দেখায়, মোট জমা মিলে"],
+   ["পেমেন্ট ডিলিট","ডিলিটে due ঠিকমতো ফেরে"],
+ ]},
+ {ic:"📊", t:"স্টক", s:"স্টক তালিকা", tests:[
+   ["জিরো স্টক লুকানো","০ স্টকের সারি তালিকায় দেখায় না"],
+   ["নেগেটিভ স্টক লাল","নেগেটিভ স্টক লাল রঙে দেখায়"],
+ ]},
+ {ic:"📈", t:"রিপোর্ট", s:"বিক্রয়, দিনশেষ, লাভ-ক্ষতি", tests:[
+   ["দৈনিক বিক্রয় রিপোর্ট","স্ট্যাট কার্ড, no-item ও standalone পেমেন্ট সেকশন ঠিক"],
+   ["তারিখ ফিল্টার","ডিফল্ট আজ; তারিখ বদলালে ডেটা বদলায়"],
+   ["দিনশেষ রিপোর্ট","ক্যাশ ইন-আউট ও দিনের সারাংশ সঠিক; মালিকের ফোনে SMS"],
+   ["ক্যাশ মেলানো","opening + cashNet = expected; গরমিল সেভ হয়, হিস্ট্রি দেখায়"],
+   ["লাভ-ক্ষতি রিপোর্ট","লাভ/ক্ষতি সঠিক হিসাব"],
+   ["সেল লগ (audit)","সংশোধন/মুছে ফেলা লগ ফিল্টার চিপসহ দেখায়"],
+ ]},
+ {ic:"📢", t:"তাগাদা লিস্ট", s:"বকেয়া আদায়", tests:[
+   ["বকেয়া তালিকা","due >0 কাস্টমার দেখায়, এলাকা ফিল্টার কাজ করে"],
+   ["Aging চিপ","৩০/৬০/৯০+ দিনের চিপ ঠিক ভাগ করে"],
+   ["SMS / WhatsApp","একক ও বাল্ক (৫০/ব্যাচ) SMS এবং WhatsApp লিংক কাজ করে"],
+   ["লিমিট ছাড়ানো ব্যাজ","লিমিট পার কাস্টমারে লাল ব্যাজ"],
+ ]},
+ {ic:"🏢", t:"মাল্টি-শপ / সুপার অ্যাডমিন", s:"শাখা নিয়ন্ত্রণ ও আইসোলেশন", tests:[
+   ["শপ তৈরি","লিমিটের মধ্যে নতুন শাখা তৈরি হয়"],
+   ["শপে enter / exit","শাখায় ঢোকা-বেরোনো, সেশন সঠিক সেট"],
+   ["ব্র্যাঞ্চ লিমিট","max_shops ছাড়ালে add বাটন নিষ্ক্রিয়"],
+   ["শপ লক","লিমিট ছাড়ালে পুরনো শাখা লক; ডেটা মুছে না"],
+   ["ডেটা আইসোলেশন","এক শপের ডেটা অন্য শপে দেখা যায় না (ক্রস-শপ ID → 404)"],
+   ["পাসওয়ার্ড রিসেট","super_admin নিজ শপের স্টাফ পাসওয়ার্ড রিসেট করে"],
+ ]},
+ {ic:"⚙️", t:"রুট / রিসেলার / লাইসেন্স", s:"সর্বোচ্চ স্তরের নিয়ন্ত্রণ", tests:[
+   ["সুপার অ্যাডমিন CRUD","root নতুন super_admin তৈরি/সম্পাদন করে (max_shops সহ)"],
+   ["রিসেলার ম্যানেজমেন্ট","root রিসেলার তৈরি; রিসেলার নিজ ক্লায়েন্ট দেখে"],
+   ["লাইসেন্স নবায়ন","মেয়াদ বাড়ানো, warning/grace/expired স্ট্যাটাস ঠিক"],
+   ["পেমেন্ট লগ","পেমেন্ট রেকর্ড/তালিকা/ডিলিট; কমিশন হিসাব"],
+   ["ডেটা ক্লিনআপ — স্মার্ট রিসেট","লেনদেন মুছে; কাস্টমার/সাপ্লায়ার/পণ্য তালিকা থাকে; due/স্টক ০ হয়; অটো ব্যাকআপ"],
+   ["ডেটা ক্লিনআপ — কাস্টম","নির্দিষ্ট এক টেবিল মুছে; নাম টাইপ কনফার্মেশন লাগে"],
+ ]},
+ {ic:"👤", t:"স্টাফ ম্যানেজমেন্ট", s:"ব্যবহারকারী নিয়ন্ত্রণ", tests:[
+   ["স্টাফ তৈরি / সংশোধন","admin/staff অ্যাকাউন্ট তৈরি ও সম্পাদন"],
+   ["সেলফ-ডিলিট ব্লক","নিজেকে ডিলিট করা যায় না"],
+   ["শেষ অ্যাডমিন ব্লক","শেষ admin মুছে ফেলা যায় না"],
+   ["ক্রস-শপ এডিট","অন্য শপের ইউজার এডিট → 404"],
+ ]},
+ {ic:"🎨", t:"স্টোর কনফিগ ও UI", s:"সেটিংস ও সাধারণ", tests:[
+   ["স্টোর তথ্য","নাম, মালিক, ফোন, ঠিকানা সেভ হয়, ইনভয়েসে দেখায়"],
+   ["ফন্ট পিকার","১৪ ফন্টের যেকোনোটি সিলেক্টে UI বদলায়"],
+   ["Turbo নেভিগেশন","পেজ বদলে ফুল রিলোড হয় না, JS চালু থাকে"],
+   ["কীবোর্ড শর্টকাট","Alt+B/T/C ইত্যাদি শর্টকাট কাজ করে"],
+   ["মিনি ক্যালকুলেটর","টপবার/Alt+C-তে খোলে; সংখ্যা সিলেক্টে যোগ হয়"],
+   ["চ্যাট","চ্যাট বাবল ডান কিনারায় ছোট, ক্লিকে খোলে; মেসেজ যায়"],
+   ["মোবাইল responsive","ছোট স্ক্রিনে লেআউট, বাটন, ইনভয়েস ঠিক দেখায়"],
+   ["PWA ইনস্টল","অ্যাপ ইনস্টল করা যায়; অফলাইনেও খোলে"],
+   ["ব্যাকআপ","php artisan app:backup-db ঠিকমতো ডাম্প তৈরি করে"],
+ ]},
+];
+
+var KEY="ruposhi_qa_v1";
+var state=JSON.parse(localStorage.getItem(KEY)||"{}");
+var filter="all";
+var modsEl=document.getElementById("mods");
+
+function idOf(m,t){return m+"-"+t;}
+function save(){localStorage.setItem(KEY,JSON.stringify(state));}
+
+DATA.forEach(function(mod,mi){
+  var wrap=document.createElement("div");
+  wrap.className="mod"; wrap.dataset.mi=mi;
+  var head=document.createElement("div");
+  head.className="mod-head";
+  head.innerHTML='<div class="mod-ico">'+mod.ic+'</div>'+
+    '<div class="mod-titles"><h2>'+mod.t+'</h2><div class="sub">'+mod.s+'</div></div>'+
+    '<div class="mod-mini"><b id="mini-'+mi+'">0</b>/<span>'+mod.tests.length+'</span></div>'+
+    '<div class="mod-caret"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div>';
+  head.onclick=function(){wrap.classList.toggle("collapsed");};
+  wrap.appendChild(head);
+  var body=document.createElement("div"); body.className="mod-body";
+  mod.tests.forEach(function(tst,ti){
+    var id=idOf(mi,ti);
+    var st=state[id]||{};
+    var row=document.createElement("div");
+    row.className="row"; row.dataset.id=id;
+    row.innerHTML='<div class="row-num">'+(mi+1)+'.'+(ti+1)+'</div>'+
+      '<div class="row-main">'+
+        '<div class="row-title">'+tst[0]+'</div>'+
+        '<div class="row-desc">'+tst[1]+'</div>'+
+        '<textarea class="row-comment" placeholder="মন্তব্য / সমস্যা...">'+(st.c||"")+'</textarea>'+
+        '<span class="cmt-add">+ মন্তব্য</span>'+
+      '</div>'+
+      '<div class="verdict">'+
+        '<button class="vbtn" data-v="pass">পাস</button>'+
+        '<button class="vbtn" data-v="fail">ফেল</button>'+
+        '<button class="vbtn" data-v="pend">বাকি</button>'+
+      '</div>';
+    var ta=row.querySelector(".row-comment");
+    var addBtn=row.querySelector(".cmt-add");
+    if(st.c){ta.classList.add("show");addBtn.classList.add("hide");}
+    addBtn.onclick=function(){ta.classList.add("show");addBtn.classList.add("hide");ta.focus();};
+    ta.oninput=function(){state[id]=state[id]||{};state[id].c=ta.value;save();};
+    row.querySelectorAll(".vbtn").forEach(function(b){
+      b.onclick=function(){
+        state[id]=state[id]||{};
+        state[id].v = state[id].v===b.dataset.v ? null : b.dataset.v;
+        save(); render();
+      };
+    });
+    body.appendChild(row);
+  });
+  wrap.appendChild(body);
+  modsEl.appendChild(wrap);
+});
+
+function render(){
+  var pass=0,fail=0,pend=0,total=0;
+  DATA.forEach(function(mod,mi){
+    var mp=0;
+    mod.tests.forEach(function(tst,ti){
+      var id=idOf(mi,ti); total++;
+      var v=(state[id]||{}).v;
+      var row=modsEl.querySelector('[data-id="'+id+'"]');
+      row.classList.remove("r-pass","r-fail","r-pend");
+      row.querySelectorAll(".vbtn").forEach(function(b){b.classList.toggle("on",b.dataset.v===v);});
+      if(v==="pass"){pass++;mp++;row.classList.add("r-pass");}
+      else if(v==="fail"){fail++;row.classList.add("r-fail");}
+      else if(v==="pend"){pend++;row.classList.add("r-pend");}
+      var show=true;
+      if(filter==="pass")show=v==="pass";
+      else if(filter==="fail")show=v==="fail";
+      else if(filter==="pend")show=v==="pend";
+      else if(filter==="untest")show=!v;
+      row.classList.toggle("hidden",!show);
+    });
+    document.getElementById("mini-"+mi).textContent=mp;
+  });
+  var untest=total-pass-fail-pend;
+  document.getElementById("c-total").textContent=total;
+  document.getElementById("c-pass").textContent=pass;
+  document.getElementById("c-fail").textContent=fail;
+  document.getElementById("c-pend").textContent=pend;
+  document.getElementById("c-untest").textContent=untest;
+  document.getElementById("seg-pass").style.width=(pass/total*100)+"%";
+  document.getElementById("seg-fail").style.width=(fail/total*100)+"%";
+  document.getElementById("seg-pend").style.width=(pend/total*100)+"%";
+  var done=pass+fail+pend;
+  var pctNum=Math.round(done/total*100);
+  document.getElementById("pct").textContent=toBn(pctNum)+"% সম্পন্ন ("+toBn(done)+"/"+toBn(total)+")";
+}
+function toBn(n){return String(n).replace(/[0-9]/g,function(d){return "০১২৩৪৫৬৭৮৯"[d];});}
+
+document.querySelectorAll(".chip").forEach(function(c){
+  c.onclick=function(){
+    filter = filter===c.dataset.f ? "all" : c.dataset.f;
+    document.querySelectorAll(".chip").forEach(function(x){x.classList.toggle("active",x.dataset.f===filter&&filter!=="all");});
+    render();
+  };
+});
+
+["tester","tdate","tver"].forEach(function(k){
+  var el=document.getElementById(k);
+  el.value=(state._meta||{})[k]||"";
+  el.oninput=function(){state._meta=state._meta||{};state._meta[k]=el.value;save();};
+});
+if(!(state._meta||{}).tdate){document.getElementById("tdate").value=new Date().toISOString().slice(0,10);}
+
+var allOpen=true;
+document.getElementById("expandBtn").onclick=function(e){
+  allOpen=!allOpen;
+  document.querySelectorAll(".mod").forEach(function(m){m.classList.toggle("collapsed",!allOpen);});
+  e.target.textContent=allOpen?"সব বন্ধ করুন":"সব খুলুন";
+};
+document.getElementById("printBtn").onclick=function(){window.print();};
+document.getElementById("resetBtn").onclick=function(){
+  if(confirm("সব পাস/ফেল ও মন্তব্য মুছে ফেলবেন? এটি ফেরানো যাবে না।")){
+    state={_meta:state._meta}; save(); location.reload();
+  }
+};
+var V2LABEL={pass:"পাস",fail:"ফেল",pend:"বাকি"};
+var LABEL2V={"পাস":"pass","ফেল":"fail","বাকি":"pend","pass":"pass","fail":"fail","pend":"pend"};
+function q(c){return '"'+String(c==null?"":c).replace(/"/g,'""')+'"';}
+
+document.getElementById("csvBtn").onclick=function(){
+  var m=state._meta||{};
+  var rows=[];
+  rows.push(["#meta","টেস্টার",m.tester||""]);
+  rows.push(["#meta","তারিখ",m.tdate||""]);
+  rows.push(["#meta","ভার্সন",m.tver||""]);
+  rows.push([]);
+  rows.push(["মডিউল","নং","টেস্ট","ফলাফল","মন্তব্য"]);
+  DATA.forEach(function(mod,mi){mod.tests.forEach(function(tst,ti){
+    var st=state[idOf(mi,ti)]||{};
+    rows.push([mod.t,(mi+1)+"."+(ti+1),tst[0],V2LABEL[st.v]||"পরীক্ষা হয়নি",st.c||""]);
+  });});
+  var csv="﻿"+rows.map(function(r){return r.map(q).join(",");}).join("\r\n");
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download="ruposhi-qa-"+(m.tdate||"test")+".csv";
+  a.click();
+};
+
+/* ── CSV parser (handles quoted fields, commas, newlines, "" escapes) ── */
+function parseCSV(text){
+  text=text.replace(/^﻿/,"");
+  var rows=[],row=[],cur="",inq=false;
+  for(var i=0;i<text.length;i++){
+    var ch=text[i];
+    if(inq){
+      if(ch==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else inq=false; }
+      else cur+=ch;
+    }else{
+      if(ch==='"')inq=true;
+      else if(ch===",")row.push(cur),cur="";
+      else if(ch==="\n"){row.push(cur);rows.push(row);row=[];cur="";}
+      else if(ch==="\r"){}
+      else cur+=ch;
+    }
+  }
+  if(cur!==""||row.length){row.push(cur);rows.push(row);}
+  return rows;
+}
+
+/* build lookup: "1.1" -> id, and test-name -> id (fallback) */
+var NUM2ID={},NAME2ID={};
+DATA.forEach(function(mod,mi){mod.tests.forEach(function(tst,ti){
+  NUM2ID[(mi+1)+"."+(ti+1)]=idOf(mi,ti);
+  NAME2ID[tst[0].trim()]=idOf(mi,ti);
+});});
+
+document.getElementById("importBtn").onclick=function(){document.getElementById("importFile").click();};
+document.getElementById("importFile").onchange=function(e){
+  var file=e.target.files[0]; if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var rows=parseCSV(ev.target.result);
+      var next={_meta:Object.assign({},state._meta)};
+      var applied=0,headerSeen=false;
+      rows.forEach(function(r){
+        if(!r||!r.length)return;
+        var c0=(r[0]||"").trim();
+        if(c0==="#meta"){
+          var key=(r[1]||"").trim(),val=(r[2]||"").trim();
+          if(key.indexOf("টেস্টার")===0)next._meta.tester=val;
+          else if(key.indexOf("তারিখ")===0)next._meta.tdate=val;
+          else if(key.indexOf("ভার্সন")===0)next._meta.tver=val;
+          return;
+        }
+        if(c0==="মডিউল"){headerSeen=true;return;}
+        if(!headerSeen)return;
+        var num=(r[1]||"").trim();
+        var name=(r[2]||"").trim();
+        var result=(r[3]||"").trim();
+        var comment=(r[4]||"");
+        var id=NUM2ID[num]||NAME2ID[name];
+        if(!id)return;
+        var v=LABEL2V[result]||null;
+        if(v||comment){ next[id]={}; if(v)next[id].v=v; if(comment)next[id].c=comment; applied++; }
+      });
+      if(!applied && !headerSeen){ alert("এই CSV-তে টেস্টিং ডেটা পাওয়া যায়নি। এখান থেকে ডাউনলোড করা ফাইলটাই আপলোড করুন।"); return; }
+      if(!confirm("CSV থেকে "+toBn(applied)+"টি টেস্টের ফলাফল লোড হবে। বর্তমান কাজ প্রতিস্থাপিত হবে। এগিয়ে যাবেন?")) return;
+      state=next; save(); location.reload();
+    }catch(err){ alert("CSV পড়া যায়নি: "+err.message); }
+    finally{ e.target.value=""; }
+  };
+  reader.readAsText(file);
+};
+
+var root=document.documentElement;
+document.getElementById("themeBtn").onclick=function(){
+  var cur=root.getAttribute("data-theme");
+  var isDark=cur?cur==="dark":matchMedia("(prefers-color-scheme: dark)").matches;
+  root.setAttribute("data-theme",isDark?"light":"dark");
+};
+
+render();
+</script>
+</body>
+</html>

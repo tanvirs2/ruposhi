@@ -35,6 +35,11 @@ if (app()->environment('local')) {
     })->where('code', '404|403|500|419|503');
 }
 
+/* ── Public QA testing sheet (no auth — anyone with the URL) ── */
+Route::get('/testing', function () {
+    return response()->file(public_path('testing.html'));
+})->name('testing');
+
 /* ── Auth ──────────────────────────────────────────────────── */
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
 Route::post('/login', [AuthController::class, 'login'])->middleware('guest');
