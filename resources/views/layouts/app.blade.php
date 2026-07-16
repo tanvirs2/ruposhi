@@ -708,6 +708,10 @@
                 </a>
                 <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">P</kbd></span>
             </div>
+            <div class="shortcut-row">
+                <span><i class="fas fa-search" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>আইটেম খোঁজার ঘরে যান</span>
+                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">F</kbd></span>
+            </div>
 
             <div class="shortcut-group-title">তালিকা</div>
             <div class="shortcut-row">

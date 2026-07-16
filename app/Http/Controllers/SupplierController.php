@@ -53,7 +53,8 @@ class SupplierController extends Controller
         $openingPaidOnPurchases    = $supplier->purchases()->where('purchase_date', '<', $from)->sum('paid_amount');
         $openingDepositOnPurchases = PurchaseDeposit::whereIn('purchase_id', $openingPurchaseIds)->sum('amount');
         $openingCredit             = $supplier->payments()->where('payment_date', '<', $from)->sum('amount');
-        $openingBalance            = $openingDebit - $openingPaidOnPurchases - $openingDepositOnPurchases - $openingCredit;
+        // opening_balance predates every transaction, so it counts regardless of the date filter
+        $openingBalance            = $supplier->opening_balance + $openingDebit - $openingPaidOnPurchases - $openingDepositOnPurchases - $openingCredit;
 
         // Purchases in range — expand to item-level rows
         $purchases = $supplier->purchases()
@@ -209,7 +210,8 @@ class SupplierController extends Controller
         $allTimePaid      = Purchase::where('supplier_id', $supplier->id)->sum('paid_amount');
         $allTimeDeposits  = PurchaseDeposit::whereIn('purchase_id', $allPurchaseIds)->sum('amount');
         $allTimePayments  = SupplierPayment::where('supplier_id', $supplier->id)->sum('amount');
-        $realTotalDue     = $allTimePurchases - $allTimePaid - $allTimeDeposits - $allTimePayments; // NO max(0) — allows credit
+        // opening_balance = due carried in from the paper ledger, from before the shop went live
+        $realTotalDue     = $supplier->opening_balance + $allTimePurchases - $allTimePaid - $allTimeDeposits - $allTimePayments; // NO max(0) — allows credit
         if ($supplier->due_amount != $realTotalDue) {
             $supplier->update(['due_amount' => $realTotalDue]);
         }
@@ -268,8 +270,11 @@ class SupplierController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate(['name' => 'required|string|max:255']);
-        $supplier = Supplier::create($request->only('name', 'proprietor', 'phone', 'email', 'address'));
+        $request->validate([
+            'name'            => 'required|string|max:255',
+            'opening_balance' => 'nullable|numeric',   // negative = advance; never capped at 0
+        ]);
+        $supplier = Supplier::create($request->only('name', 'proprietor', 'phone', 'email', 'address', 'opening_balance'));
 
         // AJAX (popup from receive form) — return the new supplier as JSON
         if ($request->expectsJson() || $request->ajax()) {
@@ -296,8 +301,11 @@ class SupplierController extends Controller
 
     public function update(Request $request, Supplier $supplier)
     {
-        $request->validate(['name' => 'required|string|max:255']);
-        $supplier->update($request->only('name', 'proprietor', 'phone', 'email', 'address'));
+        $request->validate([
+            'name'            => 'required|string|max:255',
+            'opening_balance' => 'nullable|numeric',
+        ]);
+        $supplier->update($request->only('name', 'proprietor', 'phone', 'email', 'address', 'opening_balance'));
         return redirect()->route('suppliers.index')->with('success', 'সরবরাহকারী সফলভাবে আপডেট করা হয়েছে।');
     }
 

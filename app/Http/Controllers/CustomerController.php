@@ -106,12 +106,13 @@ class CustomerController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name'         => 'required|string|max:255',
-            'phone'        => 'nullable|string|max:20',
-            'credit_limit' => 'nullable|numeric|min:0',
+            'name'            => 'required|string|max:255',
+            'phone'           => 'nullable|string|max:20',
+            'credit_limit'    => 'nullable|numeric|min:0',
+            'opening_balance' => 'nullable|numeric',
         ]);
 
-        $customer = Customer::create($request->only('name', 'proprietor', 'phone', 'address', 'area_id', 'credit_limit'));
+        $customer = Customer::create($request->only('name', 'proprietor', 'phone', 'address', 'area_id', 'credit_limit', 'opening_balance'));
 
         // AJAX (popup from sale form) — return the new customer as JSON
         if ($request->expectsJson() || $request->ajax()) {
@@ -141,12 +142,13 @@ class CustomerController extends Controller
     public function update(Request $request, Customer $customer)
     {
         $request->validate([
-            'name'         => 'required|string|max:255',
-            'phone'        => 'nullable|string|max:20',
-            'credit_limit' => 'nullable|numeric|min:0',
+            'name'            => 'required|string|max:255',
+            'phone'           => 'nullable|string|max:20',
+            'credit_limit'    => 'nullable|numeric|min:0',
+            'opening_balance' => 'nullable|numeric',
         ]);
 
-        $customer->update($request->only('name', 'proprietor', 'phone', 'address', 'area_id', 'credit_limit'));
+        $customer->update($request->only('name', 'proprietor', 'phone', 'address', 'area_id', 'credit_limit', 'opening_balance'));
 
         return redirect()->route('customers.index')->with('success', 'কাস্টমার সফলভাবে আপডেট করা হয়েছে।');
     }
@@ -212,14 +214,17 @@ class CustomerController extends Controller
                                ->where('sale_date', '<', $from)->sum('paid_amount');
         $openingPayments = CustomerPayment::where('customer_id', $customer->id)
                                ->where('payment_date', '<', $from)->sum('amount');
-        $openingBalance  = $openingSales - $openingPaid - $openingPayments;
+        // opening_balance = due carried in from the paper ledger, from before
+        // the shop went live. It predates every transaction, so it belongs in
+        // both sums below regardless of the date filter.
+        $openingBalance  = $customer->opening_balance + $openingSales - $openingPaid - $openingPayments;
 
         // ── Real total due (all time, calculated from DB) ─────────
         $allTimeSales    = Sale::where('customer_id', $customer->id)->sum('total_amount');
         $allTimePaid     = Sale::where('customer_id', $customer->id)->sum('paid_amount');
         $allTimePayments = CustomerPayment::where('customer_id', $customer->id)->sum('amount');
         // Allow negative (credit balance from overpayment) — no max(0,...) cap
-        $realTotalDue    = $allTimeSales - $allTimePaid - $allTimePayments;
+        $realTotalDue    = $customer->opening_balance + $allTimeSales - $allTimePaid - $allTimePayments;
 
         // ── Auto-fix stale due_amount on customer record ───────────
         if (abs($customer->due_amount - $realTotalDue) > 0.01) {

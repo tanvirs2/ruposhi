@@ -1472,6 +1472,23 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
 }
 .pos-right { position: sticky; top: calc(var(--topbar-h) + 16px); }
 
+/* The item-search card pins like .pos-right. Without it a long cart pushes the
+   search box off-screen, so every item past ~15 costs a scroll up and back down.
+   z-index clears the cart table's own sticky thead (z-index 1) so the
+   suggestions dropdown lands on top of it.
+   Desktop only — on a phone a pinned card eats what little space is left. */
+@media (min-width: 901px) {
+    .pos-search-card {
+        position: sticky;
+        /* Flush to the topbar — no +16px like .pos-right. Nothing scrolls above
+           that panel, but cart rows scroll above this one, and any gap here is a
+           slot they visibly slide through. At rest the card is unmoved; the
+           offset only applies once it pins. */
+        top: var(--topbar-h);
+        z-index: 20;
+    }
+}
+
 /* Shrink right panel on medium screens (tablet / small laptop) */
 @media (max-width: 1400px) and (min-width: 901px) {
     :root { --submit-bar-w: 290px; }

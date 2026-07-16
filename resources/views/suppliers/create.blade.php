@@ -23,6 +23,11 @@
                 <label>ইমেইল</label>
                 <input type="email" name="email" value="{{ old('email') }}">
             </div>
+            <div class="form-group-field">
+                <label>পুরনো দেনা (৳)</label>
+                <input type="number" name="opening_balance" value="{{ old('opening_balance') }}" step="any" placeholder="খালি = ০">
+                <small style="color:#64748b;font-size:.75rem">সফটওয়্যার চালুর আগের খাতার দেনা। অগ্রিম দেওয়া থাকলে মাইনাস দিন (যেমন -৫০০)</small>
+            </div>
             <div class="form-group-field form-full">
                 <label>ঠিকানা</label>
                 <textarea name="address" rows="3">{{ old('address') }}</textarea>

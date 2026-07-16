@@ -35,12 +35,17 @@
     src:url('{{ asset('fonts/' . $activeFont['subset'] . '-latin.woff2') }}') format('woff2'); unicode-range:{{ $rangeLatin }}; }
 </style>
 @elseif(!empty($activeFont['file']))
-{{-- {{ $activeFont['css_name'] }} — self-hosted, not on Google Fonts --}}
+{{-- {{ $activeFont['css_name'] }} — self-hosted, not on Google Fonts.
+     unicode-range pins these to Bengali only. Without it the face claims
+     U+0-10FFFF, so its own Latin glyphs win — and these are Bengali display
+     fonts whose ASCII comma sits high like an apostrophe, which looked wrong
+     next to English digits (৳ 1,987,000). Bengali range keeps ৳ (U+09F3) and
+     Bengali digits on-font; digits/comma/punctuation fall to Inter. --}}
 <link rel="preload" href="{{ asset('fonts/' . $activeFont['file'] . '-400.woff2') }}" as="font" type="font/woff2" crossorigin>
 <style>
 @foreach($activeFont['weights'] as $w)
 @font-face { font-family:'{{ $activeFont['css_name'] }}'; font-style:normal; font-weight:{{ $w }}; font-display:block;
-    src:url('{{ asset('fonts/' . $activeFont['file'] . '-' . $w . '.woff2') }}') format('woff2'); }
+    src:url('{{ asset('fonts/' . $activeFont['file'] . '-' . $w . '.woff2') }}') format('woff2'); unicode-range:{{ $rangeBn }}; }
 @endforeach
 </style>
 @else

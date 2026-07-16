@@ -69,6 +69,7 @@ class DashboardController extends Controller
     {
         $today = today()->toDateString();
 
+        // Item sales base — these are the real sales (count + total)
         $rows = Sale::with('user:id,name')
             ->has('items')
             ->where('sale_date', $today)
@@ -80,9 +81,37 @@ class DashboardController extends Controller
                 'total' => $grp->sum('total_amount'),
                 'paid'  => $grp->sum('paid_amount'),
                 'due'   => $grp->sum('due_amount'),
-            ])
-            ->sortByDesc('total')
-            ->values();
+            ]);
+
+        // Merge no-item payments (বাকী পরিশোধ) into each user's paid total —
+        // this table is for cash reconciliation, so money collected against an
+        // old due counts as cash that user handled. Only 'paid' moves: a due
+        // collection is not a sale, so count/total/due stay put. Mirrors the
+        // same merge in ReportController::salesReport().
+        $noItemSales = Sale::with('user:id,name')
+            ->doesntHave('items')
+            ->where('paid_amount', '>', 0)
+            ->where('sale_date', $today)
+            ->get();
+
+        foreach ($noItemSales->groupBy('user_id') as $userId => $grp) {
+            $noItemPaid = $grp->sum('paid_amount');
+            if ($rows->has($userId)) {
+                $row = $rows[$userId];
+                $row['paid'] += $noItemPaid;
+                $rows[$userId] = $row;
+            } else {
+                $rows[$userId] = [
+                    'name'  => $grp->first()->user?->name ?? 'অজানা',
+                    'count' => 0,
+                    'total' => 0,
+                    'paid'  => $noItemPaid,
+                    'due'   => 0,
+                ];
+            }
+        }
+
+        $rows = $rows->sortByDesc('total')->values();
 
         $totals = [
             'count' => $rows->sum('count'),

@@ -3,7 +3,13 @@
 @section('page-title', 'সরবরাহকারী')
 
 @section('content')
-@include('partials.page-header', ['title' => 'সরবরাহকারী তালিকা', 'createRoute' => route('suppliers.create'), 'createLabel' => 'নতুন সরবরাহকারী'])
+@include('partials.page-header', [
+    'title'       => 'সরবরাহকারী তালিকা',
+    'createRoute' => route('suppliers.create'),
+    'createLabel' => 'নতুন সরবরাহকারী',
+    'extraRoute'  => auth()->user()->canManageShop() ? route('contacts.import.form', 'suppliers') : null,
+    'extraLabel'  => 'CSV ইমপোর্ট',
+])
 
 <div class="card">
     <div class="card-filter">

@@ -297,7 +297,12 @@ function animateValue(el, duration = 900) {
         endNum  = parseInt(match[2].replace(/,/g, ''), 10);
         suffix  = match[3] ?? '';
     } else {
-        endNum  = parseInt(text.replace(/[^\d]/g, ''), 10);
+        // Only a lone number counts up. Multi-part values — e.g. the
+        // "কম / শেষ স্টক" card's "161 / 179" — keep their separator;
+        // stripping non-digits would fuse them into one bogus 161179.
+        const match = text.match(/^([\d,]+)$/);
+        if (!match) { el.textContent = banglaDigits(text); return; }
+        endNum  = parseInt(match[1].replace(/,/g, ''), 10);
         prefix  = '';
         suffix  = '';
     }
@@ -401,6 +406,15 @@ function animateValue(el, duration = 900) {
         // that's exactly where you'd want to close/open it while typing a sum.
         if (e.code === 'KeyC') {
             if (typeof window.miniCalcToggle === 'function') { e.preventDefault(); window.miniCalcToggle(); }
+            return;
+        }
+
+        // Alt+F jumps to the item search on the sale/purchase forms. Like Alt+B
+        // and Alt+C it must work inside inputs — you press it from the price
+        // field of the row you just filled, to go add the next item.
+        if (e.code === 'KeyF') {
+            const s = document.getElementById('itemSearch');
+            if (s) { e.preventDefault(); s.focus(); s.select(); }
             return;
         }
 

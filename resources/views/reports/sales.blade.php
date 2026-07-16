@@ -222,7 +222,16 @@
                             {{ str_pad($s->id, 6, '0', STR_PAD_LEFT) }}
                         </a>
                     </td>
-                    <td>{{ $s->customer?->name ?? '<span style="color:#94a3b8">ওয়াক-ইন</span>' }}</td>
+                    <td>
+                        @if($s->customer)
+                            {{ $s->customer->name }}
+                            @if($s->customer->proprietor)
+                                <div style="font-size:.78rem;color:#64748b">{{ $s->customer->proprietor }}</div>
+                            @endif
+                        @else
+                            <span style="color:#94a3b8">ওয়াক-ইন</span>
+                        @endif
+                    </td>
                     <td class="tc">{{ \Carbon\Carbon::parse($s->sale_date)->format('d/m/Y') }}</td>
                     <td class="tc">{{ $s->payment_method ?: '—' }}</td>
                     <td class="tr" style="color:#16a34a;font-weight:600">
@@ -276,7 +285,16 @@
                             {{ str_pad($s->id, 6, '0', STR_PAD_LEFT) }}
                         </a>
                     </td>
-                    <td>{{ $s->customer?->name ?? '<span style="color:#94a3b8">ওয়াক-ইন</span>' }}</td>
+                    <td>
+                        @if($s->customer)
+                            {{ $s->customer->name }}
+                            @if($s->customer->proprietor)
+                                <div style="font-size:.78rem;color:#64748b">{{ $s->customer->proprietor }}</div>
+                            @endif
+                        @else
+                            <span style="color:#94a3b8">ওয়াক-ইন</span>
+                        @endif
+                    </td>
                     <td class="tc">{{ \Carbon\Carbon::parse($s->sale_date)->format('d/m/Y') }}</td>
                     <td class="tc">{{ $s->payment_method ?: '—' }}</td>
                     <td class="tr" style="color:#16a34a;font-weight:600">
@@ -694,7 +712,16 @@
                 @foreach($standalonePayments as $p)
                 <tr>
                     <td class="tc mono">{{ str_pad($p->id, 6, '0', STR_PAD_LEFT) }}</td>
-                    <td>{{ $p->customer?->name ?? '—' }}</td>
+                    <td>
+                        @if($p->customer)
+                            {{ $p->customer->name }}
+                            @if($p->customer->proprietor)
+                                <div style="font-size:.78rem;color:#64748b">{{ $p->customer->proprietor }}</div>
+                            @endif
+                        @else
+                            —
+                        @endif
+                    </td>
                     <td class="tc">{{ \Carbon\Carbon::parse($p->payment_date)->format('Y-m-d') }}</td>
                     <td class="tc">{{ $p->payment_method ?: '—' }}</td>
                     <td style="color:#64748b;font-size:.82rem">{{ $p->notes ?: '—' }}</td>
@@ -845,7 +872,16 @@
                                 <span style="background:#dcfce7;color:#15803d;padding:1px 8px;border-radius:20px;font-size:.72rem;font-weight:700;white-space:nowrap">পরিশোধ</span>
                             @endif
                         </td>
-                        <td>{{ $obj->customer?->name ?? ($type === 'sale' ? '— ওয়াক-ইন' : '—') }}</td>
+                        <td>
+                            @if($obj->customer)
+                                {{ $obj->customer->name }}
+                                @if($obj->customer->proprietor)
+                                    <div style="font-size:.78rem;color:#64748b">{{ $obj->customer->proprietor }}</div>
+                                @endif
+                            @else
+                                {{ $type === 'sale' ? '— ওয়াক-ইন' : '—' }}
+                            @endif
+                        </td>
                         <td class="tc col-hide-tablet" style="font-size:.8rem;color:#334155;white-space:nowrap">
                             {{ \Carbon\Carbon::parse($row['date'])->format('d/m/Y') }}
                         </td>

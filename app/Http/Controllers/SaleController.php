@@ -107,7 +107,7 @@ class SaleController extends Controller
             'items'        => 'nullable|array',
             'items.*.id'   => 'required_with:items|exists:items,id',
             'items.*.qty'  => 'required_with:items|numeric|min:0.01',
-            'items.*.price'=> 'required_with:items|numeric|min:0',
+            'items.*.price'=> 'required_with:items|numeric|min:0.01',
             'paid_amount'  => 'required|numeric|min:0',
         ]);
 
@@ -245,7 +245,7 @@ class SaleController extends Controller
             'items'        => 'nullable|array',
             'items.*.id'   => 'required_with:items|exists:items,id',
             'items.*.qty'  => 'required_with:items|numeric|min:0.01',
-            'items.*.price'=> 'required_with:items|numeric|min:0',
+            'items.*.price'=> 'required_with:items|numeric|min:0.01',
             'paid_amount'  => 'required|numeric|min:0',
         ]);
 

@@ -3,7 +3,13 @@
 @section('page-title', 'কাস্টমার')
 
 @section('content')
-@include('partials.page-header', ['title' => 'কাস্টমার তালিকা', 'createRoute' => route('customers.create'), 'createLabel' => 'নতুন কাস্টমার'])
+@include('partials.page-header', [
+    'title'       => 'কাস্টমার তালিকা',
+    'createRoute' => route('customers.create'),
+    'createLabel' => 'নতুন কাস্টমার',
+    'extraRoute'  => auth()->user()->canManageShop() ? route('contacts.import.form', 'customers') : null,
+    'extraLabel'  => 'CSV ইমপোর্ট',
+])
 
 <div class="card" id="custCard">
     <div class="card-filter">

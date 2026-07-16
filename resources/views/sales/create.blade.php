@@ -31,7 +31,7 @@
 
     {{-- Left: Items --}}
     <div class="pos-left">
-        <div class="card" style="margin-bottom:16px">
+        <div class="card pos-search-card" style="margin-bottom:16px">
             <div class="card-header" style="padding:10px 14px"><h3><i class="fas fa-search"></i> আইটেম যোগ করুন</h3></div>
             <div style="padding:10px 14px;padding-top:8px">
                 <div class="search-box">
@@ -550,6 +550,12 @@ function makeFloatingDropdown(inputEl, dropEl) {
 }
 
 // ── Customer search ──────────────────────────────────────────
+// Margin above which a row is flagged "অতিরিক্ত!". Single source of truth —
+// the row badge, the live toggle and the submit confirm all read it, and
+// sales/edit.blade.php carries the same value. Keep the two files in step.
+// (var, not const — Turbo re-evaluates body scripts on every visit.)
+var EXCESS_PCT = 15;
+
 // allCustomers is now a client-side CACHE, not the whole table.
 // It is seeded with the pre-selected customer (if any) and grows as the
 // user searches (server-side) or adds a customer via the popup.
@@ -871,12 +877,11 @@ function updateRowTotal(id) {
     // ── Loss warning per row ──────────────────────────────────
     const lossWarn = document.getElementById('loss-warn-' + id);
     if (lossWarn) {
-        const isLoss = item.priceEntered && item.cost > 0 && item.price < item.cost;
+        const isLoss = item.priceEntered && item.cost > 0 && item.price > 0 && item.price < item.cost;
         lossWarn.style.display = isLoss ? 'inline-flex' : 'none';
     }
 
-    // ── Excessive profit warning per row (>10% margin) ────────
-    const EXCESS_PCT = 10;
+    // ── Excessive profit warning per row (> EXCESS_PCT margin) ────────
     const excessWarn = document.getElementById('excess-warn-' + id);
     if (excessWarn) {
         const pct = item.cost > 0 ? (item.price - item.cost) / item.cost * 100 : 0;
@@ -957,24 +962,24 @@ function renderCart() {
             <td class="col-secret" style="color:#94a3b8;font-size:.88rem;${secretDisplay}">৳ ${c.cost.toLocaleString()}</td>
             <td>
                 <input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.priceEntered ? c.price : ''}"
-                    style="width:100px"
+                    id="price-${c.id}" style="width:100px"
                     oninput="updatePrice(${c.id},this.value)" class="inline-input">
                 <span id="loss-warn-${c.id}"
-                    style="display:${c.priceEntered && c.cost > 0 && c.price < c.cost ? 'inline-flex' : 'none'};
+                    style="display:${c.priceEntered && c.cost > 0 && c.price > 0 && c.price < c.cost ? 'inline-flex' : 'none'};
                            align-items:center;gap:3px;margin-left:5px;
                            font-size:.72rem;font-weight:700;color:#b91c1c;
                            background:#fee2e2;border:1px solid #fca5a5;
                            border-radius:20px;padding:1px 7px;vertical-align:middle;white-space:nowrap">
                     ⚠ লোকসান!
                 </span>
-                ${(()=>{ const pct=c.cost>0?(c.price-c.cost)/c.cost*100:0; const isEx=c.priceEntered&&c.cost>0&&pct>10; return `<span id="excess-warn-${c.id}"
+                ${(()=>{ const pct=c.cost>0?(c.price-c.cost)/c.cost*100:0; const isEx=c.priceEntered&&c.cost>0&&pct>EXCESS_PCT; return `<span id="excess-warn-${c.id}"
                     title="${isEx?`লাভ: ${pct.toFixed(1)}%`:''}"
                     style="display:${isEx?'inline-flex':'none'};
                            align-items:center;gap:3px;margin-left:5px;
                            font-size:.72rem;font-weight:700;color:#92400e;
                            background:#fef9c3;border:1px solid #fde68a;
                            border-radius:20px;padding:1px 7px;vertical-align:middle;white-space:nowrap">
-                    ⚠ অতিরিক্ত লাভ!
+                    ⚠ অতিরিক্ত!
                 </span>`; })()}
             </td>
             <td id="row-profit-${c.id}" class="col-secret ${pClass}" style="${secretDisplay}">${profitStr}</td>
@@ -1339,8 +1344,26 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
     }
     document.getElementById('walkinWarning').style.display = 'none';
 
+    // ── Zero price = hard block, not a warning ───────────────
+    // Submitting with no items at all is a real feature (paying off an old
+    // due). An item priced at ৳0 is something else: a forgotten field. It
+    // ships stock for no money and leaves COGS with no revenue. Free goods
+    // belong in the ছাড় field, where the report can show why. Blocked here
+    // and again server-side (items.*.price => min:0.01).
+    const zeroPriced = cart.filter(c => !(c.price > 0));
+    if (zeroPriced.length) {
+        e.preventDefault();
+        const first = document.getElementById('price-' + zeroPriced[0].id);
+        if (first) { first.focus(); first.select(); }
+        showStockToast(zeroPriced.length === 1
+            ? `"${zeroPriced[0].name}" — দাম দিন`
+            : `${zeroPriced.length}টি আইটেমের দাম দেওয়া হয়নি`, 'error');
+        return;
+    }
+
     // ── Loss warning on submit ───────────────────────────────
-    const lossItems = cart.filter(c => c.priceEntered && c.cost > 0 && c.price < c.cost);
+    // price > 0 — a ৳0 row is caught above; it isn't a loss sale.
+    const lossItems = cart.filter(c => c.priceEntered && c.cost > 0 && c.price > 0 && c.price < c.cost);
     if (lossItems.length && !_lossConfirmPending) {
         e.preventDefault();
         const lines = lossItems.map(c =>
@@ -1355,7 +1378,6 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
     _lossConfirmPending = false;
 
     // ── Excessive profit warning on submit ───────────────────
-    const EXCESS_PCT = 10;
     const excessItems = cart.filter(c => c.priceEntered && c.cost > 0 && (c.price - c.cost) / c.cost * 100 > EXCESS_PCT);
     if (excessItems.length && !_excessConfirmPending) {
         e.preventDefault();
@@ -1453,7 +1475,7 @@ function showExcessConfirm(details, onConfirm) {
                                 color:#92400e;display:flex;align-items:center;justify-content:center;
                                 font-size:1.4rem;flex-shrink:0">⚠</div>
                     <div>
-                        <h3 style="font-size:1rem;color:#0f172a;margin:0">অতিরিক্ত লাভ!</h3>
+                        <h3 style="font-size:1rem;color:#0f172a;margin:0">অতিরিক্ত!</h3>
                         <p style="font-size:.78rem;color:#64748b;margin:2px 0 0">লাভের পরিমাণ ২৫%-এর বেশি — নিশ্চিত করুন</p>
                     </div>
                 </div>

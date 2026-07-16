@@ -9,7 +9,7 @@
 
     {{-- Left: Item selection --}}
     <div class="pos-left">
-        <div class="card" style="margin-bottom:16px">
+        <div class="card pos-search-card" style="margin-bottom:16px">
             <div class="card-header"><h3><i class="fas fa-box-open"></i> আইটেম যোগ করুন</h3></div>
             <div style="padding:16px">
                 <div class="search-box" style="margin-bottom:12px">

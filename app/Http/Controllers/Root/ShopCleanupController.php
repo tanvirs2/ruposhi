@@ -116,9 +116,11 @@ class ShopCleanupController extends Controller
                 DB::table($table)->where('shop_id', $shop->id)->delete();
             }
 
-            // Keep the rows, zero the derived balances/stock
-            DB::table('customers')->where('shop_id', $shop->id)->update(['due_amount' => 0]);
-            DB::table('suppliers')->where('shop_id', $shop->id)->update(['due_amount' => 0]);
+            // Keep the rows, zero the derived balances/stock.
+            // opening_balance must go too — it feeds the ledger's due formula,
+            // so leaving it would let the auto-fix restore a due after cleanup.
+            DB::table('customers')->where('shop_id', $shop->id)->update(['due_amount' => 0, 'opening_balance' => 0]);
+            DB::table('suppliers')->where('shop_id', $shop->id)->update(['due_amount' => 0, 'opening_balance' => 0]);
             DB::table('stock')->where('shop_id', $shop->id)->update(['quantity' => 0]);
 
             DB::statement('SET FOREIGN_KEY_CHECKS=1');

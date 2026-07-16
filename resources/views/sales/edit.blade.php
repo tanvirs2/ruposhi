@@ -9,7 +9,7 @@
 
     {{-- Left: Items --}}
     <div class="pos-left">
-        <div class="card" style="margin-bottom:16px">
+        <div class="card pos-search-card" style="margin-bottom:16px">
             <div class="card-header"><h3><i class="fas fa-search"></i> আইটেম যোগ করুন</h3></div>
             <div style="padding:16px">
                 <div class="search-box" style="margin-bottom:12px">
@@ -307,6 +307,11 @@ function makeFloatingDropdown(inputEl, dropEl) {
     return { show, hide, position };
 }
 
+// Margin above which a row is flagged "অতিরিক্ত!". Must match the same
+// constant in sales/create.blade.php — new sale and edit should agree.
+// (var, not const — Turbo re-evaluates body scripts on every visit.)
+var EXCESS_PCT = 15;
+
 // ── Customer search ──────────────────────────────────────────
 // allCustomers is a client-side cache, seeded with this sale's customer.
 var allCustomers      = [];
@@ -504,7 +509,7 @@ function updateRowTotal(id) {
     const excessWarn = document.getElementById('excess-warn-' + id);
     if (excessWarn) {
         const pct = item.cost > 0 ? (item.price - item.cost) / item.cost * 100 : 0;
-        const isExcess = item.cost > 0 && item.price > 0 && pct > 10;
+        const isExcess = item.cost > 0 && item.price > 0 && pct > EXCESS_PCT;
         excessWarn.style.display = isExcess ? 'inline-flex' : 'none';
         if (isExcess) excessWarn.title = `লাভ: ${pct.toFixed(1)}%`;
     }
@@ -569,15 +574,15 @@ function renderCart() {
             <td><input type="text" inputmode="decimal" name="items[${idx}][qty]" value="${c.qty}" style="width:70px" oninput="updateQty(${c.id},this.value)" class="inline-input"></td>
             <td class="col-secret" style="color:#94a3b8;font-size:.88rem;${secretDisplay}">৳ ${c.cost.toLocaleString()}</td>
             <td>
-                <input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.price}" style="width:100px" oninput="updatePrice(${c.id},this.value)" class="inline-input">
+                <input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.price}" id="price-${c.id}" style="width:100px" oninput="updatePrice(${c.id},this.value)" class="inline-input">
                 <span id="loss-warn-${c.id}"
                     style="display:${c.cost>0 && c.price>0 && c.price < c.cost ? 'inline-flex':'none'};align-items:center;gap:3px;margin-left:5px;font-size:.72rem;font-weight:700;color:#b91c1c;background:#fee2e2;border:1px solid #fca5a5;border-radius:20px;padding:1px 7px;vertical-align:middle;white-space:nowrap">
                     ⚠ লোকসান!
                 </span>
-                ${(()=>{ const pct=c.cost>0?(c.price-c.cost)/c.cost*100:0; const isEx=c.cost>0&&c.price>0&&pct>10; return `<span id="excess-warn-${c.id}"
+                ${(()=>{ const pct=c.cost>0?(c.price-c.cost)/c.cost*100:0; const isEx=c.cost>0&&c.price>0&&pct>EXCESS_PCT; return `<span id="excess-warn-${c.id}"
                     title="${isEx?`লাভ: ${pct.toFixed(1)}%`:''}"
                     style="display:${isEx?'inline-flex':'none'};align-items:center;gap:3px;margin-left:5px;font-size:.72rem;font-weight:700;color:#92400e;background:#fef9c3;border:1px solid #fde68a;border-radius:20px;padding:1px 7px;vertical-align:middle;white-space:nowrap">
-                    ⚠ অতিরিক্ত লাভ!
+                    ⚠ অতিরিক্ত!
                 </span>`; })()}
             </td>
             <td id="row-profit-${c.id}" class="col-secret ${pClass}" style="${secretDisplay}">${profitStr}</td>
@@ -810,6 +815,20 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
         return;
     }
     document.getElementById('walkinWarning').style.display = 'none';
+
+    // ── Zero price = hard block (same rule as sales/create) ──
+    // No items at all is a valid due payment; an item at ৳0 is a forgotten
+    // field that ships stock for no money. Server enforces it too.
+    const zeroPriced = cart.filter(c => !(c.price > 0));
+    if (zeroPriced.length) {
+        e.preventDefault();
+        const first = document.getElementById('price-' + zeroPriced[0].id);
+        if (first) { first.focus(); first.select(); }
+        showStockToast(zeroPriced.length === 1
+            ? `"${zeroPriced[0].name}" — দাম দিন`
+            : `${zeroPriced.length}টি আইটেমের দাম দেওয়া হয়নি`, 'error');
+        return;
+    }
 
     if (_stockConfirmPending) { _stockConfirmPending = false; return; }
     const overItems = cart.filter(c => c.qty > (c.stock ?? Infinity));

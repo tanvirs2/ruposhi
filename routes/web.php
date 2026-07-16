@@ -103,6 +103,16 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/user-summary', [DashboardController::class, 'userSummary'])->name('dashboard.user-summary');
 
+    /* Bulk CSV import for customers/suppliers (opening balances).
+       MUST stay above the resource routes — otherwise "customers/import"
+       is matched by customers/{customer} and 404s on model binding. */
+    Route::middleware('shop.admin')->group(function () {
+        Route::get('{type}/import',           [\App\Http\Controllers\ContactImportController::class, 'form'])->name('contacts.import.form');
+        Route::get('{type}/import/template',  [\App\Http\Controllers\ContactImportController::class, 'template'])->name('contacts.import.template');
+        Route::post('{type}/import/preview',  [\App\Http\Controllers\ContactImportController::class, 'preview'])->name('contacts.import.preview');
+        Route::post('{type}/import/commit',   [\App\Http\Controllers\ContactImportController::class, 'commit'])->name('contacts.import.commit');
+    })->where('type', 'customers|suppliers');
+
     /* Customers */
     Route::get('customers-search',            [CustomerController::class, 'search'])->name('customers.search');
     Route::resource('customers', CustomerController::class);

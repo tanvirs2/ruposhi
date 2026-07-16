@@ -9,7 +9,7 @@ class Customer extends Model
 {
     use HasShopScope;
 
-    protected $fillable = ['name', 'proprietor', 'phone', 'address', 'area_id', 'due_amount', 'credit_limit', 'created_by'];
+    protected $fillable = ['name', 'proprietor', 'phone', 'address', 'area_id', 'due_amount', 'opening_balance', 'credit_limit', 'created_by'];
 
     public function area()
     {
