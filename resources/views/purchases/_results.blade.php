@@ -31,7 +31,14 @@
                                 #RCV-{{ str_pad($purchase->id,4,'0',STR_PAD_LEFT) }}
                             </a>
                         </td>
-                        <td>{{ $purchase->supplier?->name ?? '—' }}</td>
+                        <td>
+                            @if($purchase->supplier)
+                                {{ $purchase->supplier->name }}
+                                @if($purchase->supplier->proprietor)
+                                    <div style="font-size:.78rem;color:#64748b">{{ $purchase->supplier->proprietor }}</div>
+                                @endif
+                            @else — @endif
+                        </td>
                         <td style="max-width:220px" class="si-cell">
                             @if($purchase->items->isEmpty())
                                 <span style="color:#94a3b8;font-size:.8rem">— পরিশোধ (পণ্য ছাড়া)</span>
@@ -191,7 +198,14 @@
                                         #RCV-{{ str_pad($purchase->id,4,'0',STR_PAD_LEFT) }}
                                     </a>
                                 </td>
-                                <td>{{ $purchase->supplier?->name ?? '—' }}</td>
+                                <td>
+                                    @if($purchase->supplier)
+                                        {{ $purchase->supplier->name }}
+                                        @if($purchase->supplier->proprietor)
+                                            <div style="font-size:.78rem;color:#64748b">{{ $purchase->supplier->proprietor }}</div>
+                                        @endif
+                                    @else — @endif
+                                </td>
                                 <td style="font-weight:500">{{ $pi->item->name ?? '—' }}</td>
                                 <td style="text-align:right">{{ number_format($pi->quantity, 0) }}</td>
                                 <td style="text-align:right">৳ {{ number_format($pi->price, 2) }}</td>

@@ -119,7 +119,10 @@ class ContactImportController extends Controller
                         'email'           => $r['email'] ?: null,
                         'address'         => $r['address'] ?: null,
                         'opening_balance' => $r['opening_balance'],
-                    ]);
+                    // A fresh contact has no transactions, so due = opening_balance.
+                    // Set it now so the list shows the imported due right away
+                    // instead of "পরিষ্কার" until each ledger is opened one by one.
+                    ])->recalcDue();
                 } else {
                     $areaId = null;
                     if ($r['area'] !== '') {
@@ -135,7 +138,8 @@ class ContactImportController extends Controller
                         'area_id'         => $areaId,
                         'opening_balance' => $r['opening_balance'],
                         'credit_limit'    => $r['credit_limit'],
-                    ]);
+                    // See supplier note above — sync due_amount on import.
+                    ])->recalcDue();
                 }
                 $added++;
             }

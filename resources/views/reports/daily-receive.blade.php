@@ -107,6 +107,9 @@
                     <td>
                         @if($p->supplier)
                             <a href="{{ route('suppliers.ledger', $p->supplier) }}" class="link-primary">{{ $p->supplier->name }}</a>
+                            @if($p->supplier->proprietor)
+                                <div style="font-size:.78rem;color:#64748b">{{ $p->supplier->proprietor }}</div>
+                            @endif
                         @else
                             <span style="color:#94a3b8">—</span>
                         @endif

@@ -365,7 +365,10 @@
                         @if($day['paid'] > 0)
                         <div style="position:absolute;bottom:0;left:0;right:0;
                                     background:#16a34a22;border-bottom:3px solid #16a34a;
-                                    height:{{ min(100, $paidPct > 0 ? ($day['paid']/$day['total']*100) : 0) }}%;
+                                    {{-- Guard on total (the denominator), NOT paidPct. On a pure
+                                         due-collection day paid > 0 but total = 0 (no items sold) —
+                                         paidPct>0 passed while dividing by zero. total=0 ⇒ fill (100%). --}}
+                                    height:{{ $day['total'] > 0 ? min(100, $day['paid']/$day['total']*100) : 100 }}%;
                                     border-radius:0 0 2px 2px">
                         </div>
                         @endif

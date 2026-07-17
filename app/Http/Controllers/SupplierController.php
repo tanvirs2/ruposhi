@@ -204,17 +204,9 @@ class SupplierController extends Controller
             ->sortBy('sort_key')->values();
         $totalDeposits = $totalCredit;
 
-        // Real total due (all time) — auto-fix stale due_amount (allows negative for credit/advance)
-        $allPurchaseIds  = Purchase::where('supplier_id', $supplier->id)->pluck('id');
-        $allTimePurchases = Purchase::where('supplier_id', $supplier->id)->sum('total_amount');
-        $allTimePaid      = Purchase::where('supplier_id', $supplier->id)->sum('paid_amount');
-        $allTimeDeposits  = PurchaseDeposit::whereIn('purchase_id', $allPurchaseIds)->sum('amount');
-        $allTimePayments  = SupplierPayment::where('supplier_id', $supplier->id)->sum('amount');
-        // opening_balance = due carried in from the paper ledger, from before the shop went live
-        $realTotalDue     = $supplier->opening_balance + $allTimePurchases - $allTimePaid - $allTimeDeposits - $allTimePayments; // NO max(0) — allows credit
-        if ($supplier->due_amount != $realTotalDue) {
-            $supplier->update(['due_amount' => $realTotalDue]);
-        }
+        // Real total due (all time) — canonical formula lives on the model,
+        // which also writes back the auto-fix. See Supplier::recalcDue().
+        $realTotalDue = $supplier->recalcDue();
 
         // CSV export
         if ($request->export === 'csv') {
@@ -274,7 +266,13 @@ class SupplierController extends Controller
             'name'            => 'required|string|max:255',
             'opening_balance' => 'nullable|numeric',   // negative = advance; never capped at 0
         ]);
+        // Blank পুরনো দেনা = 0, not null (column is NOT NULL default 0).
+        $request->merge(['opening_balance' => $request->opening_balance ?? 0]);
         $supplier = Supplier::create($request->only('name', 'proprietor', 'phone', 'email', 'address', 'opening_balance'));
+
+        // Sync due_amount from the opening balance now, so the list shows it
+        // immediately instead of "পরিষ্কার" until someone opens the ledger.
+        $supplier->recalcDue();
 
         // AJAX (popup from receive form) — return the new supplier as JSON
         if ($request->expectsJson() || $request->ajax()) {
@@ -305,7 +303,14 @@ class SupplierController extends Controller
             'name'            => 'required|string|max:255',
             'opening_balance' => 'nullable|numeric',
         ]);
+        // Blank পুরনো দেনা = 0, not null (column is NOT NULL default 0).
+        $request->merge(['opening_balance' => $request->opening_balance ?? 0]);
         $supplier->update($request->only('name', 'proprietor', 'phone', 'email', 'address', 'opening_balance'));
+
+        // opening_balance may have changed — resync due_amount from the full
+        // formula so the list is correct without waiting for the ledger.
+        $supplier->recalcDue();
+
         return redirect()->route('suppliers.index')->with('success', 'সরবরাহকারী সফলভাবে আপডেট করা হয়েছে।');
     }
 

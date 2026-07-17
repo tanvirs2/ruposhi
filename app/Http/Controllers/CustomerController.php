@@ -112,7 +112,15 @@ class CustomerController extends Controller
             'opening_balance' => 'nullable|numeric',
         ]);
 
+        // A blank field arrives as null (empty strings are converted), but the
+        // column is NOT NULL default 0 — a blank পুরনো বাকী means "no old due" = 0.
+        $request->merge(['opening_balance' => $request->opening_balance ?? 0]);
+
         $customer = Customer::create($request->only('name', 'proprietor', 'phone', 'address', 'area_id', 'credit_limit', 'opening_balance'));
+
+        // Sync due_amount from the opening balance now, so the list shows it
+        // immediately instead of "পরিষ্কার" until someone opens the ledger.
+        $customer->recalcDue();
 
         // AJAX (popup from sale form) — return the new customer as JSON
         if ($request->expectsJson() || $request->ajax()) {
@@ -148,7 +156,15 @@ class CustomerController extends Controller
             'opening_balance' => 'nullable|numeric',
         ]);
 
+        // Blank পুরনো বাকী = 0, not null (column is NOT NULL default 0).
+        $request->merge(['opening_balance' => $request->opening_balance ?? 0]);
+
         $customer->update($request->only('name', 'proprietor', 'phone', 'address', 'area_id', 'credit_limit', 'opening_balance'));
+
+        // opening_balance may have changed — resync due_amount from the full
+        // formula (this customer may already have transactions) so the list is
+        // correct without waiting for the ledger to be opened.
+        $customer->recalcDue();
 
         return redirect()->route('customers.index')->with('success', 'কাস্টমার সফলভাবে আপডেট করা হয়েছে।');
     }
@@ -219,17 +235,9 @@ class CustomerController extends Controller
         // both sums below regardless of the date filter.
         $openingBalance  = $customer->opening_balance + $openingSales - $openingPaid - $openingPayments;
 
-        // ── Real total due (all time, calculated from DB) ─────────
-        $allTimeSales    = Sale::where('customer_id', $customer->id)->sum('total_amount');
-        $allTimePaid     = Sale::where('customer_id', $customer->id)->sum('paid_amount');
-        $allTimePayments = CustomerPayment::where('customer_id', $customer->id)->sum('amount');
-        // Allow negative (credit balance from overpayment) — no max(0,...) cap
-        $realTotalDue    = $customer->opening_balance + $allTimeSales - $allTimePaid - $allTimePayments;
-
-        // ── Auto-fix stale due_amount on customer record ───────────
-        if (abs($customer->due_amount - $realTotalDue) > 0.01) {
-            $customer->update(['due_amount' => $realTotalDue]);
-        }
+        // ── Real total due (all time) — canonical formula lives on the model,
+        //    which also writes back the auto-fix. See Customer::recalcDue().
+        $realTotalDue = $customer->recalcDue();
 
         // ── Sales within period → item-level rows ────────────────
         $sales = Sale::with(['items.item', 'extraCosts'])

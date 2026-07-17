@@ -69,6 +69,9 @@
             @foreach($suppliers as $s)
             <button type="button" class="ls-recent-item" onclick="pickSupplier({{ $s->id }}, '{{ addslashes($s->name) }}')">
                 <div class="ls-recent-name">{{ $s->name }}</div>
+                @if($s->proprietor)
+                <div class="ls-recent-sub" style="color:#64748b">{{ $s->proprietor }}</div>
+                @endif
                 @if($s->phone)
                 <div class="ls-recent-sub"><i class="fas fa-phone" style="font-size:.7rem"></i> {{ $s->phone }}</div>
                 @endif

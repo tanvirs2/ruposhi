@@ -68,6 +68,9 @@
                         <a href="{{ route('suppliers.ledger', $p->supplier) }}" class="link-primary">
                             {{ $p->supplier->name }}
                         </a>
+                        @if($p->supplier->proprietor)
+                        <div style="font-size:.78rem;color:#64748b">{{ $p->supplier->proprietor }}</div>
+                        @endif
                     </td>
                     <td><strong style="color:#16a34a">৳ {{ number_format($p->paid_amount, 0) }}</strong></td>
                     <td><span class="badge badge-green">{{ $p->payment_method }}</span></td>
