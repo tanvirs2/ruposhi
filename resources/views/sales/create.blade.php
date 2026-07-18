@@ -979,7 +979,7 @@ function renderCart() {
                            font-size:.72rem;font-weight:700;color:#92400e;
                            background:#fef9c3;border:1px solid #fde68a;
                            border-radius:20px;padding:1px 7px;vertical-align:middle;white-space:nowrap">
-                    ⚠ অতিরিক্ত!
+                    <i class="fas fa-triangle-exclamation"></i>
                 </span>`; })()}
             </td>
             <td id="row-profit-${c.id}" class="col-secret ${pClass}" style="${secretDisplay}">${profitStr}</td>
