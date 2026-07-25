@@ -25,7 +25,7 @@
             </div>
             <div class="form-group-field">
                 <label>পুরনো দেনা (৳)</label>
-                <input type="number" name="opening_balance" value="{{ old('opening_balance') }}" step="any" placeholder="খালি = ০">
+                <input type="text" inputmode="decimal" name="opening_balance" value="{{ old('opening_balance') }}" placeholder="খালি = ০">
                 <small style="color:#64748b;font-size:.75rem">সফটওয়্যার চালুর আগের খাতার দেনা। অগ্রিম দেওয়া থাকলে মাইনাস দিন (যেমন -৫০০)</small>
             </div>
             <div class="form-group-field form-full">

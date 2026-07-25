@@ -33,7 +33,7 @@
                style="{{ ($search || request('area_id') || $status !== 'active') ? '' : 'display:none' }}">
                 <i class="fas fa-xmark"></i> পরিষ্কার
             </a>
-            <button type="button" class="btn-export-print no-print" onclick="window.print()">
+            <button type="button" class="btn-export-print no-print" id="custPrintBtn">
                 <i class="fas fa-print"></i> প্রিন্ট
             </button>
         </form>
@@ -89,6 +89,31 @@
             })
             .catch(function () { results.style.opacity = '1'; window.location = url; });
     }
+
+    // প্রিন্ট — swap the paginated 15 rows for the FULL filtered list first,
+    // print, then put the paginated view back
+    document.getElementById('custPrintBtn').addEventListener('click', function () {
+        var url = buildUrl();
+        url += (url.indexOf('?') === -1 ? '?' : '&') + 'print=1';
+        var snapshot = results.innerHTML;
+        var restored = false;
+        function restore() {
+            if (restored) return;
+            restored = true;
+            results.innerHTML = snapshot;
+        }
+        results.style.opacity = '.5';
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                results.innerHTML = html;
+                results.style.opacity = '1';
+                window.addEventListener('afterprint', restore, { once: true });
+                window.print();
+                setTimeout(restore, 2000);   // fallback if afterprint never fires
+            })
+            .catch(function () { results.style.opacity = '1'; window.print(); });
+    });
 
     // live search
     var t;

@@ -12,22 +12,52 @@ class SupplierController extends Controller
 {
     public function index(Request $request)
     {
-        $showAll = $request->boolean('show_all'); // toggle: show zero-due suppliers
+        $status = $request->get('status', 'active');     // active|due|advance|clean|all
+        $search = trim((string) $request->get('search', ''));
 
-        $baseQuery = Supplier::when($request->search, fn($q) =>
-            $q->where('name', 'like', "%{$request->search}%")
-              ->orWhere('phone', 'like', "%{$request->search}%")
-        );
+        // Reusable scoped builder. Search wrapped in a sub-closure so the orWhere
+        // group can't bypass the shop_id global scope (CLAUDE.md gotcha #5).
+        $makeQuery = fn() => Supplier::query()
+            ->when($search !== '', fn($q) => $q->where(fn($s) => $s
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('proprietor', 'like', "%{$search}%")
+                ->orWhere('phone', 'like', "%{$search}%")));
 
-        $grossDue    = (clone $baseQuery)->where('due_amount', '>', 0)->sum('due_amount');
-        $totalCredit = abs((clone $baseQuery)->where('due_amount', '<', 0)->sum('due_amount'));
+        // Per-status counts (for the filter chip badges) — respect the search
+        $counts = [
+            'due'     => $makeQuery()->where('due_amount', '>', 0)->count(),
+            'advance' => $makeQuery()->where('due_amount', '<', 0)->count(),
+            'clean'   => $makeQuery()->where('due_amount', '=', 0)->count(),
+        ];
+        $counts['active'] = $counts['due'] + $counts['advance'];
+        $counts['all']    = $counts['active'] + $counts['clean'];
+
+        // Supplier list filtered by chosen status
+        $list = $makeQuery();
+        switch ($status) {
+            case 'due':     $list->where('due_amount', '>', 0); break;
+            case 'advance': $list->where('due_amount', '<', 0); break;
+            case 'clean':   $list->where('due_amount', '=', 0); break;
+            case 'all':     break;                                  // no due filter
+            default:        $list->where('due_amount', '!=', 0);    // 'active'
+        }
+        // print=1 → one page with every matching row (the print button fetches this
+        // before opening the print dialog, so paper shows the whole filtered list)
+        $perPage   = $request->boolean('print') ? 100000 : 15;
+        $suppliers = $list->latest()->paginate($perPage)->withQueryString();
+
+        // Gross due (positive only), credit (negative, shown positive), net = gross - credit
+        $grossDue    = $makeQuery()->where('due_amount', '>', 0)->sum('due_amount');
+        $totalCredit = abs($makeQuery()->where('due_amount', '<', 0)->sum('due_amount'));
         $totalDue    = $grossDue - $totalCredit;
 
-        $suppliers = (clone $baseQuery)
-            ->when(!$showAll, fn($q) => $q->where('due_amount', '!=', 0)) // hide clean by default
-            ->latest()->paginate(15);
+        $data = compact('suppliers', 'grossDue', 'totalCredit', 'totalDue', 'status', 'counts', 'search');
 
-        return view('suppliers.index', compact('suppliers', 'grossDue', 'totalCredit', 'totalDue', 'showAll'));
+        if ($request->ajax()) {
+            return view('suppliers._results', $data);
+        }
+
+        return view('suppliers.index', $data);
     }
 
     public function ledgerSelect()

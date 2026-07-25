@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'সরবরাহকারী')
 @section('page-title', 'সরবরাহকারী')
 
@@ -11,108 +11,130 @@
     'extraLabel'  => 'CSV ইমপোর্ট',
 ])
 
-<div class="card">
+<div class="card" id="supCard">
     <div class="card-filter">
-        <form method="GET" class="filter-form">
-            <div class="search-box"><i class="fas fa-search"></i>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="নাম বা ফোন...">
+        <form method="GET" action="{{ route('suppliers.index') }}" class="filter-form" id="supFilterForm">
+            <input type="hidden" name="status" value="{{ $status }}">
+            <div class="search-box" style="flex:1;min-width:200px">
+                <i class="fas fa-search"></i>
+                <input type="text" name="search" value="{{ $search }}" placeholder="নাম, প্রোপ্রাইটর বা ফোন..."
+                       autocomplete="off" id="supSearchInput">
             </div>
-            <button type="submit" class="btn btn-secondary">খুঁজুন</button>
-            @if(request('search'))<a href="{{ route('suppliers.index') }}" class="btn btn-ghost">পরিষ্কার</a>@endif
-
-            {{-- Toggle: hide/show zero-due suppliers --}}
-            @if($showAll)
-                <a href="{{ route('suppliers.index', array_merge(request()->except('show_all'), [])) }}"
-                   class="btn btn-ghost" style="color:#0d9488;border-color:#0d9488">
-                    <i class="fas fa-eye-slash"></i> পরিষ্কার লুকান
-                </a>
-            @else
-                <a href="{{ route('suppliers.index', array_merge(request()->all(), ['show_all' => 1])) }}"
-                   class="btn btn-ghost">
-                    <i class="fas fa-eye"></i> সব দেখুন
-                </a>
-            @endif
+            <button type="submit" class="btn btn-secondary"><i class="fas fa-search"></i> খুঁজুন</button>
+            <a href="{{ route('suppliers.index') }}" class="btn btn-ghost" id="supClearBtn"
+               style="{{ ($search || $status !== 'active') ? '' : 'display:none' }}">
+                <i class="fas fa-xmark"></i> পরিষ্কার
+            </a>
+            <button type="button" class="btn-export-print no-print" id="supPrintBtn">
+                <i class="fas fa-print"></i> প্রিন্ট
+            </button>
         </form>
     </div>
-    <div class="table-wrap">
-        <table class="data-table">
-            <colgroup>
-                <col style="width:50px">    {{-- # --}}
-                <col style="width:170px">   {{-- নাম --}}
-                <col style="width:150px">   {{-- প্রোপ্রাইটর --}}
-                <col style="width:130px">   {{-- ফোন --}}
-                <col style="width:180px">   {{-- ঠিকানা --}}
-                <col style="width:120px">   {{-- বকেয়া --}}
-                <col style="width:90px">    {{-- অ্যাকশন --}}
-            </colgroup>
-            <thead>
-                <tr><th>#</th><th>নাম</th><th>প্রোপ্রাইটর</th><th>ফোন</th><th>ঠিকানা</th><th>বকেয়া</th><th>অ্যাকশন</th></tr>
-            </thead>
-            <tbody>
-                @forelse($suppliers as $supplier)
-                <tr>
-                    <td class="mono">{{ $loop->iteration }}</td>
-                    <td><strong>{{ $supplier->name }}</strong></td>
-                    <td>{{ $supplier->proprietor ?? '—' }}</td>
-                    <td>{{ $supplier->phone ?? '—' }}</td>
-                    <td>{{ $supplier->address ? \Str::limit($supplier->address, 30) : '—' }}</td>
-                    <td>
-                        @if($supplier->due_amount > 0)
-                            <span class="badge badge-red">৳ {{ number_format($supplier->due_amount, 0) }}</span>
-                        @elseif($supplier->due_amount < 0)
-                            <span class="badge" style="background:#eff6ff;color:#1d4ed8">অগ্রিম ৳ {{ number_format(abs($supplier->due_amount), 0) }}</span>
-                        @else
-                            <span class="badge badge-green">পরিষ্কার</span>
-                        @endif
-                    </td>
-                    <td>
-                        <div class="action-btns">
-                            <a href="{{ route('suppliers.ledger', $supplier) }}" class="btn-icon-sm" title="লেজার" style="color:#0d9488">
-                                <i class="fas fa-book-open"></i>
-                            </a>
-                            <a href="{{ route('supplier-payments.create', ['supplier_id' => $supplier->id]) }}" class="btn-icon-sm" title="পরিশোধ যোগ" style="color:#16a34a">
-                                <i class="fas fa-money-bill-wave"></i>
-                            </a>
-                            <a href="{{ route('suppliers.edit', $supplier) }}" class="btn-icon-sm" title="সম্পাদনা">
-                                <i class="fas fa-pen"></i>
-                            </a>
-                            <form class="admin-only" method="POST" action="{{ route('suppliers.destroy', $supplier) }}"
-                                  data-confirm-msg="{{ $supplier->name }} — সরবরাহকারী মুছে ফেলবেন? বকেয়া: ৳{{ number_format($supplier->due_amount,0) }}। এই কাজ পূর্বাবস্থায় ফেরানো যাবে না।">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                @empty
-                <tr><td colspan="7" class="empty-row">কোনো সরবরাহকারী পাওয়া যায়নি</td></tr>
-                @endforelse
-            </tbody>
-            @if($suppliers->isNotEmpty())
-            <tfoot>
-                <tr class="tfoot-summary">
-                    <td colspan="5" style="text-align:right;font-weight:700;padding-right:16px">মোট বকেয়া</td>
-                    <td style="font-weight:800;color:#dc2626">৳ {{ number_format($grossDue, 0) }}</td>
-                    <td></td>
-                </tr>
-                @if($totalCredit > 0)
-                <tr class="tfoot-summary">
-                    <td colspan="5" style="text-align:right;font-weight:700;padding-right:16px">মোট অগ্রিম (−)</td>
-                    <td style="font-weight:800;color:#1d4ed8">৳ {{ number_format($totalCredit, 0) }}</td>
-                    <td></td>
-                </tr>
-                <tr class="tfoot-summary">
-                    <td colspan="5" style="text-align:right;font-weight:700;padding-right:16px">নিট বকেয়া</td>
-                    <td style="font-weight:800;color:{{ $totalDue > 0 ? '#dc2626' : '#16a34a' }}">
-                        ৳ {{ number_format(abs($totalDue), 0) }}
-                    </td>
-                    <td></td>
-                </tr>
-                @endif
-            </tfoot>
-            @endif
-        </table>
+
+    <div id="supResults">
+        @include('suppliers._results')
     </div>
-    <div class="pagination-wrap">{{ $suppliers->withQueryString()->links() }}</div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    var card = document.getElementById('supCard');
+    if (!card || card._ajaxBound) return;   // guard: don't re-bind on repeated turbo:load
+    card._ajaxBound = true;
+
+    var form        = document.getElementById('supFilterForm');
+    var input       = document.getElementById('supSearchInput');
+    var results     = document.getElementById('supResults');
+    var clearBtn    = document.getElementById('supClearBtn');
+    var statusInput = form.querySelector('input[name="status"]');
+
+    function syncClearBtn() {
+        var active = input.value.trim() || statusInput.value !== 'active';
+        clearBtn.style.display = active ? '' : 'none';
+    }
+
+    function buildUrl() {
+        var params = new URLSearchParams();
+        if (input.value.trim()) params.set('search', input.value.trim());
+        if (statusInput.value) params.set('status', statusInput.value);
+        var qs = params.toString();
+        return form.action + (qs ? '?' + qs : '');
+    }
+
+    function load(url, opts) {
+        opts = opts || {};
+        results.style.opacity = '.5';
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                results.innerHTML = html;
+                results.style.opacity = '1';
+                syncClearBtn();
+                if (opts.keepFocus && document.activeElement !== input) {
+                    input.focus();
+                    var v = input.value; input.value = ''; input.value = v; // caret to end
+                }
+            })
+            .catch(function () { results.style.opacity = '1'; window.location = url; });
+    }
+
+    // প্রিন্ট — swap the paginated 15 rows for the FULL filtered list first,
+    // print, then put the paginated view back
+    document.getElementById('supPrintBtn').addEventListener('click', function () {
+        var url = buildUrl();
+        url += (url.indexOf('?') === -1 ? '?' : '&') + 'print=1';
+        var snapshot = results.innerHTML;
+        var restored = false;
+        function restore() {
+            if (restored) return;
+            restored = true;
+            results.innerHTML = snapshot;
+        }
+        results.style.opacity = '.5';
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                results.innerHTML = html;
+                results.style.opacity = '1';
+                window.addEventListener('afterprint', restore, { once: true });
+                window.print();
+                setTimeout(restore, 2000);   // fallback if afterprint never fires
+            })
+            .catch(function () { results.style.opacity = '1'; window.print(); });
+    });
+
+    // live search
+    var t;
+    input.addEventListener('input', function () {
+        clearTimeout(t);
+        t = setTimeout(function () { load(buildUrl(), { keepFocus: true }); }, 300);
+    });
+
+    // form submit (Enter key / খুঁজুন button)
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        load(buildUrl());
+    });
+
+    // filter chips + পরিষ্কার link + pagination — all live inside #supCard,
+    // delegate so re-rendered content (chips/pagination) stays wired
+    card.addEventListener('click', function (e) {
+        var link = e.target.closest('a');
+        if (!link) return;
+        var withinResults = results.contains(link);
+        var isChip  = link.hasAttribute('data-ajax-filter');
+        var isClear = link.id === 'supClearBtn';
+        var isPage  = withinResults && link.closest('.pagination-wrap');
+        if (!isChip && !isClear && !isPage) return;
+
+        e.preventDefault();
+        var url = link.href;
+        load(url);
+        if (isChip) { statusInput.value = new URL(url, window.location.origin).searchParams.get('status') || 'active'; }
+        if (isClear) { input.value = ''; statusInput.value = 'active'; }
+    });
+})();
+</script>
+@endpush

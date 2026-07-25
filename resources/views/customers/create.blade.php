@@ -29,12 +29,12 @@
             </div>
             <div class="form-group-field">
                 <label>ক্রেডিট লিমিট (৳)</label>
-                <input type="number" name="credit_limit" value="{{ old('credit_limit') }}" min="0" step="any" placeholder="খালি = লিমিট নেই">
+                <input type="text" inputmode="decimal" name="credit_limit" value="{{ old('credit_limit') }}" placeholder="খালি = লিমিট নেই">
                 <small style="color:#64748b;font-size:.75rem">বাকী এই সীমা ছাড়ালে বিক্রয়ের সময় সতর্কবার্তা দেখাবে</small>
             </div>
             <div class="form-group-field">
                 <label>পুরনো বাকী (৳)</label>
-                <input type="number" name="opening_balance" value="{{ old('opening_balance') }}" step="any" placeholder="খালি = ০">
+                <input type="text" inputmode="decimal" name="opening_balance" value="{{ old('opening_balance') }}" placeholder="খালি = ০">
                 <small style="color:#64748b;font-size:.75rem">সফটওয়্যার চালুর আগের খাতার বাকী। অগ্রিম দেওয়া থাকলে মাইনাস দিন (যেমন -৫০০)</small>
             </div>
             <div class="form-group-field form-full">

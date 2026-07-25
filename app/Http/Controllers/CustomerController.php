@@ -48,7 +48,10 @@ class CustomerController extends Controller
             case 'all':     break;                                  // no due filter
             default:        $list->where('due_amount', '!=', 0);    // 'active'
         }
-        $customers = $list->latest()->paginate(15)->withQueryString();
+        // print=1 → one page with every matching row (the print button fetches this
+        // before opening the print dialog, so paper shows the whole filtered list)
+        $perPage   = $request->boolean('print') ? 100000 : 15;
+        $customers = $list->latest()->paginate($perPage)->withQueryString();
 
         $areas = CustomerArea::orderBy('name')->get();
 

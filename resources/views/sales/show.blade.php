@@ -34,17 +34,26 @@
     $grandTotal    = $sale->total_amount + $sale->previous_due;
     $remaining     = $grandTotal - $sale->paid_amount;
 
-    /* ── Print density — ONE fixed size, owner's directive ─────────────
-       No dynamic scaling: staff read the same size every day. Owner capped
-       one-page memos at 20 rows (was 25 — 25 printed too small/tight). With
-       only 20 rows the fixed font is 0.90rem (bigger, easier to read; ~5mm
-       rows × 20 ≈ 100mm, well inside the ~121mm row budget with a full 7-row
-       tfoot). >20 rows flows to 2 pages (same layout, still readable font).
-       CSS vars consumed by the @media print rules. */
+    /* ── Print density — default up to 20, dynamic 21–40 ───────────────
+       1–20 rows: ONE fixed comfortable size (0.92rem). Deliberately NOT
+       scaled up for few items — the old per-tier version made a 1-row memo
+       print oversized. Every memo from 1 to 20 items reads identically.
+       21–40 rows: shrink progressively (linear ramp) so all rows still fit
+       ONE page — font 0.92→0.64rem, padding 2→0px, line-height 1.2→1.0.
+       >40 rows: too many for one sheet → 2-page memo-multi at compact size.
+       CSS vars consumed by the @media print rules (see .memo-table below). */
     $itemCount = $sale->items->count();
-    $memoMulti = $itemCount > 20;
-    if ($memoMulti) { $mFont = '0.92'; $mPad = '2'; $mLh = '1.2'; }
-    else            { $mFont = '0.92'; $mPad = '2'; $mLh = '1.2'; }
+    $memoMulti = $itemCount > 40;
+    if ($itemCount <= 20) {
+        $mFont = '0.92'; $mPad = '2'; $mLh = '1.2';
+    } elseif ($itemCount <= 40) {
+        $f     = ($itemCount - 20) / 20;                         // 0.05 … 1.0
+        $mFont = number_format(0.92 - $f * 0.28, 2);             // 0.91 … 0.64
+        $mPad  = (string) max(0, (int) round(2 * (1 - $f)));     // 2 … 0
+        $mLh   = number_format(1.2 - $f * 0.2, 2);               // 1.19 … 1.00
+    } else {
+        $mFont = '0.64'; $mPad = '0'; $mLh = '1.0';
+    }
 @endphp
 
 {{-- Action buttons (no-print) --}}

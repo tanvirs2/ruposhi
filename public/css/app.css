@@ -1678,6 +1678,7 @@ input[type="time"].form-select {
     .sidebar, .topbar, .quick-actions, .ui-controls, .ctrl-btn,
     .btn-export, .btn-export-print, .card-filter, .filter-form,
     .shortcuts-overlay, .confirm-modal, .no-print, .pagination-wrap,
+    .filter-chips, .page-header-bar,
     .action-btns, .btn-icon-sm, .col-hide-print, .btn, .fab,
     .floating-submit, .form-actions, .alert,
     #miniChatRoot, #miniCalcRoot, #calcSelBubble, #info-popover,
