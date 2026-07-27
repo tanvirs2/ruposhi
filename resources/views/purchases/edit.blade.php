@@ -221,12 +221,28 @@ var existingCartData = @json($existingItems);
 function makeFloatingDropdown(inputEl, dropEl) {
     document.body.appendChild(dropEl);
     dropEl.style.cssText = `position:fixed;display:none;z-index:9999;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);overflow-y:auto;max-height:240px;`;
+    // Flip above the input when there isn't room below (short/laptop screens).
+    // Zoom gotcha: topbar A/A+/A- scales <html> via CSS zoom; dropEl is a
+    // <body> descendant of that same zoomed <html>, so pixel values written
+    // to its inline style get re-scaled again at render — divide by zoom
+    // before writing to cancel it (see sales/create.blade.php for detail).
     function position() {
         const r = inputEl.getBoundingClientRect();
-        dropEl.style.top = (r.bottom+4)+'px'; dropEl.style.left = r.left+'px'; dropEl.style.width = r.width+'px';
+        const z = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+        const dropH = Math.min(dropEl.scrollHeight || 240, 240);
+        const spaceBelow = window.innerHeight - r.bottom, spaceAbove = r.top;
+        if (spaceBelow < dropH + 8 && spaceAbove > spaceBelow) {
+            dropEl.style.top = 'auto'; dropEl.style.bottom = ((window.innerHeight - r.top + 4) / z) + 'px';
+        } else {
+            dropEl.style.bottom = 'auto'; dropEl.style.top = ((r.bottom+4) / z)+'px';
+        }
+        dropEl.style.left = (r.left / z)+'px'; dropEl.style.width = (r.width / z)+'px';
     }
-    function show(html) { dropEl.innerHTML = html; position(); dropEl.style.display = 'block'; }
-    function hide() { dropEl.style.display = 'none'; dropEl.innerHTML = ''; }
+    let trackTimer = null;
+    function startTracking() { stopTracking(); trackTimer = setInterval(() => { if (dropEl.style.display !== 'none') position(); }, 200); }
+    function stopTracking()  { if (trackTimer) { clearInterval(trackTimer); trackTimer = null; } }
+    function show(html) { dropEl.innerHTML = html; position(); dropEl.style.display = 'block'; startTracking(); }
+    function hide() { dropEl.style.display = 'none'; dropEl.innerHTML = ''; stopTracking(); }
     window.addEventListener('scroll', position, true);
     window.addEventListener('resize', position);
     document.addEventListener('click', e => { if (!inputEl.contains(e.target) && !dropEl.contains(e.target)) hide(); });

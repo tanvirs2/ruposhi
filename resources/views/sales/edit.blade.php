@@ -136,6 +136,7 @@
                         <label>ছাড় (৳)</label>
                         <input type="text" inputmode="decimal" name="discount" id="discountInput"
                             value="{{ $sale->discount }}">
+                        <div id="discountWords" style="display:none;margin-top:5px;font-size:.78rem;font-weight:600;color:#7c3aed"></div>
                     </div>
                 </div>
                 {{-- Categorised extra costs --}}
@@ -291,14 +292,33 @@ var existingCartData = @json($existingItems);
 function makeFloatingDropdown(inputEl, dropEl) {
     document.body.appendChild(dropEl);
     dropEl.style.cssText = `position:fixed;display:none;z-index:9999;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);overflow-y:auto;max-height:240px;`;
+    // Flip above the input when there isn't room below (short/laptop screens).
+    // Zoom gotcha: topbar A/A+/A- scales <html> via CSS zoom; dropEl is a
+    // <body> descendant of that same zoomed <html>, so pixel values written
+    // to its inline style get re-scaled again at render — divide by zoom
+    // before writing to cancel it (see sales/create.blade.php for detail).
     function position() {
-        const r = inputEl.getBoundingClientRect();
-        dropEl.style.top   = (r.bottom + 4) + 'px';
-        dropEl.style.left  = r.left + 'px';
-        dropEl.style.width = r.width + 'px';
+        const r          = inputEl.getBoundingClientRect();
+        const z          = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+        const dropH      = Math.min(dropEl.scrollHeight || 240, 240);
+        const spaceBelow = window.innerHeight - r.bottom;
+        const spaceAbove = r.top;
+        if (spaceBelow < dropH + 8 && spaceAbove > spaceBelow) {
+            dropEl.style.top    = 'auto';
+            dropEl.style.bottom = ((window.innerHeight - r.top + 4) / z) + 'px';
+        } else {
+            dropEl.style.bottom = 'auto';
+            dropEl.style.top    = ((r.bottom + 4) / z) + 'px';
+        }
+        dropEl.style.left  = (r.left / z)  + 'px';
+        dropEl.style.width = (r.width / z) + 'px';
     }
-    function show(html) { dropEl.innerHTML = html; position(); dropEl.style.display = 'block'; }
-    function hide() { dropEl.style.display = 'none'; dropEl.innerHTML = ''; }
+    // Keep tracking the input's position while open (zoom/layout-shift safety).
+    let trackTimer = null;
+    function startTracking() { stopTracking(); trackTimer = setInterval(() => { if (dropEl.style.display !== 'none') position(); }, 200); }
+    function stopTracking()  { if (trackTimer) { clearInterval(trackTimer); trackTimer = null; } }
+    function show(html) { dropEl.innerHTML = html; position(); dropEl.style.display = 'block'; startTracking(); }
+    function hide() { dropEl.style.display = 'none'; dropEl.innerHTML = ''; stopTracking(); }
     window.addEventListener('scroll', position, true);
     window.addEventListener('resize', position);
     document.addEventListener('click', function(e) {
@@ -632,25 +652,30 @@ function addExtraCostRow(catName, amount) {
     ).join('');
     const row = document.createElement('div');
     row.id = `ecr-${idx}`;
-    row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px';
+    row.style.cssText = 'margin-bottom:6px';
     row.innerHTML = `
-        <select name="extra_costs[${idx}][category]" class="extra-cost-cat form-select"
-            style="flex:1;padding:6px 8px;font-size:.82rem;min-width:0"
-            onchange="updateSummary()">
-            <option value="">-- ক্যাটাগরি --</option>
-            ${opts}
-        </select>
-        <input type="text" inputmode="decimal" name="extra_costs[${idx}][amount]"
-            placeholder="৳ পরিমাণ" value="${amount !== undefined ? amount : ''}"
-            class="extra-cost-amount"
-            style="width:90px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem"
-            oninput="updateSummary()">
-        <button type="button" onclick="removeExtraCostRow(${idx})"
-            style="padding:5px 8px;border:none;background:#fee2e2;color:#dc2626;border-radius:6px;cursor:pointer;flex-shrink:0">
-            <i class="fas fa-times"></i>
-        </button>`;
+        <div style="display:flex;gap:6px;align-items:center">
+            <select name="extra_costs[${idx}][category]" class="extra-cost-cat form-select"
+                style="flex:1;padding:6px 8px;font-size:.82rem;min-width:0"
+                onchange="updateSummary()">
+                <option value="">-- ক্যাটাগরি --</option>
+                ${opts}
+            </select>
+            <input type="text" inputmode="decimal" name="extra_costs[${idx}][amount]"
+                id="eca-${idx}"
+                placeholder="৳ পরিমাণ" value="${amount !== undefined ? amount : ''}"
+                class="extra-cost-amount"
+                style="width:90px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem"
+                oninput="updateSummary()">
+            <button type="button" onclick="removeExtraCostRow(${idx})"
+                style="padding:5px 8px;border:none;background:#fee2e2;color:#dc2626;border-radius:6px;cursor:pointer;flex-shrink:0">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="ecw-${idx}" style="display:none;margin-top:3px;font-size:.72rem;font-weight:600;color:#7c3aed;text-align:right"></div>`;
     document.getElementById('extraCostRows').appendChild(row);
     if (typeof attachBengaliConverter === 'function') attachBengaliConverter(row);
+    bnWatchTakaWords(`eca-${idx}`, `ecw-${idx}`);
     if (catName === undefined) row.querySelector('select').focus();
     updateSummary();
 }
@@ -929,6 +954,7 @@ function showStockToast(msg, type) {
 })();
 
 document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'));
+document.addEventListener('turbo:load', () => bnWatchTakaWords('discountInput', 'discountWords'));
 </script>
 @endpush
 @endsection

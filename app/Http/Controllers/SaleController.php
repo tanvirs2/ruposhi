@@ -378,17 +378,7 @@ class SaleController extends Controller
             $sale->delete();
         });
 
-        // SMS: notify admin of deletion (skip if toggle off)
-        $adminPhone = StoreConfig::get('sms_on_delete', '1') == '1' ? StoreConfig::get('store_phone', '') : '';
-        if ($adminPhone) {
-            $storeName = StoreConfig::get('store_name', 'দোকান');
-            $msg = "[{$storeName}] বিক্রয় মুছে ফেলা হয়েছে\n#" . str_pad($sale->id, 6, '0', STR_PAD_LEFT)
-                . " | " . ($sale->customer?->name ?? 'ওয়াক-ইন')
-                . "\nমোট: ৳" . number_format($sale->total_amount, 0)
-                . "\nমুছেছেন: " . (auth()->user()->name);
-            app(SmsService::class)->send($adminPhone, $msg);
-        }
-
+        // No admin SMS here — admin deleted it themselves, they already know.
         return redirect()->route('sales.index')->with('success', 'বিক্রয় মুছে ফেলা হয়েছে।');
     }
 
@@ -405,6 +395,23 @@ class SaleController extends Controller
             'delete_requested_at' => now(),
             'delete_requested_by' => auth()->id(),
         ]);
+
+        // SMS: alert admin the moment a staff member requests a deletion —
+        // that's the point admin needs to be told to go review it. No SMS is
+        // needed after admin approves — they clicked approve themselves, they
+        // already know.
+        $adminPhone = StoreConfig::get('sms_on_delete', '1') == '1' ? StoreConfig::get('store_phone', '') : '';
+        if ($adminPhone) {
+            $sale->load('customer');
+            $storeName = StoreConfig::get('store_name', 'দোকান');
+            $msg = "[{$storeName}] বিক্রয় ডিলিট অনুরোধ\n#" . str_pad($sale->id, 6, '0', STR_PAD_LEFT)
+                . " | " . ($sale->customer?->name ?? 'ওয়াক-ইন')
+                . "\nমোট: ৳" . number_format($sale->total_amount, 0)
+                . "\nঅনুরোধ করেছেন: " . auth()->user()->name
+                . "\nঅনুগ্রহ করে লগইন করে অনুমোদন/বাতিল করুন।";
+            app(SmsService::class)->send($adminPhone, $msg);
+        }
+
         return back()->with('success', 'ডিলিট অনুরোধ পাঠানো হয়েছে। অ্যাডমিনের অনুমোদনের অপেক্ষায়।');
     }
 

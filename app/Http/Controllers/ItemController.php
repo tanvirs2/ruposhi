@@ -20,7 +20,7 @@ class ItemController extends Controller
             ->when($request->category_id, fn($q) =>
                 $q->where('category_id', $request->category_id)
             )
-            ->latest()->paginate(20)->withQueryString();
+            ->latest()->paginate($request->boolean('print') ? 100000 : 20)->withQueryString();
 
         $categories = Category::orderBy('name')->get();
 

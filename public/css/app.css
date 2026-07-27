@@ -1719,6 +1719,10 @@ input[type="time"].form-select {
     }
     .tfoot-summary td { background: #fff !important; border-top: 1.5px solid #000 !important; }
 
+    /* স্টক প্রিন্ট — ক্যাটাগরি কলাম লুকিয়ে সেই জায়গা আইটেম নামকে দেওয়া হয়,
+       তাই নাম যেন কখনো দুই লাইনে ভেঙে না যায় */
+    .stock-item-td, .stock-item-td * { white-space: nowrap !important; }
+
     /* ── Stats — one compact strip, not big cards ── */
     .stats-grid, .sales-stats-grid {
         display: flex !important; flex-wrap: wrap !important; gap: 6px !important;

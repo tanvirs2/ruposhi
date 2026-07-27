@@ -172,6 +172,7 @@
                         <span class="taka-input-wrap">
                             <input type="text" inputmode="decimal" name="discount" id="discountInput" value="0">
                         </span>
+                        <div id="discountWords" style="display:none;margin-top:5px;font-size:.78rem;font-weight:600;color:#7c3aed"></div>
                     </div>
                 </div>
                 {{-- Categorised extra costs --}}
@@ -522,22 +523,60 @@ function makeFloatingDropdown(inputEl, dropEl) {
         overflow-y:auto;max-height:240px;
     `;
 
+    // Flip above the input when there isn't room below (short/laptop screens) —
+    // otherwise the dropdown can spill past the viewport bottom.
+    //
+    // Zoom gotcha: the topbar A/A+/A- buttons scale the whole UI via CSS
+    // `zoom` on <html> (app.css: sm=.92, lg=1.1). getBoundingClientRect()
+    // already returns post-zoom (visual) pixels, but dropEl is ALSO a
+    // descendant of that zoomed <html> (it's appended to <body>), so any
+    // pixel value we WRITE into its inline style gets re-scaled by zoom
+    // again at render time — compounding into large drift the further the
+    // input sits from the top-left corner (worst for this right-side
+    // sidebar field). Dividing by the zoom factor before writing cancels
+    // that second scaling.
     function position() {
-        const r = inputEl.getBoundingClientRect();
-        dropEl.style.top   = (r.bottom + 4) + 'px';
-        dropEl.style.left  = r.left + 'px';
-        dropEl.style.width = r.width + 'px';
+        const r          = inputEl.getBoundingClientRect();
+        const z          = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+        const dropH      = Math.min(dropEl.scrollHeight || 240, 240);
+        const spaceBelow = window.innerHeight - r.bottom;
+        const spaceAbove = r.top;
+        if (spaceBelow < dropH + 8 && spaceAbove > spaceBelow) {
+            dropEl.style.top    = 'auto';
+            dropEl.style.bottom = ((window.innerHeight - r.top + 4) / z) + 'px';
+        } else {
+            dropEl.style.bottom = 'auto';
+            dropEl.style.top    = ((r.bottom + 4) / z) + 'px';
+        }
+        dropEl.style.left  = (r.left / z)  + 'px';
+        dropEl.style.width = (r.width / z) + 'px';
+    }
+
+    // Keep tracking the input's position while the dropdown is open — a plain
+    // scroll/resize listener misses layout shifts from other causes (browser
+    // zoom, sibling content changing height, etc.), which on some laptop
+    // screens could leave the dropdown drifting off its input. Cheap poll,
+    // only runs while visible.
+    let trackTimer = null;
+    function startTracking() {
+        stopTracking();
+        trackTimer = setInterval(() => { if (dropEl.style.display !== 'none') position(); }, 200);
+    }
+    function stopTracking() {
+        if (trackTimer) { clearInterval(trackTimer); trackTimer = null; }
     }
 
     function show(html) {
         dropEl.innerHTML = html;
         position();
         dropEl.style.display = 'block';
+        startTracking();
     }
 
     function hide() {
         dropEl.style.display = 'none';
         dropEl.innerHTML = '';
+        stopTracking();
     }
 
     window.addEventListener('scroll', position, true);
@@ -1159,27 +1198,32 @@ function addExtraCostRow() {
     ).join('');
     const row = document.createElement('div');
     row.id = `ecr-${idx}`;
-    row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px';
+    row.style.cssText = 'margin-bottom:6px';
     row.innerHTML = `
-        <select name="extra_costs[${idx}][category]" class="extra-cost-cat form-select"
-            style="flex:1;padding:6px 8px;font-size:.82rem;min-width:0"
-            onchange="this.style.borderColor='';updateSummary()">
-            <option value="">-- ক্যাটাগরি --</option>
-            ${opts}
-        </select>
-        <span class="taka-input-wrap" style="width:96px;flex-shrink:0">
-            <input type="text" inputmode="decimal" name="extra_costs[${idx}][amount]"
-                placeholder="পরিমাণ" value=""
-                class="extra-cost-amount"
-                style="width:100%;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem"
-                oninput="updateSummary()">
-        </span>
-        <button type="button" onclick="removeExtraCostRow(${idx})"
-            style="padding:5px 8px;border:none;background:#fee2e2;color:#dc2626;border-radius:6px;cursor:pointer;flex-shrink:0">
-            <i class="fas fa-times"></i>
-        </button>`;
+        <div style="display:flex;gap:6px;align-items:center">
+            <select name="extra_costs[${idx}][category]" class="extra-cost-cat form-select"
+                style="flex:1;padding:6px 8px;font-size:.82rem;min-width:0"
+                onchange="this.style.borderColor='';updateSummary()">
+                <option value="">-- ক্যাটাগরি --</option>
+                ${opts}
+            </select>
+            <span class="taka-input-wrap" style="width:96px;flex-shrink:0">
+                <input type="text" inputmode="decimal" name="extra_costs[${idx}][amount]"
+                    id="eca-${idx}"
+                    placeholder="পরিমাণ" value=""
+                    class="extra-cost-amount"
+                    style="width:100%;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem"
+                    oninput="updateSummary()">
+            </span>
+            <button type="button" onclick="removeExtraCostRow(${idx})"
+                style="padding:5px 8px;border:none;background:#fee2e2;color:#dc2626;border-radius:6px;cursor:pointer;flex-shrink:0">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="ecw-${idx}" style="display:none;margin-top:3px;font-size:.72rem;font-weight:600;color:#7c3aed;text-align:right"></div>`;
     document.getElementById('extraCostRows').appendChild(row);
     if (typeof attachBengaliConverter === 'function') attachBengaliConverter(row);
+    bnWatchTakaWords(`eca-${idx}`, `ecw-${idx}`);
     row.querySelector('select').focus();
 }
 
@@ -1886,6 +1930,7 @@ window.addEventListener('resize', syncSubmitBarSpacer);
 document.addEventListener('turbo:load', syncSubmitBarSpacer);
 
 document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'));
+document.addEventListener('turbo:load', () => bnWatchTakaWords('discountInput', 'discountWords'));
 
 document.addEventListener('click', function(e) {
     if (!e.target.closest('[id^="item-change-box-"]') && !e.target.closest('.cart-item-name') && !e.target.closest('[onclick^="openItemChange"]')) {

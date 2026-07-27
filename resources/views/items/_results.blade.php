@@ -8,7 +8,7 @@
                     <th class="tr">ক্রয় মূল্য</th>
                     <th class="tr">বিক্রয় মূল্য</th>
                     <th class="tc">স্টক</th>
-                    <th class="tc">অ্যাকশন</th>
+                    <th class="tc col-hide-print">অ্যাকশন</th>
                 </tr>
             </thead>
             <tbody>
@@ -30,7 +30,7 @@
                             {{ $qty }} {{ $item->unit }}
                         </span>
                     </td>
-                    <td class="tc">
+                    <td class="tc col-hide-print">
                         <div class="action-btns">
                             <a href="{{ route('items.edit', $item) }}" class="btn-icon-sm"><i class="fas fa-pen"></i></a>
                             <form class="admin-only" method="POST" action="{{ route('items.destroy', $item) }}"

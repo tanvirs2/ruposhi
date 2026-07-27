@@ -221,12 +221,15 @@ class SupplierController extends Controller
         //  $deposits → new view: all payments (deposit/purchase_payment/standalone) in their own table
         $combined = $ledger;
 
+        // NOTE: $bills rows are the SAME objects as $combined's (filter/concat/sortBy
+        // don't clone). Must write to a distinct property here — overwriting ->balance
+        // would corrupt $combined's already-correct cumulative balance for these rows.
         $bills = $rows->filter(fn($r) => in_array($r->type, ['item', 'extra_cost']))
             ->sortBy('sort_key')->values();
         $runBillBal = $openingBalance;
         foreach ($bills as $row) {
-            $runBillBal  += $row->debit;
-            $row->balance = $runBillBal;
+            $runBillBal      += $row->debit;
+            $row->billBalance = $runBillBal;
         }
 
         $deposits = $rows->filter(fn($r) => in_array($r->type, ['deposit', 'purchase_payment']))

@@ -4,7 +4,7 @@
                 <tr>
                     <th>#</th>
                     <th>আইটেম</th>
-                    <th>ক্যাটাগরি</th>
+                    <th class="col-hide-print">ক্যাটাগরি</th>
                     <th class="tc">সর্বশেষ আপডেট</th>
                     <th class="tc">মোট বিক্রয়</th>
                     <th class="tc">পূর্বের স্টক</th>
@@ -36,13 +36,13 @@
                 @endphp
                 <tr class="{{ $isToday ? 'stock-updated-today' : '' }}">
                     <td class="mono">{{ $loop->iteration }}</td>
-                    <td>
+                    <td class="stock-item-td">
                         <strong>{{ $s->item->name }}</strong>
                         @if($isToday)
                             <span class="badge-new-stock">নতুন</span>
                         @endif
                     </td>
-                    <td>{{ $s->item->category?->name ?? '—' }}</td>
+                    <td class="col-hide-print">{{ $s->item->category?->name ?? '—' }}</td>
                     <td class="tc" style="font-size:.78rem;white-space:nowrap">
                         @if($updatedAt)
                             @if($isToday)

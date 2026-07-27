@@ -64,7 +64,7 @@
     <div class="table-wrap">
         <table class="data-table">
             <thead>
-                <tr><th>রিসিভ নং</th><th>সরবরাহকারী</th><th>ধরন</th><th>পরিমাণ</th><th>তারিখ</th><th>পদ্ধতি</th><th>মন্তব্য</th><th>রেকর্ডকারী</th><th>অ্যাকশন</th></tr>
+                <tr><th>রিসিভ নং</th><th>সরবরাহকারী</th><th>ধরন</th><th>পরিমাণ</th><th>তারিখ</th><th>পদ্ধতি</th><th class="col-hide-print">মন্তব্য</th><th>রেকর্ডকারী</th><th class="col-hide-print">অ্যাকশন</th></tr>
             </thead>
             <tbody>
                 @forelse($payments as $item)
@@ -113,9 +113,9 @@
                     </td>
                     <td>{{ $date->format('d/m/Y') }}</td>
                     <td><span class="badge badge-green">{{ $method }}</span></td>
-                    <td>{{ $notes }}</td>
+                    <td class="col-hide-print">{{ $notes }}</td>
                     <td>{{ $userName }}</td>
-                    <td>
+                    <td class="col-hide-print">
                         <div class="action-btns">
                             <a href="{{ route('purchases.show', $purchaseId) }}" class="btn-icon-sm" title="ইনভয়েস"><i class="fas fa-eye"></i></a>
                             @if(!$isDeposit && $row->items_count === 0)

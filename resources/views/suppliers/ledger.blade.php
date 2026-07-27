@@ -495,7 +495,7 @@
                         <span class="sl-debit">৳ {{ number_format($row->debit, 0) }}</span>
                     </td>
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
-                        <span class="sl-debit">৳ {{ number_format($row->balance, 0) }}</span>
+                        <span class="sl-debit">৳ {{ number_format($row->billBalance, 0) }}</span>
                     </td>
                 </tr>
                 @empty
@@ -513,7 +513,7 @@
                         </span>
                     </td>
                     <td style="text-align:right;font-weight:800">
-                        @php $billsFinal = $bills->last()->balance ?? $openingBalance; @endphp
+                        @php $billsFinal = $bills->last()->billBalance ?? $openingBalance; @endphp
                         ৳ {{ number_format($billsFinal, 0) }}
                     </td>
                 </tr>

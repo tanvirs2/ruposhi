@@ -26,10 +26,10 @@
             <col style="width:130px">   {{-- ফোন --}}
             <col style="width:180px">   {{-- ঠিকানা --}}
             <col style="width:120px">   {{-- বকেয়া --}}
-            <col style="width:90px">    {{-- অ্যাকশন --}}
+            <col class="col-hide-print" style="width:90px">    {{-- অ্যাকশন --}}
         </colgroup>
         <thead>
-            <tr><th>#</th><th>নাম</th><th>প্রোপ্রাইটর</th><th>ফোন</th><th>ঠিকানা</th><th>বকেয়া</th><th>অ্যাকশন</th></tr>
+            <tr><th>#</th><th>নাম</th><th>প্রোপ্রাইটর</th><th>ফোন</th><th>ঠিকানা</th><th>বকেয়া</th><th class="col-hide-print">অ্যাকশন</th></tr>
         </thead>
         <tbody>
             @forelse($suppliers as $supplier)
@@ -43,12 +43,12 @@
                     @if($supplier->due_amount > 0)
                         <span class="badge badge-red">৳ {{ number_format($supplier->due_amount, 0) }}</span>
                     @elseif($supplier->due_amount < 0)
-                        <span class="badge" style="background:#eff6ff;color:#1d4ed8">অগ্রিম ৳ {{ number_format(abs($supplier->due_amount), 0) }}</span>
+                        <span class="badge" style="background:#eff6ff;color:#1d4ed8">অগ্রিম -৳ {{ number_format(abs($supplier->due_amount), 0) }}</span>
                     @else
                         <span class="badge badge-green">পরিষ্কার</span>
                     @endif
                 </td>
-                <td>
+                <td class="col-hide-print">
                     <div class="action-btns">
                         <a href="{{ route('suppliers.ledger', $supplier) }}" class="btn-icon-sm" title="লেজার" style="color:#0d9488">
                             <i class="fas fa-book-open"></i>

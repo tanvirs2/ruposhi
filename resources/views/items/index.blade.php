@@ -20,6 +20,9 @@
             <button type="submit" class="btn btn-secondary">ফিল্টার</button>
             <a href="{{ route('items.index') }}" class="btn btn-ghost" id="itemsClearBtn"
                style="{{ request()->hasAny(['search','category_id']) ? '' : 'display:none' }}">পরিষ্কার</a>
+            <button type="button" class="btn-export-print no-print" id="itemsPrintBtn">
+                <i class="fas fa-print"></i> প্রিন্ট
+            </button>
         </form>
     </div>
     <div id="itemsResults">
@@ -75,6 +78,31 @@
     input.addEventListener('input', function () {
         clearTimeout(t);
         t = setTimeout(function () { load(buildUrl(), { keepFocus: true }); }, 300);
+    });
+
+    // প্রিন্ট — swap the paginated rows for the FULL filtered list first,
+    // print, then put the paginated view back
+    document.getElementById('itemsPrintBtn').addEventListener('click', function () {
+        var url = buildUrl();
+        url += (url.indexOf('?') === -1 ? '?' : '&') + 'print=1';
+        var snapshot = results.innerHTML;
+        var restored = false;
+        function restore() {
+            if (restored) return;
+            restored = true;
+            results.innerHTML = snapshot;
+        }
+        results.style.opacity = '.5';
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                results.innerHTML = html;
+                results.style.opacity = '1';
+                window.addEventListener('afterprint', restore, { once: true });
+                window.print();
+                setTimeout(restore, 2000);
+            })
+            .catch(function () { results.style.opacity = '1'; window.print(); });
     });
 
     category.addEventListener('change', function () { load(buildUrl()); });

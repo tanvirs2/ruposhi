@@ -26,7 +26,7 @@
             <col style="width:120px">   {{-- এরিয়া --}}
             <col style="width:130px">   {{-- ফোন --}}
             <col style="width:120px">   {{-- বকেয়া --}}
-            <col style="width:90px">    {{-- অ্যাকশন --}}
+            <col class="col-hide-print" style="width:90px">    {{-- অ্যাকশন --}}
         </colgroup>
         <thead>
             <tr>
@@ -36,7 +36,7 @@
                 <th>এরিয়া</th>
                 <th>ফোন</th>
                 <th>বকেয়া</th>
-                <th>অ্যাকশন</th>
+                <th class="col-hide-print">অ্যাকশন</th>
             </tr>
         </thead>
         <tbody>
@@ -59,7 +59,7 @@
                         <span class="badge badge-green">পরিষ্কার</span>
                     @endif
                 </td>
-                <td>
+                <td class="col-hide-print">
                     <div class="action-btns">
                         <a href="{{ route('customers.ledger', $customer) }}" class="btn-icon-sm" title="লেজার" style="color:#0d9488">
                             <i class="fas fa-book-open"></i>
