@@ -99,8 +99,19 @@
                 results.innerHTML = html;
                 results.style.opacity = '1';
                 window.addEventListener('afterprint', restore, { once: true });
-                window.print();
-                setTimeout(restore, 2000);
+                // Wait for layout/paint (and self-hosted fonts) before opening the
+                // print dialog — calling window.print() right after a large innerHTML
+                // swap can catch Chrome mid-layout and produce a blank print preview.
+                var doPrint = function () {
+                    requestAnimationFrame(function () {
+                        requestAnimationFrame(function () {
+                            window.print();
+                            setTimeout(restore, 2000);
+                        });
+                    });
+                };
+                if (document.fonts && document.fonts.ready) { document.fonts.ready.then(doPrint); }
+                else { doPrint(); }
             })
             .catch(function () { results.style.opacity = '1'; window.print(); });
     });

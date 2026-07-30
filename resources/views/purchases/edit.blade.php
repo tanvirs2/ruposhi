@@ -139,7 +139,7 @@
                     <label>পরিশোধ (৳) <span class="req">*</span></label>
                     <div style="display:flex;gap:8px">
                         <input type="text" inputmode="decimal" name="paid_amount" id="paidInput"
-                            value="{{ $purchase->paid_amount }}" required style="flex:1">
+                            value="{{ $purchase->paid_amount }}" style="flex:1">
                         <button type="button" onclick="setFullPay()"
                             style="padding:0 14px;border-radius:var(--radius-sm);border:1.5px solid var(--accent);
                                    background:var(--accent-light);color:var(--accent);font-size:.78rem;
@@ -597,8 +597,10 @@ document.getElementById('receiveForm').addEventListener('submit',function(e){
     document.getElementById('paidInput').value = '{{ $purchase->paid_amount }}';
     updateSummary();
     @if($purchase->supplier_id)
-    const pre = allSuppliers.find(s=>s.id=={{ $purchase->supplier_id }});
-    if(pre){ supplierSelected.innerHTML=`<div style="font-weight:700;color:#0d9488">✓ ${pre.name}</div>`; supplierSelected.style.display='block'; }
+    // Reuse selectSupplier() (not a hand-rolled duplicate) so the previous-due/
+    // advance banner shows immediately on load — matches what happens when the
+    // supplier is picked manually from the search dropdown.
+    selectSupplier({{ $purchase->supplier_id }});
     @endif
 
     // Pre-populate existing extra costs

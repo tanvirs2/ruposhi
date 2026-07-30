@@ -940,13 +940,34 @@ function showStockToast(msg, type) {
     })();
     @endif
 
-    // Pre-select customer info display
+    // Pre-select customer info display — includes the same due/advance banner
+    // selectCustomer() shows, but built directly here (not via selectCustomer()
+    // itself) since that function also resets paidInput/prevDuePay, which would
+    // clobber the sale's already-loaded paid amount during page init.
     @if($sale->customer_id)
     const preCust = allCustomers.find(c => c.id == {{ $sale->customer_id }});
     if (preCust) {
         let html = `<div style="font-weight:700;color:#0d9488;font-size:.9rem">✓ ${preCust.name}</div>`;
         if (preCust.proprietor) html += `<div style="font-size:.8rem;color:#475569;margin-top:1px">প্রোঃ ${preCust.proprietor}</div>`;
         if (preCust.phone)      html += `<div style="font-size:.78rem;color:#94a3b8;margin-top:1px">📞 ${preCust.phone}</div>`;
+        if (preCust.area?.name) html += `<div style="font-size:.78rem;color:#94a3b8;margin-top:1px">📍 ${preCust.area.name}</div>`;
+        const preDue = parseFloat(preCust.due_amount) || 0;
+        if (preDue > 0) {
+            html += `<div style="margin-top:6px;padding:8px 12px;background:#fee2e2;border:1px solid #fecaca;border-radius:8px;display:flex;justify-content:space-between;align-items:center">
+                        <span style="color:#991b1b;font-size:.83rem;font-weight:600"><i class="fas fa-triangle-exclamation"></i> আগের বাকী আছে</span>
+                        <span style="color:#dc2626;font-size:1rem;font-weight:700">৳ ${preDue.toLocaleString('en', {minimumFractionDigits:2})}</span>
+                     </div>`;
+            prevDueDisplay.textContent = '৳ ' + preDue.toLocaleString('en', {minimumFractionDigits:2});
+            prevDueRow.style.display = 'flex';
+        } else if (preDue < 0) {
+            html += `<div style="margin-top:6px;padding:8px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;display:flex;justify-content:space-between;align-items:center">
+                        <span style="color:#1d4ed8;font-size:.83rem;font-weight:600"><i class="fas fa-piggy-bank"></i> অগ্রিম পরিশোধ আছে</span>
+                        <span style="color:#1d4ed8;font-size:1rem;font-weight:700">৳ ${Math.abs(preDue).toLocaleString('en', {minimumFractionDigits:2})}</span>
+                     </div>`;
+        } else {
+            html += `<div style="margin-top:6px;padding:6px 12px;background:#dcfce7;border:1px solid #bbf7d0;border-radius:8px;font-size:.8rem;color:#15803d;font-weight:600">✓ কোনো বাকী নেই</div>`;
+        }
+        currentPrevDue = preDue;
         customerSelected.innerHTML = html;
         customerSelected.style.display = 'block';
     }

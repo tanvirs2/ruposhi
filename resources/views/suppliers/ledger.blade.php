@@ -178,7 +178,7 @@
                     </td>
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
                         <span class="{{ $openingBalance > 0 ? 'sl-debit' : 'sl-credit' }}">
-                            ৳ {{ number_format(abs($openingBalance), 0) }}
+                            ৳ {{ $openingBalance < 0 ? '-' : '' }}{{ number_format(abs($openingBalance), 0) }}
                             <br><small class="sl-bal-tag">{{ $openingBalance > 0 ? 'দেনা' : 'পাওনা' }}</small>
                         </span>
                     </td>
@@ -285,7 +285,7 @@
                             <br><small class="sl-bal-tag">নিষ্পত্তি</small>
                         @else
                             <span class="{{ $row->balance > 0 ? 'sl-debit' : 'sl-credit' }}">
-                                ৳ {{ number_format(abs($row->balance), 0) }}
+                                ৳ {{ $row->balance < 0 ? '-' : '' }}{{ number_format(abs($row->balance), 0) }}
                             </span>
                             <br><small class="sl-bal-tag {{ $row->balance > 0 ? 'sl-tag-due' : 'sl-tag-credit' }}">
                                 {{ $row->balance > 0 ? 'দেনা' : 'পাওনা' }}
@@ -321,7 +321,7 @@
                             <span style="color:#64748b;font-weight:700">৳ 0</span>
                         @else
                             <span class="{{ $finalBal > 0 ? 'sl-debit' : 'sl-credit' }}">
-                                ৳ {{ number_format(abs($finalBal), 0) }}
+                                ৳ {{ $finalBal < 0 ? '-' : '' }}{{ number_format(abs($finalBal), 0) }}
                             </span>
                             <br><small class="sl-bal-tag {{ $finalBal > 0 ? 'sl-tag-due' : 'sl-tag-credit' }}">
                                 {{ $finalBal > 0 ? 'দেনা' : 'পাওনা' }}
@@ -455,7 +455,7 @@
                     </td>
                     <td style="text-align:right;font-variant-numeric:tabular-nums">
                         <span class="{{ $openingBalance > 0 ? 'sl-debit' : 'sl-credit' }}">
-                            ৳ {{ number_format(abs($openingBalance), 0) }}
+                            ৳ {{ $openingBalance < 0 ? '-' : '' }}{{ number_format(abs($openingBalance), 0) }}
                             <br><small class="sl-bal-tag">{{ $openingBalance > 0 ? 'দেনা' : 'পাওনা' }}</small>
                         </span>
                     </td>

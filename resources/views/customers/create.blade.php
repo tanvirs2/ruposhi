@@ -32,11 +32,14 @@
                 <input type="text" inputmode="decimal" name="credit_limit" value="{{ old('credit_limit') }}" placeholder="খালি = লিমিট নেই">
                 <small style="color:#64748b;font-size:.75rem">বাকী এই সীমা ছাড়ালে বিক্রয়ের সময় সতর্কবার্তা দেখাবে</small>
             </div>
+            @if(auth()->user()->canManageShop())
             <div class="form-group-field">
                 <label>পুরনো বাকী (৳)</label>
-                <input type="text" inputmode="decimal" name="opening_balance" value="{{ old('opening_balance') }}" placeholder="খালি = ০">
+                <input type="text" inputmode="decimal" name="opening_balance" id="openingBalanceInput" value="{{ old('opening_balance') }}" placeholder="খালি = ০">
+                <div id="openingBalanceWords" style="display:none;margin-top:4px;font-size:.75rem;font-weight:600;color:#7c3aed"></div>
                 <small style="color:#64748b;font-size:.75rem">সফটওয়্যার চালুর আগের খাতার বাকী। অগ্রিম দেওয়া থাকলে মাইনাস দিন (যেমন -৫০০)</small>
             </div>
+            @endif
             <div class="form-group-field form-full">
                 <label>ঠিকানা</label>
                 <textarea name="address" rows="2">{{ old('address') }}</textarea>
@@ -49,3 +52,9 @@
     </form>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('turbo:load', () => bnWatchTakaWords('openingBalanceInput', 'openingBalanceWords'));
+</script>
+@endpush

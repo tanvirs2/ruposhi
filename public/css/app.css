@@ -1723,6 +1723,16 @@ input[type="time"].form-select {
        তাই নাম যেন কখনো দুই লাইনে ভেঙে না যায় */
     .stock-item-td, .stock-item-td * { white-space: nowrap !important; }
 
+    /* কাস্টমার/সরবরাহকারী তালিকা প্রিন্ট — লম্বা নাম/প্রোপ্রাইটর দুই লাইনে ভেঙে
+       রো-এর উচ্চতা অসমান করে ফেলছিল; শুধু এই দুই কলাম এক লাইনে কেটে (...)
+       দেখাবে, সব রো সমান উচ্চতার হবে। বকেয়া/ব্যাজের মতো ছোট কলাম অক্ষত থাকবে। */
+    .print-uniform-rows { table-layout: fixed !important; }
+    .print-ellipsis-td {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
     /* ── Stats — one compact strip, not big cards ── */
     .stats-grid, .sales-stats-grid {
         display: flex !important; flex-wrap: wrap !important; gap: 6px !important;

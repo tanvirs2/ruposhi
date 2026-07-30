@@ -18,7 +18,7 @@
 </div>
 
 <div class="table-wrap">
-    <table class="data-table">
+    <table class="data-table print-uniform-rows">
         <colgroup>
             <col style="width:50px">    {{-- # --}}
             <col style="width:180px">   {{-- প্রতিষ্ঠান --}}
@@ -43,8 +43,8 @@
             @forelse($customers as $customer)
             <tr>
                 <td class="mono">{{ $loop->iteration }}</td>
-                <td><strong>{{ $customer->name }}</strong></td>
-                <td>{{ $customer->proprietor ?? '—' }}</td>
+                <td class="print-ellipsis-td"><strong>{{ $customer->name }}</strong></td>
+                <td class="print-ellipsis-td">{{ $customer->proprietor ?? '—' }}</td>
                 <td>{{ $customer->area?->name ?? '—' }}</td>
                 <td>{{ $customer->phone ?? '—' }}</td>
                 <td>

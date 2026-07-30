@@ -292,7 +292,7 @@
                         <button type="button" class="info-btn" data-info="এখন সরবরাহকারীকে কত টাকা দিচ্ছেন। বাকি টাকা স্বয়ংক্রিয়ভাবে সরবরাহকারীর বকেয়ায় যোগ হবে।">i</button>
                     </label>
                     <div style="display:flex;gap:8px">
-                        <input type="text" inputmode="decimal" name="paid_amount" id="paidInput" value="0" required style="flex:1">
+                        <input type="text" inputmode="decimal" name="paid_amount" id="paidInput" value="0" style="flex:1">
                         <button type="button" onclick="setFullPay()"
                             style="padding:0 14px;border-radius:var(--radius-sm);border:1.5px solid var(--accent);
                                    background:var(--accent-light);color:var(--accent);font-size:.78rem;
@@ -959,25 +959,30 @@ function addDepositRow() {
     const opts = depositCategories.map(c => `<option value="${c}">${c}</option>`).join('');
     const row  = document.createElement('div');
     row.id = `dpr-${idx}`;
-    row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px';
+    row.style.cssText = 'margin-bottom:6px';
     row.innerHTML = `
-        <select name="deposit_rows[${idx}][category]" class="deposit-cat form-select"
-            style="flex:1;padding:6px 8px;font-size:.82rem;min-width:0" onchange="updateSummary()">
-            <option value="">-- ক্যাটাগরি --</option>
-            ${opts}
-        </select>
-        <span class="taka-input-wrap" style="width:96px;flex-shrink:0">
-            <input type="text" inputmode="decimal" name="deposit_rows[${idx}][amount]"
-                placeholder="পরিমাণ" value="" class="deposit-amount"
-                style="width:100%;padding:6px 8px;border:1.5px solid #93c5fd;border-radius:6px;font-size:.82rem"
-                oninput="updateSummary()">
-        </span>
-        <button type="button" onclick="removeDepositRow(${idx})"
-            style="padding:5px 8px;border:none;background:#fee2e2;color:#dc2626;border-radius:6px;cursor:pointer;flex-shrink:0">
-            <i class="fas fa-times"></i>
-        </button>`;
+        <div style="display:flex;gap:6px;align-items:center">
+            <select name="deposit_rows[${idx}][category]" class="deposit-cat form-select"
+                style="flex:1;padding:6px 8px;font-size:.82rem;min-width:0" onchange="updateSummary()">
+                <option value="">-- ক্যাটাগরি --</option>
+                ${opts}
+            </select>
+            <span class="taka-input-wrap" style="width:96px;flex-shrink:0">
+                <input type="text" inputmode="decimal" name="deposit_rows[${idx}][amount]"
+                    id="dpa-${idx}"
+                    placeholder="পরিমাণ" value="" class="deposit-amount"
+                    style="width:100%;padding:6px 8px;border:1.5px solid #93c5fd;border-radius:6px;font-size:.82rem"
+                    oninput="updateSummary()">
+            </span>
+            <button type="button" onclick="removeDepositRow(${idx})"
+                style="padding:5px 8px;border:none;background:#fee2e2;color:#dc2626;border-radius:6px;cursor:pointer;flex-shrink:0">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="dpw-${idx}" style="display:none;margin-top:3px;font-size:.72rem;font-weight:600;color:#1d4ed8;text-align:right"></div>`;
     document.getElementById('depositRows').appendChild(row);
     if (typeof attachBengaliConverter === 'function') attachBengaliConverter(row);
+    bnWatchTakaWords(`dpa-${idx}`, `dpw-${idx}`);
     row.querySelector('select').focus();
 }
 
@@ -1009,25 +1014,30 @@ function addExtraCostRow() {
     const opts = extraCategories.map(c => `<option value="${c}">${c}</option>`).join('');
     const row  = document.createElement('div');
     row.id = `ecr-${idx}`;
-    row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px';
+    row.style.cssText = 'margin-bottom:6px';
     row.innerHTML = `
-        <select name="extra_costs[${idx}][category]" class="extra-cost-cat form-select"
-            style="flex:1;padding:6px 8px;font-size:.82rem;min-width:0" onchange="this.style.borderColor='';updateSummary()">
-            <option value="">-- ক্যাটাগরি --</option>
-            ${opts}
-        </select>
-        <span class="taka-input-wrap" style="width:96px;flex-shrink:0">
-            <input type="text" inputmode="decimal" name="extra_costs[${idx}][amount]"
-                placeholder="পরিমাণ" value="" class="extra-cost-amount"
-                style="width:100%;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem"
-                oninput="updateSummary()">
-        </span>
-        <button type="button" onclick="removeExtraCostRow(${idx})"
-            style="padding:5px 8px;border:none;background:#fee2e2;color:#dc2626;border-radius:6px;cursor:pointer;flex-shrink:0">
-            <i class="fas fa-times"></i>
-        </button>`;
+        <div style="display:flex;gap:6px;align-items:center">
+            <select name="extra_costs[${idx}][category]" class="extra-cost-cat form-select"
+                style="flex:1;padding:6px 8px;font-size:.82rem;min-width:0" onchange="this.style.borderColor='';updateSummary()">
+                <option value="">-- ক্যাটাগরি --</option>
+                ${opts}
+            </select>
+            <span class="taka-input-wrap" style="width:96px;flex-shrink:0">
+                <input type="text" inputmode="decimal" name="extra_costs[${idx}][amount]"
+                    id="eca-${idx}"
+                    placeholder="পরিমাণ" value="" class="extra-cost-amount"
+                    style="width:100%;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem"
+                    oninput="updateSummary()">
+            </span>
+            <button type="button" onclick="removeExtraCostRow(${idx})"
+                style="padding:5px 8px;border:none;background:#fee2e2;color:#dc2626;border-radius:6px;cursor:pointer;flex-shrink:0">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="ecw-${idx}" style="display:none;margin-top:3px;font-size:.72rem;font-weight:600;color:#7c3aed;text-align:right"></div>`;
     document.getElementById('extraCostRows').appendChild(row);
     if (typeof attachBengaliConverter === 'function') attachBengaliConverter(row);
+    bnWatchTakaWords(`eca-${idx}`, `ecw-${idx}`);
     row.querySelector('select').focus();
 }
 

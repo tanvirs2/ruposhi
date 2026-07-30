@@ -404,11 +404,14 @@ class SaleController extends Controller
         if ($adminPhone) {
             $sale->load('customer');
             $storeName = StoreConfig::get('store_name', 'দোকান');
+            // Link straight to the অনুমোদন কেন্দ্র (approvals hub) — that's the
+            // page with the actual অনুমোদন/বাতিল buttons for this request.
+            $link = route('approvals.index');
             $msg = "[{$storeName}] বিক্রয় ডিলিট অনুরোধ\n#" . str_pad($sale->id, 6, '0', STR_PAD_LEFT)
                 . " | " . ($sale->customer?->name ?? 'ওয়াক-ইন')
                 . "\nমোট: ৳" . number_format($sale->total_amount, 0)
                 . "\nঅনুরোধ করেছেন: " . auth()->user()->name
-                . "\nঅনুগ্রহ করে লগইন করে অনুমোদন/বাতিল করুন।";
+                . "\nলিংক: {$link}";
             app(SmsService::class)->send($adminPhone, $msg);
         }
 

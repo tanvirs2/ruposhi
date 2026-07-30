@@ -23,11 +23,14 @@
                 <label>ইমেইল</label>
                 <input type="email" name="email" value="{{ old('email', $supplier->email) }}">
             </div>
+            @if(auth()->user()->canManageShop())
             <div class="form-group-field">
                 <label>পুরনো দেনা (৳)</label>
-                <input type="text" inputmode="decimal" name="opening_balance" value="{{ old('opening_balance', $supplier->opening_balance + 0) }}" placeholder="খালি = ০">
+                <input type="text" inputmode="decimal" name="opening_balance" id="openingBalanceInput" value="{{ old('opening_balance', $supplier->opening_balance + 0) }}" placeholder="খালি = ০">
+                <div id="openingBalanceWords" style="display:none;margin-top:4px;font-size:.75rem;font-weight:600;color:#7c3aed"></div>
                 <small style="color:#64748b;font-size:.75rem">সফটওয়্যার চালুর আগের খাতার দেনা। বদলালে মোট দেনাও সাথে সাথে ঠিক হয়ে যাবে</small>
             </div>
+            @endif
             <div class="form-group-field form-full">
                 <label>ঠিকানা</label>
                 <textarea name="address" rows="3">{{ old('address', $supplier->address) }}</textarea>
@@ -40,3 +43,9 @@
     </form>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('turbo:load', () => bnWatchTakaWords('openingBalanceInput', 'openingBalanceWords'));
+</script>
+@endpush

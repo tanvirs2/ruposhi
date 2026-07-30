@@ -98,8 +98,10 @@ class PurchaseController extends Controller
             'items.*.id'          => 'required_with:items|exists:items,id',
             'items.*.qty'         => 'required_with:items|numeric|min:0.01',
             'items.*.price'       => 'required_with:items|numeric|min:0',
-            'paid_amount'         => 'required|numeric|min:0',
+            'paid_amount'         => 'nullable|numeric|min:0',
         ]);
+        // Blank পরিশোধ = ৳0, not a blocked submit (matches ছাড়/পুরনো বাকীর মতো ফিল্ড).
+        $request->merge(['paid_amount' => $request->paid_amount ?? 0]);
 
         $purchase = null;
         DB::transaction(function () use ($request, &$purchase) {
@@ -112,20 +114,19 @@ class PurchaseController extends Controller
             $deposit   = $depositRows->sum(fn($r) => (float) $r['amount']);
             $total     = $itemsTotal + $extraCost;
 
-            // If items exist and paid > (total - deposit), split overpayment into
-            // a separate no-item advance purchase so it appears in পরিশোধ তালিকা.
-            $hasItems    = !empty($request->items);
-            $netCost     = $total - $deposit;
-            $overpaid    = $hasItems ? max(0.0, (float) $request->paid_amount - $netCost) : 0.0;
-            $effectivePaid = (float) $request->paid_amount - $overpaid;
-            $due           = $total - $effectivePaid - $deposit; // 0 when overpaid, positive when underpaid
+            // paid_amount is exactly what the user entered — no splitting into a
+            // separate advance purchase. due_amount = total - paid - deposit and
+            // is allowed to go negative (overpayment shows as "অতিরিক্ত পরিশোধ" on
+            // the invoice, same as everywhere else in the app — never capped at 0).
+            $paid = (float) $request->paid_amount;
+            $due  = $total - $paid - $deposit;
 
             $purchase = Purchase::create([
                 'supplier_id'    => $request->supplier_id ?: null,
                 'user_id'        => auth()->id(),
                 'total_amount'   => $total,
                 'extra_cost'     => $extraCost,
-                'paid_amount'    => $effectivePaid,
+                'paid_amount'    => $paid,
                 'deposit_amount' => $deposit,
                 'due_amount'     => $due,
                 'payment_method' => $request->payment_method ?? 'নগদ',
@@ -168,26 +169,9 @@ class PurchaseController extends Controller
                 ]);
             }
 
-            // Supplier due uses the full original paid amount (effectivePaid + overpaid)
             if ($request->supplier_id) {
                 $supplier = Supplier::find($request->supplier_id);
-                $supplier->increment('due_amount', $total - (float) $request->paid_amount - $deposit);
-            }
-
-            // Create the overpayment as a standalone advance in পরিশোধ তালিকা
-            if ($overpaid > 0 && $request->supplier_id) {
-                Purchase::create([
-                    'supplier_id'    => $request->supplier_id,
-                    'user_id'        => auth()->id(),
-                    'total_amount'   => 0,
-                    'extra_cost'     => 0,
-                    'paid_amount'    => $overpaid,
-                    'deposit_amount' => 0,
-                    'due_amount'     => -$overpaid,
-                    'payment_method' => $request->payment_method ?? 'নগদ',
-                    'notes'          => '__advance_for:' . $purchase->id,
-                    'purchase_date'  => $request->purchase_date,
-                ]);
+                $supplier->increment('due_amount', $due);
             }
         });
 
@@ -217,8 +201,10 @@ class PurchaseController extends Controller
             'items.*.id'          => 'required_with:items|exists:items,id',
             'items.*.qty'         => 'required_with:items|numeric|min:0.01',
             'items.*.price'       => 'required_with:items|numeric|min:0',
-            'paid_amount'         => 'required|numeric|min:0',
+            'paid_amount'         => 'nullable|numeric|min:0',
         ]);
+        // Blank পরিশোধ = ৳0, not a blocked submit (matches ছাড়/পুরনো বাকীর মতো ফিল্ড).
+        $request->merge(['paid_amount' => $request->paid_amount ?? 0]);
 
         // Staff: store as pending edit for admin approval
         if (!auth()->user()->canManageShop()) {
@@ -264,17 +250,16 @@ class PurchaseController extends Controller
             $deposit   = $depositRows->sum(fn($r) => (float) $r['amount']);
             $total     = $itemsTotal + $extraCost;
 
-            $hasItems      = !empty($request->items);
-            $netCost       = $total - $deposit;
-            $overpaid      = $hasItems ? max(0.0, (float) $request->paid_amount - $netCost) : 0.0;
-            $effectivePaid = (float) $request->paid_amount - $overpaid;
-            $due           = $total - $effectivePaid - $deposit;
+            // paid_amount is exactly what was entered — no overpayment split
+            // (see store() for the same rule); due_amount can go negative.
+            $paid = (float) $request->paid_amount;
+            $due  = $total - $paid - $deposit;
 
             $purchase->update([
                 'supplier_id'    => $request->supplier_id ?: null,
                 'total_amount'   => $total,
                 'extra_cost'     => $extraCost,
-                'paid_amount'    => $effectivePaid,
+                'paid_amount'    => $paid,
                 'deposit_amount' => $deposit,
                 'due_amount'     => $due,
                 'payment_method' => $request->payment_method ?? 'নগদ',
@@ -315,26 +300,10 @@ class PurchaseController extends Controller
                 ]);
             }
 
-            // 5. Re-apply supplier due using full original paid amount
+            // 5. Re-apply supplier due
             if ($request->supplier_id) {
                 $supplier = Supplier::find($request->supplier_id);
-                $supplier->increment('due_amount', $total - (float) $request->paid_amount - $deposit);
-            }
-
-            // 6. Re-create advance record if still overpaid
-            if ($overpaid > 0 && $request->supplier_id) {
-                Purchase::create([
-                    'supplier_id'    => $request->supplier_id,
-                    'user_id'        => auth()->id(),
-                    'total_amount'   => 0,
-                    'extra_cost'     => 0,
-                    'paid_amount'    => $overpaid,
-                    'deposit_amount' => 0,
-                    'due_amount'     => -$overpaid,
-                    'payment_method' => $request->payment_method ?? 'নগদ',
-                    'notes'          => '__advance_for:' . $purchase->id,
-                    'purchase_date'  => $request->purchase_date,
-                ]);
+                $supplier->increment('due_amount', $due);
             }
         });
 
@@ -404,6 +373,23 @@ class PurchaseController extends Controller
             'delete_requested_at' => now(),
             'delete_requested_by' => auth()->id(),
         ]);
+
+        // SMS: alert admin the moment a staff member requests a deletion —
+        // mirrors SaleController::requestDelete(). No SMS after approval —
+        // admin clicked approve themselves, they already know.
+        $adminPhone = StoreConfig::get('sms_on_delete', '1') == '1' ? StoreConfig::get('store_phone', '') : '';
+        if ($adminPhone) {
+            $purchase->load('supplier');
+            $storeName = StoreConfig::get('store_name', 'দোকান');
+            $link = route('approvals.index');
+            $msg = "[{$storeName}] পণ্য গ্রহণ ডিলিট অনুরোধ\n#" . str_pad($purchase->id, 6, '0', STR_PAD_LEFT)
+                . " | " . ($purchase->supplier?->name ?? 'সরবরাহকারী নেই')
+                . "\nমোট: ৳" . number_format($purchase->total_amount, 0)
+                . "\nঅনুরোধ করেছেন: " . auth()->user()->name
+                . "\nলিংক: {$link}";
+            app(SmsService::class)->send($adminPhone, $msg);
+        }
+
         return back()->with('success', 'ডিলিট অনুরোধ পাঠানো হয়েছে। অ্যাডমিনের অনুমোদনের অপেক্ষায়।');
     }
 
@@ -471,16 +457,15 @@ class PurchaseController extends Controller
             $extraCost  = $extraCosts->sum(fn($r) => (float) $r['amount']);
             $deposit    = $deposits->sum(fn($r) => (float) $r['amount']);
             $total      = $itemsTotal + $extraCost;
-            $hasItems   = !empty($d['items']);
-            $overpaid   = $hasItems ? max(0.0, (float) $d['paid_amount'] - ($total - $deposit)) : 0.0;
-            $effPaid    = (float) $d['paid_amount'] - $overpaid;
-            $due        = $total - $effPaid - $deposit;
+            // paid_amount is exactly what was entered — no overpayment split.
+            $paid = (float) $d['paid_amount'];
+            $due  = $total - $paid - $deposit;
 
             $purchase->update([
                 'supplier_id'    => $d['supplier_id'] ?: null,
                 'total_amount'   => $total,
                 'extra_cost'     => $extraCost,
-                'paid_amount'    => $effPaid,
+                'paid_amount'    => $paid,
                 'deposit_amount' => $deposit,
                 'due_amount'     => $due,
                 'payment_method' => $d['payment_method'] ?? 'নগদ',
@@ -504,10 +489,7 @@ class PurchaseController extends Controller
             }
 
             if ($d['supplier_id'] ?? null) {
-                Supplier::find($d['supplier_id'])?->increment('due_amount', $total - (float) $d['paid_amount'] - $deposit);
-            }
-            if ($overpaid > 0 && ($d['supplier_id'] ?? null)) {
-                Purchase::create(['supplier_id' => $d['supplier_id'], 'user_id' => auth()->id(), 'total_amount' => 0, 'extra_cost' => 0, 'paid_amount' => $overpaid, 'deposit_amount' => 0, 'due_amount' => -$overpaid, 'payment_method' => $d['payment_method'] ?? 'নগদ', 'notes' => '__advance_for:' . $purchase->id, 'purchase_date' => $d['purchase_date']]);
+                Supplier::find($d['supplier_id'])?->increment('due_amount', $due);
             }
         });
 
@@ -575,13 +557,16 @@ class PurchaseController extends Controller
     private function sendPurchaseEditSms(Purchase $purchase, PendingEdit $pending): void
     {
         try {
-            $phone = StoreConfig::get('store_phone', '');
+            $phone = StoreConfig::get('sms_on_edit', '1') == '1' ? StoreConfig::get('store_phone', '') : '';
             if (empty($phone)) return;
 
-            $ref   = '#RCV-' . str_pad($purchase->id, 4, '0', STR_PAD_LEFT);
-            $staff = auth()->user()->name;
-            $link  = config('app.url') . '/purchases/' . $purchase->id;
-            $msg   = "[POS] সংশোধন অনুরোধ\nরেকর্ড: {$ref}\nস্টাফ: {$staff}\nলিংক: {$link}";
+            $purchase->loadMissing('supplier');
+            $storeName = StoreConfig::get('store_name', 'দোকান');
+            $link  = route('approvals.index');
+            $msg   = "[{$storeName}] পণ্য গ্রহণ সংশোধন অনুরোধ\n#" . str_pad($purchase->id, 6, '0', STR_PAD_LEFT)
+                . " | " . ($purchase->supplier?->name ?? 'সরবরাহকারী নেই')
+                . "\nঅনুরোধ করেছেন: " . auth()->user()->name
+                . "\nলিংক: {$link}";
 
             $result = app(SmsService::class)->send($phone, $msg);
             if ($result['success']) $pending->update(['sms_sent' => true]);

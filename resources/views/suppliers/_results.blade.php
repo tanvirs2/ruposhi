@@ -18,7 +18,7 @@
 </div>
 
 <div class="table-wrap">
-    <table class="data-table">
+    <table class="data-table print-uniform-rows">
         <colgroup>
             <col style="width:50px">    {{-- # --}}
             <col style="width:170px">   {{-- নাম --}}
@@ -35,15 +35,15 @@
             @forelse($suppliers as $supplier)
             <tr>
                 <td class="mono">{{ $loop->iteration }}</td>
-                <td><strong>{{ $supplier->name }}</strong></td>
-                <td>{{ $supplier->proprietor ?? '—' }}</td>
+                <td class="print-ellipsis-td"><strong>{{ $supplier->name }}</strong></td>
+                <td class="print-ellipsis-td">{{ $supplier->proprietor ?? '—' }}</td>
                 <td>{{ $supplier->phone ?? '—' }}</td>
                 <td>{{ $supplier->address ? \Str::limit($supplier->address, 30) : '—' }}</td>
                 <td>
                     @if($supplier->due_amount > 0)
                         <span class="badge badge-red">৳ {{ number_format($supplier->due_amount, 0) }}</span>
                     @elseif($supplier->due_amount < 0)
-                        <span class="badge" style="background:#eff6ff;color:#1d4ed8">অগ্রিম -৳ {{ number_format(abs($supplier->due_amount), 0) }}</span>
+                        <span class="badge" style="background:#eff6ff;color:#1d4ed8">অগ্রিম ৳ -{{ number_format(abs($supplier->due_amount), 0) }}</span>
                     @else
                         <span class="badge badge-green">পরিষ্কার</span>
                     @endif
