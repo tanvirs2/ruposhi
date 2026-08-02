@@ -131,6 +131,7 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
     Route::resource('customer-payments', CustomerPaymentController::class)->except('edit', 'update');
 
     Route::resource('items',       ItemController::class);
+    Route::post('items/{item}/favorite', [\App\Http\Controllers\ItemFavoriteController::class, 'toggle'])->name('items.favorite.toggle');
     Route::resource('categories',  CategoryController::class)->except('show');
     /* Suppliers */
     Route::resource('suppliers', SupplierController::class);

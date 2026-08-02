@@ -235,7 +235,7 @@ async function fetchCustomers(q) {
         const matches = raw.map(c => ({
             id: c.id, name: c.name, phone: c.phone || '',
             proprietor: c.proprietor || '', due: parseFloat(c.due_amount) || 0,
-            area: c.area ? c.area.name : '',
+            area: c.area ? c.area.name : '', area_id: c.area_id || null,
         }));
         matches.forEach(c => { if (!allCustomers.find(x => x.id === c.id)) allCustomers.push(c); });
         renderCustomerMatches(matches);
@@ -274,6 +274,17 @@ function selectCustomer(id) {
     currentDue     = c.due;
     renderDue(c);
     dropEl.style.display = 'none';
+    syncAreaDisplay(c.area_id);
+}
+
+// Reflect the selected customer's area in the এরিয়া field — display only,
+// does NOT call onAreaChanged() (that resets the customer selection, which
+// would undo the selectCustomer() call that triggered this).
+function syncAreaDisplay(areaId) {
+    if (!areaId || areaEl.value == areaId) return;
+    const a = allAreas.find(x => x.id === areaId);
+    areaEl.value       = areaId;
+    areaSearchEl.value = a ? a.name : '';
 }
 
 function renderDue(c) {

@@ -1489,6 +1489,17 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
     }
 }
 
+/* Frequently-sold + favorite quick-pick sections at the top of the item
+   picker column. Both render the same .picker-tile markup as "সব আইটেম".
+   Visibility follows the parent .pos-picker (wide screens only). */
+.freq-items-panel { margin-top: 0; margin-bottom: 14px; }
+.freq-items-title { font-size: .78rem; font-weight: 700; color: #64748b; margin-bottom: 6px; }
+.freq-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+}
+
 /* Shrink right panel on medium screens (tablet / small laptop) */
 @media (max-width: 1400px) and (min-width: 901px) {
     :root { --submit-bar-w: 290px; }
@@ -1496,6 +1507,55 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
     .sale-submit-bar { width: 290px; }
     .content { padding: 18px 20px 100px; }
 }
+
+/* Middle "item picker" column — only wide monitors have the spare space for
+   it; a laptop screen is already tight with just search + cart + summary. */
+.pos-picker { display: none; }
+@media (min-width: 1401px) {
+    /* Picker sits on the far left, narrow and fixed-width — it's a bonus
+       quick-add panel, not the main focus. Search/cart column keeps the 1fr
+       so the cart table still gets real room to breathe. */
+    .pos-grid { grid-template-columns: 300px 1fr 360px; }
+    .pos-picker {
+        display: block;
+        position: sticky;
+        top: var(--topbar-h);
+        /* .content has 28px top padding, so the box's resting position is
+           topbar-h + 28px from the viewport top — the height must subtract
+           that too, or the bottom edge overflows past the viewport. */
+        height: calc(100vh - var(--topbar-h) - 28px - 16px);
+    }
+    /* Scroll happens inside the box, under the heading — the heading
+       (card-header) stays put instead of scrolling away with the grid. */
+    .pos-picker .card { display: flex; flex-direction: column; height: 100%; }
+    .picker-scroll { flex: 1; overflow-y: auto; }
+}
+.picker-divider {
+    font-size: .78rem; font-weight: 700; color: #64748b;
+    margin: 14px 0 8px; padding-top: 10px; border-top: 1px solid var(--border);
+}
+.picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+}
+.picker-tile {
+    border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 7px 8px; cursor: pointer; background: var(--surface);
+    transition: .15s;
+}
+.picker-tile:hover { border-color: #0d9488; background: #f0fdfa; }
+.picker-tile-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; }
+.picker-tile-name { font-size: .74rem; font-weight: 600; color: var(--text); line-height: 1.25; }
+.picker-tile-meta { display: flex; flex-direction: column; gap: 1px; margin-top: 4px; }
+.picker-tile-price { font-size: .7rem; color: #0d9488; font-weight: 700; }
+.picker-tile-stock { font-size: .72rem; font-weight: 600; }
+.picker-fav-star {
+    font-size: .78rem; color: #cbd5e1; cursor: pointer; flex-shrink: 0;
+    padding: 2px; margin: -2px; transition: .15s;
+}
+.picker-fav-star:hover { color: #f59e0b; }
+.picker-fav-star.is-fav { color: #f59e0b; }
 
 /* Floating sale submit bar — right panel on desktop, full-width on mobile */
 .sale-submit-bar {

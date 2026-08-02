@@ -134,9 +134,9 @@
                 <div class="memo-customer-left">
                     {{-- প্রতিষ্ঠান + প্রোপ্রাইটর on one line — 3 lines → 2 on the small memo paper --}}
                     <div class="memo-meta-line">
-                        <span class="memo-meta-key">প্রতিষ্ঠানঃ</span> {{ $sale->customer->name }}
+                        <span class="memo-meta-key">প্রতিষ্ঠানঃ</span> <strong>{{ $sale->customer->name }}</strong>
                         @if($sale->customer->proprietor)
-                        <span class="memo-meta-key" style="margin-left:12px;min-width:0">প্রোপ্রাইটরঃ</span> {{ $sale->customer->proprietor }}
+                        <span class="memo-meta-key" style="margin-left:12px;min-width:0">প্রোপ্রাইটরঃ</span> <strong>{{ $sale->customer->proprietor }}</strong>
                         @endif
                     </div>
                     <div class="memo-meta-line"><span class="memo-meta-key">ঠিকানাঃ</span> {{ $sale->customer->address ?? '' }}</div>

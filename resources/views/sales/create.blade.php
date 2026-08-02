@@ -29,7 +29,26 @@
 
 <div class="pos-grid">
 
-    {{-- Left: Items --}}
+    {{-- Item picker — only shown on wide monitors (see .pos-picker CSS); sits left of the search/cart column --}}
+    <div class="pos-picker" id="posPicker">
+        <div class="card">
+            <div class="card-header" style="padding:10px 14px"><h3><i class="fas fa-grip"></i> আইটেম পিকার</h3></div>
+            <div class="picker-scroll" style="padding:14px">
+                <div class="freq-items-panel" id="freqItemsPanel" style="display:none">
+                    <div class="freq-items-title"><i class="fas fa-clock-rotate-left"></i> প্রায়ই বিক্রি হওয়া আইটেম</div>
+                    <div class="freq-items-grid" id="freqGrid"></div>
+                </div>
+                <div class="freq-items-panel" id="favItemsPanel" style="display:none">
+                    <div class="freq-items-title"><i class="fas fa-star"></i> পছন্দের আইটেম</div>
+                    <div class="freq-items-grid" id="favGrid"></div>
+                </div>
+                <div class="picker-divider">সব আইটেম</div>
+                <div class="picker-grid" id="pickerGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Items: search + selected cart --}}
     <div class="pos-left">
         <div class="card pos-search-card" style="margin-bottom:16px">
             <div class="card-header" style="padding:10px 14px"><h3><i class="fas fa-search"></i> আইটেম যোগ করুন</h3></div>
@@ -761,7 +780,76 @@ itemSearch.addEventListener('input', function() {
             </div>
         </div>`;
     }).join('') || '<div class="suggestion-item" style="color:#94a3b8">কোনো আইটেম পাওয়া যায়নি</div>';
+    renderPickerGrid(q);
 });
+
+// ── Item picker (left column, wide screens only) ────────────────
+var pickerGrid    = document.getElementById('pickerGrid');
+var freqGrid       = document.getElementById('freqGrid');
+var freqItemsPanel = document.getElementById('freqItemsPanel');
+var favGrid        = document.getElementById('favGrid');
+var favItemsPanel  = document.getElementById('favItemsPanel');
+var frequentIds    = @json($frequentItemIds);
+var favoriteIds    = new Set(@json($favoriteItemIds));
+var favoriteToggleUrlBase = @json(url('/items'));
+
+function pickerTileHtml(i) {
+    var avail = i.stock ? parseFloat(i.stock.quantity) : 0;
+    var minQty = i.stock ? parseFloat(i.stock.min_quantity) : 0;
+    var stockColor = avail <= 0 ? '#dc2626' : avail <= minQty ? '#d97706' : '#16a34a';
+    var isFav = favoriteIds.has(i.id);
+    return '<div class="picker-tile" onclick="addItem(' + i.id + ')">'
+        + '<div class="picker-tile-top">'
+        +   '<span class="picker-tile-name">' + i.name + '</span>'
+        +   '<i class="' + (isFav ? 'fas' : 'far') + ' fa-star picker-fav-star' + (isFav ? ' is-fav' : '') + '" onclick="toggleFavorite(' + i.id + ', event)"></i>'
+        + '</div>'
+        + '<div class="picker-tile-meta">'
+        +   '<span class="picker-tile-price">৳' + parseFloat(i.sale_price).toLocaleString() + '</span>'
+        +   '<span class="picker-tile-stock" style="color:' + stockColor + '">স্টক: ' + avail + '</span>'
+        + '</div></div>';
+}
+
+function renderPickerGrid(filter) {
+    if (!pickerGrid) return;
+    filter = (filter || '').toLowerCase().trim();
+    var list = filter ? allItems.filter(function(i){ return i.name.toLowerCase().includes(filter); }) : allItems;
+    pickerGrid.innerHTML = list.map(pickerTileHtml).join('')
+        || '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:.85rem">কোনো আইটেম পাওয়া যায়নি</div>';
+}
+
+function renderFreqGrid() {
+    if (!freqGrid) return;
+    var list = frequentIds.map(function(id){ return allItems.find(function(i){ return i.id === id; }); }).filter(Boolean);
+    freqItemsPanel.style.display = list.length ? '' : 'none';
+    freqGrid.innerHTML = list.map(pickerTileHtml).join('');
+}
+
+function renderFavGrid() {
+    if (!favGrid) return;
+    var list = allItems.filter(function(i){ return favoriteIds.has(i.id); });
+    favItemsPanel.style.display = list.length ? '' : 'none';
+    favGrid.innerHTML = list.map(pickerTileHtml).join('');
+}
+
+function toggleFavorite(id, ev) {
+    if (ev) ev.stopPropagation();
+    fetch(favoriteToggleUrlBase + '/' + id + '/favorite', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+            'Accept': 'application/json'
+        }
+    }).then(function(r){ return r.json(); }).then(function(data) {
+        if (data.favorited) favoriteIds.add(id); else favoriteIds.delete(id);
+        renderFavGrid();
+        renderFreqGrid();
+        renderPickerGrid(itemSearch.value);
+    });
+}
+
+renderPickerGrid('');
+renderFreqGrid();
+renderFavGrid();
 
 function addItem(id) {
     const item   = allItems.find(i => i.id === id);

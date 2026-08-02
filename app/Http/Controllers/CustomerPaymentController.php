@@ -50,6 +50,7 @@ class CustomerPaymentController extends Controller
                 'phone'      => $c->phone ?? '',
                 'proprietor' => $c->proprietor ?? '',
                 'due'        => floatval($c->due_amount),
+                'area_id'    => $c->area_id,
             ];
         }
         $paymentMethods = StoreConfigController::getGroupedPaymentMethods();

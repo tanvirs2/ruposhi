@@ -94,10 +94,24 @@ class SaleController extends Controller
         $items          = Item::with('stock:id,item_id,quantity')
                             ->select('id','name','sale_price','purchase_price')
                             ->orderBy('name')->get();
+
+        // Frequently sold items (last 60 days) — quick-pick list on wide screens.
+        // Only the item IDs are computed here; price/stock still come from $items above.
+        $frequentItemIds = SaleItem::whereHas('sale', fn($q) => $q->where('sale_date', '>=', now()->subDays(60)))
+                            ->selectRaw('item_id, COUNT(*) as cnt')
+                            ->groupBy('item_id')
+                            ->orderByDesc('cnt')
+                            ->limit(10)
+                            ->pluck('item_id');
+
+        // User's own favorite (starred) items — separate from the auto-ranked
+        // frequent list, since this is a manual per-user preference.
+        $favoriteItemIds  = \App\Models\ItemFavorite::where('user_id', auth()->id())->pluck('item_id');
+
         $paymentMethods   = StoreConfigController::getGroupedPaymentMethods();
         $extraCategories  = ExtraCostCategory::orderBy('name')->pluck('name');
         $areas            = CustomerArea::orderBy('name')->get(['id', 'name']);
-        return view('sales.create', compact('preCustomer', 'items', 'paymentMethods', 'extraCategories', 'areas'));
+        return view('sales.create', compact('preCustomer', 'items', 'frequentItemIds', 'favoriteItemIds', 'paymentMethods', 'extraCategories', 'areas'));
     }
 
     public function store(Request $request)

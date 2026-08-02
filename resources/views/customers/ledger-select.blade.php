@@ -405,6 +405,27 @@ function pickCustomer(id, name) {
     document.getElementById('selectedName').textContent = name;
     document.getElementById('selectedCustomer').style.display = 'flex';
     document.getElementById('submitBtn').disabled = false;
+
+    const c = allCustomers.find(x => x.id === id);
+    if (c && c.area_id) syncAreaDisplay(c.area_id, c.area ? c.area.name : '');
+}
+
+// Reflect the selected customer's area in the এলাকা combobox — display only.
+// Does NOT dispatch `change` (that fires onAreaChange(), which calls
+// clearCustomer() and would immediately undo the pickCustomer() that
+// triggered this in the first place).
+function syncAreaDisplay(areaId, areaName) {
+    areaId = String(areaId);
+    const hidden = document.getElementById('areaFilter');
+    if (!hidden || hidden.value === areaId) return;
+    hidden.value = areaId;
+    const box = hidden.closest('.area-combobox');
+    if (box) {
+        const input = box.querySelector('.ac-search');
+        if (input) input.value = areaName || '';
+    }
+    selectedArea = areaId;
+    updatePanel();
 }
 
 function clearCustomer() {
