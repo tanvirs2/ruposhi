@@ -1514,8 +1514,11 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
 @media (min-width: 1401px) {
     /* Picker sits on the far left, narrow and fixed-width — it's a bonus
        quick-add panel, not the main focus. Search/cart column keeps the 1fr
-       so the cart table still gets real room to breathe. */
-    .pos-grid { grid-template-columns: 300px 1fr 360px; }
+       so the cart table still gets real room to breathe.
+       ⚠ Scoped to .pos-grid-picker (sales/create only) — .pos-grid alone is
+       shared with sales/edit and purchases/create+edit, which have no picker
+       column and break if given a 3-track template. */
+    .pos-grid-picker { grid-template-columns: 300px 1fr 360px; }
     .pos-picker {
         display: block;
         position: sticky;

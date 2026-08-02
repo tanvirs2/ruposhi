@@ -27,7 +27,7 @@
     </button>
 </div>
 
-<div class="pos-grid">
+<div class="pos-grid pos-grid-picker">
 
     {{-- Item picker — only shown on wide monitors (see .pos-picker CSS); sits left of the search/cart column --}}
     <div class="pos-picker" id="posPicker">
