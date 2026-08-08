@@ -124,7 +124,7 @@
                 <div class="summary-row">
                     <span>মোট বিক্রয়:</span>
                     <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-                        <span id="totalDisplay">৳ 0.00</span>
+                        <span id="totalDisplay">৳ 0</span>
                         <button type="button" id="discountToggleBtn" onclick="toggleField('discount')"
                             class="cost-toggle-btn" title="ছাড় যোগ করুন">+ ছাড়</button>
                         <button type="button" id="extraCostToggleBtn" onclick="toggleExtraCosts()"
@@ -161,7 +161,7 @@
                     </div>
                 </div>
 
-                <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0.00</span></div>
+                <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0</span></div>
 
                 <div class="form-group-field">
                     <label>পরিশোধ (৳) <span class="req">*</span></label>
@@ -184,7 +184,7 @@
                     </div>
                 </div>
 
-                <div class="summary-row" style="color:#ef4444"><span>বকেয়া:</span><span id="dueDisplay">৳ 0.00</span></div>
+                <div class="summary-row" style="color:#ef4444"><span>বকেয়া:</span><span id="dueDisplay">৳ 0</span></div>
 
                 <div class="form-group-field">
                     <label><i class="fas fa-credit-card" style="color:var(--accent)"></i> পরিশোধ মোড</label>
@@ -207,9 +207,9 @@
                 <div class="profit-panel" id="profitPanel" style="display:none">
                     <div class="profit-panel-header"><i class="fas fa-chart-line"></i> লাভের বিবরণ</div>
                     <div class="profit-panel-body">
-                        <div class="profit-row"><span>মোট খরচ (ক্রয়):</span><span id="costDisplay">৳ 0.00</span></div>
-                        <div class="profit-row"><span>মোট আয় (বিক্রয়):</span><span id="revenueDisplay">৳ 0.00</span></div>
-                        <div class="profit-row profit-net"><span>আনুমানিক লাভ:</span><span id="profitDisplay">৳ 0.00</span></div>
+                        <div class="profit-row"><span>মোট খরচ (ক্রয়):</span><span id="costDisplay">৳ 0</span></div>
+                        <div class="profit-row"><span>মোট আয় (বিক্রয়):</span><span id="revenueDisplay">৳ 0</span></div>
+                        <div class="profit-row profit-net"><span>আনুমানিক লাভ:</span><span id="profitDisplay">৳ 0</span></div>
                         <div style="margin-top:8px;text-align:center">
                             <span class="margin-badge" id="marginBadge">—</span>
                             <span id="marginPct" style="font-size:.8rem;color:#64748b;margin-left:6px"></span>
@@ -415,14 +415,14 @@ function selectCustomer(id) {
     if (due > 0) {
         html += `<div style="margin-top:6px;padding:8px 12px;background:#fee2e2;border:1px solid #fecaca;border-radius:8px;display:flex;justify-content:space-between;align-items:center">
                     <span style="color:#991b1b;font-size:.83rem;font-weight:600"><i class="fas fa-triangle-exclamation"></i> আগের বাকী আছে</span>
-                    <span style="color:#dc2626;font-size:1rem;font-weight:700">৳ ${due.toLocaleString('en', {minimumFractionDigits:2})}</span>
+                    <span style="color:#dc2626;font-size:1rem;font-weight:700">৳ ${due.toLocaleString('en', {maximumFractionDigits:0})}</span>
                  </div>`;
-        prevDueDisplay.textContent = '৳ ' + due.toLocaleString('en', {minimumFractionDigits:2});
+        prevDueDisplay.textContent = '৳ ' + due.toLocaleString('en', {maximumFractionDigits:0});
         prevDueRow.style.display = 'flex';
     } else if (due < 0) {
         html += `<div style="margin-top:6px;padding:8px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;display:flex;justify-content:space-between;align-items:center">
                     <span style="color:#1d4ed8;font-size:.83rem;font-weight:600"><i class="fas fa-piggy-bank"></i> অগ্রিম পরিশোধ আছে</span>
-                    <span style="color:#1d4ed8;font-size:1rem;font-weight:700">৳ ${Math.abs(due).toLocaleString('en', {minimumFractionDigits:2})}</span>
+                    <span style="color:#1d4ed8;font-size:1rem;font-weight:700">৳ ${Math.abs(due).toLocaleString('en', {maximumFractionDigits:0})}</span>
                  </div>`;
         prevDueRow.style.display = 'none';
         resetPrevDuePay();
@@ -722,12 +722,12 @@ function updateSummary() {
     const profit    = net - totalCost - extra;
     const marginPct = totalCost > 0 ? (profit / totalCost * 100) : 0;
 
-    document.getElementById('totalDisplay').textContent   = '৳ ' + total.toFixed(2);
-    document.getElementById('netDisplay').textContent     = '৳ ' + net.toFixed(2);
-    document.getElementById('dueDisplay').textContent     = '৳ ' + due.toFixed(2);
-    document.getElementById('costDisplay').textContent    = '৳ ' + totalCost.toFixed(2);
-    document.getElementById('revenueDisplay').textContent = '৳ ' + net.toFixed(2);
-    document.getElementById('profitDisplay').textContent  = (profit >= 0 ? '+' : '') + '৳ ' + profit.toFixed(2);
+    document.getElementById('totalDisplay').textContent   = '৳ ' + total.toFixed(0);
+    document.getElementById('netDisplay').textContent     = '৳ ' + net.toFixed(0);
+    document.getElementById('dueDisplay').textContent     = '৳ ' + due.toFixed(0);
+    document.getElementById('costDisplay').textContent    = '৳ ' + totalCost.toFixed(0);
+    document.getElementById('revenueDisplay').textContent = '৳ ' + net.toFixed(0);
+    document.getElementById('profitDisplay').textContent  = (profit >= 0 ? '+' : '') + '৳ ' + profit.toFixed(0);
     document.getElementById('profitDisplay').style.color  = profit >= 0 ? '#16a34a' : '#dc2626';
 
     const badge = document.getElementById('marginBadge');
@@ -955,14 +955,14 @@ function showStockToast(msg, type) {
         if (preDue > 0) {
             html += `<div style="margin-top:6px;padding:8px 12px;background:#fee2e2;border:1px solid #fecaca;border-radius:8px;display:flex;justify-content:space-between;align-items:center">
                         <span style="color:#991b1b;font-size:.83rem;font-weight:600"><i class="fas fa-triangle-exclamation"></i> আগের বাকী আছে</span>
-                        <span style="color:#dc2626;font-size:1rem;font-weight:700">৳ ${preDue.toLocaleString('en', {minimumFractionDigits:2})}</span>
+                        <span style="color:#dc2626;font-size:1rem;font-weight:700">৳ ${preDue.toLocaleString('en', {maximumFractionDigits:0})}</span>
                      </div>`;
-            prevDueDisplay.textContent = '৳ ' + preDue.toLocaleString('en', {minimumFractionDigits:2});
+            prevDueDisplay.textContent = '৳ ' + preDue.toLocaleString('en', {maximumFractionDigits:0});
             prevDueRow.style.display = 'flex';
         } else if (preDue < 0) {
             html += `<div style="margin-top:6px;padding:8px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;display:flex;justify-content:space-between;align-items:center">
                         <span style="color:#1d4ed8;font-size:.83rem;font-weight:600"><i class="fas fa-piggy-bank"></i> অগ্রিম পরিশোধ আছে</span>
-                        <span style="color:#1d4ed8;font-size:1rem;font-weight:700">৳ ${Math.abs(preDue).toLocaleString('en', {minimumFractionDigits:2})}</span>
+                        <span style="color:#1d4ed8;font-size:1rem;font-weight:700">৳ ${Math.abs(preDue).toLocaleString('en', {maximumFractionDigits:0})}</span>
                      </div>`;
         } else {
             html += `<div style="margin-top:6px;padding:6px 12px;background:#dcfce7;border:1px solid #bbf7d0;border-radius:8px;font-size:.8rem;color:#15803d;font-weight:600">✓ কোনো বাকী নেই</div>`;

@@ -573,9 +573,9 @@ class ReportController extends Controller
                         '#' . $s->id,
                         $s->customer?->name ?? '—',
                         $items,
-                        number_format($s->total_amount, 2),
-                        number_format($s->paid_amount,  2),
-                        number_format($s->due_amount,   2),
+                        number_format($s->total_amount),
+                        number_format($s->paid_amount),
+                        number_format($s->due_amount),
                     ]);
                 }
             }
@@ -603,7 +603,7 @@ class ReportController extends Controller
                         $p->sale_date->format('d/m/Y'),
                         $p->customer?->name ?? '—',
                         $p->customer?->phone ?? '—',
-                        number_format($p->paid_amount, 2),
+                        number_format($p->paid_amount),
                         $p->notes ?? '',
                     ]);
                 }
@@ -632,7 +632,7 @@ class ReportController extends Controller
                         $p->purchase_date->format('d/m/Y'),
                         $p->supplier?->name ?? '—',
                         $p->supplier?->phone ?? '—',
-                        number_format($p->paid_amount, 2),
+                        number_format($p->paid_amount),
                         $p->notes ?? '',
                     ]);
                 }
@@ -658,7 +658,7 @@ class ReportController extends Controller
                         $c->proprietor ?? '',
                         $c->phone ?? '',
                         $c->area?->name ?? '',
-                        number_format($c->due_amount, 2),
+                        number_format($c->due_amount),
                     ]);
                 }
             }
@@ -686,10 +686,10 @@ class ReportController extends Controller
                         '#' . $p->id,
                         $p->supplier?->name ?? '—',
                         $products,
-                        number_format($p->total_amount, 2),
-                        number_format($p->paid_amount,  2),
-                        number_format($p->deposit_amount ?? 0, 2),
-                        number_format($p->due_amount,   2),
+                        number_format($p->total_amount),
+                        number_format($p->paid_amount),
+                        number_format($p->deposit_amount ?? 0),
+                        number_format($p->due_amount),
                     ]);
                 }
             }
@@ -878,22 +878,22 @@ class ReportController extends Controller
             "লাভ-লোকসান_{$from}_{$to}",
             ['বিবরণ', 'পরিমাণ (৳)'],
             function ($out) use ($grossSales, $discounts, $cogs, $grossProfit, $totalExpenses, $netProfit, $itemBreakdown) {
-                fputcsv($out, ['মোট বিক্রয়',       number_format($grossSales,   2)]);
-                fputcsv($out, ['ছাড়',              number_format($discounts,    2)]);
-                fputcsv($out, ['নিট বিক্রয় আয়',   number_format($grossSales,   2)]);
-                fputcsv($out, ['পণ্য ক্রয় মূল্য',  number_format($cogs,         2)]);
-                fputcsv($out, ['গ্রস লাভ',          number_format($grossProfit,  2)]);
-                fputcsv($out, ['পরিচালনা ব্যয়',     number_format($totalExpenses,2)]);
-                fputcsv($out, ['নিট লাভ/লোকসান',    number_format($netProfit,    2)]);
+                fputcsv($out, ['মোট বিক্রয়',       number_format($grossSales)]);
+                fputcsv($out, ['ছাড়',              number_format($discounts)]);
+                fputcsv($out, ['নিট বিক্রয় আয়',   number_format($grossSales)]);
+                fputcsv($out, ['পণ্য ক্রয় মূল্য',  number_format($cogs)]);
+                fputcsv($out, ['গ্রস লাভ',          number_format($grossProfit)]);
+                fputcsv($out, ['পরিচালনা ব্যয়',     number_format($totalExpenses)]);
+                fputcsv($out, ['নিট লাভ/লোকসান',    number_format($netProfit)]);
                 fputcsv($out, []);
                 fputcsv($out, ['— পণ্যভিত্তিক বিবরণ —', '']);
                 fputcsv($out, ['পণ্য', 'পরিমাণ', 'আয় (৳)', 'খরচ (৳)', 'লাভ (৳)']);
                 foreach ($itemBreakdown as $r) {
                     fputcsv($out, [
                         $r->name, $r->qty,
-                        number_format($r->revenue, 2),
-                        number_format($r->cost,    2),
-                        number_format($r->profit,  2),
+                        number_format($r->revenue),
+                        number_format($r->cost),
+                        number_format($r->profit),
                     ]);
                 }
             }
@@ -1010,9 +1010,9 @@ class ReportController extends Controller
                     fputcsv($out, [
                         $r->name,
                         $r->sold_qty,
-                        number_format($r->revenue, 2),
-                        number_format($r->cost, 2),
-                        number_format($r->revenue - $r->cost, 2),
+                        number_format($r->revenue),
+                        number_format($r->cost),
+                        number_format($r->revenue - $r->cost),
                         $r->current_stock ?? 0,
                     ]);
                 }

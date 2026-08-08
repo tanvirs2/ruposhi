@@ -34,28 +34,28 @@
         <div class="stat-icon"><i class="fas fa-arrow-trend-up"></i></div>
         <div class="stat-body">
             <span class="stat-label">মোট বিক্রয় আয়</span>
-            <span class="stat-value">৳ {{ number_format($summary['total_revenue'],2) }}</span>
+            <span class="stat-value">৳ {{ number_format($summary['total_revenue']) }}</span>
         </div>
     </div>
     <div class="stat-card stat-orange">
         <div class="stat-icon"><i class="fas fa-boxes-stacked"></i></div>
         <div class="stat-body">
             <span class="stat-label">মোট পণ্য খরচ (COGS)</span>
-            <span class="stat-value">৳ {{ number_format($summary['total_cogs'],2) }}</span>
+            <span class="stat-value">৳ {{ number_format($summary['total_cogs']) }}</span>
         </div>
     </div>
     <div class="stat-card stat-purple">
         <div class="stat-icon"><i class="fas fa-money-bill-transfer"></i></div>
         <div class="stat-body">
             <span class="stat-label">অতিরিক্ত খরচ</span>
-            <span class="stat-value">৳ {{ number_format($summary['total_expenses'],2) }}</span>
+            <span class="stat-value">৳ {{ number_format($summary['total_expenses']) }}</span>
         </div>
     </div>
     <div class="stat-card {{ $summary['net_profit'] >= 0 ? 'stat-blue' : 'stat-orange' }}">
         <div class="stat-icon"><i class="fas fa-scale-balanced"></i></div>
         <div class="stat-body">
             <span class="stat-label">নিট লাভ</span>
-            <span class="stat-value">৳ {{ number_format($summary['net_profit'],2) }}</span>
+            <span class="stat-value">৳ {{ number_format($summary['net_profit']) }}</span>
         </div>
     </div>
 </div>
@@ -70,18 +70,18 @@
     <div style="padding:16px 20px;display:flex;flex-wrap:wrap;gap:24px;align-items:center">
         <div>
             <div style="font-size:.8rem;color:#64748b;margin-bottom:2px">মোট আয় (আলোচনাকৃত মূল্যে)</div>
-            <div style="font-size:1.1rem;font-weight:700;color:#1e293b">৳ {{ number_format($summary['total_revenue'],2) }}</div>
+            <div style="font-size:1.1rem;font-weight:700;color:#1e293b">৳ {{ number_format($summary['total_revenue']) }}</div>
         </div>
         <div style="font-size:1.2rem;color:#94a3b8">−</div>
         <div>
             <div style="font-size:.8rem;color:#64748b;margin-bottom:2px">পণ্য ক্রয় খরচ</div>
-            <div style="font-size:1.1rem;font-weight:700;color:#1e293b">৳ {{ number_format($summary['total_cogs'],2) }}</div>
+            <div style="font-size:1.1rem;font-weight:700;color:#1e293b">৳ {{ number_format($summary['total_cogs']) }}</div>
         </div>
         <div style="font-size:1.2rem;color:#94a3b8">=</div>
         <div>
             <div style="font-size:.8rem;color:#64748b;margin-bottom:2px">গ্রস লাভ</div>
             <div style="font-size:1.2rem;font-weight:700;color:{{ $summary['gross_profit'] >= 0 ? '#16a34a' : '#dc2626' }}">
-                {{ $summary['gross_profit'] >= 0 ? '+' : '' }}৳ {{ number_format($summary['gross_profit'],2) }}
+                {{ $summary['gross_profit'] >= 0 ? '+' : '' }}৳ {{ number_format($summary['gross_profit']) }}
             </div>
         </div>
         <div style="margin-left:auto">
@@ -109,7 +109,7 @@
                     <tr>
                         <td>{{ \Carbon\Carbon::parse($row->date)->format('d M Y') }}</td>
                         <td>{{ $row->count }}</td>
-                        <td>৳ {{ number_format($row->total,2) }}</td>
+                        <td>৳ {{ number_format($row->total) }}</td>
                     </tr>
                     @empty
                     <tr><td colspan="3" class="empty-row">এই সময়কালে কোনো বিক্রয় নেই</td></tr>

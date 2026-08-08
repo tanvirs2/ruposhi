@@ -348,34 +348,34 @@
     <div class="pl-section-head">আয় (Revenue)</div>
     <div class="pl-row">
         <span>মোট বিক্রয় (Gross Sales)</span>
-        <span>৳ {{ number_format($grossSales, 2) }}</span>
+        <span>৳ {{ number_format($grossSales) }}</span>
     </div>
     @if($discounts > 0)
     <div class="pl-row pl-row-sub">
         <span>বাদ: ছাড় (Discounts)</span>
-        <span style="color:#dc2626">− ৳ {{ number_format($discounts, 2) }}</span>
+        <span style="color:#dc2626">− ৳ {{ number_format($discounts) }}</span>
     </div>
     @endif
     @if(($extraCost ?? 0) > 0)
     <div class="pl-row pl-row-sub">
         <span>বাদ: অতিরিক্ত খরচ (pass-through)</span>
-        <span style="color:#dc2626">− ৳ {{ number_format($extraCost, 2) }}</span>
+        <span style="color:#dc2626">− ৳ {{ number_format($extraCost) }}</span>
     </div>
     @endif
     <div class="pl-row pl-row-total">
         <span>নিট বিক্রয় আয়</span>
-        <span>৳ {{ number_format($netRevenue, 2) }}</span>
+        <span>৳ {{ number_format($netRevenue) }}</span>
     </div>
 
     {{-- COGS --}}
     <div class="pl-section-head">বিক্রিত পণ্যের খরচ (COGS)</div>
     <div class="pl-row">
         <span>পণ্যের ক্রয় মূল্য (বিক্রিত পরিমাণ অনুযায়ী)</span>
-        <span style="color:#dc2626">− ৳ {{ number_format($cogs, 2) }}</span>
+        <span style="color:#dc2626">− ৳ {{ number_format($cogs) }}</span>
     </div>
     <div class="pl-row pl-row-total {{ $grossProfit >= 0 ? 'pl-positive' : 'pl-negative' }}">
         <span>গ্রস লাভ (Gross Profit)</span>
-        <span>{{ $grossProfit >= 0 ? '+' : '' }}৳ {{ number_format($grossProfit, 2) }}
+        <span>{{ $grossProfit >= 0 ? '+' : '' }}৳ {{ number_format($grossProfit) }}
             <small style="font-weight:500;font-size:.8rem;opacity:.75">({{ $grossMargin }}%)</small>
         </span>
     </div>
@@ -385,7 +385,7 @@
     @forelse($expenseCategories as $exp)
     <div class="pl-row pl-row-sub">
         <span>{{ $exp->category }}</span>
-        <span style="color:#dc2626">− ৳ {{ number_format($exp->total, 2) }}</span>
+        <span style="color:#dc2626">− ৳ {{ number_format($exp->total) }}</span>
     </div>
     @empty
     <div class="pl-row pl-row-sub" style="color:#94a3b8">
@@ -394,13 +394,13 @@
     @endforelse
     <div class="pl-row pl-row-total">
         <span>মোট পরিচালনা ব্যয়</span>
-        <span style="color:#dc2626">− ৳ {{ number_format($totalExpenses, 2) }}</span>
+        <span style="color:#dc2626">− ৳ {{ number_format($totalExpenses) }}</span>
     </div>
 
     {{-- Net profit --}}
     <div class="pl-net {{ $netProfit >= 0 ? 'pl-net-profit' : 'pl-net-loss' }}">
         <span>নিট {{ $netProfit >= 0 ? 'লাভ' : 'লোকসান' }} (Net {{ $netProfit >= 0 ? 'Profit' : 'Loss' }})</span>
-        <span>{{ $netProfit >= 0 ? '+' : '' }}৳ {{ number_format($netProfit, 2) }}
+        <span>{{ $netProfit >= 0 ? '+' : '' }}৳ {{ number_format($netProfit) }}
             <small style="font-size:.82rem;font-weight:500;opacity:.8">({{ $netMargin }}%)</small>
         </span>
     </div>

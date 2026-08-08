@@ -22,8 +22,8 @@
                         @endif
                     </td>
                     <td>{{ $item->category?->name ?? '—' }}</td>
-                    <td class="tr">৳ {{ number_format($item->purchase_price, 2) }}</td>
-                    <td class="tr">৳ {{ number_format($item->sale_price, 2) }}</td>
+                    <td class="tr">৳ {{ number_format($item->purchase_price) }}</td>
+                    <td class="tr">৳ {{ number_format($item->sale_price) }}</td>
                     <td class="tc">
                         @php $qty = $item->stock?->quantity ?? 0; $low = $item->stock?->isLow(); @endphp
                         <span class="badge {{ $low ? 'badge-red' : 'badge-green' }}">

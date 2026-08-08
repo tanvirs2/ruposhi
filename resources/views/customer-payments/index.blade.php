@@ -98,7 +98,7 @@
             <tfoot>
                 <tr class="tfoot-summary">
                     <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট (ফিল্টার)</td>
-                    <td style="font-weight:800;color:#16a34a">৳ {{ number_format($totalPaid, 2) }}</td>
+                    <td style="font-weight:800;color:#16a34a">৳ {{ number_format($totalPaid) }}</td>
                     <td colspan="4"></td>
                 </tr>
             </tfoot>

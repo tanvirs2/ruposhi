@@ -9,11 +9,16 @@ class Item extends Model
 {
     use HasShopScope;
 
-    protected $fillable = ['name', 'code', 'category_id', 'purchase_price', 'sale_price', 'unit', 'created_by'];
+    protected $fillable = ['name', 'code', 'category_id', 'brand_id', 'purchase_price', 'sale_price', 'unit', 'created_by'];
 
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function brand()
+    {
+        return $this->belongsTo(Brand::class);
     }
 
     public function stock()

@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'দৈনিক রিসিভ রিপোর্ট')
 @section('page-title', 'দৈনিক রিসিভ রিপোর্ট')
 
@@ -117,18 +117,18 @@
                     <td style="font-size:.82rem;color:#64748b">
                         {{ $p->items->map(fn($i) => $i->item->name.' ('.$i->quantity.')')->implode(', ') }}
                     </td>
-                    <td style="text-align:right;font-weight:600">৳ {{ number_format($p->total_amount, 2) }}</td>
-                    <td style="text-align:right;color:#16a34a">৳ {{ number_format($p->paid_amount, 2) }}</td>
+                    <td style="text-align:right;font-weight:600">৳ {{ number_format($p->total_amount) }}</td>
+                    <td style="text-align:right;color:#16a34a">৳ {{ number_format($p->paid_amount) }}</td>
                     <td style="text-align:right">
                         @if(($p->deposit_amount ?? 0) > 0)
-                            <span style="color:#1d4ed8;font-weight:600">৳ {{ number_format($p->deposit_amount, 2) }}</span>
+                            <span style="color:#1d4ed8;font-weight:600">৳ {{ number_format($p->deposit_amount) }}</span>
                         @else
                             <span style="color:#cbd5e1">—</span>
                         @endif
                     </td>
                     <td style="text-align:right">
                         @if($p->due_amount > 0)
-                            <span style="color:#dc2626;font-weight:600">৳ {{ number_format($p->due_amount, 2) }}</span>
+                            <span style="color:#dc2626;font-weight:600">৳ {{ number_format($p->due_amount) }}</span>
                         @else
                             <span style="color:#16a34a">—</span>
                         @endif

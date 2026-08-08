@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Item;
 use App\Models\Category;
+use App\Models\Brand;
 use App\Models\Stock;
 use Illuminate\Http\Request;
 
@@ -34,11 +35,17 @@ class ItemController extends Controller
     public function create()
     {
         $categories = Category::orderBy('name')->get();
-        return view('items.create', compact('categories'));
+        $brands     = Brand::orderBy('name')->get();
+        return view('items.create', compact('categories', 'brands'));
     }
 
     public function store(Request $request)
     {
+        // sale_price has a DB default of 0, but that only applies when the
+        // column is omitted on INSERT — since we always pass the key, a blank
+        // field submits an explicit null and violates the NOT NULL default.
+        $request->merge(['sale_price' => $request->sale_price ?? 0]);
+
         $request->validate([
             'name'           => 'required|string|max:255',
             'code'           => 'nullable|string|unique:items,code',
@@ -46,7 +53,7 @@ class ItemController extends Controller
             'purchase_price' => 'required|numeric|min:0',
         ]);
 
-        $item = Item::create($request->only('name', 'code', 'category_id', 'purchase_price', 'sale_price', 'unit'));
+        $item = Item::create($request->only('name', 'code', 'category_id', 'brand_id', 'purchase_price', 'sale_price', 'unit'));
 
         Stock::create(['item_id' => $item->id, 'quantity' => 0, 'min_quantity' => $request->min_quantity ?? 5]);
 
@@ -57,11 +64,14 @@ class ItemController extends Controller
     {
         $item->load('stock');
         $categories = Category::orderBy('name')->get();
-        return view('items.edit', compact('item', 'categories'));
+        $brands     = Brand::orderBy('name')->get();
+        return view('items.edit', compact('item', 'categories', 'brands'));
     }
 
     public function update(Request $request, Item $item)
     {
+        $request->merge(['sale_price' => $request->sale_price ?? 0]);
+
         $request->validate([
             'name'           => 'required|string|max:255',
             'code'           => 'nullable|string|unique:items,code,' . $item->id,
@@ -69,7 +79,7 @@ class ItemController extends Controller
             'purchase_price' => 'required|numeric|min:0',
         ]);
 
-        $item->update($request->only('name', 'code', 'category_id', 'purchase_price', 'sale_price', 'unit'));
+        $item->update($request->only('name', 'code', 'category_id', 'brand_id', 'purchase_price', 'sale_price', 'unit'));
 
         if ($item->stock) {
             $item->stock->update(['min_quantity' => $request->min_quantity ?? $item->stock->min_quantity]);

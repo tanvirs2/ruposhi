@@ -365,6 +365,26 @@ function animateValue(el, duration = 900) {
     };
 
     document.addEventListener('turbo:load', window._syncFontBtns);
+
+    // Chrome's print/PDF pipeline sometimes renders a blank page when an
+    // ancestor has a non-1 CSS `zoom` (used above for sm/lg font sizes) —
+    // the @media print override to zoom:1 requires an extra reflow pass
+    // that occasionally loses the race against print's snapshot. Strip the
+    // attribute (and its zoom) before the browser captures the print layout,
+    // and restore it right after so screen zoom is unaffected.
+    let _preprintFontsize = null;
+    window.addEventListener('beforeprint', function () {
+        _preprintFontsize = document.documentElement.getAttribute('data-fontsize');
+        if (_preprintFontsize && _preprintFontsize !== 'md') {
+            document.documentElement.removeAttribute('data-fontsize');
+        }
+    });
+    window.addEventListener('afterprint', function () {
+        if (_preprintFontsize && _preprintFontsize !== 'md') {
+            document.documentElement.setAttribute('data-fontsize', _preprintFontsize);
+        }
+        _preprintFontsize = null;
+    });
 })();
 
 /* ── Keyboard shortcuts ─────────────────────────────────────── */

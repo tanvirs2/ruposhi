@@ -96,10 +96,10 @@
                     <td class="mono">{{ $loop->iteration }}</td>
                     <td><strong>{{ $row->name }}</strong></td>
                     <td style="text-align:right">{{ number_format($row->sold_qty, 0) }}</td>
-                    <td style="text-align:right;font-weight:600">৳ {{ number_format($row->revenue, 2) }}</td>
-                    <td style="text-align:right">৳ {{ number_format($row->cost, 2) }}</td>
+                    <td style="text-align:right;font-weight:600">৳ {{ number_format($row->revenue) }}</td>
+                    <td style="text-align:right">৳ {{ number_format($row->cost) }}</td>
                     <td style="text-align:right" class="profit-{{ $cls }}">
-                        ৳ {{ number_format($profit, 2) }}
+                        ৳ {{ number_format($profit) }}
                     </td>
                     <td style="text-align:right">
                         <span class="margin-badge {{ $cls }}">{{ number_format($margin, 1) }}%</span>
@@ -118,10 +118,10 @@
             <tfoot>
                 <tr style="background:var(--accent-light);font-weight:700">
                     <td colspan="3" style="text-align:right;padding-right:16px">সর্বমোট</td>
-                    <td style="text-align:right">৳ {{ number_format($grandRevenue, 2) }}</td>
-                    <td style="text-align:right">৳ {{ number_format($grandCost, 2) }}</td>
+                    <td style="text-align:right">৳ {{ number_format($grandRevenue) }}</td>
+                    <td style="text-align:right">৳ {{ number_format($grandCost) }}</td>
                     <td style="text-align:right;color:{{ $grandProfit >= 0 ? '#16a34a' : '#dc2626' }}">
-                        ৳ {{ number_format($grandProfit, 2) }}
+                        ৳ {{ number_format($grandProfit) }}
                     </td>
                     <td colspan="2"></td>
                 </tr>

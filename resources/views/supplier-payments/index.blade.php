@@ -108,7 +108,7 @@
                     </td>
                     <td>
                         <strong style="color:{{ $isDeposit ? '#1d4ed8' : '#16a34a' }}">
-                            ৳ {{ number_format($amount, 2) }}
+                            ৳ {{ number_format($amount) }}
                         </strong>
                     </td>
                     <td>{{ $date->format('d/m/Y') }}</td>
@@ -139,18 +139,18 @@
             <tfoot>
                 <tr class="tfoot-summary">
                     <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট পরিশোধ</td>
-                    <td style="font-weight:800;color:#16a34a">৳ {{ number_format($totalPaid, 2) }}</td>
+                    <td style="font-weight:800;color:#16a34a">৳ {{ number_format($totalPaid) }}</td>
                     <td colspan="5"></td>
                 </tr>
                 @if($totalDeposit > 0)
                 <tr class="tfoot-summary">
                     <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট জমা</td>
-                    <td style="font-weight:800;color:#1d4ed8">৳ {{ number_format($totalDeposit, 2) }}</td>
+                    <td style="font-weight:800;color:#1d4ed8">৳ {{ number_format($totalDeposit) }}</td>
                     <td colspan="5"></td>
                 </tr>
                 <tr class="tfoot-summary">
                     <td colspan="3" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট (পরিশোধ + জমা)</td>
-                    <td style="font-weight:800;color:#7c3aed">৳ {{ number_format($totalPaid + $totalDeposit, 2) }}</td>
+                    <td style="font-weight:800;color:#7c3aed">৳ {{ number_format($totalPaid + $totalDeposit) }}</td>
                     <td colspan="5"></td>
                 </tr>
                 @endif

@@ -91,8 +91,8 @@ class SaleController extends Controller
                 ->find(request('customer_id'))
             : null;
 
-        $items          = Item::with('stock:id,item_id,quantity')
-                            ->select('id','name','sale_price','purchase_price')
+        $items          = Item::with(['stock:id,item_id,quantity', 'category:id,name'])
+                            ->select('id','name','sale_price','purchase_price','category_id')
                             ->orderBy('name')->get();
 
         // Frequently sold items (last 60 days) — quick-pick list on wide screens.

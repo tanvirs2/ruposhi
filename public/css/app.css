@@ -1537,10 +1537,18 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
     font-size: .78rem; font-weight: 700; color: #64748b;
     margin: 14px 0 8px; padding-top: 10px; border-top: 1px solid var(--border);
 }
-.picker-grid {
+/* .picker-grid is now a plain stack of category groups, not a grid itself —
+   each .picker-cat-grid inside it is the actual tile grid. */
+.picker-cat-label {
+    font-size: .72rem; font-weight: 700; color: #7c3aed;
+    margin: 12px 0 6px;
+}
+.picker-cat-label:first-child { margin-top: 0; }
+.picker-cat-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 8px;
+    margin-bottom: 4px;
 }
 .picker-tile {
     border: 1.5px solid var(--border); border-radius: 8px;

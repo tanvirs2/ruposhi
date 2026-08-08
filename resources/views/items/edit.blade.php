@@ -47,6 +47,16 @@
             </div>
 
             <div class="form-group-field">
+                <label>ব্র্যান্ড <span style="font-weight:400;color:#94a3b8">(ঐচ্ছিক)</span></label>
+                <select name="brand_id" class="form-select">
+                    <option value="">ব্র্যান্ড নির্বাচন করুন</option>
+                    @foreach($brands as $b)
+                        <option value="{{ $b->id }}" @selected(old('brand_id', $item->brand_id) == $b->id)>{{ $b->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="form-group-field">
                 <label>কোড (SKU)</label>
                 <input type="text" name="code" value="{{ old('code', $item->code) }}">
             </div>

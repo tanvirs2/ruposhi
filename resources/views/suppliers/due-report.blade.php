@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'সরবরাহকারী বাকী রিপোর্ট')
 @section('page-title', 'সরবরাহকারী বাকী রিপোর্ট')
 
@@ -43,7 +43,7 @@
                     <td>{{ $s->address ? \Str::limit($s->address, 25) : '—' }}</td>
                     <td style="text-align:right">
                         <span class="badge badge-red" style="font-size:.9rem;padding:4px 12px">
-                            ৳ {{ number_format($s->due_amount, 2) }}
+                            ৳ {{ number_format($s->due_amount) }}
                         </span>
                     </td>
                     <td>
@@ -70,7 +70,7 @@
             <tfoot>
                 <tr style="background:var(--accent-light);font-weight:700">
                     <td colspan="4" style="text-align:right;padding-right:16px">সর্বমোট বকেয়া</td>
-                    <td style="text-align:right;color:#dc2626">৳ {{ number_format($totalDue, 2) }}</td>
+                    <td style="text-align:right;color:#dc2626">৳ {{ number_format($totalDue) }}</td>
                     <td></td>
                 </tr>
             </tfoot>

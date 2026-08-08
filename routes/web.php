@@ -8,6 +8,7 @@ use App\Http\Controllers\CustomerAreaController;
 use App\Http\Controllers\CustomerPaymentController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\BrandController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierPaymentController;
 use App\Http\Controllers\SaleController;
@@ -133,6 +134,7 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
     Route::resource('items',       ItemController::class);
     Route::post('items/{item}/favorite', [\App\Http\Controllers\ItemFavoriteController::class, 'toggle'])->name('items.favorite.toggle');
     Route::resource('categories',  CategoryController::class)->except('show');
+    Route::resource('brands',      BrandController::class)->except('show');
     /* Suppliers */
     Route::resource('suppliers', SupplierController::class);
     Route::get('suppliers/{supplier}/ledger', [SupplierController::class, 'ledger'])->name('suppliers.ledger');

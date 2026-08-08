@@ -24,7 +24,7 @@
                     <td><strong>{{ $emp->name }}</strong></td>
                     <td>{{ $emp->position ?? '—' }}</td>
                     <td>{{ $emp->phone ?? '—' }}</td>
-                    <td>৳ {{ number_format($emp->salary,2) }}</td>
+                    <td>৳ {{ number_format($emp->salary) }}</td>
                     <td>{{ $emp->join_date?->format('d M Y') ?? '—' }}</td>
                     <td>
                         @if($emp->status==='active') <span class="badge badge-green">সক্রিয়</span>

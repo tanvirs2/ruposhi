@@ -14,10 +14,28 @@
 .dc-row .dc-label { color: var(--text-secondary); font-weight: 600; }
 .dc-row .dc-val { font-weight: 800; font-size: 1rem; }
 .dc-net { background: var(--surface-2); border-radius: 0 0 12px 12px; }
+.dc-tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 2px solid var(--border); }
+.dc-tab { padding: 10px 18px; font-weight: 700; font-size: .88rem; color: var(--text-secondary); background: none; border: none; border-bottom: 3px solid transparent; margin-bottom: -2px; cursor: pointer; }
+.dc-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.dc-tabpane { display: none; }
+.dc-tabpane.active { display: block; }
+.dc-ledger { display: grid; grid-template-columns: 1fr auto 1fr; }
+.dc-ledger-col { display: flex; flex-direction: column; }
+.dc-ledger-divider { width: 1px; background: var(--border); }
+.dc-ledger-head { padding: 12px 16px; font-weight: 800; font-size: .88rem; text-align: center; }
+.dc-ledger-row { display: flex; justify-content: space-between; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: .88rem; }
+.dc-ledger-row .dc-ledger-label { color: var(--text-secondary); font-weight: 600; }
+.dc-ledger-row .dc-ledger-amt { font-weight: 800; white-space: nowrap; }
+.dc-ledger-total { background: var(--surface-2); font-size: .95rem; }
+@media (max-width: 700px) {
+    .dc-ledger { grid-template-columns: 1fr; }
+    .dc-ledger-divider { width: 100%; height: 1px; }
+}
 @media print {
     .sidebar, .topbar, .no-print, #miniChatRoot, #miniCalcRoot { display: none !important; }
     .main { margin-left: 0 !important; }
     .content { padding: 0 !important; }
+    .dc-tabpane { display: block !important; }
 }
 </style>
 
@@ -40,6 +58,13 @@
         </form>
     </div>
 </div>
+
+<div class="dc-tabs no-print">
+    <button type="button" class="dc-tab active" data-dctab="summary" onclick="dcSwitchTab('summary')">সারাংশ</button>
+    <button type="button" class="dc-tab" data-dctab="cash" onclick="dcSwitchTab('cash')">ক্যাশ মেলানো</button>
+</div>
+
+<div class="dc-tabpane active" id="dcTabSummary">
 
 {{-- Top stats --}}
 <div class="stats-grid" style="margin-bottom:20px;grid-template-columns:repeat(4,1fr)">
@@ -148,12 +173,69 @@
     </div>
 </div>
 
-{{-- ── Cash reconciliation (ক্যাশ মেলানো) ─────────────────────── --}}
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px" class="dc-grid">
+</div>{{-- /dcTabSummary --}}
+
+<div class="dc-tabpane" id="dcTabCash">
+
+{{-- ── Cash ledger: বাম = ইন, ডান = আউট ─────────────────────── --}}
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:20px">
+    <div style="padding:14px 16px;border-bottom:1.5px solid var(--border);font-weight:700;font-size:.92rem">
+        <i class="fas fa-money-bill-transfer" style="color:var(--accent);margin-right:6px"></i> দিনের ক্যাশ ইন/আউট ({{ \Carbon\Carbon::parse($date)->format('d/m/Y') }})
+    </div>
+    <div class="dc-ledger">
+        <div class="dc-ledger-col">
+            <div class="dc-ledger-head" style="color:#16a34a">ইন (ক্যাশ ঢুকেছে)</div>
+            <div class="dc-ledger-row">
+                <span class="dc-ledger-label">বিক্রয় থেকে নগদ</span>
+                <span class="dc-ledger-amt">৳ {{ number_format($salesPaid, 0) }}</span>
+            </div>
+            <div class="dc-ledger-row">
+                <span class="dc-ledger-label">বাকী আদায় (আলাদা পরিশোধ)</span>
+                <span class="dc-ledger-amt">৳ {{ number_format($standalonePayments, 0) }}</span>
+            </div>
+            <div class="dc-ledger-row">
+                <span class="dc-ledger-label">ক্যাশে জমা (খরচ ও জমা)</span>
+                <span class="dc-ledger-amt">৳ {{ number_format($deposits, 0) }}</span>
+            </div>
+            <div class="dc-ledger-row dc-ledger-total">
+                <span class="dc-ledger-label" style="color:var(--text-primary)">মোট ইন</span>
+                <span class="dc-ledger-amt" style="color:#16a34a">৳ {{ number_format($cashIn, 0) }}</span>
+            </div>
+        </div>
+        <div class="dc-ledger-divider"></div>
+        <div class="dc-ledger-col">
+            <div class="dc-ledger-head" style="color:#dc2626">আউট (ক্যাশ বেরিয়েছে)</div>
+            <div class="dc-ledger-row">
+                <span class="dc-ledger-label">পণ্য গ্রহণে পরিশোধ</span>
+                <span class="dc-ledger-amt">৳ {{ number_format($purchasePaid, 0) }}</span>
+            </div>
+            <div class="dc-ledger-row">
+                <span class="dc-ledger-label">সরবরাহকারী পরিশোধ (আলাদা)</span>
+                <span class="dc-ledger-amt">৳ {{ number_format($supplierPayments, 0) }}</span>
+            </div>
+            <div class="dc-ledger-row">
+                <span class="dc-ledger-label">খরচ</span>
+                <span class="dc-ledger-amt">৳ {{ number_format($expenses, 0) }}</span>
+            </div>
+            <div class="dc-ledger-row dc-ledger-total">
+                <span class="dc-ledger-label" style="color:var(--text-primary)">মোট আউট</span>
+                <span class="dc-ledger-amt" style="color:#dc2626">৳ {{ number_format($cashOut, 0) }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="dc-row dc-net">
+        <span class="dc-label" style="color:var(--text-primary);font-size:.95rem">আজ ক্যাশ নীট (ইন − আউট)</span>
+        <span class="dc-val" style="font-size:1.15rem;color:{{ $cashNet >= 0 ? '#16a34a' : '#dc2626' }}">
+            {{ $cashNet < 0 ? '−' : '' }} ৳ {{ number_format(abs($cashNet), 0) }}
+        </span>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" class="dc-grid">
 
     <div class="card" style="padding:0;overflow:hidden">
         <div style="padding:14px 16px;border-bottom:1.5px solid var(--border);font-weight:700;font-size:.92rem">
-            <i class="fas fa-scale-balanced" style="color:var(--accent);margin-right:6px"></i> ক্যাশ মেলানো ({{ \Carbon\Carbon::parse($date)->format('d/m/Y') }})
+            <i class="fas fa-scale-balanced" style="color:var(--accent);margin-right:6px"></i> ক্যাশ মেলানো (গোনা) — {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}
         </div>
 
         @if($reconciliation)
@@ -247,10 +329,22 @@
     </div>
 </div>
 
+</div>{{-- /dcTabCash --}}
+
 <script>
 function dcShowForm() {
     var f = document.getElementById('dcReconcileForm');
     if (f) f.style.display = 'block';
+}
+function dcSwitchTab(name) {
+    var panes = document.querySelectorAll('.dc-tabpane');
+    for (var i = 0; i < panes.length; i++) panes[i].classList.remove('active');
+    var tabs = document.querySelectorAll('.dc-tab');
+    for (var j = 0; j < tabs.length; j++) tabs[j].classList.remove('active');
+    var pane = document.getElementById(name === 'cash' ? 'dcTabCash' : 'dcTabSummary');
+    if (pane) pane.classList.add('active');
+    var tab = document.querySelector('.dc-tab[data-dctab="' + name + '"]');
+    if (tab) tab.classList.add('active');
 }
 </script>
 

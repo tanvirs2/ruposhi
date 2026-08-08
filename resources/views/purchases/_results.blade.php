@@ -1,4 +1,4 @@
-﻿    {{-- ══ INVOICE VIEW ══════════════════════════════════════════ --}}
+    {{-- ══ INVOICE VIEW ══════════════════════════════════════════ --}}
     <div id="invoiceView">
         <div class="table-wrap">
             <table class="data-table">
@@ -208,7 +208,7 @@
                                 </td>
                                 <td style="font-weight:500">{{ $pi->item->name ?? '—' }}</td>
                                 <td style="text-align:right">{{ number_format($pi->quantity, 0) }}</td>
-                                <td style="text-align:right">৳ {{ number_format($pi->price, 2) }}</td>
+                                <td style="text-align:right">৳ {{ number_format($pi->price) }}</td>
                                 <td style="text-align:right;font-weight:600">৳ {{ number_format($pi->subtotal, 0) }}</td>
                                 <td class="sd-cell">
                                     {{ $purchase->purchase_date->format('d M Y') }}

@@ -74,8 +74,8 @@
                                 @endif
                             </td>
                             <td>{{ $s->item->category?->name ?? '—' }}</td>
-                            <td>৳ {{ number_format($s->item->purchase_price, 2) }}</td>
-                            <td>৳ {{ number_format($s->item->sale_price, 2) }}</td>
+                            <td>৳ {{ number_format($s->item->purchase_price) }}</td>
+                            <td>৳ {{ number_format($s->item->sale_price) }}</td>
                             <td>
                                 <strong style="font-size:1rem">{{ number_format($s->quantity, 0) }}</strong>
                                 <span style="color:#64748b;font-size:.8rem"> {{ $s->item->unit }}</span>

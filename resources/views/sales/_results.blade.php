@@ -1,4 +1,4 @@
-﻿    {{-- ══ INVOICE VIEW ══════════════════════════════════════════ --}}
+    {{-- ══ INVOICE VIEW ══════════════════════════════════════════ --}}
     <div id="invoiceView">
         <div class="table-wrap">
             <table class="data-table">
@@ -48,9 +48,9 @@
                             {{ $sale->sale_date->format('d M Y') }}
                             <br><small style="color:#475569;font-size:.75rem">{{ $sale->created_at->format('h:i a') }}</small>
                         </td>
-                        <td>৳ {{ number_format($sale->total_amount,2) }}</td>
-                        <td style="color:#16a34a">৳ {{ number_format($sale->paid_amount,2) }}</td>
-                        <td>{{ $sale->due_amount > 0 ? '৳ '.number_format($sale->due_amount,2) : '—' }}</td>
+                        <td>৳ {{ number_format($sale->total_amount) }}</td>
+                        <td style="color:#16a34a">৳ {{ number_format($sale->paid_amount) }}</td>
+                        <td>{{ $sale->due_amount > 0 ? '৳ '.number_format($sale->due_amount) : '—' }}</td>
                         <td>
                             @if($sale->status==='completed') <span class="badge badge-green">সম্পন্ন</span>
                             @elseif($sale->status==='pending') <span class="badge badge-yellow">মুলতুবি</span>
@@ -164,7 +164,7 @@
                                 <td>{{ $sale->customer?->name ?? 'ওয়াক-ইন' }}</td>
                                 <td style="font-weight:500">{{ $si->item->name ?? '—' }}</td>
                                 <td style="text-align:right">{{ number_format($si->quantity, 0) }}</td>
-                                <td style="text-align:right">৳ {{ number_format($si->price, 2) }}</td>
+                                <td style="text-align:right">৳ {{ number_format($si->price) }}</td>
                                 <td style="text-align:right;font-weight:600">৳ {{ number_format($si->subtotal, 0) }}</td>
                                 <td class="sd-cell">
                                     {{ $sale->sale_date->format('d M Y') }}

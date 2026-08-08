@@ -170,6 +170,11 @@
                         <span class="nav-label">আইটেম ক্যাটাগরি</span>
                         <button type="button" class="info-btn" data-info="পণ্যের ক্যাটাগরি তৈরি করুন। যেমন: চাল, ডাল, তেল। ক্যাটাগরি দিয়ে পণ্য ফিল্টার করা যাবে।">i</button>
                     </a>
+                    <a href="{{ route('brands.index') }}" class="nav-item nav-child {{ $_seg==='brands' ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fas fa-copyright"></i></span>
+                        <span class="nav-label">ব্র্যান্ড</span>
+                        <button type="button" class="info-btn" data-info="পণ্যের ব্র্যান্ড তৈরি করুন। যেমন: আকিজ, সিটি, ফ্রেশ। ঐচ্ছিক — না দিলেও চলবে।">i</button>
+                    </a>
                 </div>
             </div>
             {{-- ── Stock accordion ──────────────────────────── --}}

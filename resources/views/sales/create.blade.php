@@ -176,7 +176,7 @@
                 <div class="summary-row">
                     <span>মোট বিক্রয়:</span>
                     <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-                        <span id="totalDisplay">৳ 0.00</span>
+                        <span id="totalDisplay">৳ 0</span>
                         <button type="button" id="discountToggleBtn" onclick="toggleField('discount')"
                             class="cost-toggle-btn" title="ছাড় যোগ করুন">+ ছাড়</button>
                         <button type="button" id="extraCostToggleBtn" onclick="toggleExtraCosts()"
@@ -215,11 +215,11 @@
                         </button>
                     </div>
                 </div>
-                <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0.00</span></div>
+                <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0</span></div>
 
                 {{-- Total to collect today = this sale + outstanding previous due --}}
                 <div class="summary-row" id="collectRow" style="display:none;font-weight:700">
-                    <span>আজ মোট নিতে হবে:</span><span id="collectDisplay" style="color:#b45309">৳ 0.00</span>
+                    <span>আজ মোট নিতে হবে:</span><span id="collectDisplay" style="color:#b45309">৳ 0</span>
                 </div>
 
                 {{-- Single money-in field — system auto-splits between this sale & old due --}}
@@ -263,7 +263,7 @@
                     এই কাস্টমারের কোনো বাকী নেই — অতিরিক্ত পরিশোধ রিপোর্টে বাকীর হিসাবে প্রভাব ফেলবে না।
                 </div>
                 {{-- This sale's own outstanding (kept for clarity) --}}
-                <div class="summary-row" id="saleDueRow" style="color:#ef4444"><span>এই বিক্রয়ে বাকী:</span><span id="dueDisplay">৳ 0.00</span></div>
+                <div class="summary-row" id="saleDueRow" style="color:#ef4444"><span>এই বিক্রয়ে বাকী:</span><span id="dueDisplay">৳ 0</span></div>
 
                 {{-- Payment Method (DB-driven) --}}
                 <div class="form-group-field">
@@ -295,11 +295,11 @@
                         <i class="fas fa-chart-line"></i> লাভের বিবরণ
                     </div>
                     <div class="profit-panel-body">
-                        <div class="profit-row"><span>মোট খরচ (ক্রয়):</span><span id="costDisplay">৳ 0.00</span></div>
-                        <div class="profit-row"><span>মোট আয় (বিক্রয়):</span><span id="revenueDisplay">৳ 0.00</span></div>
+                        <div class="profit-row"><span>মোট খরচ (ক্রয়):</span><span id="costDisplay">৳ 0</span></div>
+                        <div class="profit-row"><span>মোট আয় (বিক্রয়):</span><span id="revenueDisplay">৳ 0</span></div>
                         <div class="profit-row profit-net">
                             <span>আনুমানিক লাভ:</span>
-                            <span id="profitDisplay">৳ 0.00</span>
+                            <span id="profitDisplay">৳ 0</span>
                         </div>
                         <div style="margin-top:8px;text-align:center">
                             <span class="margin-badge" id="marginBadge">—</span>
@@ -716,9 +716,9 @@ function selectCustomer(id) {
                     <span style="color:#991b1b;font-size:.83rem;font-weight:600">
                         <i class="fas fa-triangle-exclamation"></i> আগের বাকী আছে
                     </span>
-                    <span style="color:#dc2626;font-size:1rem;font-weight:700">৳ ${due.toLocaleString('en', {minimumFractionDigits:2})}</span>
+                    <span style="color:#dc2626;font-size:1rem;font-weight:700">৳ ${due.toLocaleString('en', {maximumFractionDigits:0})}</span>
                  </div>`;
-        prevDueDisplay.textContent = '৳ ' + due.toLocaleString('en', {minimumFractionDigits:2});
+        prevDueDisplay.textContent = '৳ ' + due.toLocaleString('en', {maximumFractionDigits:0});
         prevDueRow.style.display = 'flex';
     } else if (due < 0) {
         html += `<div style="margin-top:6px;padding:8px 12px;background:#eff6ff;border:1px solid #bfdbfe;
@@ -726,7 +726,7 @@ function selectCustomer(id) {
                     <span style="color:#1d4ed8;font-size:.83rem;font-weight:600">
                         <i class="fas fa-piggy-bank"></i> অগ্রিম পরিশোধ আছে
                     </span>
-                    <span style="color:#1d4ed8;font-size:1rem;font-weight:700">৳ ${Math.abs(due).toLocaleString('en', {minimumFractionDigits:2})}</span>
+                    <span style="color:#1d4ed8;font-size:1rem;font-weight:700">৳ ${Math.abs(due).toLocaleString('en', {maximumFractionDigits:0})}</span>
                  </div>`;
         prevDueRow.style.display = 'none';
         resetPrevDuePay();
@@ -813,8 +813,27 @@ function renderPickerGrid(filter) {
     if (!pickerGrid) return;
     filter = (filter || '').toLowerCase().trim();
     var list = filter ? allItems.filter(function(i){ return i.name.toLowerCase().includes(filter); }) : allItems;
-    pickerGrid.innerHTML = list.map(pickerTileHtml).join('')
-        || '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:.85rem">কোনো আইটেম পাওয়া যায়নি</div>';
+
+    if (!list.length) {
+        pickerGrid.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:.85rem">কোনো আইটেম পাওয়া যায়নি</div>';
+        return;
+    }
+
+    // Group by category (name), uncategorized items last under "অন্যান্য".
+    var groups = {};
+    list.forEach(function(i) {
+        var catName = i.category ? i.category.name : null;
+        var key = catName || '￿ অন্যান্য'; // sort key that always sorts last
+        if (!groups[key]) groups[key] = { label: catName || 'অন্যান্য', items: [] };
+        groups[key].items.push(i);
+    });
+    var keys = Object.keys(groups).sort();
+
+    pickerGrid.innerHTML = keys.map(function(key) {
+        var g = groups[key];
+        return '<div class="picker-cat-label">' + g.label + '</div>'
+            + '<div class="picker-cat-grid">' + g.items.map(pickerTileHtml).join('') + '</div>';
+    }).join('');
 }
 
 function renderFreqGrid() {
@@ -1139,14 +1158,14 @@ function updateSummary() {
     if (footQty)   footQty.textContent   = totalQty.toString();
     if (footTotal) footTotal.textContent = '৳ ' + total.toFixed(0);
 
-    document.getElementById('totalDisplay').textContent   = '৳ ' + total.toFixed(2);
-    document.getElementById('netDisplay').textContent     = '৳ ' + net.toFixed(2);
-    document.getElementById('dueDisplay').textContent     = '৳ ' + due.toFixed(2);
+    document.getElementById('totalDisplay').textContent   = '৳ ' + total.toFixed(0);
+    document.getElementById('netDisplay').textContent     = '৳ ' + net.toFixed(0);
+    document.getElementById('dueDisplay').textContent     = '৳ ' + due.toFixed(0);
 
     // profit panel
-    document.getElementById('costDisplay').textContent    = '৳ ' + totalCost.toFixed(2);
-    document.getElementById('revenueDisplay').textContent = '৳ ' + net.toFixed(2);
-    document.getElementById('profitDisplay').textContent  = (profit >= 0 ? '+' : '') + '৳ ' + profit.toFixed(2);
+    document.getElementById('costDisplay').textContent    = '৳ ' + totalCost.toFixed(0);
+    document.getElementById('revenueDisplay').textContent = '৳ ' + net.toFixed(0);
+    document.getElementById('profitDisplay').textContent  = (profit >= 0 ? '+' : '') + '৳ ' + profit.toFixed(0);
     document.getElementById('profitDisplay').style.color  = profit >= 0 ? '#16a34a' : '#dc2626';
 
     const badge = document.getElementById('marginBadge');

@@ -629,7 +629,7 @@ function selectSupplier(id) {
                     <span style="color:#991b1b;font-size:.83rem;font-weight:600">
                         <i class="fas fa-triangle-exclamation"></i> আগের বকেয়া আছে
                     </span>
-                    <span style="color:#dc2626;font-size:1rem;font-weight:700">৳ ${due.toLocaleString('en', {minimumFractionDigits:2})}</span>
+                    <span style="color:#dc2626;font-size:1rem;font-weight:700">৳ ${due.toLocaleString('en', {maximumFractionDigits:0})}</span>
                  </div>`;
     } else if (due < 0) {
         html += `<div style="margin-top:6px;padding:8px 12px;background:#eff6ff;border:1px solid #bfdbfe;
@@ -637,7 +637,7 @@ function selectSupplier(id) {
                     <span style="color:#1d4ed8;font-size:.83rem;font-weight:600">
                         <i class="fas fa-piggy-bank"></i> অগ্রিম পরিশোধ আছে
                     </span>
-                    <span style="color:#1d4ed8;font-size:1rem;font-weight:700">৳ ${Math.abs(due).toLocaleString('en', {minimumFractionDigits:2})}</span>
+                    <span style="color:#1d4ed8;font-size:1rem;font-weight:700">৳ ${Math.abs(due).toLocaleString('en', {maximumFractionDigits:0})}</span>
                  </div>`;
     } else {
         html += `<div style="margin-top:6px;padding:6px 12px;background:#dcfce7;border:1px solid #bbf7d0;
@@ -653,7 +653,7 @@ function selectSupplier(id) {
     // Show advance panel if supplier has credit balance (negative due)
     if (due < 0) {
         supplierAdvance = Math.abs(due);
-        prevAdvanceDisp.textContent = '৳ ' + supplierAdvance.toLocaleString('en', {minimumFractionDigits:2});
+        prevAdvanceDisp.textContent = '৳ ' + supplierAdvance.toLocaleString('en', {maximumFractionDigits:0});
         prevAdvanceRow.style.display = 'flex';
     } else {
         supplierAdvance = 0;
