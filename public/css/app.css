@@ -1744,7 +1744,35 @@ input[type="time"].form-select {
     /* The screen font-size buttons set html[data-fontsize] zoom (0.9/1/1.08).
        Without this reset the browser scales the whole printout by that zoom,
        so print output changed with the UI font choice. Print must be fixed. */
-    html { zoom: 1 !important; font-size: 15px !important; }
+    html,
+    html[data-fontsize="sm"],
+    html[data-fontsize="md"],
+    html[data-fontsize="lg"] { zoom: normal !important; font-size: 15px !important; }
+
+    /* ── Blank-page fix (Chrome/Edge) ──
+       On screen the shell is `body{display:flex;min-height:100vh}` +
+       `.main-wrapper{flex:1;min-height:100vh}`. Chrome's print pipeline lays a
+       flex container out against the *page* box, and with 100vh in the mix it
+       resolves the whole shell to exactly one page height, then paints nothing
+       into it — the client got one perfectly blank sheet on every list page
+       (customers, suppliers, supplier-payments).
+       Flatten the shell to plain block flow for paper: no flex, no viewport
+       units, no clipping. This is CSS-only on purpose — the earlier JS-based
+       attempt silently did nothing on browsers holding a cached app.js. */
+    html, body {
+        display: block !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+    }
+    .main-wrapper, .content {
+        display: block !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        flex: none !important;
+    }
 
     .sidebar, .topbar, .quick-actions, .ui-controls, .ctrl-btn,
     .btn-export, .btn-export-print, .card-filter, .filter-form,

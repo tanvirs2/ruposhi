@@ -970,8 +970,11 @@
     </div>
 </div>
 
-<script src="{{ asset('js/app.js') }}" data-turbo-eval="false"></script>
-<script src="{{ asset('js/offline-sales.js') }}" data-turbo-eval="false"></script>
+{{-- ?v=filemtime — without it browsers keep serving a cached app.js forever and
+     bug fixes never reach clients (a print fix shipped this way went unseen for a
+     whole release). Keep the query string on every locally-authored asset. --}}
+<script src="{{ asset('js/app.js') }}?v={{ filemtime(public_path('js/app.js')) }}" data-turbo-eval="false"></script>
+<script src="{{ asset('js/offline-sales.js') }}?v={{ filemtime(public_path('js/offline-sales.js')) }}" data-turbo-eval="false"></script>
 
 <script>
 /* ── Notification Bell ── */
