@@ -33,7 +33,7 @@
             @if(request('date'))
                 <a href="{{ route('stock.low') }}" class="btn btn-ghost">পরিষ্কার</a>
             @endif
-            <button type="button" class="btn-export-print no-print" onclick="window.print()">
+            <button type="button" class="btn-export-print no-print" id="stockLowPrintBtn">
                 <i class="fas fa-print"></i> প্রিন্ট
             </button>
         </form>
@@ -156,3 +156,24 @@
     <div class="pagination-wrap">{{ $stock->withQueryString()->links() }}</div>
 </div>
 @endsection
+
+@push('scripts')
+<meta name="turbo-cache-control" content="no-cache">
+<script>
+(function () {
+    var btn = document.getElementById('stockLowPrintBtn');
+    if (!btn || btn._bound) return;
+    btn._bound = true;
+    btn.addEventListener('click', function () {
+        var params = new URLSearchParams(window.location.search);
+        params.set('print', '1');
+        window.location.href = window.location.pathname + '?' + params.toString();
+    });
+
+    // Arrived here to print the full (unpaginated) list — fire the dialog once loaded.
+    if (new URLSearchParams(window.location.search).get('print') === '1') {
+        window.print();
+    }
+})();
+</script>
+@endpush

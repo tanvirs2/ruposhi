@@ -9,4 +9,5 @@
 // into a single new entry at the top of whats_new.php (version +0.1, today's
 // date) and empty this array back out.
 return [
+    'স্টক তালিকা প্রিন্ট করলে এখন সব আইটেম ছাপবে (আগে প্রথম ২০টার বেশি বাদ পড়ে যেত)',
 ];

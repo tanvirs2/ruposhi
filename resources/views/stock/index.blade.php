@@ -38,7 +38,7 @@
             </a>
             <a href="{{ route('stock.index') }}" class="btn btn-ghost" id="stockClearBtn"
                style="{{ (request('search') || request('date') || request('updated_date')) ? '' : 'display:none' }}">পরিষ্কার</a>
-            <button type="button" class="btn-export-print no-print" onclick="window.print()">
+            <button type="button" class="btn-export-print no-print" id="stockPrintBtn">
                 <i class="fas fa-print"></i> প্রিন্ট
             </button>
         </form>
@@ -116,6 +116,26 @@
     form.addEventListener('submit', function (e) {
         e.preventDefault();
         load(buildUrl());
+    });
+
+    var printBtn = document.getElementById('stockPrintBtn');
+    printBtn.addEventListener('click', function () {
+        var params = new URLSearchParams();
+        if (input.value.trim()) params.set('search', input.value.trim());
+        if (dateInput.value    && dateInput.value !== today) params.set('date', dateInput.value);
+        if (updatedInput.value) params.set('updated_date', updatedInput.value);
+        params.set('print', '1');
+        var url = form.action + '?' + params.toString();
+
+        var savedHtml = results.innerHTML;
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                results.innerHTML = html;
+                window.print();
+                results.innerHTML = savedHtml;
+            })
+            .catch(function () { window.print(); });
     });
 
     card.addEventListener('click', function (e) {

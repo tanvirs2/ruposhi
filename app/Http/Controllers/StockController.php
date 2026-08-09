@@ -21,6 +21,9 @@ class StockController extends Controller
             $updatedDate = null;
         }
 
+        // Print view (আইটেম প্রিন্ট) needs every matching row on one page, not just page 1
+        $perPage = $request->boolean('print') ? 1000000 : 20;
+
         $stock = Stock::with(['item.category'])
             ->where('quantity', '!=', 0)   // hide exactly-zero stock; show negative & positive
             ->when($request->search, fn($q) =>
@@ -30,7 +33,7 @@ class StockController extends Controller
                 $q->whereDate('stock.updated_at', $updatedDate)
             )
             ->orderBy($updatedDate ? 'stock.updated_at' : 'quantity', $updatedDate ? 'desc' : 'asc')
-            ->paginate(20);
+            ->paginate($perPage);
 
         // Date filter — defaults to today
         $filterDate = $request->date ?: now()->toDateString();
@@ -95,10 +98,12 @@ class StockController extends Controller
     /* স্টক শেষ — items at or below minimum quantity */
     public function low(Request $request)
     {
+        $perPage = $request->boolean('print') ? 1000000 : 20;
+
         $stock = Stock::with(['item.category'])
             ->whereRaw('quantity <= min_quantity')
             ->orderBy('quantity')
-            ->paginate(20);
+            ->paginate($perPage);
 
         // Date filter — defaults to today
         $filterDate = $request->date ?: now()->toDateString();
