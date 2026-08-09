@@ -137,7 +137,7 @@
                     </td>
                     <td>
                         <span class="dsl-item-name">{{ $row->item_name }}</span>
-                        @if($row->customer_name)
+                        @if($isNewSale && $row->customer_name)
                         <span class="dsl-customer-tag">{{ $row->customer_name }}</span>
                         @endif
                     </td>

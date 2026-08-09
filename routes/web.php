@@ -209,10 +209,10 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
 
     Route::get('/reports/sale-logs', [ReportController::class, 'saleLogs'])->name('reports.sale-logs');
 
-    /* দিনশেষ রিপোর্ট — admin only */
-    Route::get('/reports/day-close',       [ReportController::class, 'dayClose'])->name('reports.day-close')->middleware('shop.admin');
-    Route::post('/reports/day-close/sms',  [ReportController::class, 'dayCloseSms'])->name('reports.day-close.sms')->middleware('shop.admin');
-    Route::post('/reports/day-close/reconcile', [ReportController::class, 'dayCloseReconcile'])->name('reports.day-close.reconcile')->middleware('shop.admin');
+    /* দিনশেষ রিপোর্ট — সব ইউজার (admin + staff) দেখতে পারবে */
+    Route::get('/reports/day-close',       [ReportController::class, 'dayClose'])->name('reports.day-close');
+    Route::post('/reports/day-close/sms',  [ReportController::class, 'dayCloseSms'])->name('reports.day-close.sms');
+    Route::post('/reports/day-close/reconcile', [ReportController::class, 'dayCloseReconcile'])->name('reports.day-close.reconcile');
 
     /* Store Config — admin only */
     Route::middleware('shop.admin')->group(function () {

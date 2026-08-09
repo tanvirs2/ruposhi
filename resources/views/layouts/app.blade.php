@@ -328,12 +328,12 @@
                         <span class="nav-label">লাভ-লোকসান</span>
                         <button type="button" class="info-btn" data-info="নির্দিষ্ট সময়কালের বিক্রয় আয়, পণ্য খরচ, পরিচালনা ব্যয় ও নিট লাভ-লোকসানের পূর্ণ বিবরণ।">i</button>
                     </a>
+                    @endif
                     <a href="{{ route('reports.day-close') }}" class="nav-item nav-child {{ $_path==='reports/day-close' ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-cash-register"></i></span>
                         <span class="nav-label">দিনশেষ রিপোর্ট</span>
                         <button type="button" class="info-btn" data-info="দিনের সারাংশ এক নজরে — বিক্রয়, নগদ আদায়, খরচ, নতুন বাকী ও ক্যাশ হিসাব। মালিকের ফোনে SMS-ও পাঠানো যায়।">i</button>
                     </a>
-                    @endif
                     <a href="{{ route('reports.sale-logs') }}" class="nav-item nav-child {{ $_path==='reports/sale-logs' ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-clock-rotate-left"></i></span>
                         <span class="nav-label">সংশোধন / মুছে ফেলার লগ</span>
@@ -1100,8 +1100,16 @@ function drRange(fromName, toName, formSel, type) {
         const day = String(d.getDate()).padStart(2, '0');
         return `${y}-${m}-${day}`;
     };
-    document.querySelector(`input[name="${fromName}"]`).value = fmt(from);
-    document.querySelector(`input[name="${toName}"]`).value   = fmt(to);
+    const fromEl = document.querySelector(`input[name="${fromName}"]`);
+    const toEl   = document.querySelector(`input[name="${toName}"]`);
+    // Some pages set a "min" on the to-field while the user types in the
+    // from-field (to stop to < from). That min is stale once we jump to a
+    // quick range here, and can silently invalidate the value we're about
+    // to set — clear it first so this button always wins.
+    toEl.removeAttribute('min');
+    fromEl.value = fmt(from);
+    toEl.value   = fmt(to);
+    toEl.min     = fmt(from);
     const f = document.querySelector(formSel);
     if (f.requestSubmit) f.requestSubmit(); else f.submit();
 }

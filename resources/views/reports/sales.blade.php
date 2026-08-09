@@ -444,7 +444,7 @@
                     <td class="tc col-hide-tablet" style="font-size:.78rem;color:#334155;white-space:nowrap">
                         @if($isNewSale) {{ \Carbon\Carbon::parse($row->date)->format('d/m/Y') }} @else — @endif
                     </td>
-                    <td>{{ $row->customer_name }}</td>
+                    <td>@if($isNewSale) {{ $row->customer_name }} @else — @endif</td>
                     <td>{{ $row->item_name }}</td>
                     <td class="tc">{{ (int)$row->qty }}</td>
                     <td class="tc col-hide-tablet">{{ $totalKg ?? '—' }}</td>
@@ -471,7 +471,7 @@
                     </td>
                     <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b">{{ $row->user_name ?? '—' }}</td>
                     <td class="tc col-hide-tablet" style="font-size:.78rem;color:#334155;white-space:nowrap">
-                        {{ \Carbon\Carbon::parse($row->sale_time)->format('h:i:s a') }}
+                        @if($isNewSale) {{ \Carbon\Carbon::parse($row->sale_time)->format('h:i:s a') }} @else — @endif
                     </td>
                 </tr>
                 @empty
@@ -581,7 +581,7 @@
                     </td>
                     <td class="tc col-hide-tablet" style="font-size:.78rem;color:#64748b">{{ $row->user_name ?? '—' }}</td>
                     <td class="tc col-hide-tablet" style="font-size:.78rem;color:#334155;white-space:nowrap">
-                        {{ \Carbon\Carbon::parse($row->sale_time)->format('h:i:s a') }}
+                        @if($wIsNew) {{ \Carbon\Carbon::parse($row->sale_time)->format('h:i:s a') }} @else — @endif
                     </td>
                 </tr>
                 @endforeach

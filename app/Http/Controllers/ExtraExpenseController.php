@@ -13,22 +13,21 @@ class ExtraExpenseController extends Controller
         $from  = $request->from ?: $today;
         $to    = $request->to   ?: $today;
 
-        $query = ExtraExpense::when($request->search, fn($q) =>
+        $baseQuery = fn() => ExtraExpense::when($request->search, fn($q) =>
                 $q->where('title', 'like', "%{$request->search}%")
             )
-            ->when($request->type,     fn($q) => $q->where('type',     $request->type))
             ->when($request->category, fn($q) => $q->where('category', $request->category))
             ->whereDate('expense_date', '>=', $from)
             ->whereDate('expense_date', '<=', $to)
             ->latest('expense_date');
 
-        $expenses   = $query->paginate(20)->withQueryString();
+        $deposits   = $baseQuery()->where('type', 'deposit')->paginate(20, ['*'], 'deposit_page')->withQueryString();
+        $expenses   = $baseQuery()->where('type', 'expense')->paginate(20, ['*'], 'expense_page')->withQueryString();
         $categories = ExtraExpense::distinct()->pluck('category')->filter();
 
         $allFiltered = ExtraExpense::when($request->search, fn($q) =>
                 $q->where('title', 'like', "%{$request->search}%")
             )
-            ->when($request->type,     fn($q) => $q->where('type',     $request->type))
             ->when($request->category, fn($q) => $q->where('category', $request->category))
             ->whereDate('expense_date', '>=', $from)
             ->whereDate('expense_date', '<=', $to);
@@ -36,7 +35,7 @@ class ExtraExpenseController extends Controller
         $totalExpense = $allFiltered->clone()->where('type', 'expense')->sum('amount');
         $totalDeposit = $allFiltered->clone()->where('type', 'deposit')->sum('amount');
 
-        return view('expenses.index', compact('expenses', 'categories', 'totalExpense', 'totalDeposit', 'from', 'to'));
+        return view('expenses.index', compact('deposits', 'expenses', 'categories', 'totalExpense', 'totalDeposit', 'from', 'to'));
     }
 
     public function create()
