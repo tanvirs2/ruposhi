@@ -698,83 +698,108 @@
     {{-- Keyboard shortcuts overlay --}}
     <div class="shortcuts-overlay" id="shortcutsOverlay">
         <div class="shortcuts-card">
-            <h3><i class="fas fa-keyboard" style="color:var(--accent)"></i> কীবোর্ড শর্টকাট</h3>
+            <div class="shortcuts-card-head">
+                <h3><i class="fas fa-keyboard" style="color:var(--accent)"></i> কীবোর্ড শর্টকাট</h3>
+                <button type="button" class="shortcuts-close" onclick="toggleShortcutsHelp()" title="বন্ধ করুন"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="shortcuts-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="shortcutsSearchInput" placeholder="শর্টকাট খুঁজুন..." oninput="filterShortcutsHelp(this.value)">
+            </div>
+            <div class="shortcuts-empty" id="shortcutsEmpty" style="display:none">কিছু পাওয়া যায়নি</div>
 
-            <div class="shortcut-group-title">লেনদেন</div>
-            <div class="shortcut-row">
-                <a href="{{ route('sales.create') }}" onclick="toggleShortcutsHelp()" style="color:var(--accent);text-decoration:none;font-weight:600">
-                    <i class="fas fa-plus" style="font-size:.7rem;margin-right:4px"></i>নতুন বিক্রয়
-                </a>
-                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">S</kbd></span>
-            </div>
-            <div class="shortcut-row">
-                <a href="{{ route('purchases.create') }}" onclick="toggleShortcutsHelp()" style="color:var(--accent);text-decoration:none;font-weight:600">
-                    <i class="fas fa-plus" style="font-size:.7rem;margin-right:4px"></i>পণ্য গ্রহণ
-                </a>
-                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">P</kbd></span>
-            </div>
-            <div class="shortcut-row">
-                <span><i class="fas fa-search" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>আইটেম খোঁজার ঘরে যান</span>
-                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">F</kbd></span>
-            </div>
-
-            <div class="shortcut-group-title">তালিকা</div>
-            <div class="shortcut-row">
-                <a href="{{ route('purchases.index') }}" onclick="toggleShortcutsHelp()" style="color:var(--text-primary);text-decoration:none">
-                    <i class="fas fa-truck-ramp-box" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>পণ্য রিসিভ লিস্ট
-                </a>
-                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">L</kbd></span>
-            </div>
-            <div class="shortcut-row">
-                <a href="{{ route('supplier-payments.index') }}" onclick="toggleShortcutsHelp()" style="color:var(--text-primary);text-decoration:none">
-                    <i class="fas fa-money-bill-wave" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>পরিশোধ তালিকা
-                </a>
-                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">M</kbd></span>
+            <div class="shortcuts-grid">
+            <div class="shortcuts-col">
+            <div class="shortcut-group">
+                <div class="shortcut-group-title">লেনদেন</div>
+                <div class="shortcut-row">
+                    <a href="{{ route('sales.create') }}" onclick="toggleShortcutsHelp()" class="shortcut-link shortcut-link-accent">
+                        <span class="shortcut-icon"><i class="fas fa-plus"></i></span>নতুন বিক্রয়
+                    </a>
+                    <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">S</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <a href="{{ route('purchases.create') }}" onclick="toggleShortcutsHelp()" class="shortcut-link shortcut-link-accent">
+                        <span class="shortcut-icon"><i class="fas fa-plus"></i></span>পণ্য গ্রহণ
+                    </a>
+                    <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">P</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <span class="shortcut-link"><span class="shortcut-icon"><i class="fas fa-search"></i></span>আইটেম খোঁজার ঘরে যান</span>
+                    <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">F</kbd></span>
+                </div>
             </div>
 
-            <div class="shortcut-group-title">নেভিগেশন</div>
-            <div class="shortcut-row">
-                <a href="{{ route('dashboard') }}" onclick="toggleShortcutsHelp()" style="color:var(--text-primary);text-decoration:none">
-                    <i class="fas fa-gauge" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>ড্যাশবোর্ড
-                </a>
-                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">D</kbd></span>
+            <div class="shortcut-group">
+                <div class="shortcut-group-title">তালিকা</div>
+                <div class="shortcut-row">
+                    <a href="{{ route('purchases.index') }}" onclick="toggleShortcutsHelp()" class="shortcut-link">
+                        <span class="shortcut-icon"><i class="fas fa-truck-ramp-box"></i></span>পণ্য রিসিভ লিস্ট
+                    </a>
+                    <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">L</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <a href="{{ route('supplier-payments.index') }}" onclick="toggleShortcutsHelp()" class="shortcut-link">
+                        <span class="shortcut-icon"><i class="fas fa-money-bill-wave"></i></span>পরিশোধ তালিকা
+                    </a>
+                    <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">M</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <a href="{{ route('expenses.index') }}" onclick="toggleShortcutsHelp()" class="shortcut-link">
+                        <span class="shortcut-icon"><i class="fas fa-receipt"></i></span>খরচ ও জমার তালিকা
+                    </a>
+                    <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">E</kbd></span>
+                </div>
             </div>
-            <div class="shortcut-row">
-                <a href="{{ route('stock.index') }}" onclick="toggleShortcutsHelp()" style="color:var(--text-primary);text-decoration:none">
-                    <i class="fas fa-warehouse" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>স্টক
-                </a>
-                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">K</kbd></span>
-            </div>
-            <div class="shortcut-row">
-                <a href="{{ route('reports.sales') }}" onclick="toggleShortcutsHelp()" style="color:var(--text-primary);text-decoration:none">
-                    <i class="fas fa-chart-line" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>দৈনিক বিক্রয় রিপোর্ট
-                </a>
-                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">T</kbd></span>
             </div>
 
-            <div class="shortcut-group-title">সিস্টেম</div>
-            <div class="shortcut-row">
-                <span>ডার্ক/লাইট মোড</span>
-                <span style="color:var(--text-secondary);font-size:.8rem">টপবারে 🌙 বোতাম</span>
+            <div class="shortcuts-col">
+            <div class="shortcut-group">
+                <div class="shortcut-group-title">নেভিগেশন</div>
+                <div class="shortcut-row">
+                    <a href="{{ route('dashboard') }}" onclick="toggleShortcutsHelp()" class="shortcut-link">
+                        <span class="shortcut-icon"><i class="fas fa-gauge"></i></span>ড্যাশবোর্ড
+                    </a>
+                    <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">D</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <a href="{{ route('stock.index') }}" onclick="toggleShortcutsHelp()" class="shortcut-link">
+                        <span class="shortcut-icon"><i class="fas fa-warehouse"></i></span>স্টক
+                    </a>
+                    <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">K</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <a href="{{ route('reports.sales') }}" onclick="toggleShortcutsHelp()" class="shortcut-link">
+                        <span class="shortcut-icon"><i class="fas fa-chart-line"></i></span>দৈনিক বিক্রয় রিপোর্ট
+                    </a>
+                    <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">T</kbd></span>
+                </div>
             </div>
-            <div class="shortcut-row">
-                <a href="#" onclick="toggleShortcutsHelp();togglePhonetic();return false;" style="color:var(--text-primary);text-decoration:none">
-                    <span style="font-family:'Hind Siliguri',sans-serif;font-weight:700;margin-right:4px">ক</span>বাংলা ফোনেটিক টাইপিং
-                </a>
-                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">B</kbd></span>
+
+            <div class="shortcut-group">
+                <div class="shortcut-group-title">সিস্টেম</div>
+                <div class="shortcut-row">
+                    <span class="shortcut-link">ডার্ক/লাইট মোড</span>
+                    <span style="color:var(--text-secondary);font-size:.8rem">টপবারে 🌙 বোতাম</span>
+                </div>
+                <div class="shortcut-row">
+                    <a href="#" onclick="toggleShortcutsHelp();togglePhonetic();return false;" class="shortcut-link">
+                        <span class="shortcut-icon" style="font-family:'Hind Siliguri',sans-serif;font-weight:700">ক</span>বাংলা ফোনেটিক টাইপিং
+                    </a>
+                    <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">B</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <a href="#" onclick="toggleShortcutsHelp();miniCalcToggle();return false;" class="shortcut-link">
+                        <span class="shortcut-icon"><i class="fas fa-calculator"></i></span>ক্যালকুলেটর
+                    </a>
+                    <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">C</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <span class="shortcut-link">এই উইন্ডো</span>
+                    <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">/</kbd></span>
+                </div>
             </div>
-            <div class="shortcut-row">
-                <a href="#" onclick="toggleShortcutsHelp();miniCalcToggle();return false;" style="color:var(--text-primary);text-decoration:none">
-                    <i class="fas fa-calculator" style="font-size:.7rem;margin-right:4px;color:var(--text-secondary)"></i>ক্যালকুলেটর
-                </a>
-                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">C</kbd></span>
             </div>
-            <div class="shortcut-row">
-                <span>এই উইন্ডো</span>
-                <span><kbd class="kbd">Alt</kbd> + <kbd class="kbd">/</kbd></span>
-            </div>
-            <div style="margin-top:16px;text-align:right">
-                <button onclick="toggleShortcutsHelp()" class="btn btn-ghost" style="font-size:.82rem">বন্ধ করুন</button>
             </div>
         </div>
     </div>

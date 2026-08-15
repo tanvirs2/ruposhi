@@ -1078,8 +1078,15 @@ class ReportController extends Controller
             $suggestedOpening = $prev?->counted_cash;
         }
 
+        // Stale-reconciliation check: if sales/purchases/payments/expenses for this
+        // date were added, edited, or deleted AFTER the cash was reconciled, the
+        // saved system_net snapshot no longer matches today's live cash ledger —
+        // the discrepancy shown below would be computed from outdated numbers.
+        $reconciliationStale = $reconciliation
+            && abs((float) $reconciliation->system_net - $d['cashNet']) > 0.01;
+
         return view('reports.day-close', array_merge($d, compact(
-            'date', 'ownerPhone', 'reconciliation', 'recentClosings', 'suggestedOpening'
+            'date', 'ownerPhone', 'reconciliation', 'recentClosings', 'suggestedOpening', 'reconciliationStale'
         )));
     }
 

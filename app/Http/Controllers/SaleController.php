@@ -274,8 +274,8 @@ class SaleController extends Controller
                 ->with('success', 'সংশোধনের অনুরোধ পাঠানো হয়েছে। অ্যাডমিনের অনুমোদনের অপেক্ষায়।');
         }
 
-        // Log current state BEFORE changes
-        $this->logSale($sale, 'edited', $request->edit_note);
+        // Capture state BEFORE changes so the log can show a before/after diff
+        $beforeSnapshot = $this->buildSaleSnapshot($sale);
 
         DB::transaction(function () use ($request, $sale) {
             // ── 1. Restore old stock ────────────────────────────────
@@ -366,6 +366,10 @@ class SaleController extends Controller
             if ($request->edit_note) $msg .= "\nকারণ: {$request->edit_note}";
             app(SmsService::class)->send($adminPhone, $msg);
         }
+
+        // Log the completed change (after the transaction, so the "after" side of
+        // the snapshot reflects the saved values, with the pre-edit state attached).
+        $this->logSale($sale, 'edited', $request->edit_note, $beforeSnapshot);
 
         return redirect()->route('sales.show', $sale)->with('success', 'বিক্রয় সফলভাবে সংশোধন করা হয়েছে।');
     }
@@ -469,7 +473,7 @@ class SaleController extends Controller
         $sale = Sale::findOrFail($pendingEdit->model_id);
         $d    = $pendingEdit->proposed_data;
 
-        $this->logSale($sale, 'edited', 'সংশোধন অনুরোধ অনুমোদিত (স্টাফ: ' . ($pendingEdit->requestedBy?->name ?? '?') . ')');
+        $beforeSnapshot = $this->buildSaleSnapshot($sale);
 
         DB::transaction(function () use ($sale, $d) {
             foreach ($sale->items as $oldItem) {
@@ -521,6 +525,8 @@ class SaleController extends Controller
                 Customer::find($d['customer_id'])?->increment('due_amount', $net - (float) $d['paid_amount']);
             }
         });
+
+        $this->logSale($sale, 'edited', 'সংশোধন অনুরোধ অনুমোদিত (স্টাফ: ' . ($pendingEdit->requestedBy?->name ?? '?') . ')', $beforeSnapshot);
 
         $pendingEdit->update(['status' => 'approved', 'decided_by' => auth()->id(), 'decided_at' => now()]);
         return back()->with('success', 'সংশোধন অনুমোদিত এবং প্রযোজ্য হয়েছে।');
@@ -650,34 +656,48 @@ class SaleController extends Controller
         return $changed ? implode(', ', $changed) : 'অজানা';
     }
 
-    // ── Helper: snapshot sale and log the action ─────────────
-    private function logSale(Sale $sale, string $action, ?string $note = null): void
+    // ── Helper: build a point-in-time snapshot of a sale ──────
+    private function buildSaleSnapshot(Sale $sale): array
     {
-        $sale->loadMissing(['items.item', 'customer']);
+        $sale->load(['items.item', 'customer']);
+        return [
+            'id'             => $sale->id,
+            'sale_date'      => $sale->sale_date?->toDateString(),
+            'customer_name'  => $sale->customer?->name,
+            'total_amount'   => $sale->total_amount,
+            'paid_amount'    => $sale->paid_amount,
+            'due_amount'     => $sale->due_amount,
+            'discount'       => $sale->discount,
+            'extra_cost'     => $sale->extra_cost,
+            'payment_method' => $sale->payment_method,
+            'status'         => $sale->status,
+            'notes'          => $sale->notes,
+            'items'          => $sale->items->map(fn($si) => [
+                'item_name' => $si->item?->name,
+                'quantity'  => $si->quantity,
+                'price'     => $si->price,
+                'subtotal'  => $si->subtotal,
+            ])->toArray(),
+        ];
+    }
+
+    // ── Helper: snapshot sale and log the action ─────────────
+    // $before, when given (edited/edit_requested actions), is the snapshot
+    // captured BEFORE the change was applied — stored alongside the current
+    // ("after") snapshot so the log detail view can show a before/after diff
+    // instead of just one point-in-time state.
+    private function logSale(Sale $sale, string $action, ?string $note = null, ?array $before = null): void
+    {
+        $snapshot = $this->buildSaleSnapshot($sale);
+        if ($before !== null) {
+            $snapshot['before'] = $before;
+        }
         SaleLog::create([
-            'sale_id' => $sale->id,
-            'action'  => $action,
-            'user_id' => auth()->id(),
-            'note'    => $note,
-            'snapshot' => [
-                'id'             => $sale->id,
-                'sale_date'      => $sale->sale_date?->toDateString(),
-                'customer_name'  => $sale->customer?->name,
-                'total_amount'   => $sale->total_amount,
-                'paid_amount'    => $sale->paid_amount,
-                'due_amount'     => $sale->due_amount,
-                'discount'       => $sale->discount,
-                'extra_cost'     => $sale->extra_cost,
-                'payment_method' => $sale->payment_method,
-                'status'         => $sale->status,
-                'notes'          => $sale->notes,
-                'items'          => $sale->items->map(fn($si) => [
-                    'item_name' => $si->item?->name,
-                    'quantity'  => $si->quantity,
-                    'price'     => $si->price,
-                    'subtotal'  => $si->subtotal,
-                ])->toArray(),
-            ],
+            'sale_id'  => $sale->id,
+            'action'   => $action,
+            'user_id'  => auth()->id(),
+            'note'     => $note,
+            'snapshot' => $snapshot,
         ]);
     }
 }

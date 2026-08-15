@@ -50,8 +50,8 @@
                     <option value="{{ $cat }}" @selected(request('category')===$cat)>{{ $cat }}</option>
                 @endforeach
             </select>
-            <input type="date" name="from" value="{{ $from }}" title="শুরুর তারিখ">
-            <input type="date" name="to"   value="{{ $to }}"   title="শেষ তারিখ">
+            <input type="date" name="from" class="form-select" value="{{ $from }}" title="শুরুর তারিখ" style="width:145px">
+            <input type="date" name="to"   class="form-select" value="{{ $to }}"   title="শেষ তারিখ"  style="width:145px">
             @include('partials.date-range-buttons')
             <button type="submit" class="btn btn-secondary">ফিল্টার</button>
             @if(request()->hasAny(['search','type','category','from','to']))
@@ -75,10 +75,8 @@
                     <tr>
                         <th>#</th>
                         <th>শিরোনাম</th>
-                        <th>ক্যাটাগরি</th>
                         <th style="text-align:right">পরিমাণ</th>
                         <th>তারিখ</th>
-                        <th>মন্তব্য</th>
                         <th>অ্যাকশন</th>
                     </tr>
                 </thead>
@@ -87,12 +85,10 @@
                     <tr style="background:#f0fdf4">
                         <td>{{ $deposits->firstItem() + $loop->index }}</td>
                         <td><strong>{{ $dep->title }}</strong></td>
-                        <td>{{ $dep->category ?? '—' }}</td>
                         <td style="text-align:right;font-variant-numeric:tabular-nums">
                             <span style="font-weight:700;color:#15803d">+৳ {{ number_format($dep->amount, 0) }}</span>
                         </td>
                         <td style="white-space:nowrap">{{ $dep->expense_date->format('d M Y') }}</td>
-                        <td style="font-size:.82rem;color:#64748b;max-width:160px;white-space:normal">{{ $dep->notes ?? '—' }}</td>
                         <td>
                             <div class="action-btns">
                                 <a href="{{ route('expenses.edit', $dep) }}" class="btn-icon-sm"><i class="fas fa-pen"></i></a>
@@ -104,9 +100,23 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="7" class="empty-row">কোনো জমা পাওয়া যায়নি</td></tr>
+                    <tr><td colspan="5" class="empty-row">কোনো জমা পাওয়া যায়নি</td></tr>
                     @endforelse
                 </tbody>
+                @if($deposits->count())
+                <tfoot>
+                    <tr class="tfoot-summary">
+                        <td colspan="2" style="font-weight:700">মোট</td>
+                        <td style="text-align:right;vertical-align:top;padding-top:10px">
+                            <span style="display:block;font-weight:800;color:#15803d;font-variant-numeric:tabular-nums">+৳ {{ number_format($totalDeposit, 0) }}</span>
+                            @if(\App\Support\BanglaWords::taka($totalDeposit) !== '')
+                            <small style="display:block;font-size:.72rem;color:#15803d;font-weight:600;margin-top:2px;white-space:normal">{{ \App\Support\BanglaWords::taka($totalDeposit) }} মাত্র</small>
+                            @endif
+                        </td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+                @endif
             </table>
         </div>
         <div class="pagination-wrap">{{ $deposits->links() }}</div>
@@ -125,10 +135,8 @@
                     <tr>
                         <th>#</th>
                         <th>শিরোনাম</th>
-                        <th>ক্যাটাগরি</th>
                         <th style="text-align:right">পরিমাণ</th>
                         <th>তারিখ</th>
-                        <th>মন্তব্য</th>
                         <th>অ্যাকশন</th>
                     </tr>
                 </thead>
@@ -137,12 +145,10 @@
                     <tr>
                         <td>{{ $expenses->firstItem() + $loop->index }}</td>
                         <td><strong>{{ $exp->title }}</strong></td>
-                        <td>{{ $exp->category ?? '—' }}</td>
                         <td style="text-align:right;font-variant-numeric:tabular-nums">
                             <span style="font-weight:700;color:#dc2626">-৳ {{ number_format($exp->amount, 0) }}</span>
                         </td>
                         <td style="white-space:nowrap">{{ $exp->expense_date->format('d M Y') }}</td>
-                        <td style="font-size:.82rem;color:#64748b;max-width:160px;white-space:normal">{{ $exp->notes ?? '—' }}</td>
                         <td>
                             <div class="action-btns">
                                 <a href="{{ route('expenses.edit', $exp) }}" class="btn-icon-sm"><i class="fas fa-pen"></i></a>
@@ -154,9 +160,23 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="7" class="empty-row">কোনো খরচ পাওয়া যায়নি</td></tr>
+                    <tr><td colspan="5" class="empty-row">কোনো খরচ পাওয়া যায়নি</td></tr>
                     @endforelse
                 </tbody>
+                @if($expenses->count())
+                <tfoot>
+                    <tr class="tfoot-summary">
+                        <td colspan="2" style="font-weight:700">মোট</td>
+                        <td style="text-align:right;vertical-align:top;padding-top:10px">
+                            <span style="display:block;font-weight:800;color:#dc2626;font-variant-numeric:tabular-nums">-৳ {{ number_format($totalExpense, 0) }}</span>
+                            @if(\App\Support\BanglaWords::taka($totalExpense) !== '')
+                            <small style="display:block;font-size:.72rem;color:#dc2626;font-weight:600;margin-top:2px;white-space:normal">{{ \App\Support\BanglaWords::taka($totalExpense) }} মাত্র</small>
+                            @endif
+                        </td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+                @endif
             </table>
         </div>
         <div class="pagination-wrap">{{ $expenses->links() }}</div>

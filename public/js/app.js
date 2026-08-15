@@ -406,6 +406,7 @@ function animateValue(el, duration = 900) {
         'KeyT':  () => go('a[href*="reports/sales"]',    '/reports/sales'),
         'KeyL':  () => go('a[href$="/purchases"]',            '/purchases'),
         'KeyM':  () => go('a[href$="/supplier-payments"]',    '/supplier-payments'),
+        'KeyE':  () => go('a[href$="/expenses"]',              '/expenses'),
         'Slash': () => toggleShortcutsHelp(),
     };
 
@@ -449,7 +450,35 @@ function animateValue(el, duration = 900) {
 
     window.toggleShortcutsHelp = function () {
         const el = document.getElementById('shortcutsOverlay');
-        if (el) el.classList.toggle('open');
+        if (!el) return;
+        el.classList.toggle('open');
+        const input = document.getElementById('shortcutsSearchInput');
+        if (el.classList.contains('open')) {
+            if (input) {
+                input.value = '';
+                window.filterShortcutsHelp('');
+                setTimeout(function () { input.focus(); }, 50);
+            }
+        }
+    };
+
+    // Live-filters the shortcuts modal rows as the user types. A group
+    // (and its title) hides entirely once none of its rows match.
+    window.filterShortcutsHelp = function (raw) {
+        const q = (raw || '').trim().toLowerCase();
+        let anyMatch = false;
+        document.querySelectorAll('#shortcutsOverlay .shortcut-group').forEach(function (group) {
+            let groupHasMatch = false;
+            group.querySelectorAll('.shortcut-row').forEach(function (row) {
+                const match = !q || row.textContent.toLowerCase().indexOf(q) !== -1;
+                row.classList.toggle('sc-hidden', !match);
+                if (match) groupHasMatch = true;
+            });
+            group.classList.toggle('sc-hidden', !groupHasMatch);
+            if (groupHasMatch) anyMatch = true;
+        });
+        const empty = document.getElementById('shortcutsEmpty');
+        if (empty) empty.style.display = (q && !anyMatch) ? '' : 'none';
     };
 
     document.addEventListener('turbo:load', function () {
@@ -460,6 +489,12 @@ function animateValue(el, duration = 900) {
                 if (e.target === overlay) overlay.classList.remove('open');
             });
         }
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        const overlay = document.getElementById('shortcutsOverlay');
+        if (overlay && overlay.classList.contains('open')) overlay.classList.remove('open');
     });
 })();
 

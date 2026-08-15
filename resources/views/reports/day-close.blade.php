@@ -37,6 +37,41 @@
     .content { padding: 0 !important; }
     .dc-tabpane { display: block !important; }
 }
+
+/* ── Cash-reconciliation money inputs ────────────────────────── */
+.dc-money-group label { display: block; font-size: .82rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+.dc-money-group .dc-money-hint { display: block; margin-top: 5px; font-size: .74rem; color: var(--text-secondary); }
+.dc-money-wrap { position: relative; }
+.dc-money-wrap .dc-money-prefix {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    font-weight: 800; font-size: 1.05rem; color: var(--text-secondary); pointer-events: none;
+}
+.dc-money-field {
+    width: 100%; box-sizing: border-box;
+    padding: 12px 14px 12px 34px;
+    font-size: 1.15rem; font-weight: 700; text-align: right;
+    font-family: inherit; color: var(--text-primary);
+    background: var(--surface);
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    outline: none; transition: border-color .15s, box-shadow .15s;
+    -moz-appearance: textfield;
+}
+.dc-money-field::-webkit-outer-spin-button,
+.dc-money-field::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.dc-money-field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+.dc-money-field.dc-money-required { border-color: #93c5fd; background: #eff6ff; }
+html[data-theme="dark"] .dc-money-field.dc-money-required { background: rgba(59,130,246,.08); }
+.dc-money-field.dc-money-required:focus { border-color: #1d4ed8; box-shadow: 0 0 0 3px rgba(29,78,216,.15); }
+.dc-note-field {
+    width: 100%; box-sizing: border-box;
+    padding: 10px 14px; font-size: .88rem; font-family: inherit; color: var(--text-primary);
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    outline: none; transition: border-color .15s, box-shadow .15s;
+}
+.dc-note-field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+@media (max-width: 480px) {
+    #dcReconcileForm > div:first-child { grid-template-columns: 1fr !important; }
+}
 </style>
 
 <div class="no-print" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
@@ -60,11 +95,11 @@
 </div>
 
 <div class="dc-tabs no-print">
-    <button type="button" class="dc-tab active" data-dctab="summary" onclick="dcSwitchTab('summary')">সারাংশ</button>
-    <button type="button" class="dc-tab" data-dctab="cash" onclick="dcSwitchTab('cash')">ক্যাশ মেলানো</button>
+    <button type="button" class="dc-tab active" data-dctab="cash" onclick="dcSwitchTab('cash')">ক্যাশ মেলানো</button>
+    <button type="button" class="dc-tab" data-dctab="summary" onclick="dcSwitchTab('summary')">সারাংশ</button>
 </div>
 
-<div class="dc-tabpane active" id="dcTabSummary">
+<div class="dc-tabpane" id="dcTabSummary">
 
 {{-- Top stats --}}
 <div class="stats-grid" style="margin-bottom:20px;grid-template-columns:repeat(4,1fr)">
@@ -175,7 +210,7 @@
 
 </div>{{-- /dcTabSummary --}}
 
-<div class="dc-tabpane" id="dcTabCash">
+<div class="dc-tabpane active" id="dcTabCash">
 
 {{-- ── Cash ledger: বাম = ইন, ডান = আউট ─────────────────────── --}}
 <div class="card" style="padding:0;overflow:hidden;margin-bottom:20px">
@@ -197,9 +232,14 @@
                 <span class="dc-ledger-label">ক্যাশে জমা (খরচ ও জমা)</span>
                 <span class="dc-ledger-amt">৳ {{ number_format($deposits, 0) }}</span>
             </div>
-            <div class="dc-ledger-row dc-ledger-total">
-                <span class="dc-ledger-label" style="color:var(--text-primary)">মোট ইন</span>
-                <span class="dc-ledger-amt" style="color:#16a34a">৳ {{ number_format($cashIn, 0) }}</span>
+            <div class="dc-ledger-row dc-ledger-total" style="align-items:flex-start">
+                <span class="dc-ledger-label" style="color:var(--text-primary);padding-top:2px">মোট ইন</span>
+                <span style="text-align:right">
+                    <span class="dc-ledger-amt" style="display:block;color:#16a34a">৳ {{ number_format($cashIn, 0) }}</span>
+                    @if(\App\Support\BanglaWords::taka($cashIn) !== '')
+                    <small style="display:block;font-size:.72rem;color:#15803d;font-weight:600;margin-top:2px;white-space:normal">{{ \App\Support\BanglaWords::taka($cashIn) }} মাত্র</small>
+                    @endif
+                </span>
             </div>
         </div>
         <div class="dc-ledger-divider"></div>
@@ -217,9 +257,14 @@
                 <span class="dc-ledger-label">খরচ</span>
                 <span class="dc-ledger-amt">৳ {{ number_format($expenses, 0) }}</span>
             </div>
-            <div class="dc-ledger-row dc-ledger-total">
-                <span class="dc-ledger-label" style="color:var(--text-primary)">মোট আউট</span>
-                <span class="dc-ledger-amt" style="color:#dc2626">৳ {{ number_format($cashOut, 0) }}</span>
+            <div class="dc-ledger-row dc-ledger-total" style="align-items:flex-start">
+                <span class="dc-ledger-label" style="color:var(--text-primary);padding-top:2px">মোট আউট</span>
+                <span style="text-align:right">
+                    <span class="dc-ledger-amt" style="display:block;color:#dc2626">৳ {{ number_format($cashOut, 0) }}</span>
+                    @if(\App\Support\BanglaWords::taka($cashOut) !== '')
+                    <small style="display:block;font-size:.72rem;color:#dc2626;font-weight:600;margin-top:2px;white-space:normal">{{ \App\Support\BanglaWords::taka($cashOut) }} মাত্র</small>
+                    @endif
+                </span>
             </div>
         </div>
     </div>
@@ -240,29 +285,69 @@
 
         @if($reconciliation)
         @php $dcDisc = (float) $reconciliation->discrepancy; @endphp
-        <div class="dc-row">
-            <span class="dc-label">দিনের শুরুতে ক্যাশ</span>
-            <span class="dc-val">৳ {{ number_format($reconciliation->opening_cash, 0) }}</span>
+        @if($reconciliationStale)
+        <div class="dc-row" style="background:#fffbeb;border-bottom:1px solid #fde68a">
+            <span style="font-size:.82rem;color:#92400e;font-weight:600">
+                <i class="fas fa-triangle-exclamation"></i>
+                এই দিনের ক্যাশ মেলানো সেভ করার পর বিক্রয়/ক্রয়/খরচের তথ্য পরিবর্তিত হয়েছে —
+                নিচের গরমিল পুরনো (সেভের সময়ের) হিসাবে দেখানো হচ্ছে। বর্তমান ক্যাশ নীট এখন
+                ৳ {{ number_format($cashNet, 0) }}। সঠিক গরমিল পেতে "আবার মেলান" চাপুন।
+            </span>
         </div>
-        <div class="dc-row">
-            <span class="dc-label">+ আজ ক্যাশ নীট (সেভের সময়)</span>
-            <span class="dc-val">৳ {{ number_format($reconciliation->system_net, 0) }}</span>
+        @endif
+        @php
+            // Helper: words for a taka figure that may be negative or zero —
+            // BanglaWords::taka() only handles positives, so wrap it here.
+            $dcWords = function ($v) {
+                $v = (float) $v;
+                if ($v == 0) return 'শূন্য টাকা মাত্র';
+                $w = \App\Support\BanglaWords::taka(abs($v));
+                return $w === '' ? 'শূন্য টাকা মাত্র' : ($v < 0 ? '(−) ' . $w . ' মাত্র' : $w . ' মাত্র');
+            };
+            $dcExpected = $reconciliation->opening_cash + $reconciliation->system_net;
+        @endphp
+        <div class="dc-row" style="align-items:flex-start">
+            <span class="dc-label" style="padding-top:2px">দিনের শুরুতে ক্যাশ</span>
+            <span style="text-align:right">
+                <span class="dc-val" style="display:block">৳ {{ number_format($reconciliation->opening_cash, 0) }}</span>
+                <small style="display:block;font-size:.72rem;color:#64748b;font-weight:600;margin-top:2px;white-space:normal">{{ $dcWords($reconciliation->opening_cash) }}</small>
+            </span>
         </div>
-        <div class="dc-row">
-            <span class="dc-label">= প্রত্যাশিত ক্যাশ</span>
-            <span class="dc-val">৳ {{ number_format($reconciliation->opening_cash + $reconciliation->system_net, 0) }}</span>
+        <div class="dc-row" style="align-items:flex-start">
+            <span class="dc-label" style="padding-top:2px">+ আজ ক্যাশ নীট (সেভের সময়)</span>
+            <span style="text-align:right">
+                <span class="dc-val" style="display:block">৳ {{ number_format($reconciliation->system_net, 0) }}</span>
+                <small style="display:block;font-size:.72rem;color:#64748b;font-weight:600;margin-top:2px;white-space:normal">{{ $dcWords($reconciliation->system_net) }}</small>
+            </span>
         </div>
-        <div class="dc-row">
-            <span class="dc-label">হাতে গোনা ক্যাশ</span>
-            <span class="dc-val" style="color:#1d4ed8">৳ {{ number_format($reconciliation->counted_cash, 0) }}</span>
+        <div class="dc-row" style="align-items:flex-start">
+            <span class="dc-label" style="padding-top:2px">= প্রত্যাশিত ক্যাশ</span>
+            <span style="text-align:right">
+                <span class="dc-val" style="display:block">৳ {{ number_format($dcExpected, 0) }}</span>
+                <small style="display:block;font-size:.72rem;color:#64748b;font-weight:600;margin-top:2px;white-space:normal">{{ $dcWords($dcExpected) }}</small>
+            </span>
         </div>
-        <div class="dc-row dc-net">
-            <span class="dc-label" style="color:var(--text-primary);font-size:.95rem">গরমিল</span>
-            <span class="dc-val" style="font-size:1.15rem;color:{{ $dcDisc == 0 ? '#16a34a' : '#dc2626' }}">
-                @if($dcDisc == 0)
-                    ✓ মিলেছে
-                @else
-                    {{ $dcDisc < 0 ? '−' : '+' }} ৳ {{ number_format(abs($dcDisc), 0) }} {{ $dcDisc < 0 ? '(কম)' : '(বেশি)' }}
+        <div class="dc-row" style="align-items:flex-start">
+            <span class="dc-label" style="padding-top:2px">হাতে গোনা ক্যাশ</span>
+            <span style="text-align:right">
+                <span class="dc-val" style="display:block;color:#1d4ed8">৳ {{ number_format($reconciliation->counted_cash, 0) }}</span>
+                <small style="display:block;font-size:.72rem;color:#1d4ed8;font-weight:600;margin-top:2px;white-space:normal">{{ $dcWords($reconciliation->counted_cash) }}</small>
+            </span>
+        </div>
+        <div class="dc-row dc-net" style="align-items:flex-start">
+            <span class="dc-label" style="color:var(--text-primary);font-size:.95rem;padding-top:2px">গরমিল</span>
+            <span style="text-align:right">
+                <span class="dc-val" style="display:block;font-size:1.15rem;color:{{ $dcDisc == 0 ? '#16a34a' : '#dc2626' }}">
+                    @if($dcDisc == 0)
+                        ✓ মিলেছে
+                    @else
+                        {{ $dcDisc < 0 ? '−' : '+' }} ৳ {{ number_format(abs($dcDisc), 0) }} {{ $dcDisc < 0 ? '(কম)' : '(বেশি)' }}
+                    @endif
+                </span>
+                @if($dcDisc != 0 && \App\Support\BanglaWords::taka(abs($dcDisc)) !== '')
+                <small style="display:block;font-size:.72rem;color:#64748b;font-weight:600;margin-top:2px;white-space:normal">
+                    {{ \App\Support\BanglaWords::taka(abs($dcDisc)) }} মাত্র {{ $dcDisc < 0 ? '(কম)' : '(বেশি)' }}
+                </small>
                 @endif
             </span>
         </div>
@@ -281,25 +366,33 @@
               class="no-print" style="padding:14px 16px;display:{{ $reconciliation ? 'none' : 'block' }}">
             @csrf
             <input type="hidden" name="date" value="{{ $date }}">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-                <div class="form-group">
-                    <label style="font-size:.8rem;font-weight:600">দিনের শুরুতে ক্যাশ (৳)</label>
-                    <input type="number" step="any" min="0" name="opening_cash" class="form-input"
-                           value="{{ $reconciliation ? $reconciliation->opening_cash + 0 : ($suggestedOpening !== null ? $suggestedOpening + 0 : '') }}"
-                           placeholder="0">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div class="dc-money-group">
+                    <label for="dcOpeningCash">দিনের শুরুতে ক্যাশ</label>
+                    <div class="dc-money-wrap">
+                        <span class="dc-money-prefix">৳</span>
+                        <input type="number" step="any" min="0" name="opening_cash" id="dcOpeningCash" class="dc-money-field"
+                               value="{{ $reconciliation ? $reconciliation->opening_cash + 0 : ($suggestedOpening !== null ? $suggestedOpening + 0 : '') }}"
+                               placeholder="0">
+                    </div>
                     @if(!$reconciliation && $suggestedOpening !== null)
-                    <small style="color:#64748b;font-size:.72rem">আগের দিনের গোনা ক্যাশ থেকে ধরা হয়েছে</small>
+                    <small class="dc-money-hint">আগের দিনের গোনা ক্যাশ থেকে ধরা হয়েছে</small>
                     @endif
                 </div>
-                <div class="form-group">
-                    <label style="font-size:.8rem;font-weight:600">হাতে গোনা ক্যাশ (৳) *</label>
-                    <input type="number" step="any" min="0" name="counted_cash" class="form-input" required
-                           value="{{ $reconciliation ? $reconciliation->counted_cash + 0 : '' }}" placeholder="ক্যাশবাক্স গুনে লিখুন">
+                <div class="dc-money-group">
+                    <label for="dcCountedCash" style="color:#1d4ed8">হাতে গোনা ক্যাশ <span style="color:#dc2626">*</span></label>
+                    <div class="dc-money-wrap">
+                        <span class="dc-money-prefix" style="color:#1d4ed8">৳</span>
+                        <input type="number" step="any" min="0" name="counted_cash" id="dcCountedCash" class="dc-money-field dc-money-required" required
+                               value="{{ $reconciliation ? $reconciliation->counted_cash + 0 : '' }}" placeholder="ক্যাশবাক্স গুনে লিখুন">
+                    </div>
+                    <small class="dc-money-hint">ক্যাশবাক্স হাতে গুনে এখানে লিখুন</small>
                 </div>
             </div>
-            <div class="form-group" style="margin-top:8px">
-                <input type="text" name="note" class="form-input" maxlength="255"
-                       value="{{ $reconciliation->note ?? '' }}" placeholder="মন্তব্য (ঐচ্ছিক)">
+            <div class="dc-money-group" style="margin-top:14px">
+                <label for="dcNote">মন্তব্য <span style="font-weight:400;color:var(--text-secondary)">(ঐচ্ছিক)</span></label>
+                <input type="text" name="note" id="dcNote" class="dc-note-field" maxlength="255"
+                       value="{{ $reconciliation->note ?? '' }}" placeholder="যেমন: ৫০০ টাকা ভাংতি রাখা হয়েছে">
             </div>
             <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:10px">
                 <small style="color:#64748b;font-size:.74rem">প্রত্যাশিত = শুরুর ক্যাশ + আজ ক্যাশ নীট (৳ {{ number_format($cashNet, 0) }})</small>

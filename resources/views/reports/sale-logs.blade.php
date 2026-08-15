@@ -121,7 +121,7 @@
 
 {{-- Detail Modal --}}
 <div id="logModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:14px;padding:24px;max-width:560px;width:94%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div style="background:#fff;border-radius:14px;padding:24px;max-width:660px;width:94%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 style="font-size:1rem;font-weight:700;color:#0f172a" id="modalTitle">বিস্তারিত</h3>
             <button onclick="closeModal()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#64748b">✕</button>
@@ -147,32 +147,94 @@ foreach ($logs as $l) {
 <script>
 var logData = {!! json_encode($logJson) !!};
 
+function itemsTable(items) {
+    if (!items || !items.length) return '<div style="color:#94a3b8;font-size:.82rem">পণ্য নেই</div>';
+    let rows = '';
+    items.forEach(i => {
+        rows += `<tr><td style="padding:5px 8px;border:1px solid #e2e8f0">${i.item_name||'?'}</td><td style="padding:5px 8px;border:1px solid #e2e8f0;text-align:center">${i.quantity}</td><td style="padding:5px 8px;border:1px solid #e2e8f0;text-align:right">৳ ${Number(i.price).toLocaleString()}</td><td style="padding:5px 8px;border:1px solid #e2e8f0;text-align:right">৳ ${Number(i.subtotal).toLocaleString()}</td></tr>`;
+    });
+    return `<table style="width:100%;border-collapse:collapse;font-size:.8rem"><thead><tr style="background:#f1f5f9"><th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left">পণ্য</th><th style="padding:5px 8px;border:1px solid #e2e8f0">পরিমাণ</th><th style="padding:5px 8px;border:1px solid #e2e8f0">দর</th><th style="padding:5px 8px;border:1px solid #e2e8f0">মোট</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
 function showDetail(id) {
     const d = logData[id]; if (!d) return;
     const s = d.snapshot;
+    const before = s.before || null; // present only for edits — the pre-edit state
     const actionBadge = d.action === 'deleted'
         ? '<span style="background:#fee2e2;color:#dc2626;padding:2px 10px;border-radius:20px;font-size:.8rem;font-weight:700">🗑 মুছে ফেলা</span>'
         : '<span style="background:#fef9c3;color:#92400e;padding:2px 10px;border-radius:20px;font-size:.8rem;font-weight:700">✎ সংশোধিত</span>';
 
-    let items = '';
-    (s.items||[]).forEach(i => {
-        items += `<tr><td style="padding:5px 8px;border:1px solid #e2e8f0">${i.item_name||'?'}</td><td style="padding:5px 8px;border:1px solid #e2e8f0;text-align:center">${i.quantity}</td><td style="padding:5px 8px;border:1px solid #e2e8f0;text-align:right">৳ ${Number(i.price).toLocaleString()}</td><td style="padding:5px 8px;border:1px solid #e2e8f0;text-align:right">৳ ${Number(i.subtotal).toLocaleString()}</td></tr>`;
-    });
-
     document.getElementById('modalTitle').innerHTML = `চালান #${String(s.id||'').padStart(6,'0')} ${actionBadge}`;
-    document.getElementById('modalBody').innerHTML = `
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.85rem;margin-bottom:14px">
-            <div><strong>তারিখ:</strong> ${s.sale_date||'—'}</div>
-            <div><strong>কাস্টমার:</strong> ${s.customer_name||'ওয়াক-ইন'}</div>
-            <div><strong>মোট:</strong> ৳ ${Number(s.total_amount||0).toLocaleString()}</div>
-            <div><strong>পরিশোধ:</strong> ৳ ${Number(s.paid_amount||0).toLocaleString()}</div>
-            <div><strong>বাকী:</strong> ৳ ${Number(s.due_amount||0).toLocaleString()}</div>
-            <div><strong>পদ্ধতি:</strong> ${s.payment_method||'—'}</div>
-        </div>
-        ${items ? `<table style="width:100%;border-collapse:collapse;font-size:.82rem;margin-bottom:12px"><thead><tr style="background:#f1f5f9"><th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left">পণ্য</th><th style="padding:5px 8px;border:1px solid #e2e8f0">পরিমাণ</th><th style="padding:5px 8px;border:1px solid #e2e8f0">দর</th><th style="padding:5px 8px;border:1px solid #e2e8f0">মোট</th></tr></thead><tbody>${items}</tbody></table>` : ''}
-        ${d.note ? `<div style="padding:8px 12px;background:#fef9c3;border:1px dashed #fde68a;border-radius:6px;font-size:.82rem;color:#92400e"><strong>কারণ:</strong> ${d.note}</div>` : ''}
-        <div style="margin-top:10px;font-size:.76rem;color:#94a3b8">লগ সময়: ${d.created_at} &nbsp;|&nbsp; ইউজার: ${d.user||'—'}</div>
-    `;
+
+    let body = '';
+
+    if (before) {
+        // ── Edit with a captured before-state → show a field-by-field diff ──
+        const fields = [
+            ['sale_date',      'তারিখ',    v => v || '—'],
+            ['customer_name',  'কাস্টমার', v => v || 'ওয়াক-ইন'],
+            ['total_amount',   'মোট',      v => '৳ ' + Number(v||0).toLocaleString()],
+            ['discount',       'ছাড়',      v => '৳ ' + Number(v||0).toLocaleString()],
+            ['extra_cost',     'অতিরিক্ত খরচ', v => '৳ ' + Number(v||0).toLocaleString()],
+            ['paid_amount',    'পরিশোধ',   v => '৳ ' + Number(v||0).toLocaleString()],
+            ['due_amount',     'বাকী',     v => '৳ ' + Number(v||0).toLocaleString()],
+            ['payment_method', 'পদ্ধতি',   v => v || '—'],
+            ['notes',          'নোট',      v => v || '—'],
+        ];
+        let rows = '';
+        fields.forEach(([key, label, fmt]) => {
+            const oldV = before[key], newV = s[key];
+            const changed = JSON.stringify(oldV) !== JSON.stringify(newV);
+            if (!changed) return;
+            rows += `<tr>
+                <td style="padding:6px 8px;border:1px solid #e2e8f0;font-weight:600;color:#334155">${label}</td>
+                <td style="padding:6px 8px;border:1px solid #e2e8f0;color:#b91c1c;text-decoration:line-through;background:#fef2f2">${fmt(oldV)}</td>
+                <td style="padding:6px 8px;border:1px solid #e2e8f0;color:#15803d;font-weight:600;background:#f0fdf4">${fmt(newV)}</td>
+            </tr>`;
+        });
+
+        const oldItemsKey = JSON.stringify((before.items||[]).map(i => [i.item_name, i.quantity, i.price]));
+        const newItemsKey = JSON.stringify((s.items||[]).map(i => [i.item_name, i.quantity, i.price]));
+        const itemsChanged = oldItemsKey !== newItemsKey;
+
+        body += `<div style="font-size:.8rem;color:#64748b;margin-bottom:8px">সংশোধনের আগে যা ছিল, তার সাথে সংশোধনের পর যা হয়েছে তার তুলনা — নিচে শুধু পরিবর্তিত ক্ষেত্রগুলো দেখানো হয়েছে।</div>`;
+        if (rows) {
+            body += `<table style="width:100%;border-collapse:collapse;font-size:.82rem;margin-bottom:14px">
+                <thead><tr style="background:#f1f5f9"><th style="padding:6px 8px;border:1px solid #e2e8f0;text-align:left">ক্ষেত্র</th><th style="padding:6px 8px;border:1px solid #e2e8f0;text-align:left">আগে</th><th style="padding:6px 8px;border:1px solid #e2e8f0;text-align:left">পরে</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+        } else if (!itemsChanged) {
+            body += `<div style="padding:8px 12px;background:#f1f5f9;border-radius:6px;font-size:.82rem;color:#64748b;margin-bottom:14px">কোনো মান পরিবর্তন হয়নি।</div>`;
+        }
+
+        if (itemsChanged) {
+            body += `<div style="font-weight:700;font-size:.82rem;color:#334155;margin-bottom:4px">পণ্য — আগে</div>
+                <div style="margin-bottom:10px">${itemsTable(before.items)}</div>
+                <div style="font-weight:700;font-size:.82rem;color:#334155;margin-bottom:4px">পণ্য — পরে</div>
+                <div style="margin-bottom:14px">${itemsTable(s.items)}</div>`;
+        } else if (s.items && s.items.length) {
+            body += `<div style="font-weight:700;font-size:.82rem;color:#334155;margin-bottom:4px">পণ্য (অপরিবর্তিত)</div>
+                <div style="margin-bottom:14px">${itemsTable(s.items)}</div>`;
+        }
+    } else {
+        // ── No before-state (deletion, or an older log row) → single snapshot ──
+        body += `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.85rem;margin-bottom:14px">
+                <div><strong>তারিখ:</strong> ${s.sale_date||'—'}</div>
+                <div><strong>কাস্টমার:</strong> ${s.customer_name||'ওয়াক-ইন'}</div>
+                <div><strong>মোট:</strong> ৳ ${Number(s.total_amount||0).toLocaleString()}</div>
+                <div><strong>পরিশোধ:</strong> ৳ ${Number(s.paid_amount||0).toLocaleString()}</div>
+                <div><strong>বাকী:</strong> ৳ ${Number(s.due_amount||0).toLocaleString()}</div>
+                <div><strong>পদ্ধতি:</strong> ${s.payment_method||'—'}</div>
+            </div>
+            <div style="margin-bottom:12px">${itemsTable(s.items)}</div>
+        `;
+    }
+
+    body += `${d.note ? `<div style="padding:8px 12px;background:#fef9c3;border:1px dashed #fde68a;border-radius:6px;font-size:.82rem;color:#92400e"><strong>কারণ:</strong> ${d.note}</div>` : ''}
+        <div style="margin-top:10px;font-size:.76rem;color:#94a3b8">লগ সময়: ${d.created_at} &nbsp;|&nbsp; ইউজার: ${d.user||'—'}</div>`;
+
+    document.getElementById('modalBody').innerHTML = body;
     document.getElementById('logModal').style.display = 'flex';
 }
 function closeModal() { document.getElementById('logModal').style.display = 'none'; }
