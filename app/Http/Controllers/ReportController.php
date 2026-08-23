@@ -163,7 +163,7 @@ class ReportController extends Controller
             ->selectRaw('SUM(amount) as total')->value('total') ?? 0;
 
         // Real profit = negotiated revenue - cost of goods sold - expenses
-        // COGS = sum(sale_items.price * qty) used as revenue; cost = sum(items.purchase_price * qty)
+        // COGS = sum(sale_items.price * qty) used as revenue; cost = sum(sale_items.cost_price * qty) — the price frozen at sale time
         $cogsSummary = DB::table('sale_items')
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
@@ -171,7 +171,7 @@ class ReportController extends Controller
             ->where('sales.shop_id', auth()->user()->shop_id)
             ->selectRaw('
                 SUM(sale_items.subtotal) as revenue,
-                SUM(items.purchase_price * sale_items.quantity) as cost
+                SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as cost
             ')
             ->first();
 
@@ -197,13 +197,13 @@ class ReportController extends Controller
             ->where('sales.shop_id', auth()->user()->shop_id)
             ->selectRaw('
                 items.name,
-                items.purchase_price,
+                COALESCE(sale_items.cost_price, items.purchase_price) as purchase_price,
                 SUM(sale_items.quantity) as qty,
                 SUM(sale_items.subtotal) as revenue,
-                SUM(items.purchase_price * sale_items.quantity) as cost,
-                SUM(sale_items.subtotal) - SUM(items.purchase_price * sale_items.quantity) as profit
+                SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as cost,
+                SUM(sale_items.subtotal) - SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as profit
             ')
-            ->groupBy('items.id', 'items.name', 'items.purchase_price')
+            ->groupBy('items.id', 'items.name', DB::raw('COALESCE(sale_items.cost_price, items.purchase_price)'))
             ->orderByDesc('profit')
             ->limit(10)
             ->get();
@@ -491,13 +491,13 @@ class ReportController extends Controller
             ->selectRaw('
                 items.id,
                 items.name,
-                items.purchase_price,
+                COALESCE(sale_items.cost_price, items.purchase_price) as purchase_price,
                 SUM(sale_items.quantity) as sold_qty,
                 SUM(sale_items.subtotal) as revenue,
-                SUM(items.purchase_price * sale_items.quantity) as cost,
+                SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as cost,
                 MAX(stock.quantity) as current_stock
             ')
-            ->groupBy('items.id', 'items.name', 'items.purchase_price')
+            ->groupBy('items.id', 'items.name', DB::raw('COALESCE(sale_items.cost_price, items.purchase_price)'))
             ->orderByDesc('sold_qty')
             ->get();
 
@@ -717,7 +717,7 @@ class ReportController extends Controller
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->whereBetween('sales.sale_date', [$from, $to])
             ->where('sales.shop_id', auth()->user()->shop_id)
-            ->sum(DB::raw('items.purchase_price * sale_items.quantity'));
+            ->sum(DB::raw('COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity'));
 
         $grossProfit  = $netRevenue - $cogs;
         $grossMargin  = $netRevenue > 0 ? round($grossProfit / $netRevenue * 100, 2) : 0;
@@ -752,7 +752,7 @@ class ReportController extends Controller
             ->whereBetween('sales.sale_date', [$from, $to])
             ->where('sales.shop_id', auth()->user()->shop_id)
             ->selectRaw("DATE_FORMAT(sales.sale_date,'%Y-%m') as month,
-                SUM(items.purchase_price * sale_items.quantity) as cost")
+                SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as cost")
             ->groupBy('month')
             ->pluck('cost', 'month');
 
@@ -779,8 +779,8 @@ class ReportController extends Controller
                 items.name,
                 SUM(sale_items.quantity) as qty,
                 SUM(sale_items.subtotal) as revenue,
-                SUM(items.purchase_price * sale_items.quantity) as cost,
-                SUM(sale_items.subtotal) - SUM(items.purchase_price * sale_items.quantity) as profit
+                SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as cost,
+                SUM(sale_items.subtotal) - SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as profit
             ')
             ->groupBy('items.id', 'items.name')
             ->orderByDesc('profit')
@@ -798,8 +798,8 @@ class ReportController extends Controller
                 COALESCE(users.name, "অজানা") as user_name,
                 COUNT(DISTINCT sales.id) as sale_count,
                 SUM(sale_items.subtotal) as revenue,
-                SUM(items.purchase_price * sale_items.quantity) as cost,
-                SUM(sale_items.subtotal) - SUM(items.purchase_price * sale_items.quantity) as profit
+                SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as cost,
+                SUM(sale_items.subtotal) - SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as profit
             ')
             ->groupBy('users.id', 'users.name')
             ->orderByDesc('profit')
@@ -824,8 +824,8 @@ class ReportController extends Controller
                 sale_items.quantity as qty,
                 sale_items.price as unit_price,
                 sale_items.subtotal as revenue,
-                items.purchase_price,
-                (sale_items.price - items.purchase_price) * sale_items.quantity as profit
+                COALESCE(sale_items.cost_price, items.purchase_price) as purchase_price,
+                (sale_items.price - COALESCE(sale_items.cost_price, items.purchase_price)) * sale_items.quantity as profit
             ')
             ->orderBy('sales.sale_date')
             ->orderBy('sales.id')
@@ -856,7 +856,7 @@ class ReportController extends Controller
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->whereBetween('sales.sale_date', [$from, $to])
             ->where('sales.shop_id', auth()->user()->shop_id)
-            ->sum(DB::raw('items.purchase_price * sale_items.quantity'));
+            ->sum(DB::raw('COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity'));
         $grossProfit   = $grossSales - $cogs;
         $totalExpenses = ExtraExpense::whereBetween('expense_date', [$from, $to])->sum('amount');
         $netProfit     = $grossProfit - $totalExpenses;
@@ -869,8 +869,8 @@ class ReportController extends Controller
             ->selectRaw('items.name,
                 SUM(sale_items.quantity) as qty,
                 SUM(sale_items.subtotal) as revenue,
-                SUM(items.purchase_price * sale_items.quantity) as cost,
-                SUM(sale_items.subtotal) - SUM(items.purchase_price * sale_items.quantity) as profit')
+                SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as cost,
+                SUM(sale_items.subtotal) - SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as profit')
             ->groupBy('items.id', 'items.name')
             ->orderByDesc('profit')->get();
 
@@ -993,12 +993,12 @@ class ReportController extends Controller
             ->leftJoin('stock', 'items.id', '=', 'stock.item_id')
             ->whereBetween('sales.sale_date', [$from, $to])
             ->where('sales.shop_id', auth()->user()->shop_id)
-            ->selectRaw('items.name, items.purchase_price,
+            ->selectRaw('items.name, COALESCE(sale_items.cost_price, items.purchase_price) as purchase_price,
                 SUM(sale_items.quantity) as sold_qty,
                 SUM(sale_items.subtotal) as revenue,
-                SUM(items.purchase_price * sale_items.quantity) as cost,
+                SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as cost,
                 MAX(stock.quantity) as current_stock')
-            ->groupBy('items.id', 'items.name', 'items.purchase_price')
+            ->groupBy('items.id', 'items.name', DB::raw('COALESCE(sale_items.cost_price, items.purchase_price)'))
             ->orderByDesc('sold_qty')
             ->get();
 

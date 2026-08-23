@@ -10,7 +10,7 @@ class SaleItem extends Model
     use HasShopScope;
 
     public $timestamps = false;
-    protected $fillable = ['sale_id', 'item_id', 'quantity', 'price', 'subtotal'];
+    protected $fillable = ['sale_id', 'item_id', 'quantity', 'price', 'cost_price', 'subtotal'];
 
     public function sale()
     {

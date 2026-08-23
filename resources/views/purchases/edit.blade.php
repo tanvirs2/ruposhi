@@ -213,6 +213,7 @@ $existingItems = $purchase->items->map(fn($pi) => [
     'currentStock' => floatval(($pi->item->stock?->quantity ?? 0)) + floatval($pi->quantity), // add back sold qty
     'lastPrice'    => floatval($pi->price),
     'priceEntered' => true,
+    'syncPrice'    => false,
 ]);
 @endphp
 var existingCartData = @json($existingItems);
@@ -324,7 +325,7 @@ itemSearch.addEventListener('input', function() {
 function addItem(id) {
     const item = allItems.find(i=>i.id===id); if(!item) return;
     if (cart.find(c=>c.id===id)) { cart.find(c=>c.id===id).qty++; }
-    else { cart.push({id:item.id,name:item.name,price:0,priceEntered:false,lastPrice:parseFloat(item.purchase_price)||0,qty:1,currentStock:item.stock?parseFloat(item.stock.quantity):0}); }
+    else { cart.push({id:item.id,name:item.name,price:0,priceEntered:false,lastPrice:parseFloat(item.purchase_price)||0,syncPrice:false,qty:1,currentStock:item.stock?parseFloat(item.stock.quantity):0}); }
     suggestions.innerHTML=''; itemSearch.value=''; renderCart();
 }
 
@@ -364,6 +365,7 @@ function replaceItem(idx, newId) {
         id: newItem.id, name: newItem.name,
         price: 0, priceEntered: false,
         lastPrice: parseFloat(newItem.purchase_price) || 0,
+        syncPrice: false,
         qty: old.qty,   // keep same received quantity
         currentStock: newItem.stock ? parseFloat(newItem.stock.quantity) : 0,
     };
@@ -380,6 +382,11 @@ function renderStockPanel() {
     stockPanel.style.display = 'block';
 }
 function updatePrice(id,val) { const item=cart.find(c=>c.id===id); if(item){item.price=parseFloat(toEnglishDigits(val))||0;item.priceEntered=val.trim()!=='';} updateRowTotal(id); updateSummary(); }
+function toggleSyncPrice(id, on) {
+    const item = cart.find(c => c.id === id);
+    if (item) item.syncPrice = on;
+}
+
 function useLastPrice(id) {
     const item=cart.find(c=>c.id===id); if(!item) return;
     item.price=item.lastPrice; item.priceEntered=true;
@@ -422,7 +429,7 @@ function renderCart() {
             </td>
             <td class="current-stock-cell">${c.currentStock} বস্তা</td>
             <td><input type="text" inputmode="decimal" name="items[${idx}][qty]" value="${c.qty}" style="width:75px" oninput="updateQty(${c.id},this.value)" class="inline-input"></td>
-            <td><input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.priceEntered?c.price:''}" style="width:100px" oninput="updatePrice(${c.id},this.value)" class="inline-input">${hint}</td>
+            <td><input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.priceEntered?c.price:''}" style="width:100px" oninput="updatePrice(${c.id},this.value)" class="inline-input">${hint}<label class="price-sync-toggle"><input type="checkbox" name="items[${idx}][update_price]" value="1" ${c.syncPrice?'checked':''} onchange="toggleSyncPrice(${c.id}, this.checked)"><span>আইটেমের ক্রয়মূল্য আপডেট করুন</span></label></td>
             <td id="row-newstock-${c.id}" class="new-stock-cell">${ns} বস্তা</td>
             <td id="row-total-${c.id}">৳ ${(c.qty*c.price).toLocaleString()}</td>
             <td><button type="button" onclick="removeItem(${c.id})" class="btn-icon-sm btn-icon-danger"><i class="fas fa-trash"></i></button></td>

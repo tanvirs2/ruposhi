@@ -72,8 +72,8 @@
 <div class="ledger-customer-card" style="display:none">
     <table class="ledger-info-table">
         <tr>
-            <td><strong>কাস্টমার নামঃ</strong> {{ $customer->name }}</td>
-            <td><strong>প্রতিষ্ঠানের নামঃ</strong> {{ $customer->proprietor ?? '—' }}</td>
+            <td><strong>কাস্টমার নামঃ</strong> <strong>{{ $customer->name }}</strong></td>
+            <td><strong>প্রতিষ্ঠানের নামঃ</strong> <strong>{{ $customer->proprietor ?? '—' }}</strong></td>
         </tr>
         <tr>
             <td><strong>ফোনঃ</strong> {{ $customer->phone ?? '—' }}</td>
@@ -601,17 +601,12 @@ function clSetView(mode) {
     .main-wrapper { margin-left: 0 !important; }
     .content { padding: 0 !important; }
     .ledger-print-header  { display: block !important; text-align: center; margin-bottom: 2px; }
-    .ledger-print-header > div:first-child { font-size: .95rem !important; }
+    .ledger-print-header > div:first-child { font-size: 1.3rem !important; }
     .ledger-print-header > div { margin-top: 0 !important; line-height: 1.15; font-size: 8px !important; }
     .ledger-customer-card { display: block !important; margin-bottom: 3px; }
     .ledger-info-table    { font-size: 8px !important; }
     .ledger-info-table td { padding: 1px 6px !important; line-height: 1.25; }
-    .ledger-kpi-row { grid-template-columns: repeat(4,1fr); gap: 4px; margin-bottom: 4px; }
-    .ledger-kpi { padding: 2px 6px; border: 0.5px solid #999 !important; }
-    .ledger-kpi-label { font-size: 7px !important; margin-bottom: 1px !important; }
-    .ledger-kpi-value { font-size: 10px !important; }
-    .ledger-kpi-sub { display: none; }
-    .ledger-kpi-label i { display: none; }
+    .ledger-kpi-row { display: none !important; }
     .card { box-shadow: none !important; border: none !important; }
     /* White rows — keep structure with borders instead of tinted backgrounds */
     .cl-payment-row td, .cl-opening-row td, .cl-discount-row td,

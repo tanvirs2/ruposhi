@@ -168,13 +168,18 @@ class SaleController extends Controller
                 'sale_date'    => $request->sale_date,
             ]);
 
+            // Freeze today's purchase price onto each line. Reports read this
+            // snapshot, so a later price change can never rewrite past profit.
+            $costs = $this->currentCosts($request->items ?? []);
+
             foreach ($request->items ?? [] as $row) {
                 SaleItem::create([
-                    'sale_id'  => $sale->id,
-                    'item_id'  => $row['id'],
-                    'quantity' => $row['qty'],
-                    'price'    => $row['price'],
-                    'subtotal' => $row['qty'] * $row['price'],
+                    'sale_id'    => $sale->id,
+                    'item_id'    => $row['id'],
+                    'quantity'   => $row['qty'],
+                    'price'      => $row['price'],
+                    'cost_price' => $costs[$row['id']] ?? 0,
+                    'subtotal'   => $row['qty'] * $row['price'],
                 ]);
 
                 Stock::where('item_id', $row['id'])->decrement('quantity', $row['qty']);
@@ -291,6 +296,9 @@ class SaleController extends Controller
             }
 
             // ── 3. Delete old sale items ────────────────────────────
+            // Keep each line's original cost snapshot first — editing a sale
+            // must not re-price it at today's purchase price.
+            $oldCosts = $sale->items->pluck('cost_price', 'item_id');
             $sale->items()->delete();
 
             // ── 4. Calculate new totals ─────────────────────────────
@@ -326,13 +334,18 @@ class SaleController extends Controller
             ]);
 
             // ── 7. Create new items & decrement stock ───────────────
+            // Existing lines keep their original cost; only newly added items
+            // pick up today's purchase price.
+            $costs = $this->currentCosts($request->items ?? []);
+
             foreach ($request->items ?? [] as $row) {
                 SaleItem::create([
-                    'sale_id'  => $sale->id,
-                    'item_id'  => $row['id'],
-                    'quantity' => $row['qty'],
-                    'price'    => $row['price'],
-                    'subtotal' => $row['qty'] * $row['price'],
+                    'sale_id'    => $sale->id,
+                    'item_id'    => $row['id'],
+                    'quantity'   => $row['qty'],
+                    'price'      => $row['price'],
+                    'cost_price' => $oldCosts[$row['id']] ?? $costs[$row['id']] ?? 0,
+                    'subtotal'   => $row['qty'] * $row['price'],
                 ]);
                 Stock::where('item_id', $row['id'])->decrement('quantity', $row['qty']);
             }
@@ -454,6 +467,18 @@ class SaleController extends Controller
         return back()->with('success', 'বিক্রয় মুছে ফেলা হয়েছে।');
     }
 
+    /**
+     * Current purchase price of each item in a cart, keyed by item id.
+     * Used to snapshot cost onto sale lines at the moment of sale.
+     */
+    private function currentCosts(array $rows)
+    {
+        $ids = collect($rows)->pluck('id')->filter()->unique();
+        if ($ids->isEmpty()) return collect();
+
+        return Item::whereIn('id', $ids)->pluck('purchase_price', 'id');
+    }
+
     // ── Admin: reject pending deletion ───────────────────────
     public function rejectDelete(Sale $sale)
     {
@@ -482,6 +507,7 @@ class SaleController extends Controller
             if ($sale->customer_id) {
                 Customer::find($sale->customer_id)?->increment('due_amount', $sale->paid_amount - $sale->total_amount);
             }
+            $oldCosts = $sale->items->pluck('cost_price', 'item_id');
             $sale->items()->delete();
 
             $total      = collect($d['items'] ?? [])->sum(fn($i) => $i['qty'] * $i['price']);
@@ -511,8 +537,9 @@ class SaleController extends Controller
                 'edit_note'      => $d['edit_note'] ?? null,
             ]);
 
+            $costs = $this->currentCosts($d['items'] ?? []);
             foreach ($d['items'] ?? [] as $row) {
-                SaleItem::create(['sale_id' => $sale->id, 'item_id' => $row['id'], 'quantity' => $row['qty'], 'price' => $row['price'], 'subtotal' => $row['qty'] * $row['price']]);
+                SaleItem::create(['sale_id' => $sale->id, 'item_id' => $row['id'], 'quantity' => $row['qty'], 'price' => $row['price'], 'cost_price' => $oldCosts[$row['id']] ?? $costs[$row['id']] ?? 0, 'subtotal' => $row['qty'] * $row['price']]);
                 Stock::where('item_id', $row['id'])->decrement('quantity', $row['qty']);
             }
 

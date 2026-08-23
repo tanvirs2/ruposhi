@@ -278,7 +278,9 @@
 $existingItems = $sale->items->map(fn($si) => [
     'id'           => $si->item_id,
     'name'         => $si->item->name ?? '?',
-    'cost'         => floatval($si->item->purchase_price ?? 0),
+    // Cost frozen at sale time — not today's item price, so the profit
+    // preview matches what the report will actually show.
+    'cost'         => floatval($si->cost_price ?? $si->item->purchase_price ?? 0),
     'price'        => floatval($si->price),
     'defaultPrice' => floatval($si->price),
     'qty'          => floatval($si->quantity),

@@ -89,6 +89,23 @@ class PurchaseController extends Controller
         return view('purchases.create', compact('suppliers', 'items', 'paymentMethods', 'extraCategories', 'depositCategories'));
     }
 
+    /**
+     * Write the purchased rate back onto the item, when the buyer ticked
+     * "আইটেমের ক্রয়মূল্য আপডেট করুন" on that cart row (ticked by default).
+     *
+     * This matters because sales snapshot items.purchase_price as their cost —
+     * a stale item price would now be frozen into the profit report forever.
+     */
+    private function syncItemPurchasePrice(array $row): void
+    {
+        if (empty($row['update_price'])) return;
+
+        $price = (float) ($row['price'] ?? 0);
+        if ($price <= 0) return;
+
+        Item::whereKey($row['id'])->update(['purchase_price' => $price]);
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -98,6 +115,7 @@ class PurchaseController extends Controller
             'items.*.id'          => 'required_with:items|exists:items,id',
             'items.*.qty'         => 'required_with:items|numeric|min:0.01',
             'items.*.price'       => 'required_with:items|numeric|min:0',
+            'items.*.update_price'=> 'nullable',
             'paid_amount'         => 'nullable|numeric|min:0',
         ]);
         // Blank পরিশোধ = ৳0, not a blocked submit (matches ছাড়/পুরনো বাকীর মতো ফিল্ড).
@@ -149,6 +167,8 @@ class PurchaseController extends Controller
                     ['quantity' => 0, 'min_quantity' => 5]
                 );
                 $stock->increment('quantity', $row['qty']);
+
+                $this->syncItemPurchasePrice($row);
             }
 
             // Save categorised extra costs
@@ -201,6 +221,7 @@ class PurchaseController extends Controller
             'items.*.id'          => 'required_with:items|exists:items,id',
             'items.*.qty'         => 'required_with:items|numeric|min:0.01',
             'items.*.price'       => 'required_with:items|numeric|min:0',
+            'items.*.update_price'=> 'nullable',
             'paid_amount'         => 'nullable|numeric|min:0',
         ]);
         // Blank পরিশোধ = ৳0, not a blocked submit (matches ছাড়/পুরনো বাকীর মতো ফিল্ড).
@@ -278,6 +299,8 @@ class PurchaseController extends Controller
                 ]);
                 $stock = Stock::firstOrCreate(['item_id' => $row['id']], ['quantity' => 0, 'min_quantity' => 5]);
                 $stock->increment('quantity', $row['qty']);
+
+                $this->syncItemPurchasePrice($row);
             }
 
             // 4b. Replace extra costs
@@ -477,6 +500,8 @@ class PurchaseController extends Controller
                 PurchaseItem::create(['purchase_id' => $purchase->id, 'item_id' => $row['id'], 'quantity' => $row['qty'], 'price' => $row['price'], 'subtotal' => $row['qty'] * $row['price']]);
                 $stock = Stock::firstOrCreate(['item_id' => $row['id']], ['quantity' => 0, 'min_quantity' => 5]);
                 $stock->increment('quantity', $row['qty']);
+
+                $this->syncItemPurchasePrice($row);
             }
 
             $purchase->extraCosts()->delete();

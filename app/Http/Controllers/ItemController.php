@@ -88,6 +88,37 @@ class ItemController extends Controller
         return redirect()->route('items.index')->with('success', 'আইটেম সফলভাবে আপডেট করা হয়েছে।');
     }
 
+    /**
+     * Recent purchase history for one item — read-only reference shown next to
+     * the item while selling, so the shopkeeper can see which way the buying
+     * rate is moving. It never feeds the profit calculation: cost is snapshotted
+     * onto sale_items.cost_price at sale time and cannot be picked by hand.
+     */
+    public function purchaseHistory(Item $item)
+    {
+        $rows = \App\Models\PurchaseItem::where('purchase_items.item_id', $item->id)
+            ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
+            ->leftJoin('suppliers', 'suppliers.id', '=', 'purchases.supplier_id')
+            ->select(
+                'purchase_items.quantity',
+                'purchase_items.price',
+                'purchases.id as purchase_id',
+                'purchases.purchase_date',
+                'suppliers.name as supplier_name'
+            )
+            ->orderByDesc('purchases.purchase_date')
+            ->orderByDesc('purchases.id')
+            ->limit(10)
+            ->get();
+
+        return response()->json([
+            'name'           => $item->name,
+            'purchase_price' => (float) $item->purchase_price,
+            'stock'          => (float) ($item->stock?->quantity ?? 0),
+            'rows'           => $rows,
+        ]);
+    }
+
     public function destroy(Item $item)
     {
         if (!auth()->user()->canManageShop()) {

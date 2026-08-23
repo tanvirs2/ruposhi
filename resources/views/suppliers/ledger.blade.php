@@ -74,10 +74,16 @@
     <table class="sl-info-table">
         <tr>
             <td><strong>প্রতিষ্ঠান</strong></td>
-            <td>{{ $supplier->name }}</td>
+            <td><strong>{{ $supplier->name }}</strong></td>
             <td><strong>ফোন</strong></td>
             <td>{{ $supplier->phone ?? '—' }}</td>
         </tr>
+        @if($supplier->proprietor)
+        <tr>
+            <td><strong>প্রোঃ</strong></td>
+            <td colspan="3"><strong>{{ $supplier->proprietor }}</strong></td>
+        </tr>
+        @endif
         @if($supplier->address)
         <tr>
             <td><strong>ঠিকানা</strong></td>
@@ -682,7 +688,7 @@ function slSetView(mode) {
     .main-wrapper { margin-left: 0 !important; }
     .content { padding: 0 !important; }
     .sl-print-header  { display: block !important; text-align: center; margin-bottom: 2px; }
-    .sl-print-header > div:first-child { font-size: .95rem !important; }
+    .sl-print-header > div:first-child { font-size: 1.3rem !important; }
     .sl-print-header > div { margin-top: 0 !important; line-height: 1.15; font-size: 8px !important; }
     .sl-info-card     { display: block !important; margin-bottom: 3px; }
     .sl-info-table    { font-size: 8px !important; margin-bottom: 0 !important; }

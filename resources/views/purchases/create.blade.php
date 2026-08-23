@@ -699,6 +699,7 @@ function addItem(id) {
             price:         0,
             priceEntered:  false,
             lastPrice:     parseFloat(item.purchase_price) || 0,
+            syncPrice:     true,
             qty:           1,
             currentStock:  item.stock ? parseFloat(item.stock.quantity) : 0,
         });
@@ -736,6 +737,15 @@ function useLastPrice(id) {
     if (inp) inp.value = item.lastPrice;
     updateRowTotal(id);
     updateSummary();
+}
+
+// Whether this rate should also become the item's stored ক্রয়মূল্য.
+// Ticked by default: sales snapshot items.purchase_price as their cost, so a
+// stale item price would be frozen into the profit report forever.
+function toggleSyncPrice(id, on) {
+    const item = cart.find(c => c.id === id);
+    if (item) item.syncPrice = on;
+    scheduleDraftSave();
 }
 
 // Price-jump warning: entered purchase price is >5% above the previous purchase price
@@ -811,6 +821,12 @@ function renderCart() {
                            border-radius:20px;padding:1px 7px;vertical-align:middle;white-space:nowrap">
                     ⚠ দাম বেড়েছে!</span>`; })()}
                 ${hint}
+                <label class="price-sync-toggle">
+                    <input type="checkbox" name="items[${idx}][update_price]" value="1"
+                        ${c.syncPrice ? 'checked' : ''}
+                        onchange="toggleSyncPrice(${c.id}, this.checked)">
+                    <span>আইটেমের ক্রয়মূল্য আপডেট করুন</span>
+                </label>
             </td>
             <td id="row-newstock-${c.id}" class="new-stock-cell">${newStock} বস্তা</td>
             <td id="row-total-${c.id}">৳ ${(c.qty * c.price).toLocaleString()}</td>

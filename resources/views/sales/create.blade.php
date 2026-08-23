@@ -1105,7 +1105,12 @@ function renderCart() {
                     style="width:70px"
                     oninput="updateQty(${c.id},this.value)" class="inline-input">
             </td>
-            <td class="col-secret" style="color:#94a3b8;font-size:.88rem;${secretDisplay}">৳ ${c.cost.toLocaleString()}</td>
+            <td class="col-secret" style="color:#94a3b8;font-size:.88rem;${secretDisplay}">
+                ৳ ${c.cost.toLocaleString()}
+                <button type="button" onclick="showPurchaseHistory(${c.id})" title="ক্রয় ইতিহাস দেখুন"
+                    style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:.8rem;padding:0 2px">
+                    <i class="fas fa-circle-info"></i></button>
+            </td>
             <td>
                 <input type="text" inputmode="decimal" name="items[${idx}][price]" value="${c.priceEntered ? c.price : ''}"
                     id="price-${c.id}" style="width:100px"
@@ -2044,6 +2049,110 @@ document.addEventListener('click', function(e) {
         closeAllItemChanges();
     }
 });
+
+// ── ক্রয় ইতিহাস (read-only) ──────────────────────────────────
+// Shows the last purchases of an item so the seller can see which way the
+// buying rate is moving. Purely informational — the cost used for profit is
+// frozen onto the sale row at save time and cannot be picked here.
+function showPurchaseHistory(itemId) {
+    var box = document.getElementById('phModal');
+    if (!box) return;
+    document.getElementById('phBody').innerHTML =
+        '<div style="padding:26px;text-align:center;color:#94a3b8">লোড হচ্ছে…</div>';
+    box.style.display = 'flex';
+
+    fetch('/items/' + itemId + '/purchase-history', { headers: { 'Accept': 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { renderPurchaseHistory(d); })
+        .catch(function () {
+            document.getElementById('phBody').innerHTML =
+                '<div style="padding:26px;text-align:center;color:#dc2626">ইতিহাস আনা যায়নি।</div>';
+        });
+}
+
+function renderPurchaseHistory(d) {
+    document.getElementById('phTitle').textContent = d.name;
+
+    var rows = d.rows || [];
+    var body;
+
+    if (!rows.length) {
+        body = '<div style="padding:26px;text-align:center;color:#94a3b8">এই আইটেমের কোনো ক্রয় রেকর্ড নেই।</div>';
+    } else {
+        var totQty = 0, totVal = 0;
+        var tr = rows.map(function (r) {
+            var qty = parseFloat(r.quantity) || 0, price = parseFloat(r.price) || 0;
+            totQty += qty; totVal += qty * price;
+            return '<tr>'
+                + '<td style="white-space:nowrap">' + formatBnDate(r.purchase_date) + '</td>'
+                + '<td style="text-align:right">' + qty.toLocaleString() + '</td>'
+                + '<td style="text-align:right;font-weight:700">৳ ' + price.toLocaleString() + '</td>'
+                + '<td style="color:#64748b;font-size:.82rem">' + (r.supplier_name || '—') + '</td>'
+                + '</tr>';
+        }).join('');
+
+        // Reference only — the app never costs sales by average. Labelled as
+        // such so nobody reads it as the costing method.
+        var avg = totQty > 0 ? totVal / totQty : 0;
+        body = '<table class="ph-table"><thead><tr>'
+             + '<th>তারিখ</th><th style="text-align:right">পরিমাণ</th>'
+             + '<th style="text-align:right">দর</th><th>সরবরাহকারী</th>'
+             + '</tr></thead><tbody>' + tr + '</tbody></table>'
+             + '<div class="ph-foot">'
+             + '<span>এই ' + rows.length + ' ক্রয়ের গড় দর <i style="font-style:normal;color:#94a3b8">(শুধু তথ্যের জন্য)</i>: <b>৳ ' + avg.toFixed(0) + '</b></span>'
+             + '<span>বর্তমান স্টক: <b>' + (d.stock || 0).toLocaleString() + '</b></span>'
+             + '</div>';
+    }
+
+    body += '<div class="ph-note">বর্তমান ক্রয়মূল্য <b>৳ ' + (d.purchase_price || 0).toLocaleString() + '</b>'
+          + ' — বিক্রয়ের সময় এই দামটিই খরচ হিসেবে সেভ হবে এবং পরে আর বদলাবে না।</div>';
+
+    document.getElementById('phBody').innerHTML = body;
+}
+
+function formatBnDate(iso) {
+    if (!iso) return '—';
+    var p = String(iso).split('T')[0].split('-');
+    return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : iso;
+}
+
+function closePurchaseHistory() {
+    var box = document.getElementById('phModal');
+    if (box) box.style.display = 'none';
+}
+
 </script>
 @endpush
+
+<div id="phModal" onclick="if(event.target===this)closePurchaseHistory()"
+     style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:9999;
+            align-items:center;justify-content:center;padding:16px">
+    <div style="background:var(--surface);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.25);
+                width:100%;max-width:520px;max-height:82vh;overflow:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;
+                    padding:14px 18px;border-bottom:1px solid var(--border)">
+            <div style="min-width:0">
+                <div style="font-size:.72rem;color:#94a3b8;font-weight:700;letter-spacing:.3px">ক্রয় ইতিহাস</div>
+                <div id="phTitle" style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+            </div>
+            <button type="button" onclick="closePurchaseHistory()"
+                style="background:none;border:none;font-size:1.1rem;color:#94a3b8;cursor:pointer;padding:4px 6px">
+                <i class="fas fa-xmark"></i></button>
+        </div>
+        <div id="phBody"></div>
+    </div>
+</div>
+
+<style>
+.ph-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.ph-table th { text-align: left; font-size: .72rem; color: #94a3b8; font-weight: 700;
+               padding: 9px 18px; border-bottom: 1px solid var(--border); }
+.ph-table td { padding: 9px 18px; border-bottom: 1px solid var(--border); }
+.ph-table tbody tr:first-child td { background: #f0f9ff; }
+.ph-foot { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+           padding: 11px 18px; background: var(--surface-2); font-size: .84rem; }
+.ph-note { padding: 11px 18px; font-size: .78rem; color: #64748b; line-height: 1.6;
+           border-top: 1px solid var(--border); }
+</style>
+
 @endsection

@@ -133,6 +133,7 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
 
     Route::resource('items',       ItemController::class);
     Route::post('items/{item}/favorite', [\App\Http\Controllers\ItemFavoriteController::class, 'toggle'])->name('items.favorite.toggle');
+    Route::get('items/{item}/purchase-history', [ItemController::class, 'purchaseHistory'])->name('items.purchase-history');
     Route::resource('categories',  CategoryController::class)->except('show');
     Route::resource('brands',      BrandController::class)->except('show');
     /* Suppliers */

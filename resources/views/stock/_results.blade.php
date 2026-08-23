@@ -5,7 +5,7 @@
                     <th>#</th>
                     <th>আইটেম</th>
                     <th class="col-hide-print">ক্যাটাগরি</th>
-                    <th class="tc">সর্বশেষ আপডেট</th>
+                    <th class="tc col-hide-print">সর্বশেষ আপডেট</th>
                     <th class="tc">মোট বিক্রয়</th>
                     <th class="tc">পূর্বের স্টক</th>
                     <th class="tc" style="color:#0d9488">
@@ -17,7 +17,7 @@
                     <th class="tc">বর্তমান স্টক</th>
                     <th class="tr">ক্রয় মূল্য</th>
                     <th class="tr">স্টক মূল্য</th>
-                    <th class="tc">অবস্থা</th>
+                    <th class="tc col-hide-print">অবস্থা</th>
                 </tr>
             </thead>
             <tbody>
@@ -43,7 +43,7 @@
                         @endif
                     </td>
                     <td class="col-hide-print">{{ $s->item->category?->name ?? '—' }}</td>
-                    <td class="tc" style="font-size:.78rem;white-space:nowrap">
+                    <td class="tc col-hide-print" style="font-size:.78rem;white-space:nowrap">
                         @if($updatedAt)
                             @if($isToday)
                                 <span style="color:#0d9488;font-weight:600">আজ {{ $updatedAt->format('h:ia') }}</span>
@@ -103,7 +103,7 @@
                             <span style="color:#cbd5e1">—</span>
                         @endif
                     </td>
-                    <td class="tc">
+                    <td class="tc col-hide-print">
                         @if($s->quantity <= 0)
                             <span class="badge badge-red"><i class="fas fa-circle-xmark"></i> শেষ</span>
                         @elseif($s->isLow())
@@ -120,7 +120,9 @@
             @if($stock->total() > 0)
             <tfoot>
                 <tr class="tfoot-summary">
-                    <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট স্টক</td>
+                    <td colspan="2" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট স্টক</td>
+                    <td class="col-hide-print"></td>
+                    <td class="col-hide-print"></td>
                     <td class="tc" style="font-weight:800">{{ number_format($grandTotalSales, 0) }}</td>
                     <td class="tc" style="font-weight:800;color:#475569">{{ number_format($grandStockQty - $grandTodayReceive, 0) }}</td>
                     <td class="tc" style="font-weight:800;color:#0d9488">
@@ -132,7 +134,7 @@
                     <td class="tr" style="font-weight:800;color:{{ $grandStockValue < 0 ? '#dc2626' : 'inherit' }}">
                         {{ $grandStockValue < 0 ? '−' : '' }}৳ {{ number_format(abs($grandStockValue), 0) }}
                     </td>
-                    <td></td>
+                    <td class="col-hide-print"></td>
                 </tr>
             </tfoot>
             @endif

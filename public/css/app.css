@@ -2269,3 +2269,18 @@ input[type="time"].form-select {
 /* Hide admin-only UI elements for staff users */
 .role-staff .admin-only { display: none !important; }
 
+
+/* Purchase cart — "also update the item's purchase price" toggle */
+.price-sync-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 4px;
+    font-size: .7rem;
+    color: #64748b;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+.price-sync-toggle input { width: 13px; height: 13px; cursor: pointer; accent-color: var(--accent); margin: 0; }
+.price-sync-toggle:hover { color: var(--text-primary); }
