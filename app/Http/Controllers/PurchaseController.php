@@ -12,6 +12,7 @@ use App\Models\Supplier;
 use App\Models\Item;
 use App\Models\Stock;
 use App\Models\PendingEdit;
+use App\Models\PurchaseLog;
 use App\Models\StoreConfig;
 use App\Services\SmsService;
 use Illuminate\Http\Request;
@@ -234,6 +235,9 @@ class PurchaseController extends Controller
                 ->with('success', 'সংশোধনের অনুরোধ পাঠানো হয়েছে। অ্যাডমিনের অনুমোদনের অপেক্ষায়।');
         }
 
+        // Capture state BEFORE changes so the log can show a before/after diff
+        $beforeSnapshot = $this->buildPurchaseSnapshot($purchase);
+
         DB::transaction(function () use ($request, $purchase) {
             // 1. Reverse old stock & supplier effect
             foreach ($purchase->items as $pi) {
@@ -330,6 +334,22 @@ class PurchaseController extends Controller
             }
         });
 
+        // SMS: notify admin of edit (skip if toggle off) — mirrors SaleController::update()
+        $adminPhone = StoreConfig::get('sms_on_edit', '1') == '1' ? StoreConfig::get('store_phone', '') : '';
+        if ($adminPhone) {
+            $purchase->load('supplier');
+            $storeName = StoreConfig::get('store_name', 'দোকান');
+            $msg = "[{$storeName}] পণ্য গ্রহণ সংশোধন\n#RCV-" . str_pad($purchase->id, 4, '0', STR_PAD_LEFT)
+                . " | " . ($purchase->supplier?->name ?? 'সরবরাহকারী নেই')
+                . "\nসংশোধনকারী: " . auth()->user()->name
+                . "\nনতুন মোট: ৳" . number_format($purchase->total_amount, 0);
+            app(SmsService::class)->send($adminPhone, $msg);
+        }
+
+        // Log the completed change (after the transaction, so the "after" side of
+        // the snapshot reflects the saved values, with the pre-edit state attached).
+        $this->logPurchase($purchase, 'edited', null, $beforeSnapshot);
+
         return redirect()->route('purchases.show', $purchase)->with('success', 'রিসিভ সংশোধন সম্পন্ন। স্টক আপডেট হয়েছে।');
     }
 
@@ -348,6 +368,9 @@ class PurchaseController extends Controller
         // No-item rows are advance payments (shown in the supplier-payment list)
         $hadItems = $purchase->items()->exists();
         DB::transaction(function () use ($purchase) {
+            // Log before delete
+            $this->logPurchase($purchase, 'deleted', 'মুছে ফেলা হয়েছে');
+
             // Restore stock
             foreach ($purchase->items as $pi) {
                 Stock::where('item_id', $pi->item_id)->decrement('quantity', $pi->quantity);
@@ -422,6 +445,8 @@ class PurchaseController extends Controller
         if (!auth()->user()->canManageShop()) abort(403);
         $hadItems = $purchase->items()->exists();
         DB::transaction(function () use ($purchase) {
+            $this->logPurchase($purchase, 'deleted', 'মুছে ফেলা হয়েছে (স্টাফ অনুরোধ অনুমোদিত)');
+
             foreach ($purchase->items as $pi) {
                 Stock::where('item_id', $pi->item_id)->decrement('quantity', $pi->quantity);
             }
@@ -460,6 +485,8 @@ class PurchaseController extends Controller
 
         $purchase = Purchase::findOrFail($pendingEdit->model_id);
         $d        = $pendingEdit->proposed_data;
+
+        $beforeSnapshot = $this->buildPurchaseSnapshot($purchase);
 
         DB::transaction(function () use ($purchase, $d) {
             foreach ($purchase->items as $pi) {
@@ -518,6 +545,9 @@ class PurchaseController extends Controller
             }
         });
 
+        $this->logPurchase($purchase, 'edited',
+            'সংশোধন অনুরোধ অনুমোদিত (স্টাফ: ' . ($pendingEdit->requestedBy?->name ?? '?') . ')', $beforeSnapshot);
+
         $pendingEdit->update(['status' => 'approved', 'decided_by' => auth()->id(), 'decided_at' => now()]);
         return back()->with('success', 'সংশোধন অনুমোদিত এবং প্রযোজ্য হয়েছে।');
     }
@@ -527,6 +557,10 @@ class PurchaseController extends Controller
     {
         if (!auth()->user()->canManageShop()) abort(403);
         $pendingEdit->update(['status' => 'rejected', 'decided_by' => auth()->id(), 'decided_at' => now()]);
+        if ($pendingEdit->model_type === 'purchase') {
+            $purchase = Purchase::find($pendingEdit->model_id);
+            if ($purchase) $this->logPurchase($purchase, 'edit_rejected', 'সংশোধন অনুরোধ বাতিল করা হয়েছে');
+        }
         return back()->with('success', 'সংশোধন অনুরোধ বাতিল করা হয়েছে।');
     }
 
@@ -574,6 +608,10 @@ class PurchaseController extends Controller
             'status'        => $hasChanges ? 'pending' : 'no_change',
         ]);
 
+        // Always log the attempt
+        $this->logPurchase($purchase, $hasChanges ? 'edit_requested' : 'edit_attempted_no_change',
+            $hasChanges ? 'স্টাফ সংশোধন অনুরোধ পাঠিয়েছেন' : 'স্টাফ সম্পাদনা করার চেষ্টা করেছেন — কোনো পরিবর্তন নেই');
+
         if ($hasChanges) {
             $this->sendPurchaseEditSms($purchase, $pending);
         }
@@ -596,5 +634,50 @@ class PurchaseController extends Controller
             $result = app(SmsService::class)->send($phone, $msg);
             if ($result['success']) $pending->update(['sms_sent' => true]);
         } catch (\Exception $e) {}
+    }
+
+    // ── Helper: build a point-in-time snapshot of a purchase ──
+    // Mirrors SaleController::buildSaleSnapshot() — see reports/purchase-logs.
+    private function buildPurchaseSnapshot(Purchase $purchase): array
+    {
+        $purchase->load(['items.item', 'supplier']);
+        return [
+            'id'             => $purchase->id,
+            'purchase_date'  => $purchase->purchase_date?->toDateString(),
+            'supplier_name'  => $purchase->supplier?->name,
+            'total_amount'   => $purchase->total_amount,
+            'paid_amount'    => $purchase->paid_amount,
+            'due_amount'     => $purchase->due_amount,
+            'extra_cost'     => $purchase->extra_cost,
+            'deposit_amount' => $purchase->deposit_amount,
+            'payment_method' => $purchase->payment_method,
+            'notes'          => $purchase->notes,
+            'items'          => $purchase->items->map(fn($pi) => [
+                'item_name' => $pi->item?->name,
+                'quantity'  => $pi->quantity,
+                'price'     => $pi->price,
+                'subtotal'  => $pi->subtotal,
+            ])->toArray(),
+        ];
+    }
+
+    // ── Helper: snapshot purchase and log the action ──────────
+    // $before, when given (edited/edit_requested actions), is the snapshot
+    // captured BEFORE the change was applied — stored alongside the current
+    // ("after") snapshot so the log detail view can show a before/after diff
+    // instead of just one point-in-time state.
+    private function logPurchase(Purchase $purchase, string $action, ?string $note = null, ?array $before = null): void
+    {
+        $snapshot = $this->buildPurchaseSnapshot($purchase);
+        if ($before !== null) {
+            $snapshot['before'] = $before;
+        }
+        PurchaseLog::create([
+            'purchase_id' => $purchase->id,
+            'action'      => $action,
+            'user_id'     => auth()->id(),
+            'note'        => $note,
+            'snapshot'    => $snapshot,
+        ]);
     }
 }

@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'বিক্রয় লগ')
-@section('page-title', 'বিক্রয় সংশোধন ও মুছে ফেলার ইতিহাস')
+@section('title', 'রিসিভ লগ')
+@section('page-title', 'গ্রহণ সংশোধন ও মুছে ফেলার ইতিহাস')
 
 @section('content')
 
@@ -39,7 +39,7 @@
     @endphp
     <div class="filter-chips" style="border-top:1px solid var(--border);border-bottom:none">
         @foreach($logChips as $key => [$label, $cnt, $color])
-            <a href="{{ route('reports.sale-logs', array_merge(request()->except(['action','page']), ['action' => $key])) }}"
+            <a href="{{ route('reports.purchase-logs', array_merge(request()->except(['action','page']), ['action' => $key])) }}"
                class="fchip {{ $action === $key ? 'fchip-active' : '' }}" style="--chip:{{ $color }}">
                 {{ $label }}<span class="fchip-count">{{ $cnt }}</span>
             </a>
@@ -57,9 +57,9 @@
             <thead>
                 <tr>
                     <th class="tc">সময়</th>
-                    <th class="tc">চালান নং</th>
+                    <th class="tc">রিসিভ নং</th>
                     <th class="tc">ধরন</th>
-                    <th>কাস্টমার</th>
+                    <th>সরবরাহকারী</th>
                     <th class="tr">মোট</th>
                     <th class="tr">পরিশোধ</th>
                     <th>পণ্যের বিবরণ</th>
@@ -76,7 +76,7 @@
                         {{ $log->created_at->format('d/m/Y h:i a') }}
                     </td>
                     <td class="tc mono">
-                        #{{ str_pad($snap['id'] ?? $log->sale_id, 6, '0', STR_PAD_LEFT) }}
+                        #RCV-{{ str_pad($snap['id'] ?? $log->purchase_id, 4, '0', STR_PAD_LEFT) }}
                     </td>
                     <td class="tc">
                         @if($log->action === 'deleted')
@@ -85,7 +85,7 @@
                             <span class="badge" style="background:#fef9c3;color:#92400e"><i class="fas fa-pen"></i> সংশোধিত</span>
                         @endif
                     </td>
-                    <td>{{ $snap['customer_name'] ?? '—' }}</td>
+                    <td>{{ $snap['supplier_name'] ?? '—' }}</td>
                     <td class="tr">৳ {{ number_format($snap['total_amount'] ?? 0, 0) }}</td>
                     <td class="tr" style="color:#16a34a">৳ {{ number_format($snap['paid_amount'] ?? 0, 0) }}</td>
                     <td style="font-size:.78rem;color:#475569;max-width:200px">
@@ -164,22 +164,22 @@ function showDetail(id) {
         ? '<span style="background:#fee2e2;color:#dc2626;padding:2px 10px;border-radius:20px;font-size:.8rem;font-weight:700">🗑 মুছে ফেলা</span>'
         : '<span style="background:#fef9c3;color:#92400e;padding:2px 10px;border-radius:20px;font-size:.8rem;font-weight:700">✎ সংশোধিত</span>';
 
-    document.getElementById('modalTitle').innerHTML = `চালান #${String(s.id||'').padStart(6,'0')} ${actionBadge}`;
+    document.getElementById('modalTitle').innerHTML = `রিসিভ #RCV-${String(s.id||'').padStart(4,'0')} ${actionBadge}`;
 
     let body = '';
 
     if (before) {
         // ── Edit with a captured before-state → show a field-by-field diff ──
         const fields = [
-            ['sale_date',      'তারিখ',    v => v || '—'],
-            ['customer_name',  'কাস্টমার', v => v || 'ওয়াক-ইন'],
-            ['total_amount',   'মোট',      v => '৳ ' + Number(v||0).toLocaleString()],
-            ['discount',       'ছাড়',      v => '৳ ' + Number(v||0).toLocaleString()],
+            ['purchase_date',  'তারিখ',        v => v || '—'],
+            ['supplier_name',  'সরবরাহকারী',   v => v || '—'],
+            ['total_amount',   'মোট',          v => '৳ ' + Number(v||0).toLocaleString()],
             ['extra_cost',     'অতিরিক্ত খরচ', v => '৳ ' + Number(v||0).toLocaleString()],
-            ['paid_amount',    'পরিশোধ',   v => '৳ ' + Number(v||0).toLocaleString()],
-            ['due_amount',     'বাকী',     v => '৳ ' + Number(v||0).toLocaleString()],
-            ['payment_method', 'পদ্ধতি',   v => v || '—'],
-            ['notes',          'নোট',      v => v || '—'],
+            ['deposit_amount', 'জমা',          v => '৳ ' + Number(v||0).toLocaleString()],
+            ['paid_amount',    'পরিশোধ',       v => '৳ ' + Number(v||0).toLocaleString()],
+            ['due_amount',     'বাকী',         v => '৳ ' + Number(v||0).toLocaleString()],
+            ['payment_method', 'পদ্ধতি',       v => v || '—'],
+            ['notes',          'নোট',          v => v || '—'],
         ];
         let rows = '';
         fields.forEach(([key, label, fmt]) => {
@@ -224,8 +224,8 @@ function showDetail(id) {
         // ── No before-state (deletion, or an older log row) → single snapshot ──
         body += `
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.85rem;margin-bottom:14px">
-                <div><strong>তারিখ:</strong> ${s.sale_date||'—'}</div>
-                <div><strong>কাস্টমার:</strong> ${s.customer_name||'ওয়াক-ইন'}</div>
+                <div><strong>তারিখ:</strong> ${s.purchase_date||'—'}</div>
+                <div><strong>সরবরাহকারী:</strong> ${s.supplier_name||'—'}</div>
                 <div><strong>মোট:</strong> ৳ ${Number(s.total_amount||0).toLocaleString()}</div>
                 <div><strong>পরিশোধ:</strong> ৳ ${Number(s.paid_amount||0).toLocaleString()}</div>
                 <div><strong>বাকী:</strong> ৳ ${Number(s.due_amount||0).toLocaleString()}</div>

@@ -336,7 +336,11 @@
                     </a>
                     <a href="{{ route('reports.sale-logs') }}" class="nav-item nav-child {{ $_path==='reports/sale-logs' ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-clock-rotate-left"></i></span>
-                        <span class="nav-label">সংশোধন / মুছে ফেলার লগ</span>
+                        <span class="nav-label">বিক্রয় সংশোধন / মুছে ফেলার লগ</span>
+                    </a>
+                    <a href="{{ route('reports.purchase-logs') }}" class="nav-item nav-child {{ $_path==='reports/purchase-logs' ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fas fa-clock-rotate-left"></i></span>
+                        <span class="nav-label">রিসিভ সংশোধন / মুছে ফেলার লগ</span>
                     </a>
                     <a href="{{ route('reports.growth') }}" class="nav-item nav-child {{ $_path==='reports/growth' ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
@@ -1326,12 +1330,25 @@ function drRange(fromName, toName, formSel, type) {
     // long session (many page changes) dozens piled up, making the ক toggle
     // erratic and unresponsive. A single persistent listener still fires on every
     // turbo:load, which is all we need.
+    if (!window._phoneticObs) {
+        window._phoneticObs = new MutationObserver(()=>{ if(window._phoneticActive) attachAll(); });
+    }
     if (!window._phoneticBound) {
         window._phoneticBound = true;
         document.addEventListener('turbo:load', function() {
             window._phoneticActive = localStorage.getItem('phoneticMode') === '1';
             applyPhoneticUI(window._phoneticActive);
             attachAll();
+            // Re-anchor to the CURRENT body on every visit — Turbo replaces
+            // <body> wholesale on navigation, so an observer bound once (this
+            // used to run behind a `{once:true}` turbo:load guard) keeps
+            // watching a body node Turbo has since discarded. That left it silently dead
+            // for every page reached via a sidebar/link click after the very
+            // first load in the tab, so dynamic fields added later on any
+            // Turbo-visited page (e.g. the "আইটেম পরিবর্তন" search box in
+            // sales/create, built client-side after the page loads) never got
+            // phonetic typing attached — only a hard refresh fixed it.
+            window._phoneticObs.observe(document.body, {childList:true, subtree:true});
         });
         document.addEventListener('click', function(e) {
             const panel = document.getElementById('phoneticHelpPanel');
@@ -1351,14 +1368,6 @@ function drRange(fromName, toName, formSel, type) {
     };
     // (outside-click handler to close the panel is now bound once, above)
 
-    // Also attach when new inputs appear (modals, dynamic rows)
-    const obs=new MutationObserver(()=>{ if(window._phoneticActive) attachAll(); });
-    if (!window._phoneticObsStarted) {
-        window._phoneticObsStarted = true;
-        document.addEventListener('turbo:load', ()=>{
-            obs.observe(document.body,{childList:true,subtree:true});
-        }, { once: true });
-    }
 })();
 
 // ── Compact table toggle — re-runs on every Turbo navigation.
@@ -2409,11 +2418,20 @@ body.txn-summary-active  #miniChatFab { bottom: 158px; }
         });
     }
 
-    // Textarea auto-grow
-    document.getElementById('mcInput').addEventListener('input', function () {
-        this.style.height = 'auto';
-        this.style.height = Math.min(this.scrollHeight, 80) + 'px';
-    });
+    // Textarea auto-grow.
+    // Guarded: this body script re-runs on every Turbo visit, but #miniChatRoot is
+    // data-turbo-permanent — while Turbo swaps the permanent node back in, the
+    // incoming body has no #mcInput yet, so this threw "Cannot read properties of
+    // null" on EVERY navigation and aborted the rest of the script block. The
+    // element is permanent, so the listener bound on the first (hard) load survives
+    // all later Turbo visits; skipping the re-bind is correct, not a workaround.
+    var mcInputEl = document.getElementById('mcInput');
+    if (mcInputEl) {
+        mcInputEl.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 80) + 'px';
+        });
+    }
 
     function escH(s) {
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');

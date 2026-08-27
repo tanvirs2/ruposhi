@@ -230,13 +230,45 @@
         <a href="{{ route('purchases.edit', $purchase) }}" class="btn" style="background:#fef9c3;color:#92400e;border:1px solid #fde68a">
             <i class="fas fa-pen-to-square"></i> সংশোধন
         </a>
-        <form class="admin-only" method="POST" action="{{ route('purchases.destroy',$purchase) }}" style="margin-left:auto"
-            onsubmit="return confirm('মুছলে স্টক কমে যাবে। নিশ্চিত?')">
-            @csrf @method('DELETE')
-            <button type="submit" class="btn" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5">
-                <i class="fas fa-trash"></i> মুছুন
-            </button>
-        </form>
+        @if($purchase->delete_requested_at)
+            @if(auth()->user()->canManageShop())
+            <div style="margin-left:auto;display:flex;gap:8px">
+                <form method="POST" action="{{ route('purchases.approve-delete', $purchase) }}"
+                    data-confirm-msg="রিসিভ #RCV-{{ str_pad($purchase->id,4,'0',STR_PAD_LEFT) }} ডিলিট অনুমোদন করবেন?">
+                    @csrf
+                    <button type="submit" class="btn" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5">
+                        <i class="fas fa-check"></i> ডিলিট অনুমোদন
+                    </button>
+                </form>
+                <form method="POST" action="{{ route('purchases.reject-delete', $purchase) }}">
+                    @csrf
+                    <button type="submit" class="btn btn-ghost"><i class="fas fa-xmark"></i> বাতিল</button>
+                </form>
+            </div>
+            @else
+            <span style="margin-left:auto;font-size:.85rem;color:#ef4444;font-weight:600;display:flex;align-items:center;gap:6px">
+                <i class="fas fa-clock"></i> ডিলিট অনুমোদনের অপেক্ষায়
+            </span>
+            @endif
+        @else
+            @if(auth()->user()->canManageShop())
+            <form method="POST" action="{{ route('purchases.destroy',$purchase) }}" style="margin-left:auto"
+                onsubmit="return confirm('মুছলে স্টক কমে যাবে। নিশ্চিত?')">
+                @csrf @method('DELETE')
+                <button type="submit" class="btn" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5">
+                    <i class="fas fa-trash"></i> মুছুন
+                </button>
+            </form>
+            @else
+            <form method="POST" action="{{ route('purchases.request-delete', $purchase) }}" style="margin-left:auto"
+                data-confirm-msg="রিসিভ #RCV-{{ str_pad($purchase->id,4,'0',STR_PAD_LEFT) }} ডিলিটের অনুরোধ পাঠাবেন?">
+                @csrf
+                <button type="submit" class="btn" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5">
+                    <i class="fas fa-trash"></i> ডিলিট
+                </button>
+            </form>
+            @endif
+        @endif
     </div>
 </div>
 @endsection

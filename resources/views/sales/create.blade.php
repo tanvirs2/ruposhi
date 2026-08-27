@@ -32,7 +32,12 @@
     {{-- Item picker — only shown on wide monitors (see .pos-picker CSS); sits left of the search/cart column --}}
     <div class="pos-picker" id="posPicker">
         <div class="card">
-            <div class="card-header" style="padding:10px 14px"><h3><i class="fas fa-grip"></i> আইটেম পিকার</h3></div>
+            <div class="card-header" style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+                <h3><i class="fas fa-grip"></i> <span class="picker-title-text">আইটেম পিকার</span></h3>
+                <button type="button" id="pickerMinimizeBtn" class="btn-icon-sm" title="সংক্ষিপ্ত করুন" onclick="togglePickerCollapse()">
+                    <i class="fas fa-angles-left"></i>
+                </button>
+            </div>
             <div class="picker-scroll" style="padding:14px">
                 <div class="freq-items-panel" id="freqItemsPanel" style="display:none">
                     <div class="freq-items-title"><i class="fas fa-clock-rotate-left"></i> প্রায়ই বিক্রি হওয়া আইটেম</div>
@@ -102,6 +107,16 @@
             </div>
         </div>
     </div>
+
+    {{-- Single reusable "আইটেম পরিবর্তন" result dropdown, positioned via JS
+         (see searchItemChange) using position:fixed + getBoundingClientRect.
+         Must live OUTSIDE .table-wrap — that wrapper has overflow-x:auto,
+         which per spec forces overflow-y to clip too, so a dropdown nested
+         inside it (position:absolute under the row) gets cut off at the
+         table's bottom edge instead of floating over the page. --}}
+    <div id="itemChangeDropGlobal" style="display:none;position:fixed;z-index:9999;
+         background:var(--surface);border:1px solid var(--border);border-radius:8px;
+         box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:240px;max-height:200px;overflow-y:auto"></div>
 
     {{-- Right: Summary --}}
     <div class="pos-right">
@@ -783,6 +798,36 @@ itemSearch.addEventListener('input', function() {
     renderPickerGrid(q);
 });
 
+// ── Item picker collapse toggle (wide screens only) ──────────────
+function togglePickerCollapse() {
+    var grid = document.querySelector('.pos-grid-picker');
+    var picker = document.getElementById('posPicker');
+    var btnIcon = document.querySelector('#pickerMinimizeBtn i');
+    if (!grid || !picker) return;
+    var collapsed = grid.classList.toggle('picker-collapsed');
+    picker.classList.toggle('collapsed', collapsed);
+    if (btnIcon) btnIcon.className = collapsed ? 'fas fa-angles-right' : 'fas fa-angles-left';
+    var btn = document.getElementById('pickerMinimizeBtn');
+    if (btn) btn.title = collapsed ? 'বড় করুন' : 'সংক্ষিপ্ত করুন';
+    try { sessionStorage.setItem('posPickerCollapsed', collapsed ? '1' : '0'); } catch (e) {}
+}
+(function () {
+    try {
+        if (sessionStorage.getItem('posPickerCollapsed') === '1') {
+            var grid = document.querySelector('.pos-grid-picker');
+            var picker = document.getElementById('posPicker');
+            if (grid && picker) {
+                grid.classList.add('picker-collapsed');
+                picker.classList.add('collapsed');
+                var btnIcon = document.querySelector('#pickerMinimizeBtn i');
+                if (btnIcon) btnIcon.className = 'fas fa-angles-right';
+                var btn = document.getElementById('pickerMinimizeBtn');
+                if (btn) btn.title = 'বড় করুন';
+            }
+        }
+    } catch (e) {}
+})();
+
 // ── Item picker (left column, wide screens only) ────────────────
 var pickerGrid    = document.getElementById('pickerGrid');
 var freqGrid       = document.getElementById('freqGrid');
@@ -913,27 +958,43 @@ function openItemChange(id) {
 function closeItemChange(id) {
     var box = document.getElementById('item-change-box-' + id);
     if (box) box.style.display = 'none';
+    var drop = document.getElementById('itemChangeDropGlobal');
+    if (drop) drop.style.display = 'none';
 }
 function closeAllItemChanges() {
     document.querySelectorAll('[id^="item-change-box-"]').forEach(function(b){ b.style.display='none'; });
+    var drop = document.getElementById('itemChangeDropGlobal');
+    if (drop) drop.style.display = 'none';
 }
+// Single global dropdown, repositioned per-call via getBoundingClientRect —
+// see the #itemChangeDropGlobal comment above the table for why it can't be
+// an absolutely-positioned child of the row (table-wrap clips it there).
 function searchItemChange(oldId, q) {
-    var drop = document.getElementById('item-change-drop-' + oldId);
-    if (!drop) return;
+    var drop = document.getElementById('itemChangeDropGlobal');
+    var box  = document.getElementById('item-change-box-' + oldId);
+    if (!drop || !box) return;
     q = q.toLowerCase().trim();
     if (!q) { drop.style.display = 'none'; return; }
     var matches = allItems.filter(function(i){ return i.name.toLowerCase().includes(q) && i.id !== oldId; }).slice(0, 15);
-    if (!matches.length) { drop.innerHTML = '<div style="padding:10px;color:#94a3b8;font-size:.82rem">পাওয়া যায়নি</div>'; drop.style.display='block'; return; }
-    drop.innerHTML = matches.map(function(i){
-        var avail = i.stock ? parseFloat(i.stock.quantity) : 0;
-        var clr = avail <= 0 ? '#dc2626' : avail < 5 ? '#d97706' : '#16a34a';
-        return '<div style="padding:8px 12px;cursor:pointer;font-size:.85rem;border-bottom:1px solid var(--border)" '
-            + 'onmousedown="replaceCartItem('+oldId+','+i.id+')" '
-            + 'onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">'
-            + '<strong>' + i.name + '</strong>'
-            + '<span style="float:right;font-size:.75rem;color:'+clr+'">স্টক: '+avail+'</span>'
-            + '</div>';
-    }).join('');
+    if (!matches.length) {
+        drop.innerHTML = '<div style="padding:10px;color:#94a3b8;font-size:.82rem">পাওয়া যায়নি</div>';
+    } else {
+        drop.innerHTML = matches.map(function(i){
+            var avail = i.stock ? parseFloat(i.stock.quantity) : 0;
+            var clr = avail <= 0 ? '#dc2626' : avail < 5 ? '#d97706' : '#16a34a';
+            return '<div style="padding:8px 12px;cursor:pointer;font-size:.85rem;border-bottom:1px solid var(--border)" '
+                + 'onmousedown="replaceCartItem('+oldId+','+i.id+')" '
+                + 'onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">'
+                + '<strong>' + i.name + '</strong>'
+                + '<span style="float:right;font-size:.75rem;color:'+clr+'">স্টক: '+avail+'</span>'
+                + '</div>';
+        }).join('');
+    }
+    var inputEl = box.querySelector('input');
+    var rect = (inputEl || box).getBoundingClientRect();
+    drop.style.left    = rect.left + 'px';
+    drop.style.top     = rect.bottom + 'px';
+    drop.style.width   = Math.max(rect.width, 240) + 'px';
     drop.style.display = 'block';
 }
 function replaceCartItem(oldId, newId) {
@@ -1063,6 +1124,7 @@ function emptyColspan() {
 
 function renderCart() {
     scheduleDraftSave();
+    closeAllItemChanges(); // row DOM is about to be replaced — drop the orphaned global dropdown too
     const itemsFoot = document.getElementById('itemsFoot');
     if (!cart.length) {
         itemsBody.innerHTML = `<tr><td colspan="${emptyColspan()}" class="empty-row">কোনো আইটেম যোগ করা হয়নি</td></tr>`;
@@ -1097,7 +1159,6 @@ function renderCart() {
                         style="width:200px;font-size:.82rem;padding:4px 8px;border:1.5px solid var(--accent);border-radius:6px"
                         oninput="searchItemChange(${c.id},this.value)"
                         onkeydown="if(event.key==='Escape')closeItemChange(${c.id})">
-                    <div id="item-change-drop-${c.id}" style="position:absolute;top:100%;left:0;z-index:999;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:240px;max-height:200px;overflow-y:auto;display:none"></div>
                 </div>
             </td>
             <td>
@@ -2044,11 +2105,20 @@ document.addEventListener('turbo:load', syncSubmitBarSpacer);
 document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'));
 document.addEventListener('turbo:load', () => bnWatchTakaWords('discountInput', 'discountWords'));
 
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('[id^="item-change-box-"]') && !e.target.closest('.cart-item-name') && !e.target.closest('[onclick^="openItemChange"]')) {
-        closeAllItemChanges();
-    }
-});
+// Guarded once — this body script re-runs on every Turbo visit to this page;
+// an unguarded addEventListener here would stack a fresh listener per visit.
+if (!window._itemChangeGlobalBound) {
+    window._itemChangeGlobalBound = true;
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('[id^="item-change-box-"]') && !e.target.closest('.cart-item-name')
+            && !e.target.closest('[onclick^="openItemChange"]') && !e.target.closest('#itemChangeDropGlobal')) {
+            closeAllItemChanges();
+        }
+    });
+    // The global dropdown is position:fixed relative to the viewport, so a page/
+    // container scroll would leave it floating over the wrong spot — just close it.
+    document.addEventListener('scroll', function() { closeAllItemChanges(); }, true);
+}
 
 // ── ক্রয় ইতিহাস (read-only) ──────────────────────────────────
 // Shows the last purchases of an item so the seller can see which way the

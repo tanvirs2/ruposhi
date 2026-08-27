@@ -209,6 +209,7 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
     Route::get('/reports/export/daily-sales-ledger',      [ReportController::class, 'exportDailySalesLedger'])->name('reports.export.daily-sales-ledger');
 
     Route::get('/reports/sale-logs', [ReportController::class, 'saleLogs'])->name('reports.sale-logs');
+    Route::get('/reports/purchase-logs', [ReportController::class, 'purchaseLogs'])->name('reports.purchase-logs');
 
     /* দিনশেষ রিপোর্ট — সব ইউজার (admin + staff) দেখতে পারবে */
     Route::get('/reports/day-close',       [ReportController::class, 'dayClose'])->name('reports.day-close');

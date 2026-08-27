@@ -128,6 +128,16 @@
 
     </div>
 
+    {{-- Single reusable "আইটেম পরিবর্তন" result dropdown, positioned via JS
+         (see searchItemChange) using position:fixed + getBoundingClientRect.
+         Must live OUTSIDE .table-wrap — that wrapper has overflow-x:auto,
+         which per spec forces overflow-y to clip too, so a dropdown nested
+         inside it (position:absolute under the row) gets cut off at the
+         table's bottom edge instead of floating over the page. --}}
+    <div id="itemChangeDropGlobal" style="display:none;position:fixed;z-index:9999;
+         background:var(--surface);border:1px solid var(--border);border-radius:8px;
+         box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:240px;max-height:200px;overflow-y:auto"></div>
+
     {{-- Right: Summary --}}
     <div class="pos-right">
         <div class="card">
@@ -287,20 +297,25 @@
                 </div>
                 <div class="summary-row summary-total"><span>নেট প্রদেয়:</span><span id="netDisplay">৳ 0</span></div>
 
-                <div class="form-group-field">
-                    <label>পরিশোধ (৳) <span class="req">*</span>
+                {{-- Boxed like sales/create's "আজ গ্রাহক দিচ্ছেন" field — same shape,
+                     red instead of blue so পণ্য গ্রহণ (money going OUT to a supplier)
+                     stays visually distinct from বিক্রয় (money coming IN from a customer). --}}
+                <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:12px 14px">
+                    <label style="display:block;font-size:.85rem;font-weight:700;color:#dc2626;margin-bottom:7px">
+                        <i class="fas fa-hand-holding-dollar"></i> পরিশোধ (৳) <span class="req">*</span>
                         <button type="button" class="info-btn" data-info="এখন সরবরাহকারীকে কত টাকা দিচ্ছেন। বাকি টাকা স্বয়ংক্রিয়ভাবে সরবরাহকারীর বকেয়ায় যোগ হবে।">i</button>
                     </label>
-                    <div style="display:flex;gap:8px">
-                        <input type="text" inputmode="decimal" name="paid_amount" id="paidInput" value="0" style="flex:1">
-                        <button type="button" onclick="setFullPay()"
-                            style="padding:0 14px;border-radius:var(--radius-sm);border:1.5px solid var(--accent);
-                                   background:var(--accent-light);color:var(--accent);font-size:.78rem;
-                                   font-weight:700;cursor:pointer;white-space:nowrap">
+                    <div style="display:flex;gap:8px;align-items:stretch">
+                        <input type="text" inputmode="decimal" name="paid_amount" id="paidInput" value="0"
+                            style="flex:1;font-size:1.05rem;font-weight:700;min-width:0">
+                        <button type="button" onclick="setFullPay()" title="সম্পূর্ণ পরিশোধ"
+                            style="flex-shrink:0;padding:0 14px;border-radius:var(--radius-sm);border:none;
+                                   background:#dc2626;color:#fff;font-size:.82rem;
+                                   font-weight:700;cursor:pointer;white-space:nowrap;height:auto">
                             সম্পূর্ণ
                         </button>
                     </div>
-                    <div id="paidWords" style="display:none;margin-top:4px;font-size:.78rem;font-weight:600;color:var(--accent)"></div>
+                    <div id="paidWords" style="display:none;margin-top:5px;font-size:.78rem;font-weight:600;color:#dc2626"></div>
                 </div>
                 <div class="summary-row" style="color:#ef4444"><span>এই রিসিভে বাকী:</span><span id="dueDisplay">৳ 0</span></div>
 
@@ -711,6 +726,81 @@ function addItem(id) {
 
 function removeItem(id) { cart = cart.filter(c => c.id !== id); renderCart(); }
 
+// ── Change item (swap which product a row refers to, without re-adding) ──
+function openItemChange(id) {
+    closeAllItemChanges();
+    var box = document.getElementById('item-change-box-' + id);
+    if (!box) return;
+    box.style.display = 'block';
+    box.querySelector('input').value = '';
+    box.querySelector('input').focus();
+}
+function closeItemChange(id) {
+    var box = document.getElementById('item-change-box-' + id);
+    if (box) box.style.display = 'none';
+    var drop = document.getElementById('itemChangeDropGlobal');
+    if (drop) drop.style.display = 'none';
+}
+function closeAllItemChanges() {
+    document.querySelectorAll('[id^="item-change-box-"]').forEach(function(b){ b.style.display='none'; });
+    var drop = document.getElementById('itemChangeDropGlobal');
+    if (drop) drop.style.display = 'none';
+}
+// Single global dropdown, repositioned per-call via getBoundingClientRect —
+// see the #itemChangeDropGlobal comment above the table for why it can't be
+// an absolutely-positioned child of the row (table-wrap clips it there).
+function searchItemChange(oldId, q) {
+    var drop = document.getElementById('itemChangeDropGlobal');
+    var box  = document.getElementById('item-change-box-' + oldId);
+    if (!drop || !box) return;
+    q = q.toLowerCase().trim();
+    if (!q) { drop.style.display = 'none'; return; }
+    var matches = allItems.filter(function(i){ return i.name.toLowerCase().includes(q) && i.id !== oldId; }).slice(0, 15);
+    if (!matches.length) {
+        drop.innerHTML = '<div style="padding:10px;color:#94a3b8;font-size:.82rem">পাওয়া যায়নি</div>';
+    } else {
+        drop.innerHTML = matches.map(function(i){
+            var stock = i.stock ? parseFloat(i.stock.quantity) : 0;
+            return '<div style="padding:8px 12px;cursor:pointer;font-size:.85rem;border-bottom:1px solid var(--border)" '
+                + 'onmousedown="replaceCartItem('+oldId+','+i.id+')" '
+                + 'onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">'
+                + '<strong>' + i.name + '</strong>'
+                + '<span style="float:right;font-size:.75rem;color:#94a3b8">স্টক: '+stock+' বস্তা</span>'
+                + '</div>';
+        }).join('');
+    }
+    var inputEl = box.querySelector('input');
+    var rect = (inputEl || box).getBoundingClientRect();
+    drop.style.left    = rect.left + 'px';
+    drop.style.top     = rect.bottom + 'px';
+    drop.style.width   = Math.max(rect.width, 240) + 'px';
+    drop.style.display = 'block';
+}
+function replaceCartItem(oldId, newId) {
+    var newItem = allItems.find(function(i){ return i.id === newId; });
+    if (!newItem) return;
+    var oldEntry = cart.find(function(c){ return c.id === oldId; });
+    var existing = cart.find(function(c){ return c.id === newId; });
+    if (existing) {
+        existing.qty += (oldEntry ? oldEntry.qty : 1);
+        cart = cart.filter(function(c){ return c.id !== oldId; });
+    } else {
+        var idx = cart.findIndex(function(c){ return c.id === oldId; });
+        if (idx === -1) return;
+        cart[idx] = {
+            id:            newItem.id,
+            name:          newItem.name,
+            price:         0,
+            priceEntered:  false,
+            lastPrice:     parseFloat(newItem.purchase_price) || 0,
+            syncPrice:     true,
+            qty:           oldEntry ? oldEntry.qty : 1,
+            currentStock:  newItem.stock ? parseFloat(newItem.stock.quantity) : 0,
+        };
+    }
+    renderCart();
+}
+
 function updateQty(id, val) {
     const item = cart.find(c => c.id === id);
     if (item) item.qty = parseFloat(toEnglishDigits(val)) || 0;
@@ -778,6 +868,7 @@ function updateRowTotal(id) {
 
 function renderCart() {
     scheduleDraftSave();
+    closeAllItemChanges(); // row DOM is about to be replaced — drop the orphaned global dropdown too
     const itemsFoot = document.getElementById('itemsFoot');
     if (!cart.length) {
         itemsBody.innerHTML = '<tr><td colspan="7" class="empty-row">কোনো আইটেম যোগ করা হয়নি</td></tr>';
@@ -799,9 +890,16 @@ function renderCart() {
                </div>`
             : '';
         return `<tr>
-            <td>
-                ${c.name}
+            <td style="white-space:nowrap">
+                <span class="cart-item-name" style="cursor:pointer" onclick="openItemChange(${c.id})" title="ক্লিক করে পরিবর্তন করুন">${c.name}</span>
+                <button type="button" onclick="openItemChange(${c.id})" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:.75rem;margin-left:3px;vertical-align:middle" title="আইটেম পরিবর্তন করুন"><i class="fas fa-pen-to-square"></i></button>
                 <input type="hidden" name="items[${idx}][id]" value="${c.id}">
+                <div id="item-change-box-${c.id}" style="display:none;position:relative;margin-top:6px">
+                    <input type="text" placeholder="নতুন আইটেম খুঁজুন..." autocomplete="off"
+                        style="width:200px;font-size:.82rem;padding:4px 8px;border:1.5px solid var(--accent);border-radius:6px"
+                        oninput="searchItemChange(${c.id},this.value)"
+                        onkeydown="if(event.key==='Escape')closeItemChange(${c.id})">
+                </div>
             </td>
             <td class="current-stock-cell">${c.currentStock} বস্তা</td>
             <td>
@@ -1405,6 +1503,22 @@ async function saveNewSupplier() {
 }
 
 document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'));
+
+// Guarded once — this body script re-runs on every Turbo visit to this page
+// (see the Turbo top-level const/let convention note elsewhere); an unguarded
+// addEventListener here would stack a fresh listener per visit.
+if (!window._itemChangeGlobalBound) {
+    window._itemChangeGlobalBound = true;
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('[id^="item-change-box-"]') && !e.target.closest('.cart-item-name')
+            && !e.target.closest('[onclick^="openItemChange"]') && !e.target.closest('#itemChangeDropGlobal')) {
+            closeAllItemChanges();
+        }
+    });
+    // The global dropdown is position:fixed relative to the viewport, so a page/
+    // container scroll would leave it floating over the wrong spot — just close it.
+    document.addEventListener('scroll', function() { closeAllItemChanges(); }, true);
+}
 </script>
 @endpush
 @endsection

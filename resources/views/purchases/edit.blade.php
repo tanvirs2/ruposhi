@@ -3,8 +3,26 @@
 @section('page-title', 'গ্রহণ সংশোধন')
 
 @section('content')
+{{-- Amber tint — matches purchases/create.blade.php (পণ্য গ্রহণ); same module,
+     should read the same. Kept IN the body (not @push('styles')) so Turbo
+     removes it when the body is swapped on navigation away. --}}
+<style>.content { background: #fffbeb !important; }</style>
 <form method="POST" action="{{ route('purchases.update', $purchase) }}" id="receiveForm">
 @csrf @method('PUT')
+
+{{-- Amber identity bar — simpler than create's (no stat cards; this page
+     edits one specific receive, not an overview). --}}
+<div style="background:linear-gradient(90deg,#fef3c7,#fde68a);
+            border:1.5px solid #fbbf24;
+            border-radius:10px;padding:11px 20px;margin-bottom:16px;
+            display:flex;align-items:center;gap:12px;color:#92400e;flex-wrap:wrap">
+    <i class="fas fa-pen-to-square" style="font-size:1.3rem;flex-shrink:0"></i>
+    <span style="font-weight:800;font-size:1rem;letter-spacing:.3px">
+        রিসিভ #RCV-{{ str_pad($purchase->id, 4, '0', STR_PAD_LEFT) }} সংশোধন
+    </span>
+    <span style="font-size:.82rem;color:#b45309">— স্টক ও সরবরাহকারীর বকেয়া স্বয়ংক্রিয়ভাবে আপডেট হবে।</span>
+</div>
+
 <div class="pos-grid">
 
     {{-- Left: Item selection --}}
@@ -48,13 +66,6 @@
         <div class="card">
             <div class="card-header"><h3><i class="fas fa-pen-to-square"></i> রিসিভ সংশোধন</h3></div>
             <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
-
-                {{-- Notice --}}
-                <div style="padding:10px 14px;background:#fef9c3;border:1px solid #fde68a;border-radius:8px;font-size:.82rem;color:#92400e;font-weight:600">
-                    <i class="fas fa-triangle-exclamation"></i>
-                    রিসিভ <strong>#RCV-{{ str_pad($purchase->id, 4, '0', STR_PAD_LEFT) }}</strong> সংশোধন।
-                    স্টক ও সরবরাহকারীর বকেয়া স্বয়ংক্রিয়ভাবে আপডেট হবে।
-                </div>
 
                 <div class="form-group-field">
                     <label>সরবরাহকারী</label>
@@ -135,19 +146,23 @@
                 </div>
                 <div class="summary-row summary-total"><span>নেট মোট:</span><span id="netDisplay">৳ 0</span></div>
 
-                <div class="form-group-field">
-                    <label>পরিশোধ (৳) <span class="req">*</span></label>
-                    <div style="display:flex;gap:8px">
+                {{-- Boxed like purchases/create's পরিশোধ field — same module, same shape --}}
+                <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:12px 14px">
+                    <label style="display:block;font-size:.85rem;font-weight:700;color:#dc2626;margin-bottom:7px">
+                        <i class="fas fa-hand-holding-dollar"></i> পরিশোধ (৳) <span class="req">*</span>
+                    </label>
+                    <div style="display:flex;gap:8px;align-items:stretch">
                         <input type="text" inputmode="decimal" name="paid_amount" id="paidInput"
-                            value="{{ $purchase->paid_amount }}" style="flex:1">
-                        <button type="button" onclick="setFullPay()"
-                            style="padding:0 14px;border-radius:var(--radius-sm);border:1.5px solid var(--accent);
-                                   background:var(--accent-light);color:var(--accent);font-size:.78rem;
-                                   font-weight:700;cursor:pointer;white-space:nowrap">
+                            value="{{ $purchase->paid_amount }}"
+                            style="flex:1;font-size:1.05rem;font-weight:700;min-width:0">
+                        <button type="button" onclick="setFullPay()" title="সম্পূর্ণ পরিশোধ"
+                            style="flex-shrink:0;padding:0 14px;border-radius:var(--radius-sm);border:none;
+                                   background:#dc2626;color:#fff;font-size:.82rem;
+                                   font-weight:700;cursor:pointer;white-space:nowrap;height:auto">
                             সম্পূর্ণ
                         </button>
                     </div>
-                    <div id="paidWords" style="display:none;margin-top:4px;font-size:.78rem;font-weight:600;color:var(--accent)"></div>
+                    <div id="paidWords" style="display:none;margin-top:5px;font-size:.78rem;font-weight:600;color:#dc2626"></div>
                 </div>
                 <div class="summary-row" style="color:#ef4444"><span>বকেয়া:</span><span id="dueDisplay">৳ 0</span></div>
 

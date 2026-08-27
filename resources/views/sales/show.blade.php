@@ -78,13 +78,45 @@
     <a href="{{ route('sales.edit', $sale) }}" class="btn" style="background:#fef9c3;color:#92400e;border:1px solid #fde68a">
         <i class="fas fa-pen-to-square"></i> সংশোধন করুন
     </a>
-    <form class="admin-only" method="POST" action="{{ route('sales.destroy', $sale) }}" style="margin-left:auto"
-        onsubmit="return confirm('এই বিক্রয় মুছলে স্টক ফেরত আসবে। নিশ্চিত?')">
-        @csrf @method('DELETE')
-        <button type="submit" class="btn" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5">
-            <i class="fas fa-trash"></i> মুছুন
-        </button>
-    </form>
+    @if($sale->delete_requested_at)
+        @if(auth()->user()->canManageShop())
+        <div style="margin-left:auto;display:flex;gap:8px">
+            <form method="POST" action="{{ route('sales.approve-delete', $sale) }}"
+                data-confirm-msg="বিক্রয় #INV-{{ str_pad($sale->id,4,'0',STR_PAD_LEFT) }} ডিলিট অনুমোদন করবেন?">
+                @csrf
+                <button type="submit" class="btn" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5">
+                    <i class="fas fa-check"></i> ডিলিট অনুমোদন
+                </button>
+            </form>
+            <form method="POST" action="{{ route('sales.reject-delete', $sale) }}">
+                @csrf
+                <button type="submit" class="btn btn-ghost"><i class="fas fa-xmark"></i> বাতিল</button>
+            </form>
+        </div>
+        @else
+        <span style="margin-left:auto;font-size:.85rem;color:#ef4444;font-weight:600;display:flex;align-items:center;gap:6px">
+            <i class="fas fa-clock"></i> ডিলিট অনুমোদনের অপেক্ষায়
+        </span>
+        @endif
+    @else
+        @if(auth()->user()->canManageShop())
+        <form method="POST" action="{{ route('sales.destroy', $sale) }}" style="margin-left:auto"
+            onsubmit="return confirm('এই বিক্রয় মুছলে স্টক ফেরত আসবে। নিশ্চিত?')">
+            @csrf @method('DELETE')
+            <button type="submit" class="btn" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5">
+                <i class="fas fa-trash"></i> মুছুন
+            </button>
+        </form>
+        @else
+        <form method="POST" action="{{ route('sales.request-delete', $sale) }}" style="margin-left:auto"
+            data-confirm-msg="বিক্রয় #INV-{{ str_pad($sale->id,4,'0',STR_PAD_LEFT) }} ডিলিটের অনুরোধ পাঠাবেন?">
+            @csrf
+            <button type="submit" class="btn" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5">
+                <i class="fas fa-trash"></i> ডিলিট
+            </button>
+        </form>
+        @endif
+    @endif
 </div>
 
 <div class="cash-memo{{ $memoMulti ? ' memo-multi' : '' }}" id="cashMemo" style="--m-font:{{ $mFont }}rem; --m-pad:{{ $mPad }}px; --m-lh:{{ $mLh }};">

@@ -95,8 +95,8 @@ Each **super_admin** is a business owner who can own multiple branches (shops).
 5. **`orWhere` in search must be wrapped** — `$q->where(fn($s) => $s->whereHas(...)->orWhere('id', ...))` to avoid bypassing shop_id scope
 6. **`canManageShop()` not `role !== 'admin'`** — super_admin inside a shop must pass admin-only gates; use `User::canManageShop()` everywhere
 
-### Models with `HasShopScope` (24 total)
-Item, Sale, Purchase, Customer, Supplier, Category, Brand, Stock, Employee, ExtraExpense, CustomerArea, CustomerPayment, SupplierPayment, SaleLog, SmsLog, ChatMessage, GroupChatMessage, ExtraCostCategory, StoreConfig, SaleItem, PurchaseItem, SaleExtraCost, PurchaseExtraCost, ItemFavorite
+### Models with `HasShopScope` (25 total)
+Item, Sale, Purchase, Customer, Supplier, Category, Brand, Stock, Employee, ExtraExpense, CustomerArea, CustomerPayment, SupplierPayment, SaleLog, PurchaseLog, SmsLog, ChatMessage, GroupChatMessage, ExtraCostCategory, StoreConfig, SaleItem, PurchaseItem, SaleExtraCost, PurchaseExtraCost, ItemFavorite
 
 ### Middleware
 | Alias | File | Purpose |
@@ -293,7 +293,8 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 ### ReportController
 - `salesReport()` — daily sales with standalone payments, no-item sales sections
 - `grandNoItemDueReduction` uses `min(paid, max(0, previous_due))` — handles negative previous_due
-- `saleLogs()` — audit log of edits and deletions
+- `saleLogs()` — audit log of sale edits and deletions
+- `purchaseLogs()` — audit log of purchase/receive edits and deletions, exact mirror of `saleLogs()` (`PurchaseLog` model, `reports/purchase-logs.blade.php`)
 - All date defaults: `now()->toDateString()` (today, NOT startOfMonth)
 - ⚠️ All `DB::table()` raw queries manually filtered with `->where('sales.shop_id', auth()->user()->shop_id)`
 
@@ -349,6 +350,7 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 | `suppliers/ledger-select.blade.php` | Blue "অগ্রিম" badge for credit suppliers |
 | `reports/sales.blade.php` | 5-card stats, no-item payments section, standalone payments |
 | `reports/sale-logs.blade.php` | Audit log with eye modal |
+| `reports/purchase-logs.blade.php` | Same as sale-logs, for purchase/receive edits & deletions |
 | `stock/index.blade.php` | Zero-stock rows hidden, negative stock in red |
 | `users/index.blade.php` | Staff list with role badge, "আপনি" tag for self |
 | `users/create.blade.php` | Create staff/admin account |

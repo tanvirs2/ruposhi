@@ -1580,6 +1580,19 @@ th .info-btn, .card-header .info-btn, h3 .info-btn {
        (card-header) stays put instead of scrolling away with the grid. */
     .pos-picker .card { display: flex; flex-direction: column; height: 100%; }
     .picker-scroll { flex: 1; overflow-y: auto; }
+
+    /* Minimize toggle — shrinks the picker column to a slim header-only rail
+       so the middle (search/cart) column can borrow the space. State is a
+       plain JS class toggle (see togglePickerCollapse() in sales/create.blade.php),
+       remembered per-tab via sessionStorage — not persisted server-side. */
+    .pos-grid-picker.picker-collapsed { grid-template-columns: 44px 1fr 360px; }
+    .pos-picker.collapsed { height: auto; }
+    .pos-picker.collapsed .card { height: auto; box-shadow: none; }
+    .pos-picker.collapsed .picker-scroll { display: none; }
+    .pos-picker.collapsed .card-header { justify-content: center; padding: 6px 2px; }
+    .pos-picker.collapsed .card-header h3 { margin: 0; }
+    .pos-picker.collapsed .card-header .picker-title-text { display: none; }
+    .pos-picker.collapsed .card-header h3 i.fa-grip { display: none; }
 }
 .picker-divider {
     font-size: .78rem; font-weight: 700; color: #64748b;
