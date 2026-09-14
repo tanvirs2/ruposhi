@@ -299,10 +299,9 @@ class SupplierController extends Controller
             'name'            => 'required|string|max:255',
             'opening_balance' => 'nullable|numeric',   // negative = advance; never capped at 0
         ]);
-        // পুরনো দেনা is admin-only — staff can't set it, even by tampering with
-        // the request; a blank field also means "no old due" = 0.
+        // পুরনো দেনা — staff can also set this; a blank field means "no old due" = 0.
         $request->merge([
-            'opening_balance' => auth()->user()->canManageShop() ? ($request->opening_balance ?? 0) : 0,
+            'opening_balance' => $request->opening_balance ?? 0,
         ]);
         $supplier = Supplier::create($request->only('name', 'proprietor', 'phone', 'email', 'address', 'opening_balance'));
 
@@ -339,12 +338,9 @@ class SupplierController extends Controller
             'name'            => 'required|string|max:255',
             'opening_balance' => 'nullable|numeric',
         ]);
-        // পুরনো দেনা is admin-only — staff's request can't change it, even by
-        // tampering with the form; blank field means "no old due" = 0.
+        // পুরনো দেনা — staff can also set this; blank field means "no old due" = 0.
         $request->merge([
-            'opening_balance' => auth()->user()->canManageShop()
-                ? ($request->opening_balance ?? 0)
-                : $supplier->opening_balance,
+            'opening_balance' => $request->opening_balance ?? 0,
         ]);
         $supplier->update($request->only('name', 'proprietor', 'phone', 'email', 'address', 'opening_balance'));
 

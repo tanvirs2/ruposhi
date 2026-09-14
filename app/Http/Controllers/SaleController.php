@@ -133,6 +133,37 @@ class SaleController extends Controller
             return back()->withErrors(['paid_amount' => 'পরিশোধের পরিমাণ লিখুন।'])->withInput();
         }
 
+        // ডাবল-ক্লিক/ডাবল-ট্যাপ বা ধীরগতির নেটওয়ার্কে বাটনে দ্বিতীয়বার চাপ পড়ে
+        // ফর্ম দুইবার সাবমিট হলে হুবহু একই কাস্টমার/আইটেম/টাকার সেল দুইটা
+        // ইনভয়েস নম্বরে তৈরি হয়ে যায় — চালান নম্বর ইউনিক থাকায় ধরা পড়ে না,
+        // কিন্তু বাস্তবে বিক্রয় একটাই, ফলে রিপোর্টে ক্যাশ/বিক্রয় ডাবল কাউন্ট হয়।
+        // একই ইউজার, একই দিনের তারিখ, একই পরিশোধ ও আইটেম-সিগনেচারের সেল গত
+        // কয়েক সেকেন্ডে থাকলে নতুন করে না বানিয়ে সেই সেলটাই দেখানো হয়।
+        $itemSig = fn($id, $qty, $price) => $id . ':' . number_format((float) $qty, 2, '.', '') . ':' . number_format((float) $price, 2, '.', '');
+        $itemsSignature = collect($request->items ?? [])
+            ->map(fn($i) => $itemSig($i['id'], $i['qty'], $i['price']))
+            ->sort()->values()->implode('|');
+
+        $duplicate = Sale::where('user_id', auth()->id())
+            ->where('customer_id', $request->customer_id ?: null)
+            ->where('sale_date', $request->sale_date)
+            ->where('paid_amount', $request->paid_amount)
+            ->where('created_at', '>=', now()->subSeconds(15))
+            ->with('items')
+            ->latest('id')
+            ->get()
+            ->first(function ($s) use ($itemSig, $itemsSignature, $request) {
+                $sig = $s->items
+                    ->map(fn($i) => $itemSig($i->item_id, $i->quantity, $i->price))
+                    ->sort()->values()->implode('|');
+                return $sig === $itemsSignature
+                    && abs((float) $s->discount - (float) ($request->discount ?? 0)) < 0.01;
+            });
+
+        if ($duplicate) {
+            return redirect()->route('sales.show', $duplicate)->with('success', 'বিক্রয় ইতিমধ্যে সম্পন্ন হয়েছে।');
+        }
+
         $sale = null;
         DB::transaction(function () use ($request, &$sale) {
             $total      = collect($request->items ?? [])->sum(fn($i) => $i['qty'] * $i['price']);

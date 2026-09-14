@@ -373,7 +373,10 @@ class ReportController extends Controller
                 'sales.due_amount',
                 'sales.extra_cost',
                 'sales.discount',
-                'customers.name     as customer_name',
+                // ক্লায়েন্টের অনুরোধে এখানে প্রতিষ্ঠানের নামের বদলে কাস্টমারের
+                // (প্রোপ্রাইটরের) নাম দেখানো হয় — প্রোপ্রাইটর ফাঁকা থাকলে
+                // প্রতিষ্ঠানের নামে fallback করে।
+                DB::raw('COALESCE(customers.proprietor, customers.name) as customer_name'),
                 'items.name         as item_name',
                 'sale_items.quantity as qty',
                 'sale_items.price    as rate',

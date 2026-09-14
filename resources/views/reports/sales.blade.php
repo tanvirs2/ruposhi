@@ -966,7 +966,7 @@
                 @php $staffIsNew = ($row->sale_id !== $staffLastSaleId); $staffLastSaleId = $row->sale_id; @endphp
                 <tr>
                     <td class="mono"><a href="{{ route('sales.show', $row->sale_id) }}" style="color:#0d9488">#{{ str_pad($row->sale_id,6,'0',STR_PAD_LEFT) }}</a></td>
-                    <td>{{ $row->customer_name ?? 'ওয়াক-ইন' }}</td>
+                    <td>@if($staffIsNew) {{ $row->customer_name ?? 'ওয়াক-ইন' }} @else — @endif</td>
                     <td>{{ $row->item_name }}</td>
                     <td style="text-align:right">{{ number_format($row->qty, 0) }}</td>
                     <td style="text-align:right">৳ {{ number_format($row->rate, 0) }}</td>
@@ -977,7 +977,9 @@
                     <td style="text-align:right;color:{{ $staffIsNew && $row->due_amount > 0 ? '#dc2626' : '#94a3b8' }}">
                         @if($staffIsNew && $row->due_amount > 0) ৳ {{ number_format($row->due_amount,0) }} @else — @endif
                     </td>
-                    <td style="font-size:.8rem;color:#334155">{{ \Carbon\Carbon::parse($row->sale_time)->format('h:i a') }}</td>
+                    <td style="font-size:.8rem;color:#334155">
+                        @if($staffIsNew) {{ \Carbon\Carbon::parse($row->sale_time)->format('h:i a') }} @else — @endif
+                    </td>
                 </tr>
                 @endforeach
             </tbody>

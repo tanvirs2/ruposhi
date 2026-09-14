@@ -43,7 +43,7 @@
                     @if($supplier->due_amount > 0)
                         <span class="badge badge-red">৳ {{ number_format($supplier->due_amount, 0) }}</span>
                     @elseif($supplier->due_amount < 0)
-                        <span class="badge" style="background:#eff6ff;color:#1d4ed8">অগ্রিম ৳ -{{ number_format(abs($supplier->due_amount), 0) }}</span>
+                        <span class="badge badge-two-line" style="background:#eff6ff;color:#1d4ed8"><span>অগ্রিম</span><span>৳ -{{ number_format(abs($supplier->due_amount), 0) }}</span></span>
                     @else
                         <span class="badge badge-green">পরিষ্কার</span>
                     @endif
