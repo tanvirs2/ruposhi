@@ -23,6 +23,7 @@
         .page-wrapper {
             display: flex;
             align-items: flex-start;
+            justify-content: center;
             gap: 20px;
             width: 100%;
             max-width: 860px;
@@ -423,8 +424,9 @@
 
 <div class="page-wrapper">
 
+    @if(!app()->environment('production'))
     {{-- ════════════════════════════════════════════════════════
-         ⚠️  DEV ONLY — DELETE THIS ENTIRE <div class="dev-panel"> BLOCK BEFORE PRODUCTION
+         ⚠️  DEV ONLY — hidden when APP_ENV=production (see @if above)
          ════════════════════════════════════════════════════════ --}}
     <div class="dev-panel">
         <div class="dev-panel-header">
@@ -570,7 +572,8 @@
             ক্লিক করলে email + password auto-fill হবে
         </div>
     </div>
-    {{-- ════ END DEV PANEL — DELETE ABOVE DIV BEFORE PRODUCTION ════ --}}
+    {{-- ════ END DEV PANEL ════ --}}
+    @endif
 
     {{-- ── Login Card ── --}}
     <div class="login-card">
@@ -622,6 +625,7 @@
     </div>
     {{-- ── /Login Card ── --}}
 
+    @if(!app()->environment('production'))
     {{-- ⚠️ DEV ONLY — delete with dev-panel --}}
     <button class="system-toggle" id="systemToggle" onclick="toggleSystem()">
         <i class="fas fa-shield-halved"></i>
@@ -629,6 +633,7 @@
         <i class="fas fa-lock" id="toggleLockIcon"></i>
     </button>
     {{-- /DEV ONLY --}}
+    @endif
 
 </div>
 
