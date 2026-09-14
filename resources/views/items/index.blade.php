@@ -102,11 +102,17 @@
                 // Wait for layout/paint (and self-hosted fonts) before opening the
                 // print dialog — calling window.print() right after a large innerHTML
                 // swap can catch Chrome mid-layout and produce a blank print preview.
+                // বড় তালিকায় (কয়েকশ রো) দুই rAF-এও লেআউট শেষ না হয়ে সাদা পেজ
+                // আসতে পারে — রো সংখ্যা বেশি হলে সামান্য বাড়তি সময় দেওয়া হয়।
+                var rowCount  = results.querySelectorAll('tbody tr').length;
+                var extraWait = rowCount > 80 ? 350 : 0;
                 var doPrint = function () {
                     requestAnimationFrame(function () {
                         requestAnimationFrame(function () {
-                            window.print();
-                            setTimeout(restore, 2000);
+                            setTimeout(function () {
+                                window.print();
+                                setTimeout(restore, 2000);
+                            }, extraWait);
                         });
                     });
                 };
