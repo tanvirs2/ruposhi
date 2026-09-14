@@ -1499,6 +1499,16 @@ function checkExtraPayWarning() {
 var _stockConfirmPending  = false;
 var _lossConfirmPending   = false;
 var _excessConfirmPending = false;
+// ডাবল-ক্লিক/ডাবল-ট্যাপে ফর্ম দুইবার সাবমিট হয়ে হুবহু একই বিক্রয় দুইটা
+// ইনভয়েস নম্বরে তৈরি হয়ে যাওয়া (ক্যাশ ডাবল কাউন্ট) ঠেকাতে — ভ্যালিডেশন পাস
+// করার পর, আসল সাবমিশনের ঠিক আগে বাটন disable করে দেওয়া হয়।
+function disableSaleSubmitBtn() {
+    var btn = document.querySelector('#saleForm button[type="submit"]');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> সংরক্ষণ হচ্ছে...';
+    }
+}
 document.getElementById('saleForm').addEventListener('submit', function(e) {
     // Safety net: convert any remaining Bengali digits in all numeric inputs
     this.querySelectorAll('input[inputmode="decimal"], input[inputmode="numeric"], .extra-cost-amount').forEach(inp => {
@@ -1547,6 +1557,7 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
             return;
         }
         // allow submit — payment-only sale
+        disableSaleSubmitBtn();
         return;
     }
 
@@ -1610,7 +1621,7 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
     }
     _excessConfirmPending = false;
 
-    if (_stockConfirmPending) { _stockConfirmPending = false; return; }
+    if (_stockConfirmPending) { _stockConfirmPending = false; disableSaleSubmitBtn(); return; }
     const overItems = cart.filter(c => c.qty > (c.stock ?? Infinity));
     if (overItems.length) {
         e.preventDefault();
@@ -1619,7 +1630,11 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
             _stockConfirmPending = true;
             document.getElementById('saleForm').requestSubmit();
         });
+        return;
     }
+
+    // সব ভ্যালিডেশন পাস — এখন সত্যিকারের সাবমিশন হচ্ছে।
+    disableSaleSubmitBtn();
 });
 
 // ── Stock over-stock confirm dialog ─────────────────────────
