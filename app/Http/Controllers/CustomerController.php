@@ -115,10 +115,9 @@ class CustomerController extends Controller
             'opening_balance' => 'nullable|numeric',
         ]);
 
-        // পুরনো বাকী is admin-only — staff can't set it, even by tampering with
-        // the request; a blank field also means "no old due" = 0.
+        // পুরনো বাকী — staff can also set this; a blank field means "no old due" = 0.
         $request->merge([
-            'opening_balance' => auth()->user()->canManageShop() ? ($request->opening_balance ?? 0) : 0,
+            'opening_balance' => $request->opening_balance ?? 0,
         ]);
 
         $customer = Customer::create($request->only('name', 'proprietor', 'phone', 'address', 'area_id', 'credit_limit', 'opening_balance'));
@@ -161,12 +160,9 @@ class CustomerController extends Controller
             'opening_balance' => 'nullable|numeric',
         ]);
 
-        // পুরনো বাকী is admin-only — staff's request can't change it, even by
-        // tampering with the form; blank field means "no old due" = 0.
+        // পুরনো বাকী — staff can also set this; blank field means "no old due" = 0.
         $request->merge([
-            'opening_balance' => auth()->user()->canManageShop()
-                ? ($request->opening_balance ?? 0)
-                : $customer->opening_balance,
+            'opening_balance' => $request->opening_balance ?? 0,
         ]);
 
         $customer->update($request->only('name', 'proprietor', 'phone', 'address', 'area_id', 'credit_limit', 'opening_balance'));
