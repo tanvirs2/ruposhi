@@ -3,9 +3,9 @@
 ## Project Overview
 **Bengali UI** Laravel 12 POS/Inventory system for a rice wholesale shop.
 - **Local path:** `C:\laragon\www\new_pos`
-- **Production:** `pos.numaanhussain.com` on Hostinger shared hosting
-- **Prod app path:** `~/domains/pos.numaanhussain.com/pos_app`
-- **Prod public:** symlinked `public_html → pos_app/public`
+- **Production:** DigitalOcean VPS `168.144.90.82` — droplet `ruposhi-pos-prod`, Bangalore/BLR1, Ubuntu 24.04, 1 vCPU / 2GB RAM. No domain and no SSL yet; it is served on the bare IP.
+- **Prod app path:** `/var/www/ruposhi_pos` — Nginx + PHP 8.2-FPM + MySQL 8, web root `public/`
+- **⚠️ Retired 2026-09-14 — `pos.numaanhussain.com` on Hostinger shared.** User said it is no longer needed. Listed here for reference only; **never deploy there.** Old layout was `~/domains/pos.numaanhussain.com/pos_app` with `public_html → pos_app/public` symlinked.
 - **GitHub:** `https://github.com/tanvirs2/ruposhi.git`
 - **Dev server:** `php artisan serve --port=8000`
 
@@ -16,18 +16,22 @@
 - **⚠️ PUSH RULE (strict):** User must say "push" or "push now" explicitly. Do NOT push after finishing a task, do NOT ask "should I push?", do NOT push during autonomous loop. Wait. Always.
 
 ## Deploy Command (ALWAYS use this exact command)
+Give the user this one line — they paste it into Git Bash and run it themselves:
 ```bash
-cd ~/domains/pos.numaanhussain.com/pos_app && git pull origin main && php artisan migrate
+ssh root@168.144.90.82 'cd /var/www/ruposhi_pos && git pull origin main && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && chown -R www-data:www-data storage bootstrap/cache'
 ```
-After pulling, also run (rebuilds framework caches — old clear-only left the app uncached and slow):
-```bash
-php artisan config:cache && php artisan route:cache && php artisan view:cache
-```
-- `git pull origin main` — NOT bare `git pull` (doesn't work on production)
-- User runs SSH commands themselves — NEVER ask for passwords or initiate SSH
+- `git pull origin main` — NOT bare `git pull`
+- **Never drop the trailing `chown`.** The commands run as root, so the caches `view:cache`
+  writes end up root-owned and www-data can no longer write there → 500 errors.
+- User runs SSH commands themselves — NEVER ask for passwords or key passphrases, and do not
+  initiate SSH. (The key is passphrase-protected anyway: verified 2026-09-14 that
+  `ssh -o BatchMode=yes` returns `Permission denied (publickey)`.)
 - ⚠️ These cache ONLY framework internals (config files, route table, compiled Blade) —
   never business data. due_amount/stock/prices still hit the DB fresh on every request.
 - ⚠️ After config:cache, `.env` changes on the server require re-running `php artisan config:cache`.
+- ⚠️ The server `.env` must have `APP_ENV=production` — the login page's demo-accounts panel is
+  gated on it and stays visible under any other env. Check with
+  `php artisan tinker --execute="echo app()->environment();"`.
 
 ## First-Time Production Setup (seeders)
 After initial deploy of v2, run once on server:
@@ -483,7 +487,7 @@ a short per-session summary so `AGENTS.md` stays light to load every session.
 8. **Session 8 (UI Polish)** — Removed item-search result cap, fixed a `@push('styles')` CSS-leak bug, rewrote keyboard shortcuts (`e.code`), sale-logs filter chips, searchable area combobox partial, renamed মাল→পণ্য sitewide.
 9. **Session 9 (তাগাদা/ক্রেডিট/দিনশেষ)** — পরিশোধ তালিকা totals reconciliation, searchable supplier dropdown, floating calculator, তাগাদা লিস্ট (collections + aging), credit limit (warning-only), দিনশেষ রিপোর্ট + cash reconciliation, WhatsApp share, daily DB backup, concurrency hardening (`lockForUpdate`), PWA installable.
 10. **Session 10 (মেমো প্রিন্ট/ফন্ট/সেলফ-হোস্ট)** — Sidebar nav highlight, 10 new Bangla fonts, cash memo fits ¼ Demy paper with dynamic density scaling, ALL front-end assets self-hosted (zero external requests), profit/price-jump warnings on sale/purchase create.
-11. **Session 11 (আইটেম পিকার/ফেভারিট/ব্র্যান্ড)** — see "Item picker" pattern above; print row-height/minus-sign fixes; Bangla words-in-text extended to more fields; `opening_balance` restricted to admin; purchase overpayment-split removed (direct negative due instead); blank `paid_amount`/`sale_price` field fixes; previous-due banner fix on edit-page load; purchase delete/edit SMS; bold invoice names; item picker + per-user favorites; auto-fill area on customer select; new optional **Brand** field (mirrors Category).
+11. **Session 11 (আইটেম পিকার/ফেভারিট/ব্র্যান্ড)** — see "Item picker" pattern above; print row-height/minus-sign fixes; Bangla words-in-text extended to more fields; `opening_balance` restricted to admin (later reopened to staff too — Session 12); purchase overpayment-split removed (direct negative due instead); blank `paid_amount`/`sale_price` field fixes; previous-due banner fix on edit-page load; purchase delete/edit SMS; bold invoice names; item picker + per-user favorites; auto-fill area on customer select; new optional **Brand** field (mirrors Category).
 
 ---
 
