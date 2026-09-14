@@ -1893,6 +1893,17 @@ input[type="time"].form-select {
         text-overflow: ellipsis !important;
     }
 
+    /* সরবরাহকারী তালিকা — "অগ্রিম ৳ -X" ব্যাজ কলামের ফিক্সড width-এ এক লাইনে
+       আঁটাতে গিয়ে সংখ্যার শেষ ডিজিট কেটে যাচ্ছিল। প্রিন্টে "অগ্রিম" আর টাকার
+       অংক দুই লাইনে ভেঙে দেখানো হয় (স্ক্রিনে আগের মতোই এক লাইনে থাকে)। */
+    .badge-two-line {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0 !important;
+        line-height: 1.25 !important;
+    }
+    .badge-two-line span { display: block !important; white-space: nowrap !important; }
+
     /* ── Stats — one compact strip, not big cards ── */
     .stats-grid, .sales-stats-grid {
         display: flex !important; flex-wrap: wrap !important; gap: 6px !important;
