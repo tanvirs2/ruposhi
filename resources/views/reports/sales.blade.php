@@ -1016,6 +1016,7 @@
                     <th class="tc col-hide-tablet">তারিখ</th>
                     <th>আইটেম নাম</th>
                     <th class="tc">পরিমাণ</th>
+                    <th class="tr col-hide-tablet">বিক্রয় মূল্য</th>
                     <th class="tr">মোট মূল্য</th>
                     <th class="tr">জমা</th>
                     <th class="tr">বাকী</th>
@@ -1041,6 +1042,7 @@
                     </td>
                     <td>{{ $row->item_name }}</td>
                     <td class="tc">{{ (int)$row->qty }}</td>
+                    <td class="tr col-hide-tablet">{{ number_format($row->rate, 0) }}</td>
                     <td class="tr" style="font-weight:600">{{ number_format($swRunning, 0) }}</td>
                     <td class="tr" style="color:#16a34a">
                         @if($swIsNew) {{ number_format($row->paid_amount, 0) }} @else — @endif
@@ -1062,6 +1064,7 @@
             <tfoot>
                 <tr class="tfoot-summary">
                     <td colspan="4" style="text-align:right;font-weight:700;padding-right:16px">সর্বমোট</td>
+                    <td class="tr col-hide-tablet"></td>
                     <td class="tr" style="font-weight:800">{{ number_format($walkinItems->sum('amount'), 0) }}</td>
                     <td class="tr" style="color:#16a34a;font-weight:700">{{ number_format($walkinPaid, 0) }}</td>
                     <td class="tr" style="color:#dc2626;font-weight:700">{{ number_format($walkinDue, 0) }}</td>
