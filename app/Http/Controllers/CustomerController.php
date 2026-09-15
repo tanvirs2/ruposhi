@@ -260,8 +260,12 @@ class CustomerController extends Controller
 
         foreach ($sales as $sale) {
             $saleTime = $sale->created_at ?? $sale->sale_date;
+            // Running sum of what the rows below actually charge for this sale.
+            // It must land on $sale->total_amount — see the reconciliation row.
+            $billed   = 0.0;
             // One row per item
             foreach ($sale->items as $si) {
+                $billed += (float) $si->subtotal;
                 $ledger->push([
                     'sort_key' => $saleTime,
                     'datetime' => $saleTime,
@@ -276,6 +280,7 @@ class CustomerController extends Controller
             }
             // Discount row (credit — reduces the bill)
             if ($sale->discount > 0) {
+                $billed -= (float) $sale->discount;
                 $ledger->push([
                     'sort_key' => $saleTime,
                     'datetime' => $saleTime,
@@ -291,6 +296,7 @@ class CustomerController extends Controller
             // Extra cost rows (categorized — new system)
             if ($sale->extraCosts->isNotEmpty()) {
                 foreach ($sale->extraCosts as $ec) {
+                    $billed += (float) $ec->amount;
                     $ledger->push([
                         'sort_key' => $saleTime,
                         'datetime' => $saleTime,
@@ -305,6 +311,7 @@ class CustomerController extends Controller
                 }
             } elseif (($sale->extra_cost ?? 0) > 0) {
                 // Legacy fallback: old record without extraCosts rows
+                $billed += (float) $sale->extra_cost;
                 $ledger->push([
                     'sort_key' => $saleTime,
                     'datetime' => $saleTime,
@@ -317,6 +324,30 @@ class CustomerController extends Controller
                     'credit'   => 0,
                 ]);
             }
+            // Reconciliation row. sales.total_amount is the canonical bill —
+            // it is what customers.due_amount and the সর্বমোট বাকী card are
+            // built from (Customer::recalcDue()). The rows above only
+            // *reconstruct* it from sale_items + extra costs − discount, and on
+            // older records the two can drift (a line edited without its
+            // subtotal being rewritten, an extra cost migrated to
+            // sale_extra_costs with a different total). Without this row the
+            // ledger's অবশিষ্ট column silently lands on a different number than
+            // the card. Emit the gap instead of hiding it.
+            $gap = (float) $sale->total_amount - $billed;
+            if (abs($gap) > 0.01) {
+                $ledger->push([
+                    'sort_key' => $saleTime,
+                    'datetime' => $saleTime,
+                    'sale_id'  => $sale->id,
+                    'type'     => 'adjustment',
+                    'label'    => 'সমন্বয় (চালান মোট অনুযায়ী)',
+                    'qty'      => 0,
+                    'rate'     => 0,
+                    'debit'    => $gap > 0 ? $gap : 0,
+                    'credit'   => $gap < 0 ? -$gap : 0,
+                ]);
+            }
+
             // Initial payment on the sale (paid_amount > 0) → জমা টেবিল
             if ($sale->paid_amount > 0) {
                 $deposits->push([

@@ -177,6 +177,7 @@
                         'payment'    => 'cl-payment-row',
                         'discount'   => 'cl-discount-row',
                         'extra_cost' => 'cl-extracost-row',
+                        'adjustment' => 'cl-adjust-row',
                         default      => '',
                     };
                 @endphp
@@ -199,6 +200,8 @@
                             <span class="cl-discount-label"><i class="fas fa-tag" style="font-size:.72rem;margin-right:3px"></i> {{ $row['label'] }}</span>
                         @elseif($row['type'] === 'extra_cost')
                             <span class="cl-extracost-label"><i class="fas fa-plus-circle" style="font-size:.72rem;margin-right:3px"></i> {{ $row['label'] }}</span>
+                        @elseif($row['type'] === 'adjustment')
+                            <span class="cl-adjust-label"><i class="fas fa-scale-balanced" style="font-size:.72rem;margin-right:3px"></i> {{ $row['label'] }}</span>
                         @else
                             <span class="cl-item-name">{{ $row['label'] }}</span>
                         @endif
@@ -386,6 +389,7 @@
                     $rowClass = match($row['type']) {
                         'discount'   => 'cl-discount-row',
                         'extra_cost' => 'cl-extracost-row',
+                        'adjustment' => 'cl-adjust-row',
                         default      => '',
                     };
                 @endphp
@@ -414,6 +418,11 @@
                         @elseif($row['type'] === 'extra_cost')
                             <span class="cl-extracost-label">
                                 <i class="fas fa-plus-circle" style="font-size:.72rem;margin-right:3px"></i>
+                                {{ $row['label'] }}
+                            </span>
+                        @elseif($row['type'] === 'adjustment')
+                            <span class="cl-adjust-label">
+                                <i class="fas fa-scale-balanced" style="font-size:.72rem;margin-right:3px"></i>
                                 {{ $row['label'] }}
                             </span>
                         @else
@@ -560,6 +569,8 @@ function clSetView(mode) {
 
 .cl-extracost-row td { background: #fdf4ff; }
 .cl-extracost-label  { color: #7e22ce; font-weight: 600; font-size: .88rem; }
+.cl-adjust-row td   { background: #f1f5f9; }
+.cl-adjust-label    { color: #475569; font-weight: 600; font-size: .88rem; font-style: italic; }
 .cl-laborcost-row td { background: #fff1f2; }
 .cl-laborcost-label  { color: #be123c; font-weight: 600; font-size: .88rem; }
 
@@ -610,7 +621,7 @@ function clSetView(mode) {
     .card { box-shadow: none !important; border: none !important; }
     /* White rows — keep structure with borders instead of tinted backgrounds */
     .cl-payment-row td, .cl-opening-row td, .cl-discount-row td,
-    .cl-extracost-row td, .cl-laborcost-row td, .cl-tfoot td,
+    .cl-extracost-row td, .cl-laborcost-row td, .cl-adjust-row td, .cl-tfoot td,
     .cl-deposit-row td { background: #fff !important; }
     .cl-opening-row td { border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; }
     .cl-tfoot td { border-top: 1.5px solid #000; }
