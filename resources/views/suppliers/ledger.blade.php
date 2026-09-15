@@ -198,13 +198,15 @@
                     $isPay       = $row->type === 'payment' || $row->type === 'purchase_payment';
                     $isDeposit   = $row->type === 'deposit';
                     $isExtraCost = $row->type === 'extra_cost';
+                    $isAdjust    = $row->type === 'adjustment';
                     $isNewGroup  = $row->purchase_id && $row->purchase_id !== $prevPurchaseId;
                     if ($row->purchase_id) $prevPurchaseId = $row->purchase_id;
                     elseif ($row->type === 'payment') $prevPurchaseId = null;
                     $rowClass = $isPay      ? 'sl-payment-row'
                               : ($isDeposit   ? 'sl-deposit-row'
                               : ($isExtraCost ? 'sl-extracost-row'
-                              : 'sl-item-row'));
+                              : ($isAdjust    ? 'sl-adjust-row'
+                              : 'sl-item-row')));
                 @endphp
                 <tr class="{{ $rowClass }} {{ $isNewGroup ? 'sl-new-group' : '' }}">
 
@@ -233,6 +235,11 @@
                         @elseif($isExtraCost)
                             <span class="sl-extracost-label">
                                 <i class="fas fa-plus-circle" style="font-size:.72rem;margin-right:3px"></i>
+                                {{ $row->label }}
+                            </span>
+                        @elseif($isAdjust)
+                            <span class="sl-adjust-label">
+                                <i class="fas fa-scale-balanced" style="font-size:.72rem;margin-right:3px"></i>
                                 {{ $row->label }}
                             </span>
                         @elseif($isDeposit)
@@ -472,10 +479,11 @@
                 @php
                     $isItem3      = $row->type === 'item';
                     $isExtraCost3 = $row->type === 'extra_cost';
+                    $isAdjust3    = $row->type === 'adjustment';
                     $isNewGroup3  = $row->purchase_id && $row->purchase_id !== $prevPurchaseId3;
                     if ($row->purchase_id) $prevPurchaseId3 = $row->purchase_id;
                 @endphp
-                <tr class="{{ $isExtraCost3 ? 'sl-extracost-row' : 'sl-item-row' }} {{ $isNewGroup3 ? 'sl-new-group' : '' }}">
+                <tr class="{{ $isExtraCost3 ? 'sl-extracost-row' : ($isAdjust3 ? 'sl-adjust-row' : 'sl-item-row') }} {{ $isNewGroup3 ? 'sl-new-group' : '' }}">
                     <td class="tc mono" style="font-size:.82rem">
                         @if($row->link)
                             <a href="{{ $row->link }}" class="link-primary" title="রিসিভ দেখুন">{{ $row->ref }}</a>
@@ -487,6 +495,8 @@
                     <td>
                         @if($isItem3)
                             <span style="font-weight:600;color:var(--text)">{{ $row->label }}</span>
+                        @elseif($isAdjust3)
+                            <span class="sl-adjust-label"><i class="fas fa-scale-balanced" style="font-size:.72rem;margin-right:3px"></i> {{ $row->label }}</span>
                         @else
                             <span class="sl-extracost-label"><i class="fas fa-plus-circle" style="font-size:.72rem;margin-right:3px"></i> {{ $row->label }}</span>
                         @endif
@@ -588,6 +598,8 @@ function slSetView(mode) {
 .sl-payment-row  { background: #f0fdf4; }
 .sl-deposit-row  { background: #eff6ff; }
 .sl-item-row     { background: var(--card-bg); }
+.sl-adjust-row { background: #f1f5f9; }
+.sl-adjust-label { color: #475569; font-weight: 600; font-size: .88rem; font-style: italic; }
 .sl-extracost-row { background: #fdf4ff; }
 .sl-laborcost-row { background: #fff1f2; }
 .sl-extracost-label { color: #7e22ce; font-weight: 600; font-size: .88rem; }
@@ -701,7 +713,7 @@ function slSetView(mode) {
     .sl-kpi-label i, .sl-kpi-sub i { display: none; }
     .card             { box-shadow: none !important; border: none !important; }
     .sl-payment-row, .sl-opening-row, .sl-tfoot td,
-    .sl-deposit-row td { background: #fff !important; }
+    .sl-deposit-row td, .sl-adjust-row td { background: #fff !important; }
     .sl-opening-row td { border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; }
     .sl-new-group td  { border-top: 1px dashed #999 !important; }
 

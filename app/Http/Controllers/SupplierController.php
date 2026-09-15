@@ -99,7 +99,12 @@ class SupplierController extends Controller
             $ts      = $p->created_at ? $p->created_at->timestamp : 0;
             $baseKey = sprintf('%010d_%06d', $ts, $p->id);
             $iIdx    = 0;
+            // Running sum of what the rows below actually charge for this
+            // receipt. It must land on $p->total_amount — see the
+            // reconciliation row after the extra-cost block.
+            $billed  = 0.0;
             foreach ($p->items as $pi) {
+                $billed += (float) $pi->subtotal;
                 $rows->push((object)[
                     'date'        => $p->purchase_date,
                     'sort_key'    => $baseKey . '_1i' . sprintf('%04d', $iIdx),
@@ -118,6 +123,7 @@ class SupplierController extends Controller
             // Extra cost rows (categorised — new system)
             if ($p->extraCosts->isNotEmpty()) {
                 foreach ($p->extraCosts as $ecIdx => $ec) {
+                    $billed += (float) $ec->amount;
                     $rows->push((object)[
                         'date'        => $p->purchase_date,
                         'sort_key'    => $baseKey . '_2e' . sprintf('%04d', $ecIdx),
@@ -134,6 +140,7 @@ class SupplierController extends Controller
                 }
             } elseif (($p->extra_cost ?? 0) > 0) {
                 // Legacy fallback: old record without extraCosts rows
+                $billed += (float) $p->extra_cost;
                 $rows->push((object)[
                     'date'        => $p->purchase_date,
                     'sort_key'    => $baseKey . '_2e',
@@ -148,6 +155,31 @@ class SupplierController extends Controller
                     'link'        => route('purchases.show', $p),
                 ]);
             }
+            // Reconciliation row. purchases.total_amount is the canonical bill —
+            // it is what suppliers.due_amount and the সর্বমোট বাকী card are
+            // built from (Supplier::recalcDue()). The rows above only
+            // *reconstruct* it from purchase_items + extra costs, and the two
+            // can drift: deleting an item used to cascade its purchase_items
+            // rows away while the receipt kept its original total. Without this
+            // row the অবশিষ্ট column silently lands on a different number than
+            // the card. Emit the gap instead of hiding it.
+            $gap = (float) $p->total_amount - $billed;
+            if (abs($gap) > 0.01) {
+                $rows->push((object)[
+                    'date'        => $p->purchase_date,
+                    'sort_key'    => $baseKey . '_3a',
+                    'type'        => 'adjustment',
+                    'label'       => 'সমন্বয় (রিসিটের মোট অনুযায়ী)',
+                    'ref'         => '#PUR-' . str_pad($p->id, 4, '0', STR_PAD_LEFT),
+                    'qty'         => 0,
+                    'rate'        => 0,
+                    'debit'       => $gap > 0 ? $gap : 0,
+                    'credit'      => $gap < 0 ? -$gap : 0,
+                    'purchase_id' => $p->id,
+                    'link'        => route('purchases.show', $p),
+                ]);
+            }
+
             // Deposit rows (জমা — per category)
             foreach ($p->deposits as $dIdx => $dep) {
                 $rows->push((object)[
@@ -224,7 +256,7 @@ class SupplierController extends Controller
         // NOTE: $bills rows are the SAME objects as $combined's (filter/concat/sortBy
         // don't clone). Must write to a distinct property here — overwriting ->balance
         // would corrupt $combined's already-correct cumulative balance for these rows.
-        $bills = $rows->filter(fn($r) => in_array($r->type, ['item', 'extra_cost']))
+        $bills = $rows->filter(fn($r) => in_array($r->type, ['item', 'extra_cost', 'adjustment']))
             ->sortBy('sort_key')->values();
         $runBillBal = $openingBalance;
         foreach ($bills as $row) {
