@@ -124,6 +124,27 @@ class ItemController extends Controller
         if (!auth()->user()->canManageShop()) {
             abort(403, 'শুধুমাত্র অ্যাডমিন মুছতে পারবেন।');
         }
+
+        // sale_items.item_id and purchase_items.item_id are ON DELETE CASCADE,
+        // so deleting a traded item silently wipes its lines out of every past
+        // চালান. The চালান itself survives with its original total_amount, so
+        // the bill no longer adds up: customer ledgers, supplier ledgers and
+        // profit reports all drift by the value of the erased lines, with
+        // nothing on screen to say why. History is not ours to delete — refuse
+        // and let the user hide the item from the pickers instead.
+        $soldCount     = $item->saleItems()->count();
+        $purchaseCount = $item->purchaseItems()->count();
+
+        if ($soldCount || $purchaseCount) {
+            $parts = [];
+            if ($soldCount)     $parts[] = "{$soldCount}টি বিক্রয়";
+            if ($purchaseCount) $parts[] = "{$purchaseCount}টি ক্রয়";
+
+            return redirect()->route('items.index')->with('error',
+                'এই আইটেমটি ' . implode(' ও ', $parts) . ' চালানে ব্যবহৃত হয়েছে, তাই মুছে ফেলা যাবে না — '
+                . 'মুছলে ওই চালানগুলোর হিসাব গরমিল হয়ে যাবে। বদলে আইটেমটি নিষ্ক্রিয় রাখুন।');
+        }
+
         $item->delete();
         return redirect()->route('items.index')->with('success', 'আইটেম মুছে ফেলা হয়েছে।');
     }
