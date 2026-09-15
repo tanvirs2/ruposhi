@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Support\BillTotals;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Finds চালান whose stored total_amount no longer matches the sum of their
@@ -21,27 +21,10 @@ class AuditBillTotals extends Command
     public function handle(): int
     {
         // No auth in CLI, so ShopScope never applies — filter shop_id manually.
-        $shopId = $this->option('shop');
+        $shopId = $this->option('shop') ? (int) $this->option('shop') : null;
 
-        $saleGap = $this->gapExpr('sales', 'sale_items', 'sale_extra_costs', true);
-        $sales   = DB::table('sales')
-            ->when($shopId, fn ($q) => $q->where('shop_id', $shopId))
-            ->leftJoin('customers', 'sales.customer_id', '=', 'customers.id')
-            ->selectRaw("sales.id, sales.sale_date as dt, sales.total_amount,
-                         COALESCE(customers.name, 'ওয়াক-ইন') as party, {$saleGap} as gap")
-            ->havingRaw('ABS(gap) > 0.01')
-            ->orderBy('sales.id')
-            ->get();
-
-        $purchaseGap = $this->gapExpr('purchases', 'purchase_items', 'purchase_extra_costs', false);
-        $purchases   = DB::table('purchases')
-            ->when($shopId, fn ($q) => $q->where('shop_id', $shopId))
-            ->leftJoin('suppliers', 'purchases.supplier_id', '=', 'suppliers.id')
-            ->selectRaw("purchases.id, purchases.purchase_date as dt, purchases.total_amount,
-                         COALESCE(suppliers.name, '—') as party, {$purchaseGap} as gap")
-            ->havingRaw('ABS(gap) > 0.01')
-            ->orderBy('purchases.id')
-            ->get();
+        $sales     = BillTotals::driftingSales($shopId);
+        $purchases = BillTotals::driftingPurchases($shopId);
 
         $this->render('বিক্রয় (চালান)', $sales);
         $this->render('ক্রয় (রিসিট)', $purchases);
@@ -57,22 +40,6 @@ class AuditBillTotals extends Command
         $this->line('লেজারে এই ফারাক এখন "সমন্বয়" সারিতে দেখানো হয়, লুকানো থাকে না।');
 
         return self::SUCCESS;
-    }
-
-    /** total_amount − (Σ lines [− discount] + extra costs) as a SQL expression. */
-    private function gapExpr(string $table, string $lines, string $extras, bool $hasDiscount): string
-    {
-        $fk       = $table === 'sales' ? 'sale_id' : 'purchase_id';
-        $discount = $hasDiscount ? "- {$table}.discount" : '';
-
-        // Prefer the categorised extra-cost rows; fall back to the legacy
-        // scalar column only when a bill has no rows at all — this mirrors how
-        // the ledgers render them.
-        return "{$table}.total_amount - ("
-             . "COALESCE((SELECT SUM(l.subtotal) FROM {$lines} l WHERE l.{$fk} = {$table}.id), 0)"
-             . " {$discount}"
-             . " + COALESCE((SELECT SUM(x.amount) FROM {$extras} x WHERE x.{$fk} = {$table}.id),"
-             . " {$table}.extra_cost))";
     }
 
     private function render(string $title, $rows): void
