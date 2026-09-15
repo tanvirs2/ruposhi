@@ -714,7 +714,7 @@ function addItem(id) {
             price:         0,
             priceEntered:  false,
             lastPrice:     parseFloat(item.purchase_price) || 0,
-            syncPrice:     true,
+            syncPrice:     false,
             qty:           1,
             currentStock:  item.stock ? parseFloat(item.stock.quantity) : 0,
         });
@@ -793,7 +793,7 @@ function replaceCartItem(oldId, newId) {
             price:         0,
             priceEntered:  false,
             lastPrice:     parseFloat(newItem.purchase_price) || 0,
-            syncPrice:     true,
+            syncPrice:     false,
             qty:           oldEntry ? oldEntry.qty : 1,
             currentStock:  newItem.stock ? parseFloat(newItem.stock.quantity) : 0,
         };
@@ -830,8 +830,8 @@ function useLastPrice(id) {
 }
 
 // Whether this rate should also become the item's stored ক্রয়মূল্য.
-// Ticked by default: sales snapshot items.purchase_price as their cost, so a
-// stale item price would be frozen into the profit report forever.
+// ক্লায়েন্টের অনুরোধে বাই-ডিফল্ট আনচেক — ইউজার নিজে টিক দিলে তবেই
+// items.purchase_price আপডেট হবে, নইলে এই রিসিটের দর শুধু এই রিসিটেই থাকে।
 function toggleSyncPrice(id, on) {
     const item = cart.find(c => c.id === id);
     if (item) item.syncPrice = on;
