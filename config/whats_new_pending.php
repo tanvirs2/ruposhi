@@ -9,5 +9,4 @@
 // into a single new entry at the top of whats_new.php (version +0.1, today's
 // date) and empty this array back out.
 return [
-    'লগইন পাতায় ডেমো অ্যাকাউন্টের তালিকা আর দেখাবে না — পাতাটি এখন পরিষ্কার দেখাবে',
 ];
