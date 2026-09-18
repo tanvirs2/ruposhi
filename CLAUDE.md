@@ -241,6 +241,14 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 - Caching any business data causes wrong values — NEVER use `Cache::remember()` for these
 - `StoreConfig::get()` hits DB directly every time — intentional
 
+### মেমো প্রিন্ট নিরাপত্তা (পুনঃমুদ্রণ)
+- স্টাফ বাড়তি কপি প্রিন্ট করে মাল ডেলিভারি করে দিতে পারে — তাই প্রতিটা প্রিন্ট `sale_prints`-এ লগ হয়
+- `sales/show.blade.php` — `beforeprint` ইভেন্টে (প্রিন্ট বাটন **ও** Ctrl+P দুটোতেই চলে) লগ POST হয়
+- কপি ২ থেকে মেমোর উপরে `.reprint-stamp` — "পুনঃমুদ্রণ — কপি নং X" + কে/কখন; প্রিন্টে সাদা-কালোতেও স্পষ্ট
+- লিসেনার `window._memoPrintHooked` ফ্ল্যাগ দিয়ে **একবারই** বসে (Turbo-তে window টেকে, প্রতি `turbo:load`-এ বসালে একবার প্রিন্টে কয়েকটা লগ হত), আর হ্যান্ডলার `#reprintStamp` আছে কি না দেখে — নইলে অন্য পেজের Ctrl+P আগের মেমোর নামে লগ হত
+- ⚠️ প্রিন্ট **সম্পূর্ণ আটকানো অসম্ভব** — PDF সেভ, ফটোকপি, JS বন্ধ করা যায়। এটা ডিটারেন্ট + অডিট
+- আপাতত শুধু বিক্রয় মেমো; ক্রয়/রিসিভ চালানে নেই (user directive, 2026-09-18)
+
 ---
 
 ## Database Tables (Key)
@@ -262,6 +270,7 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 | `resellers` | Reseller profile — commission, max_clients, can_extend_license |
 | `brands` | `shop_id`, `name`, `description` — optional per-item brand tag, mirrors `categories`; unique `(shop_id, name)` |
 | `item_favorites` | `user_id`, `item_id` — per-user starred items for the sale-create item picker; unique `(user_id, item_id)` |
+| `sale_prints` | `shop_id`, `sale_id`, `user_id`, `copy_no`, `printed_at`, `ip` — মেমো প্রিন্ট-লগ; copy_no 1 = মূল কপি, 2+ = পুনঃমুদ্রণ |
 
 ---
 
@@ -294,11 +303,17 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 - `store()` — `due = supplierDue - amount` (NO cap — allows credit)
 - `destroy()` — checks `canManageShop()`, reverses payment
 
+### SalePrintController
+- `store()` — POST `sales/{sale}/print-log`; মেমোর প্রিন্ট রেকর্ড করে, `copy_no = max+1`
+- `lockForUpdate()` দিয়ে কপি নম্বর সিরিয়ালাইজ; একই ইউজারের ৩ সেকেন্ডের ভেতরের ইভেন্ট ডিবাউন্স (Chrome কখনো `beforeprint` দুইবার ছোড়ে)
+- ⚠️ ব্রাউজার প্রিন্ট আটকানো যায় না (Ctrl+P, PDF সেভ, ফটোকপি) — এটা প্রতিরোধ নয়, **অডিট + কাগজে কপি নং ছাপা**
+
 ### ReportController
 - `salesReport()` — daily sales with standalone payments, no-item sales sections
 - `grandNoItemDueReduction` uses `min(paid, max(0, previous_due))` — handles negative previous_due
 - `saleLogs()` — audit log of sale edits and deletions
 - `purchaseLogs()` — audit log of purchase/receive edits and deletions, exact mirror of `saleLogs()` (`PurchaseLog` model, `reports/purchase-logs.blade.php`)
+- `printLogs()` — মেমো পুনঃমুদ্রণের হিস্টরি; **শুধু `copy_no > 1`** (প্রথম প্রিন্ট স্বাভাবিক কাজ, তালিকায় আসে না), route-এ `shop.admin`
 - All date defaults: `now()->toDateString()` (today, NOT startOfMonth)
 - ⚠️ All `DB::table()` raw queries manually filtered with `->where('sales.shop_id', auth()->user()->shop_id)`
 
@@ -355,6 +370,7 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 | `reports/sales.blade.php` | 5-card stats, no-item payments section, standalone payments |
 | `reports/sale-logs.blade.php` | Audit log with eye modal |
 | `reports/purchase-logs.blade.php` | Same as sale-logs, for purchase/receive edits & deletions |
+| `reports/print-logs.blade.php` | মেমো পুনঃমুদ্রণ তালিকা (কপি ২+) — কে, কখন, কোন কপি, IP |
 | `stock/index.blade.php` | Zero-stock rows hidden, negative stock in red |
 | `users/index.blade.php` | Staff list with role badge, "আপনি" tag for self |
 | `users/create.blade.php` | Create staff/admin account |

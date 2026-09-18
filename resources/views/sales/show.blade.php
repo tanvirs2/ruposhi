@@ -59,7 +59,7 @@
 {{-- Action buttons (no-print) --}}
 <div class="form-actions no-print" style="max-width:720px;margin-bottom:16px">
     <a href="{{ route('sales.index') }}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> বিক্রয় তালিকা</a>
-    <button onclick="window.print()" class="btn btn-primary"><i class="fas fa-print"></i> প্রিন্ট / PDF</button>
+    <button onclick="printMemo()" class="btn btn-primary"><i class="fas fa-print"></i> প্রিন্ট / PDF</button>
     @if($sale->customer && $sale->customer->phone)
     @php
         $waMsg = $store['name'] . "\n"
@@ -119,7 +119,38 @@
     @endif
 </div>
 
+{{-- ── পুনঃমুদ্রণ সতর্কবার্তা (স্ক্রিনে, প্রিন্টে নয়) ─────────────
+     এই মেমো আগে প্রিন্ট হয়ে থাকলে স্টাফ যেন জেনেই আবার প্রিন্ট করে:
+     কাগজে কপি নম্বর ছাপা হবে আর হিস্টরিতে জমা হবে। --}}
+@if(($printCount ?? 0) > 0)
+<div class="no-print" style="max-width:720px;margin-bottom:16px;padding:12px 14px;
+    background:#fef2f2;border:1px solid #fecaca;border-left:4px solid #dc2626;border-radius:8px;
+    font-size:.86rem;color:#991b1b;line-height:1.7">
+    <div style="font-weight:800">
+        <i class="fas fa-print"></i> এই মেমো আগে {{ $printCount }} বার প্রিন্ট হয়েছে
+    </div>
+    @if($lastPrint)
+    <div style="font-size:.82rem;color:#7f1d1d">
+        শেষবার — {{ $lastPrint->user?->name ?? 'অজানা' }},
+        {{ $lastPrint->printed_at->format('d/m/Y h:i A') }} (কপি নং {{ $lastPrint->copy_no }})
+    </div>
+    @endif
+    <div style="font-size:.82rem;margin-top:4px">
+        আবার প্রিন্ট করলে কাগজের উপরে <strong>"পুনঃমুদ্রণ — কপি নং {{ $printCount + 1 }}"</strong>
+        ছাপা হবে এবং পুনঃমুদ্রণের হিস্টরিতে জমা হবে।
+    </div>
+</div>
+@endif
+
 <div class="cash-memo{{ $memoMulti ? ' memo-multi' : '' }}" id="cashMemo" style="--m-font:{{ $mFont }}rem; --m-pad:{{ $mPad }}px; --m-lh:{{ $mLh }};">
+
+    {{-- ── পুনঃমুদ্রণ সীল ───────────────────────────────────────────
+         প্রথম কপিতে লুকানো থাকে; দ্বিতীয় কপি থেকে beforeprint হ্যান্ডলার
+         এটা দেখিয়ে দেয়, তাই বাড়তি কপি কাগজেই আলাদা চেনা যায়। --}}
+    <div class="reprint-stamp" id="reprintStamp" style="display:none">
+        <span class="reprint-stamp-main">পুনঃমুদ্রণ — কপি নং <span id="reprintCopyNo">2</span></span>
+        <span class="reprint-stamp-sub" id="reprintStampBy"></span>
+    </div>
 
     {{-- ── STORE HEADER ─────────────────────────────────────────── --}}
     <div class="memo-header">
@@ -326,6 +357,118 @@
     </div>{{-- /.memo-footer --}}
 
 </div>{{-- /.cash-memo --}}
+
+{{-- পেজ-নির্দিষ্ট CSS body-তে, @push('styles')-এ নয় — Turbo head merge করে
+     কিন্তু push করা style কখনো সরায় না, ফলে পরের পেজেও লেগে থাকত। --}}
+<style>
+.reprint-stamp {
+    border: 2px solid #dc2626;
+    background: #fef2f2;
+    color: #991b1b;
+    border-radius: 6px;
+    padding: 5px 10px;
+    margin-bottom: 8px;
+    text-align: center;
+    line-height: 1.4;
+}
+.reprint-stamp-main { display: block; font-size: 1rem; font-weight: 800; letter-spacing: .3px; }
+.reprint-stamp-sub  { display: block; font-size: .74rem; font-weight: 600; }
+@media print {
+    /* ⚠️ মেমোটা ¼ ডেমি কাগজের জন্য উচ্চতা মেপে বসানো (ডায়নামিক ডেনসিটি
+       স্কেলিং) — সীলটা ব্লক হিসেবে থাকলে সব সারি নিচে নেমে যেত, ফুটার
+       উপচে পড়ত। তাই প্রিন্টে এটা মেমো বক্সের উপরে absolute বসে, এক
+       লাইনে — লেআউটের কোনো জায়গা নেয় না।
+       উপরের বাঁ কোণে প্রিন্টে "ক্যাশ মেমো" লেবেল আর ডান কোণে ফোন নম্বর
+       বসে (দুটোই absolute), তাই সীলটা ঠিক মাঝখানে — দোকানের নামের
+       `margin-top: 20px` ফাঁকা জায়গাটাই এর জন্য।
+       সাদা-কালো প্রিন্টারেও চোখে পড়ে: মোটা কালো বর্ডার, কালো লেখা। */
+    .reprint-stamp {
+        position: absolute !important;
+        top: 1mm !important;
+        left: 50% !important;
+        transform: translateX(-50%);
+        white-space: nowrap;
+        margin: 0 !important;
+        padding: 0 5px !important;
+        border: 1.5px solid #000 !important;
+        border-radius: 3px !important;
+        background: #fff !important;
+        color: #000 !important;
+        text-align: left !important;
+        line-height: 1.3 !important;
+        z-index: 5;
+        page-break-inside: avoid;
+    }
+    .reprint-stamp-main { display: inline !important; font-size: .68rem !important; }
+    .reprint-stamp-sub  { display: inline !important; font-size: .56rem !important; font-weight: 500 !important; }
+}
+</style>
+
+<script>
+// ── মেমো প্রিন্ট-লগ ────────────────────────────────────────────────
+// ব্রাউজার থেকে প্রিন্ট পুরোপুরি আটকানো যায় না (Ctrl+P, PDF সেভ, ফটোকপি),
+// তাই প্রতিটা প্রিন্ট সার্ভারে রেকর্ড করা হয় আর দ্বিতীয় কপি থেকে কাগজে
+// কপি নম্বর ছাপা হয়। beforeprint ইভেন্ট প্রিন্ট বাটন ও Ctrl+P — দুটোতেই
+// চলে, তাই বাটন লুকিয়ে রাখলেও লগ বাদ পড়ে না।
+//
+// ⚠️ Turbo: এই ফাইলের সব top-level ডিক্লারেশন `var` — `const`/`let` হলে
+// দ্বিতীয় ভিজিটে "already declared" SyntaxError-এ পুরো স্ক্রিপ্ট মরে যায়।
+var _memoPrintCount = {{ (int) ($printCount ?? 0) }};
+var _memoPrintUrl   = @js(route('sales.print-log', $sale));
+var _memoPrintUser  = @js(auth()->user()->name);
+
+function markMemoCopy() {
+    var copyNo = _memoPrintCount + 1;
+    var stamp  = document.getElementById('reprintStamp');
+    if (!stamp) return;
+    if (copyNo < 2) { stamp.style.display = 'none'; return; }
+
+    document.getElementById('reprintCopyNo').textContent = copyNo;
+    // প্রিন্টে main ও sub একই লাইনে বসে (উপরের @media print দেখুন), তাই
+    // শুরুতে একটা বিভাজক — স্ক্রিনে আলাদা লাইনে থাকায় ওটা চোখে পড়ে না।
+    document.getElementById('reprintStampBy').textContent =
+        ' · ' + _memoPrintUser + ' · ' + new Date().toLocaleString('en-GB');
+    stamp.style.display = 'block';
+}
+
+function logMemoPrint() {
+    // keepalive — প্রিন্ট ডায়ালগ ব্রাউজারকে ব্লক করে রাখে, তাই সাধারণ
+    // fetch মাঝপথে বাতিল হয়ে যেতে পারে।
+    fetch(_memoPrintUrl, {
+        method: 'POST',
+        keepalive: true,
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+        },
+    })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) { if (d && d.copy_no) _memoPrintCount = d.copy_no; })
+    .catch(function () { /* নেটওয়ার্ক ফেল — প্রিন্ট আটকানো হয় না */ });
+}
+
+function printMemo() {
+    // beforeprint নিজেই লগ করে, তাই এখানে আর ডাকা হয় না — সার্ভারে
+    // ডিবাউন্স থাকলেও দুইবার ডাকলে অকারণে দুইটা রিকোয়েস্ট যেত।
+    window.print();
+}
+
+// লিসেনারটা window-এ একবারই বসে। Turbo নেভিগেশনে body বদলালেও window টিকে
+// থাকে, তাই প্রতি turbo:load-এ নতুন করে বসালে একবার প্রিন্টে কয়েকটা লগ
+// জমা হত। ফ্ল্যাগ window-এ রাখা হয়েছে, কারণ এই স্ক্রিপ্টের `var` প্রতি
+// ভিজিটে আবার চলে এবং মান রিসেট করে দিত।
+if (!window._memoPrintHooked) {
+    window._memoPrintHooked = true;
+    window.addEventListener('beforeprint', function () {
+        // অন্য পেজ থেকে Ctrl+P চাপলে যেন আগের মেমোর নামে লগ না হয় —
+        // সীলটা এই পেজে আছে কি না দেখেই সিদ্ধান্ত।
+        if (!document.getElementById('reprintStamp')) return;
+        markMemoCopy();
+        logMemoPrint();
+    });
+}
+</script>
 @endsection
 
 @push('styles')

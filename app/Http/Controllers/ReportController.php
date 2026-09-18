@@ -555,6 +555,35 @@ class ReportController extends Controller
         return view('reports.sale-logs', compact('logs', 'from', 'to', 'action', 'counts'));
     }
 
+    // ── মেমো পুনঃমুদ্রণের হিস্টরি (শুধু কপি ২ ও তার পরের) ───────
+    // ক্লায়েন্টের চাওয়া: প্রথম প্রিন্ট স্বাভাবিক কাজ, তাই তালিকায় আসে না —
+    // শুধু বাড়তি কপিগুলোই জমা হয়, যেগুলো দিয়ে মাল ডেলিভারি হয়ে যেতে পারে।
+    public function printLogs(Request $request)
+    {
+        abort_unless(auth()->user()->canManageShop(), 403);
+
+        $from = $request->from ?? now()->toDateString();
+        $to   = $request->to   ?? now()->toDateString();
+
+        $logs = \App\Models\SalePrint::with(['user', 'sale.customer'])
+            ->where('copy_no', '>', 1)
+            ->whereBetween('printed_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->orderByDesc('printed_at')
+            ->paginate(30)
+            ->withQueryString();
+
+        $countBase = \App\Models\SalePrint::where('copy_no', '>', 1)
+            ->whereBetween('printed_at', [$from . ' 00:00:00', $to . ' 23:59:59']);
+
+        $summary = [
+            'reprints' => (clone $countBase)->count(),
+            'memos'    => (clone $countBase)->distinct('sale_id')->count('sale_id'),
+            'users'    => (clone $countBase)->distinct('user_id')->count('user_id'),
+        ];
+
+        return view('reports.print-logs', compact('logs', 'from', 'to', 'summary'));
+    }
+
     // ── গ্রহণ (রিসিভ) সংশোধন ও মুছে ফেলার লগ ────────────────────
     public function purchaseLogs(Request $request)
     {

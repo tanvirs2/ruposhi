@@ -342,6 +342,13 @@
                         <span class="nav-icon"><i class="fas fa-clock-rotate-left"></i></span>
                         <span class="nav-label">রিসিভ সংশোধন / মুছে ফেলার লগ</span>
                     </a>
+                    @if(auth()->user()->canManageShop())
+                    <a href="{{ route('reports.print-logs') }}" class="nav-item nav-child {{ $_path==='reports/print-logs' ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fas fa-print"></i></span>
+                        <span class="nav-label">মেমো পুনঃমুদ্রণ লগ</span>
+                        <button type="button" class="info-btn" data-info="একই ক্যাশ মেমোর দ্বিতীয় বা তার পরের কপি কে কখন প্রিন্ট করেছে তার তালিকা। প্রথম প্রিন্ট স্বাভাবিক কাজ, তাই তালিকায় আসে না।">i</button>
+                    </a>
+                    @endif
                     <a href="{{ route('reports.growth') }}" class="nav-item nav-child {{ $_path==='reports/growth' ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
                         <span class="nav-label">ব্যবসার প্রবৃদ্ধি</span>

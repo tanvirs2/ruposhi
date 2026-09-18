@@ -300,7 +300,14 @@ class SaleController extends Controller
             'phone2'  => $profile->store_phone2  ?? \App\Models\StoreConfig::get('store_phone2', ''),
             'address' => $profile->store_address ?? \App\Models\StoreConfig::get('store_address', ''),
         ];
-        return view('sales.show', compact('sale', 'store'));
+        // এই মেমো এর আগে কতবার প্রিন্ট হয়েছে — পেজে সতর্কবার্তা দেখাতে ও
+        // এবারের কপি নম্বর (আগের সংখ্যা + ১) কাগজে ছাপাতে লাগে।
+        $printCount = \App\Models\SalePrint::where('sale_id', $sale->id)->count();
+        $lastPrint  = $printCount
+            ? \App\Models\SalePrint::with('user')->where('sale_id', $sale->id)->latest('printed_at')->first()
+            : null;
+
+        return view('sales.show', compact('sale', 'store', 'printCount', 'lastPrint'));
     }
 
     public function edit(Sale $sale)

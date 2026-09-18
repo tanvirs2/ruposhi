@@ -148,6 +148,8 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
     Route::post('sales/{sale}/request-delete',  [SaleController::class, 'requestDelete'])->name('sales.request-delete');
     Route::post('sales/{sale}/approve-delete',  [SaleController::class, 'approveDelete'])->name('sales.approve-delete');
     Route::post('sales/{sale}/reject-delete',   [SaleController::class, 'rejectDelete'])->name('sales.reject-delete');
+    // মেমো প্রিন্ট-লগ — প্রিন্ট ডায়ালগ খুললেই ব্রাউজার থেকে POST হয়
+    Route::post('sales/{sale}/print-log', [App\Http\Controllers\SalePrintController::class, 'store'])->name('sales.print-log');
 
     Route::resource('purchases', PurchaseController::class);
     Route::post('purchases/{purchase}/request-delete', [PurchaseController::class, 'requestDelete'])->name('purchases.request-delete');
@@ -210,6 +212,8 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
 
     Route::get('/reports/sale-logs', [ReportController::class, 'saleLogs'])->name('reports.sale-logs');
     Route::get('/reports/purchase-logs', [ReportController::class, 'purchaseLogs'])->name('reports.purchase-logs');
+    // মেমো পুনঃমুদ্রণের হিস্টরি (শুধু কপি ২+) — অ্যাডমিন/সুপার অ্যাডমিন
+    Route::get('/reports/print-logs', [ReportController::class, 'printLogs'])->name('reports.print-logs')->middleware('shop.admin');
 
     /* দিনশেষ রিপোর্ট — সব ইউজার (admin + staff) দেখতে পারবে */
     Route::get('/reports/day-close',       [ReportController::class, 'dayClose'])->name('reports.day-close');
