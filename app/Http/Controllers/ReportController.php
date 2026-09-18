@@ -797,22 +797,47 @@ class ReportController extends Controller
             $row->profit   = $row->revenue - $row->cost - $row->expenses;
         }
 
+        // ── ছাড় লাইন-আইটেমে ভাগ করে দেওয়া (pro-rate) ─────────────
+        // ছাড় সেভ হয় সেল-লেভেলে (sales.discount), কোন আইটেমে কত ছাড় পড়ল
+        // তার রেকর্ড নেই। তাই প্রতিটা লাইনের নিজের subtotal সেই সেলের মোট
+        // subtotal-এর যত অংশ, ছাড়েরও ততটুকু অংশ ওই লাইনের উপর ধরা হয়:
+        //     line_discount = sales.discount × line.subtotal ÷ sale.sum(subtotal)
+        // এতে একটা সেলের সব লাইনের ছাড় যোগ করলে হুবহু sales.discount হয়,
+        // ফলে আইটেম ও বিস্তারিত টেবিলের মোট উপরের গ্রস লাভের সাথে মেলে।
+        $saleSubtotals = DB::table('sale_items')
+            ->join('sales as ds', 'sale_items.sale_id', '=', 'ds.id')
+            ->where('sale_items.shop_id', auth()->user()->shop_id)
+            ->whereBetween('ds.sale_date', [$from, $to])
+            ->selectRaw('sale_items.sale_id, SUM(sale_items.subtotal) as sum_subtotal')
+            ->groupBy('sale_items.sale_id');
+
+        // sum_subtotal শূন্য/NULL হলে (আইটেমহীন সেল) ভাগ করা যায় না — তখন
+        // ছাড় ০ ধরা হয়; আইটেমহীন সেলে লাইনই নেই, তাই কিছু হারায় না।
+        $lineDiscount = 'COALESCE(sales.discount * sale_items.subtotal / NULLIF(st.sum_subtotal, 0), 0)';
+
         // ── Item-wise profit breakdown (aggregated) ───────────────
         $itemBreakdown = DB::table('sale_items')
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->joinSub($saleSubtotals, 'st', fn($j) => $j->on('st.sale_id', '=', 'sales.id'))
             ->whereBetween('sales.sale_date', [$from, $to])
             ->where('sales.shop_id', auth()->user()->shop_id)
-            ->selectRaw('
+            ->selectRaw("
                 items.name,
                 SUM(sale_items.quantity) as qty,
-                SUM(sale_items.subtotal) as revenue,
-                SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as cost,
-                SUM(sale_items.subtotal) - SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as profit
-            ')
+                SUM(sale_items.subtotal) as gross_revenue,
+                SUM({$lineDiscount}) as discount,
+                SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as cost
+            ")
             ->groupBy('items.id', 'items.name')
-            ->orderByDesc('profit')
-            ->get();
+            ->get()
+            ->map(function ($row) {
+                $row->revenue = $row->gross_revenue - $row->discount;
+                $row->profit  = $row->revenue - $row->cost;
+                return $row;
+            })
+            ->sortByDesc('profit')
+            ->values();
 
         // ── User-wise performance breakdown ──────────────────────
         // ছাড় sales টেবিলে সেল-লেভেলে রাখা, আইটেম-লেভেলে নয়। sale_items
@@ -820,9 +845,14 @@ class ReportController extends Controller
         // গুণ হয়ে যেত, তাই প্রতি ইউজারের ছাড় আলাদা কুয়েরিতে বের করে
         // নিচে revenue ও profit দুটো থেকেই একবার বাদ দেওয়া হয় — ছাড় দেওয়া
         // টাকাটা দোকানে ঢোকে না, তাই ওটা ইউজারের লাভও নয়।
+        // আইটেমহীন সেল (পূর্বের বাকী পরিশোধ) বাদ — ওগুলোর কোনো লাইন নেই, তাই
+        // revenue/cost-এও নেই; ওখানে ছাড় থাকলে বাদ দিলে লাভ কম দেখাত এবং
+        // পণ্যভিত্তিক টেবিলের (pro-rate) হিসাবের সাথেও মিলত না।
         $discountByUser = DB::table('sales')
             ->whereBetween('sale_date', [$from, $to])
             ->where('shop_id', auth()->user()->shop_id)
+            ->whereExists(fn($q) => $q->from('sale_items')
+                ->whereColumn('sale_items.sale_id', 'sales.id'))
             ->selectRaw('user_id, SUM(discount) as discount')
             ->groupBy('user_id')
             ->get()
@@ -857,21 +887,25 @@ class ReportController extends Controller
             ->values();
 
         // ── Daily detail rows (one row per sale item) ─────────────
+        // লাভ থেকে ওই লাইনের ভাগে পড়া ছাড় বাদ (উপরের pro-rate নিয়ম)
         $dailyDetail = DB::table('sale_items')
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->joinSub($saleSubtotals, 'st', fn($j) => $j->on('st.sale_id', '=', 'sales.id'))
             ->whereBetween('sales.sale_date', [$from, $to])
             ->where('sales.shop_id', auth()->user()->shop_id)
-            ->selectRaw('
+            ->selectRaw("
                 sales.sale_date,
                 sales.id as sale_id,
                 items.name,
                 sale_items.quantity as qty,
                 sale_items.price as unit_price,
-                sale_items.subtotal as revenue,
+                sale_items.subtotal - {$lineDiscount} as revenue,
+                {$lineDiscount} as discount,
                 COALESCE(sale_items.cost_price, items.purchase_price) as purchase_price,
-                (sale_items.price - COALESCE(sale_items.cost_price, items.purchase_price)) * sale_items.quantity as profit
-            ')
+                (sale_items.price - COALESCE(sale_items.cost_price, items.purchase_price)) * sale_items.quantity
+                    - {$lineDiscount} as profit
+            ")
             ->orderBy('sales.sale_date')
             ->orderBy('sales.id')
             ->get();
@@ -906,18 +940,37 @@ class ReportController extends Controller
         $totalExpenses = ExtraExpense::whereBetween('expense_date', [$from, $to])->sum('amount');
         $netProfit     = $grossProfit - $totalExpenses;
 
+        // ছাড় লাইন-আইটেমে অনুপাতে ভাগ করে বাদ দেওয়া হয় — পেজের
+        // পণ্যভিত্তিক টেবিলের হিসাবের সাথে CSV যেন হুবহু মেলে (profitLoss()
+        // দেখুন: line_discount = sales.discount × line.subtotal ÷ sale মোট)
+        $saleSubtotals = DB::table('sale_items')
+            ->join('sales as ds', 'sale_items.sale_id', '=', 'ds.id')
+            ->where('sale_items.shop_id', auth()->user()->shop_id)
+            ->whereBetween('ds.sale_date', [$from, $to])
+            ->selectRaw('sale_items.sale_id, SUM(sale_items.subtotal) as sum_subtotal')
+            ->groupBy('sale_items.sale_id');
+        $lineDiscount = 'COALESCE(sales.discount * sale_items.subtotal / NULLIF(st.sum_subtotal, 0), 0)';
+
         $itemBreakdown = DB::table('sale_items')
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->joinSub($saleSubtotals, 'st', fn($j) => $j->on('st.sale_id', '=', 'sales.id'))
             ->whereBetween('sales.sale_date', [$from, $to])
             ->where('sales.shop_id', auth()->user()->shop_id)
-            ->selectRaw('items.name,
+            ->selectRaw("items.name,
                 SUM(sale_items.quantity) as qty,
-                SUM(sale_items.subtotal) as revenue,
-                SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as cost,
-                SUM(sale_items.subtotal) - SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as profit')
+                SUM(sale_items.subtotal) as gross_revenue,
+                SUM({$lineDiscount}) as discount,
+                SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as cost")
             ->groupBy('items.id', 'items.name')
-            ->orderByDesc('profit')->get();
+            ->get()
+            ->map(function ($row) {
+                $row->revenue = $row->gross_revenue - $row->discount;
+                $row->profit  = $row->revenue - $row->cost;
+                return $row;
+            })
+            ->sortByDesc('profit')
+            ->values();
 
         return $this->csvResponse(
             "লাভ-লোকসান_{$from}_{$to}",
@@ -932,11 +985,12 @@ class ReportController extends Controller
                 fputcsv($out, ['নিট লাভ/লোকসান',    number_format($netProfit)]);
                 fputcsv($out, []);
                 fputcsv($out, ['— পণ্যভিত্তিক বিবরণ —', '']);
-                fputcsv($out, ['পণ্য', 'পরিমাণ', 'আয় (৳)', 'খরচ (৳)', 'লাভ (৳)']);
+                fputcsv($out, ['পণ্য', 'পরিমাণ', 'আয় (৳)', 'ছাড় (৳)', 'খরচ (৳)', 'লাভ (৳)']);
                 foreach ($itemBreakdown as $r) {
                     fputcsv($out, [
                         $r->name, $r->qty,
                         number_format($r->revenue),
+                        number_format($r->discount),
                         number_format($r->cost),
                         number_format($r->profit),
                     ]);

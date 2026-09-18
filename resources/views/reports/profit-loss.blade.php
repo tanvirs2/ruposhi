@@ -232,14 +232,16 @@
                     <th>আইটেম নাম</th>
                     <th style="text-align:right;width:90px">বিক্রীর পরিমাণ</th>
                     <th style="text-align:right;width:120px">বিক্রয় মূল্য (৳)</th>
+                    <th style="text-align:right;width:90px">ছাড় (৳)</th>
                     <th style="text-align:right;width:110px">লাভ (৳)</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($dailyDetail as $i => $row)
                 @php
-                    $profit = floatval($row->profit);
-                    $cls    = $profit >= 0 ? 'profit-good' : 'profit-poor';
+                    $profit   = floatval($row->profit);
+                    $rowDisc  = floatval($row->discount ?? 0);
+                    $cls      = $profit >= 0 ? 'profit-good' : 'profit-poor';
                 @endphp
                 <tr>
                     <td style="text-align:center;color:#94a3b8">{{ $i + 1 }}</td>
@@ -247,12 +249,15 @@
                     <td>{{ $row->name }}</td>
                     <td style="text-align:right">{{ number_format($row->qty, 0) }}</td>
                     <td style="text-align:right">{{ number_format($row->unit_price, 0) }}</td>
+                    <td style="text-align:right;color:{{ $rowDisc > 0 ? '#ea580c' : '#cbd5e1' }}">
+                        {{ $rowDisc > 0 ? '− '.number_format($rowDisc, 0) : '—' }}
+                    </td>
                     <td style="text-align:right" class="{{ $cls }}">
                         {{ $profit >= 0 ? '+' : '' }}{{ number_format($profit, 0) }}
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="6" class="empty-row">এই সময়কালে কোনো বিক্রয় নেই</td></tr>
+                <tr><td colspan="7" class="empty-row">এই সময়কালে কোনো বিক্রয় নেই</td></tr>
                 @endforelse
             </tbody>
             @if(count($dailyDetail))
@@ -261,6 +266,9 @@
                     <td colspan="3">মোট</td>
                     <td style="text-align:right">{{ number_format($dailyDetail->sum('qty'), 0) }}</td>
                     <td style="text-align:right">—</td>
+                    <td style="text-align:right;color:{{ $dailyDetail->sum('discount') > 0 ? '#ea580c' : '#cbd5e1' }}">
+                        {{ $dailyDetail->sum('discount') > 0 ? '− '.number_format($dailyDetail->sum('discount'), 0) : '—' }}
+                    </td>
                     <td style="text-align:right" class="{{ $grossProfit >= 0 ? 'profit-good' : 'profit-poor' }}">
                         {{ $grossProfit >= 0 ? '+' : '' }}{{ number_format($grossProfit, 0) }}
                     </td>
@@ -281,6 +289,7 @@
                 <col>                              {{-- পণ্য (flexible) --}}
                 <col style="width:110px">          {{-- বিক্রীত পরিমাণ --}}
                 <col style="width:120px">          {{-- বিক্রয় আয় --}}
+                <col style="width:100px">          {{-- ছাড় --}}
                 <col style="width:120px">          {{-- ক্রয় মূল্য --}}
                 <col style="width:120px">          {{-- লাভ --}}
                 <col style="width:90px">           {{-- মার্জিন --}}
@@ -291,6 +300,7 @@
                     <th>পণ্য</th>
                     <th style="text-align:right">বিক্রীত পরিমাণ</th>
                     <th style="text-align:right">বিক্রয় আয়</th>
+                    <th style="text-align:right">ছাড়</th>
                     <th style="text-align:right">ক্রয় মূল্য</th>
                     <th style="text-align:right">লাভ</th>
                     <th style="text-align:right">মার্জিন</th>
@@ -307,6 +317,9 @@
                     <td>{{ $row->name }}</td>
                     <td style="text-align:right">{{ number_format($row->qty, 0) }}</td>
                     <td style="text-align:right">৳ {{ number_format($row->revenue, 0) }}</td>
+                    <td style="text-align:right;color:{{ ($row->discount ?? 0) > 0 ? '#ea580c' : '#cbd5e1' }}">
+                        {{ ($row->discount ?? 0) > 0 ? '− ৳ '.number_format($row->discount, 0) : '—' }}
+                    </td>
                     <td style="text-align:right;color:#94a3b8">৳ {{ number_format($row->cost, 0) }}</td>
                     <td style="text-align:right" class="{{ $cls }}">{{ $row->profit >= 0 ? '+' : '' }}৳ {{ number_format($row->profit, 0) }}</td>
                     <td style="text-align:right">
@@ -316,7 +329,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="7" class="empty-row">এই সময়কালে কোনো বিক্রয় নেই</td></tr>
+                <tr><td colspan="8" class="empty-row">এই সময়কালে কোনো বিক্রয় নেই</td></tr>
                 @endforelse
             </tbody>
             @if(count($itemBreakdown))
@@ -325,6 +338,9 @@
                     <td colspan="2" style="text-align:left">মোট</td>
                     <td style="text-align:right">{{ number_format($itemBreakdown->sum('qty'), 0) }}</td>
                     <td style="text-align:right">৳ {{ number_format($itemBreakdown->sum('revenue'), 0) }}</td>
+                    <td style="text-align:right;color:{{ $itemBreakdown->sum('discount') > 0 ? '#ea580c' : '#cbd5e1' }}">
+                        {{ $itemBreakdown->sum('discount') > 0 ? '− ৳ '.number_format($itemBreakdown->sum('discount'), 0) : '—' }}
+                    </td>
                     <td style="text-align:right;color:#94a3b8">৳ {{ number_format($itemBreakdown->sum('cost'), 0) }}</td>
                     <td style="text-align:right" class="{{ $grossProfit >= 0 ? 'profit-good' : 'profit-poor' }}">
                         {{ $grossProfit >= 0 ? '+' : '' }}৳ {{ number_format($grossProfit, 0) }}
