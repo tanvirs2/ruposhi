@@ -581,6 +581,16 @@ class ReportController extends Controller
             'users'    => (clone $countBase)->distinct('user_id')->count('user_id'),
         ];
 
+        // অ্যাডমিন তালিকাটা দেখে নিয়েছে — বেল থেকে ব্যাজ সরে যাক। এর পরের
+        // পুনঃমুদ্রণ হলেই আবার দেখাবে (NotificationComposer দেখুন)।
+        // ⚠️ শেষ রেকর্ডের সময় সেভ করা হয়, `now()` নয় — এই মুহূর্তে চলতে
+        // থাকা প্রিন্ট (যেটা পেজ লোডের পর সেকেন্ডেই জমা হতে পারে) যেন
+        // না-দেখা অবস্থাতেই থেকে যায়।
+        $lastSeen = \App\Models\SalePrint::where('copy_no', '>', 1)->max('printed_at');
+        if ($lastSeen) {
+            \App\Models\StoreConfig::set('reprint_alert_seen_at', $lastSeen);
+        }
+
         return view('reports.print-logs', compact('logs', 'from', 'to', 'summary'));
     }
 

@@ -662,6 +662,17 @@
                         </a>
                         @endif
 
+                        @if(isset($notifReprints) && $notifReprints > 0)
+                        <a href="{{ route('reports.print-logs') }}" class="notif-item notif-danger" onclick="closeNotif()">
+                            <div class="notif-icon-wrap notif-icon-red"><i class="fas fa-print"></i></div>
+                            <div class="notif-content">
+                                <div class="notif-title">মেমো পুনঃমুদ্রণ</div>
+                                <div class="notif-desc">{{ $notifReprints }}টি মেমোর বাড়তি কপি প্রিন্ট হয়েছে — দেখে নিন</div>
+                            </div>
+                            <i class="fas fa-chevron-right notif-arrow"></i>
+                        </a>
+                        @endif
+
                         @if($notifTotal === 0)
                         <div class="notif-empty">
                             <i class="fas fa-circle-check"></i>
