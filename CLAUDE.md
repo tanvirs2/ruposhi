@@ -18,16 +18,43 @@
 ## Deploy Command (ALWAYS use this exact command)
 Give the user this one line — they paste it into Git Bash and run it themselves:
 ```bash
-ssh root@168.144.90.82 'cd /var/www/ruposhi_pos && php artisan app:backup-db --tag=predeploy --keep=30 && git pull origin main && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && chown -R www-data:www-data storage bootstrap/cache'
+ssh root@168.144.90.82 'cd /var/www/ruposhi_pos && bash deploy.sh'
 ```
-- **ব্যাকআপ সবার আগে, মাইগ্রেশন থাকুক বা না থাকুক।** `&&` চেইন fail-fast —
-  ডাম্প না হলে (ডিস্ক ফুল, DB ডাউন) `git pull`/`migrate` কিছুই চলে না।
-  ব্যাকআপটা `git pull`-এর **আগে** রাখা হয় ইচ্ছাকৃতভাবে: তখন ডাম্প নেয় সার্ভারে
+`deploy.sh` (রিপো রুটে) নিজেই সব ধাপ চালায় — ব্যাকআপ → pull → migrate →
+ক্যাশ → chown — আর প্রতিটা ডিপ্লয়ের একটা **লগ ডক** লেখে।
+- **ব্যাকআপ সবার আগে, মাইগ্রেশন থাকুক বা না থাকুক।** কোনো ধাপ ব্যর্থ হলে
+  স্ক্রিপ্ট সেখানেই থামে (exit 1), কারণ লগে লেখে, আর পরের ধাপগুলো চলে না।
+  ব্যাকআপটা `git pull`-এর **আগে** ইচ্ছাকৃতভাবে: তখন ডাম্প নেয় সার্ভারে
   ইতিমধ্যে চলতে থাকা পরীক্ষিত কোড, নতুন (অপরীক্ষিত) কোড নয়। `git pull` DB
   ছোঁয় না, তাই আগে-পরে ডেটার কোনো পার্থক্য হয় না।
-- `--tag=predeploy` — ফাইল হয় `backup_predeploy_*.sql.gz`, আর পুরনো মোছার
-  হিসাব শুধু এই ট্যাগের ভেতরেই (৩০টা রাখে)। দৈনিক ব্যাকআপ (`--keep=90`) আর
-  ডিপ্লয় ব্যাকআপ একে অন্যকে মুছে ফেলে না।
+- `--tag=predeploy --keep=30` — ফাইল হয় `backup_predeploy_*.sql.gz`, আর পুরনো
+  মোছার হিসাব শুধু এই ট্যাগের ভেতরেই। দৈনিক ব্যাকআপ (`--keep=90`) আর ডিপ্লয়
+  ব্যাকআপ একে অন্যকে মুছে ফেলে না।
+- ⚠️ **`deploy.sh` নিজেই রিপো থেকে আসে**, তাই স্ক্রিপ্টের পরিবর্তন কাজে লাগে
+  **পরের** ডিপ্লয় থেকে (চলতি শেল ফাইলটা আগেই পড়ে ফেলেছে)। প্রথমবার নতুন
+  স্ক্রিপ্ট আনতে একবার পুরনো কমান্ডটা চালাতে হবে (নিচের ফলব্যাক)।
+- ব্যর্থ হলে স্ক্রিপ্ট নিজেই `chown` চালিয়ে যায় — ক্যাশের ধাপে ব্যর্থ হলে
+  root-owned ক্যাশ পড়ে থেকে ৫০০ দিত।
+- **ফলব্যাক** (স্ক্রিপ্ট না থাকলে / একবারের জন্য), একই ধাপগুলো এক লাইনে:
+```bash
+ssh root@168.144.90.82 'cd /var/www/ruposhi_pos && php artisan app:backup-db --tag=predeploy --keep=30 && git pull origin main && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && chown -R www-data:www-data storage bootstrap/cache'
+```
+
+### ডিপ্লয় লগ (কী বদলেছে, DB-তে কী বদলেছে)
+`deploy.sh` প্রতি ডিপ্লয়ে একটা markdown ডক লেখে →
+`storage/app/deploy-logs/deploy_<timestamp>.md`, **সর্বশেষ ৩০টা রাখে** (পুরনো
+নিজে থেকেই মুছে যায়, তাই ডিস্ক ভরে না)। প্রতিটা লগে থাকে:
+- আগের → নতুন কমিট (sha + subject), ব্রাঞ্চ, কে চালিয়েছে, কোন ব্যাকআপ ফাইল
+- পুল করা সব কমিটের তালিকা, `git diff --stat` (কোন ফাইল কতটা বদলেছে)
+- **ডাটাবেস পরিবর্তন আলাদা সেকশনে** — নতুন মাইগ্রেশন ফাইল + তার ভেতরের
+  `Schema::`/`$table->` লাইনগুলো, আর `migrate --force`-এর পুরো আউটপুট
+- ব্যর্থ হলে: কোন ধাপে, কী এরর
+দেখার কমান্ড (`app/Console/Commands/DeployLog.php`):
+```bash
+php artisan app:deploy-log            # সর্বশেষ ডিপ্লয়ের পুরো লগ
+php artisan app:deploy-log --list     # সাম্প্রতিক তালিকা (কমিট/ফলাফল/DB বদল)
+php artisan app:deploy-log --file=deploy_2026-09-18_041811.md
+```
 - ⚠️ ব্যাকআপ একই ড্রপলেটে থাকে — ড্রপলেট গেলে দুটোই যায়। **বড় মাইগ্রেশনের
   আগে ডাম্পটা নিজের মেশিনে নামিয়ে নিন:**
   `scp root@168.144.90.82:/var/www/ruposhi_pos/storage/app/backups/backup_predeploy_*.sql.gz .`
@@ -532,6 +559,8 @@ a short per-session summary so `CLAUDE.md` stays light to load every session.
 - **Pre-deploy:** `php artisan app:backup-db --tag=predeploy --keep=30` — ডিপ্লয় কমান্ডের প্রথম ধাপ (উপরে দেখুন); `backup_predeploy_<ts>.sql.gz`, আলাদা রোটেশন
 - ট্যাগ-ভিত্তিক rotation: ট্যাগ দিলে শুধু ওই ট্যাগের ফাইল গোনা হয়; ট্যাগ ছাড়া ডাকলে শুধু `backup_<তারিখ>_<সময়>.sql.gz` ধরনের ফাইল (ট্যাগ করা ফাইল বাদ)
 - Pre-clean DB backup: `storage/backup_before_clean_20260530_073214.sql`
+- **ডিপ্লয় লগ:** `storage/app/deploy-logs/deploy_<ts>.md` — `deploy.sh` লেখে, ৩০টা রাখে; দেখার কমান্ড `php artisan app:deploy-log [--list] [--file=…]`
+- ⚠️ দুটো ফোল্ডারই `storage/app/` এর ভেতরে, যেটা `.gitignore`-এ আছে — কখনো কমিট হয় না
 
 ## Test Accounts (local dev)
 | Email | Password | Role | Notes |
