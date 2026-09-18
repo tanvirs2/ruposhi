@@ -815,6 +815,19 @@ class ReportController extends Controller
             ->get();
 
         // ── User-wise performance breakdown ──────────────────────
+        // ছাড় sales টেবিলে সেল-লেভেলে রাখা, আইটেম-লেভেলে নয়। sale_items
+        // জয়েনের ভেতরে SUM(sales.discount) করলে লাইন-আইটেমের সংখ্যা দিয়ে
+        // গুণ হয়ে যেত, তাই প্রতি ইউজারের ছাড় আলাদা কুয়েরিতে বের করে
+        // নিচে revenue ও profit দুটো থেকেই একবার বাদ দেওয়া হয় — ছাড় দেওয়া
+        // টাকাটা দোকানে ঢোকে না, তাই ওটা ইউজারের লাভও নয়।
+        $discountByUser = DB::table('sales')
+            ->whereBetween('sale_date', [$from, $to])
+            ->where('shop_id', auth()->user()->shop_id)
+            ->selectRaw('user_id, SUM(discount) as discount')
+            ->groupBy('user_id')
+            ->get()
+            ->mapWithKeys(fn($r) => [(string) ($r->user_id ?? '') => (float) $r->discount]);
+
         $userPerformance = DB::table('sale_items')
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
@@ -830,14 +843,18 @@ class ReportController extends Controller
                 SUM(sale_items.subtotal) - SUM(COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity) as profit
             ')
             ->groupBy('users.id', 'users.name')
-            ->orderByDesc('profit')
             ->get()
-            ->map(function ($row) {
-                $row->margin = $row->revenue > 0
+            ->map(function ($row) use ($discountByUser) {
+                $row->discount = $discountByUser[(string) ($row->user_id ?? '')] ?? 0;
+                $row->revenue  = $row->revenue - $row->discount;
+                $row->profit   = $row->profit  - $row->discount;
+                $row->margin   = $row->revenue > 0
                     ? round($row->profit / $row->revenue * 100, 1)
                     : 0;
                 return $row;
-            });
+            })
+            ->sortByDesc('profit')
+            ->values();
 
         // ── Daily detail rows (one row per sale item) ─────────────
         $dailyDetail = DB::table('sale_items')

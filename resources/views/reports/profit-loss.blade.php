@@ -91,6 +91,7 @@
                     <th>ইউজার</th>
                     <th class="tc">বিক্রয় সংখ্যা</th>
                     <th class="tr">বিক্রয় মূল্য</th>
+                    <th class="tr">ছাড়</th>
                     <th class="tr">ক্রয় মূল্য (খরচ)</th>
                     <th class="tr">লাভ</th>
                     <th class="tc">মার্জিন</th>
@@ -110,6 +111,9 @@
                     </td>
                     <td class="tc">{{ number_format($u->sale_count, 0) }}টি</td>
                     <td class="tr" style="font-weight:600">৳ {{ number_format($u->revenue, 0) }}</td>
+                    <td class="tr" style="color:{{ ($u->discount ?? 0) > 0 ? '#ea580c' : '#cbd5e1' }}">
+                        {{ ($u->discount ?? 0) > 0 ? '− ৳ '.number_format($u->discount, 0) : '—' }}
+                    </td>
                     <td class="tr" style="color:#94a3b8">৳ {{ number_format($u->cost, 0) }}</td>
                     <td class="tr" style="font-weight:700;color:{{ $u->profit >= 0 ? '#16a34a' : '#dc2626' }}">
                         {{ $u->profit >= 0 ? '' : '− ' }}৳ {{ number_format(abs($u->profit), 0) }}
@@ -125,6 +129,9 @@
                     <td colspan="2" style="font-weight:700;text-align:right;padding-right:16px">মোট</td>
                     <td class="tc" style="font-weight:700">{{ number_format($userPerformance->sum('sale_count'), 0) }}টি</td>
                     <td class="tr" style="font-weight:800">৳ {{ number_format($userPerformance->sum('revenue'), 0) }}</td>
+                    <td class="tr" style="font-weight:700;color:{{ $userPerformance->sum('discount') > 0 ? '#ea580c' : '#cbd5e1' }}">
+                        {{ $userPerformance->sum('discount') > 0 ? '− ৳ '.number_format($userPerformance->sum('discount'), 0) : '—' }}
+                    </td>
                     <td class="tr" style="color:#94a3b8;font-weight:700">৳ {{ number_format($userPerformance->sum('cost'), 0) }}</td>
                     <td class="tr" style="font-weight:800;color:#16a34a">৳ {{ number_format($userPerformance->sum('profit'), 0) }}</td>
                     <td></td>
