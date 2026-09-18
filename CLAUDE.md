@@ -18,8 +18,26 @@
 ## Deploy Command (ALWAYS use this exact command)
 Give the user this one line — they paste it into Git Bash and run it themselves:
 ```bash
-ssh root@168.144.90.82 'cd /var/www/ruposhi_pos && git pull origin main && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && chown -R www-data:www-data storage bootstrap/cache'
+ssh root@168.144.90.82 'cd /var/www/ruposhi_pos && php artisan app:backup-db --tag=predeploy --keep=30 && git pull origin main && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && chown -R www-data:www-data storage bootstrap/cache'
 ```
+- **ব্যাকআপ সবার আগে, মাইগ্রেশন থাকুক বা না থাকুক।** `&&` চেইন fail-fast —
+  ডাম্প না হলে (ডিস্ক ফুল, DB ডাউন) `git pull`/`migrate` কিছুই চলে না।
+  ব্যাকআপটা `git pull`-এর **আগে** রাখা হয় ইচ্ছাকৃতভাবে: তখন ডাম্প নেয় সার্ভারে
+  ইতিমধ্যে চলতে থাকা পরীক্ষিত কোড, নতুন (অপরীক্ষিত) কোড নয়। `git pull` DB
+  ছোঁয় না, তাই আগে-পরে ডেটার কোনো পার্থক্য হয় না।
+- `--tag=predeploy` — ফাইল হয় `backup_predeploy_*.sql.gz`, আর পুরনো মোছার
+  হিসাব শুধু এই ট্যাগের ভেতরেই (৩০টা রাখে)। দৈনিক ব্যাকআপ (`--keep=90`) আর
+  ডিপ্লয় ব্যাকআপ একে অন্যকে মুছে ফেলে না।
+- ⚠️ ব্যাকআপ একই ড্রপলেটে থাকে — ড্রপলেট গেলে দুটোই যায়। **বড় মাইগ্রেশনের
+  আগে ডাম্পটা নিজের মেশিনে নামিয়ে নিন:**
+  `scp root@168.144.90.82:/var/www/ruposhi_pos/storage/app/backups/backup_predeploy_*.sql.gz .`
+- ⚠️ `php artisan down`/`up` **এই `&&` চেইনে বসাবেন না** — মাঝে কিছু ব্যর্থ হলে
+  চেইন থেমে যায় আর `up` কখনো চলে না, সাইট down হয়ে বসে থাকে। দরকার হলে
+  আলাদা করে: `php artisan down; <চেইন>; php artisan up`
+- রিস্টোর: `gunzip < backup_predeploy_<ts>.sql.gz | mysql -u <user> -p <db>`
+  (ডাম্পে `DROP TABLE IF EXISTS` আছে, তাই সরাসরি চালালেই পুরনো অবস্থায় ফেরে)
+- ঝুঁকিপূর্ণ মাইগ্রেশন আগে দেখে নিতে: `php artisan migrate --pretend` (SQL
+  ছাপে, চালায় না)
 - `git pull origin main` — NOT bare `git pull`
 - **Never drop the trailing `chown`.** The commands run as root, so the caches `view:cache`
   writes end up root-owned and www-data can no longer write there → 500 errors.
@@ -510,7 +528,9 @@ a short per-session summary so `CLAUDE.md` stays light to load every session.
 ---
 
 ## Backup
-- **Automated:** `php artisan app:backup-db` — daily 03:00 via scheduler → `storage/app/backups/backup_*.sql.gz` (keeps 14). Same-server only; download periodically for off-server safety.
+- **Automated:** `php artisan app:backup-db --keep=90` — daily 03:00 via scheduler → `storage/app/backups/backup_<ts>.sql.gz` (keeps 90). Same-server only; download periodically for off-server safety.
+- **Pre-deploy:** `php artisan app:backup-db --tag=predeploy --keep=30` — ডিপ্লয় কমান্ডের প্রথম ধাপ (উপরে দেখুন); `backup_predeploy_<ts>.sql.gz`, আলাদা রোটেশন
+- ট্যাগ-ভিত্তিক rotation: ট্যাগ দিলে শুধু ওই ট্যাগের ফাইল গোনা হয়; ট্যাগ ছাড়া ডাকলে শুধু `backup_<তারিখ>_<সময়>.sql.gz` ধরনের ফাইল (ট্যাগ করা ফাইল বাদ)
 - Pre-clean DB backup: `storage/backup_before_clean_20260530_073214.sql`
 
 ## Test Accounts (local dev)

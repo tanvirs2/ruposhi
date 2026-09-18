@@ -13,10 +13,17 @@ use Illuminate\Support\Facades\DB;
  * Run manually:  php artisan app:backup-db
  * Scheduled daily at 03:00 (routes/console.php); production needs one
  * cron entry: * * * * * php artisan schedule:run
+ *
+ * --tag দিলে ফাইলের নাম হয় backup_<tag>_<timestamp>.sql.gz আর পুরনো মোছার
+ * হিসাবও শুধু ওই ট্যাগের ফাইলের মধ্যেই হয়। ডিপ্লয়ের আগের ব্যাকআপ
+ * (--tag=predeploy) তাই দৈনিক ব্যাকআপের ঘোরাফেরায় মুছে যায় না — একটা খারাপ
+ * মাইগ্রেশন সপ্তাহখানেক পরে ধরা পড়লেও ওই দিনের ডাম্পটা তখনো থাকে।
  */
 class BackupDatabase extends Command
 {
-    protected $signature = 'app:backup-db {--keep=14 : কয়টা ব্যাকআপ ফাইল রাখা হবে}';
+    protected $signature = 'app:backup-db
+        {--keep=14 : কয়টা ব্যাকআপ ফাইল রাখা হবে}
+        {--tag= : ফাইলের নামে ট্যাগ (যেমন predeploy) — এই ট্যাগের ফাইলগুলো আলাদা করে গোনা ও মোছা হয়}';
 
     protected $description = 'পুরো ডাটাবেস SQL ফাইলে ব্যাকআপ করে (gzip), পুরনোগুলো মুছে দেয়';
 
@@ -28,7 +35,11 @@ class BackupDatabase extends Command
         }
 
         $dbName = DB::getDatabaseName();
-        $file   = $dir . DIRECTORY_SEPARATOR . 'backup_' . now()->format('Y-m-d_His') . '.sql.gz';
+
+        // ট্যাগ ফাইলের নামে বসে, তাই শেল-এ নিরাপদ অক্ষরেই সীমিত রাখা হয়
+        $tag    = preg_replace('/[^A-Za-z0-9_-]/', '', (string) $this->option('tag'));
+        $prefix = 'backup_' . ($tag !== '' ? $tag . '_' : '');
+        $file   = $dir . DIRECTORY_SEPARATOR . $prefix . now()->format('Y-m-d_His') . '.sql.gz';
 
         $gz = gzopen($file, 'wb6');
         if (!$gz) {
@@ -71,9 +82,18 @@ class BackupDatabase extends Command
         $size = round(filesize($file) / 1024, 1);
         $this->info('ব্যাকআপ সম্পন্ন: ' . basename($file) . " ({$size} KB, " . count($tables) . " টেবিল, {$totalRows} সারি)");
 
-        // Prune: keep the newest N backups
-        $keep  = max(1, (int) $this->option('keep'));
-        $files = glob($dir . DIRECTORY_SEPARATOR . 'backup_*.sql.gz');
+        // Prune: keep the newest N backups OF THIS TAG ONLY.
+        // গ্লবটা ট্যাগ-ভিত্তিক — নইলে ডিপ্লয়ের ব্যাকআপ দৈনিকগুলোকে (বা
+        // উল্টোটা) হিসাবের বাইরে ঠেলে মুছে ফেলত। ট্যাগ ছাড়া ডাকলে
+        // backup_YYYY-...  ধরা হয়, backup_predeploy_... নয়।
+        $keep = max(1, (int) $this->option('keep'));
+        $files = $tag !== ''
+            ? glob($dir . DIRECTORY_SEPARATOR . $prefix . '*.sql.gz')
+            : array_filter(
+                glob($dir . DIRECTORY_SEPARATOR . 'backup_*.sql.gz'),
+                fn($f) => (bool) preg_match('/backup_\d{4}-\d{2}-\d{2}_\d{6}\.sql\.gz$/', $f)
+            );
+        $files = array_values($files);
         rsort($files); // newest first (timestamped names sort naturally)
         foreach (array_slice($files, $keep) as $old) {
             unlink($old);
