@@ -268,7 +268,7 @@
                     background:#fee2e2;border:1px solid #fecaca;border-radius:8px;
                     font-size:.82rem;color:#991b1b;font-weight:600">
                     <i class="fas fa-circle-exclamation"></i>
-                    কাস্টমার ছাড়া বিক্রয়ে সম্পূর্ণ পরিশোধ আবশ্যক!
+                    কাস্টমার ছাড়া বিক্রয়ে মোট টাকার হুবহু সমান পরিশোধ আবশ্যক — কম বা বেশি নয়!
                 </div>
                 {{-- Extra payment warning (no items + customer has 0 due) --}}
                 <div id="extraPayWarning" style="display:none;margin-top:2px;padding:8px 12px;
@@ -1561,13 +1561,20 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
         return;
     }
 
-    // Walk-in: full payment required
+    // ── Walk-in: paid must equal net exactly ─────────────────
+    // A walk-in sale has no customer row to carry a balance, so neither
+    // direction can be stored: short payment would be a বাকী nobody owns,
+    // and overpayment would be an অগ্রিম nobody can claim back. Both are
+    // blocked here and again server-side.
     const noCustomer = !hasCustomer;
-    if (noCustomer && paid < net) {
+    if (noCustomer && Math.abs(paid - net) > 0.009) {
         e.preventDefault();
         document.getElementById('walkinWarning').style.display = 'block';
         paidEl.focus();
-        showStockToast('ওয়াক-ইন কাস্টমারের জন্য সম্পূর্ণ পরিশোধ আবশ্যক!', 'error');
+        paidEl.select();
+        showStockToast(paid < net
+            ? `ওয়াক-ইন বিক্রয়ে ৳${net.toFixed(0)} হুবহু পরিশোধ আবশ্যক — ৳${(net - paid).toFixed(0)} কম`
+            : `ওয়াক-ইন বিক্রয়ে ৳${net.toFixed(0)} হুবহু পরিশোধ আবশ্যক — ৳${(paid - net).toFixed(0)} বেশি`, 'error');
         return;
     }
     document.getElementById('walkinWarning').style.display = 'none';

@@ -114,6 +114,21 @@ class SaleController extends Controller
         return view('sales.create', compact('preCustomer', 'items', 'frequentItemIds', 'favoriteItemIds', 'paymentMethods', 'extraCategories', 'areas'));
     }
 
+    /**
+     * Net payable for an incoming sale request — same formula the store/update
+     * transactions use: items total − ছাড় + অতিরিক্ত খরচ, floored at 0.
+     */
+    private function requestNetAmount(Request $request): float
+    {
+        $total     = collect($request->items ?? [])->sum(fn($i) => (float) $i['qty'] * (float) $i['price']);
+        $discount  = (float) ($request->discount ?? 0);
+        $extraCost = collect($request->extra_costs ?? [])
+            ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0)
+            ->sum(fn($r) => (float) $r['amount']);
+
+        return max(0, $total - $discount + $extraCost);
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -131,6 +146,22 @@ class SaleController extends Controller
         }
         if (empty($request->items) && (!$request->paid_amount || $request->paid_amount <= 0)) {
             return back()->withErrors(['paid_amount' => 'পরিশোধের পরিমাণ লিখুন।'])->withInput();
+        }
+
+        // ওয়াক-ইন (কাস্টমার ছাড়া) বিক্রয়ে পরিশোধ মোট টাকার হুবহু সমান হতে হবে।
+        // No customer row exists to carry a balance, so a short payment would
+        // create a বাকী nobody owns and an overpayment an অগ্রিম nobody can
+        // claim back — both silently vanish from the ledger. Mirrors the
+        // client-side check in sales/create + sales/edit.
+        if (!empty($request->items) && !$request->customer_id) {
+            $walkinNet  = $this->requestNetAmount($request);
+            $walkinPaid = (float) $request->paid_amount;
+            if (abs($walkinPaid - $walkinNet) > 0.01) {
+                return back()->withErrors([
+                    'paid_amount' => 'কাস্টমার ছাড়া বিক্রয়ে পরিশোধ মোট ৳' . number_format($walkinNet, 0)
+                        . ' এর হুবহু সমান হতে হবে — কম বা বেশি নয়।',
+                ])->withInput();
+            }
         }
 
         // ডাবল-ক্লিক/ডাবল-ট্যাপ বা ধীরগতির নেটওয়ার্কে বাটনে দ্বিতীয়বার চাপ পড়ে
@@ -301,6 +332,22 @@ class SaleController extends Controller
 
         if (empty($request->items) && !$request->customer_id) {
             return back()->withErrors(['customer_id' => 'আইটেম ছাড়া বিক্রয়ে কাস্টমার নির্বাচন আবশ্যক।'])->withInput();
+        }
+
+        // ওয়াক-ইন (কাস্টমার ছাড়া) বিক্রয়ে পরিশোধ মোট টাকার হুবহু সমান হতে হবে।
+        // No customer row exists to carry a balance, so a short payment would
+        // create a বাকী nobody owns and an overpayment an অগ্রিম nobody can
+        // claim back — both silently vanish from the ledger. Mirrors the
+        // client-side check in sales/create + sales/edit.
+        if (!empty($request->items) && !$request->customer_id) {
+            $walkinNet  = $this->requestNetAmount($request);
+            $walkinPaid = (float) $request->paid_amount;
+            if (abs($walkinPaid - $walkinNet) > 0.01) {
+                return back()->withErrors([
+                    'paid_amount' => 'কাস্টমার ছাড়া বিক্রয়ে পরিশোধ মোট ৳' . number_format($walkinNet, 0)
+                        . ' এর হুবহু সমান হতে হবে — কম বা বেশি নয়।',
+                ])->withInput();
+            }
         }
 
         // Staff: store as pending edit for admin approval

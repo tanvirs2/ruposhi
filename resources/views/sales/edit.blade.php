@@ -180,7 +180,7 @@
                         background:#fee2e2;border:1px solid #fecaca;border-radius:8px;
                         font-size:.82rem;color:#991b1b;font-weight:600">
                         <i class="fas fa-circle-exclamation"></i>
-                        কাস্টমার ছাড়া বিক্রয়ে সম্পূর্ণ পরিশোধ আবশ্যক!
+                        কাস্টমার ছাড়া বিক্রয়ে মোট টাকার হুবহু সমান পরিশোধ আবশ্যক — কম বা বেশি নয়!
                     </div>
                 </div>
 
@@ -834,11 +834,16 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
         if (paid <= 0)    { e.preventDefault(); showStockToast('পরিশোধের পরিমাণ লিখুন!', 'error'); paidEl.focus(); return; }
         return;
     }
-    if (!hasCustomer && paid < net) {
+    // Walk-in: paid must equal net exactly — short payment leaves a বাকী
+    // with no customer to own it, overpayment an অগ্রিম nobody can claim.
+    if (!hasCustomer && Math.abs(paid - net) > 0.009) {
         e.preventDefault();
         document.getElementById('walkinWarning').style.display = 'block';
         paidEl.focus();
-        showStockToast('ওয়াক-ইন কাস্টমারের জন্য সম্পূর্ণ পরিশোধ আবশ্যক!', 'error');
+        paidEl.select();
+        showStockToast(paid < net
+            ? `ওয়াক-ইন বিক্রয়ে ৳${net.toFixed(0)} হুবহু পরিশোধ আবশ্যক — ৳${(net - paid).toFixed(0)} কম`
+            : `ওয়াক-ইন বিক্রয়ে ৳${net.toFixed(0)} হুবহু পরিশোধ আবশ্যক — ৳${(paid - net).toFixed(0)} বেশি`, 'error');
         return;
     }
     document.getElementById('walkinWarning').style.display = 'none';
