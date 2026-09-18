@@ -928,17 +928,27 @@ class ReportController extends Controller
         $from = $request->from ?? now()->toDateString();
         $to   = $request->to   ?? now()->toDateString();
 
+        // ⚠️ সারাংশের হিসাব profitLoss() পেজের সাথে হুবহু এক রাখতে হবে —
+        // দুই জায়গায় আলাদা ফর্মুলা হলে একই তারিখের CSV আর পেজ ভিন্ন সংখ্যা
+        // দেখায়। sales.total_amount আগেই ছাড় বাদ দেওয়া কিন্তু অতিরিক্ত খরচ
+        // যোগ করা মান, আর অতিরিক্ত খরচ pass-through (কাস্টমারের কাছ থেকে
+        // নিয়ে আবার খরচ করা হয়) — তাই নিট আয় থেকে ওটা বাদ যায়।
         $grossSales    = Sale::whereBetween('sale_date', [$from, $to])->sum('total_amount');
         $discounts     = Sale::whereBetween('sale_date', [$from, $to])->sum('discount');
+        $extraCost     = Sale::whereBetween('sale_date', [$from, $to])->sum('extra_cost');
+        $netRevenue    = $grossSales - $extraCost;
         $cogs          = DB::table('sale_items')
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->whereBetween('sales.sale_date', [$from, $to])
             ->where('sales.shop_id', auth()->user()->shop_id)
             ->sum(DB::raw('COALESCE(sale_items.cost_price, items.purchase_price) * sale_items.quantity'));
-        $grossProfit   = $grossSales - $cogs;
+        $grossProfit   = $netRevenue - $cogs;
+        $grossMargin   = $netRevenue > 0 ? round($grossProfit / $netRevenue * 100, 2) : 0;
         $totalExpenses = ExtraExpense::whereBetween('expense_date', [$from, $to])->sum('amount');
         $netProfit     = $grossProfit - $totalExpenses;
+        $netMargin     = $netRevenue > 0 ? round($netProfit / $netRevenue * 100, 2) : 0;
+        $itemsTotal    = $netRevenue + $discounts;   // ছাড়ের আগে পণ্যের মোট মূল্য
 
         // ছাড় লাইন-আইটেমে অনুপাতে ভাগ করে বাদ দেওয়া হয় — পেজের
         // পণ্যভিত্তিক টেবিলের হিসাবের সাথে CSV যেন হুবহু মেলে (profitLoss()
@@ -975,14 +985,22 @@ class ReportController extends Controller
         return $this->csvResponse(
             "লাভ-লোকসান_{$from}_{$to}",
             ['বিবরণ', 'পরিমাণ (৳)'],
-            function ($out) use ($grossSales, $discounts, $cogs, $grossProfit, $totalExpenses, $netProfit, $itemBreakdown) {
-                fputcsv($out, ['মোট বিক্রয়',       number_format($grossSales)]);
-                fputcsv($out, ['ছাড়',              number_format($discounts)]);
-                fputcsv($out, ['নিট বিক্রয় আয়',   number_format($grossSales)]);
-                fputcsv($out, ['পণ্য ক্রয় মূল্য',  number_format($cogs)]);
-                fputcsv($out, ['গ্রস লাভ',          number_format($grossProfit)]);
-                fputcsv($out, ['পরিচালনা ব্যয়',     number_format($totalExpenses)]);
-                fputcsv($out, ['নিট লাভ/লোকসান',    number_format($netProfit)]);
+            function ($out) use (
+                $grossSales, $discounts, $extraCost, $itemsTotal, $netRevenue,
+                $cogs, $grossProfit, $grossMargin, $totalExpenses, $netProfit,
+                $netMargin, $itemBreakdown
+            ) {
+                fputcsv($out, ['পণ্যের মোট মূল্য (ছাড়ের আগে)', number_format($itemsTotal)]);
+                fputcsv($out, ['ছাড়',                         '− ' . number_format($discounts)]);
+                fputcsv($out, ['নিট বিক্রয় আয়',              number_format($netRevenue)]);
+                fputcsv($out, ['পণ্য ক্রয় মূল্য (COGS)',      '− ' . number_format($cogs)]);
+                fputcsv($out, ['গ্রস লাভ',                     number_format($grossProfit) . "  ({$grossMargin}%)"]);
+                fputcsv($out, ['পরিচালনা ব্যয়',                '− ' . number_format($totalExpenses)]);
+                fputcsv($out, ['নিট লাভ/লোকসান',               number_format($netProfit) . "  ({$netMargin}%)"]);
+                fputcsv($out, []);
+                fputcsv($out, ['— হিসাবের বাইরে —', '']);
+                fputcsv($out, ['অতিরিক্ত খরচ (কাস্টমার থেকে নেওয়া, pass-through)', number_format($extraCost)]);
+                fputcsv($out, ['চালানের মোট (অতিরিক্ত খরচ সহ)',                     number_format($grossSales)]);
                 fputcsv($out, []);
                 fputcsv($out, ['— পণ্যভিত্তিক বিবরণ —', '']);
                 fputcsv($out, ['পণ্য', 'পরিমাণ', 'আয় (৳)', 'ছাড় (৳)', 'খরচ (৳)', 'লাভ (৳)']);
