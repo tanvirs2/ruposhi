@@ -355,6 +355,12 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 - `lockForUpdate()` দিয়ে কপি নম্বর সিরিয়ালাইজ; একই ইউজারের ৩ সেকেন্ডের ভেতরের ইভেন্ট ডিবাউন্স (Chrome কখনো `beforeprint` দুইবার ছোড়ে)
 - ⚠️ ব্রাউজার প্রিন্ট আটকানো যায় না (Ctrl+P, PDF সেভ, ফটোকপি) — এটা প্রতিরোধ নয়, **অডিট + কাগজে কপি নং ছাপা**
 
+### StoreConfigController — পরিশোধ মোড
+- `addPaymentMethod()` / `updatePaymentMethod()` / `deletePaymentMethod()` — তালিকা `store_config.payment_methods` কী-তে JSON (per-shop)
+- ⚠️ `updatePaymentMethod()` নাম বদলালে **পুরনো রেকর্ডেও** নাম আপডেট করে — `Sale`, `Purchase`, `CustomerPayment`, `SupplierPayment` (এই চারটেতেই `payment_method` কলাম আছে, আর টেক্সট হিসেবেই সেভ — FK নয়)। নইলে রিপোর্টে এক মোড দুই নামে ভাগ হয়ে যেত। মডেল দিয়ে আপডেট করা হয় বলে HasShopScope-এ নিজের শপেই সীমিত
+- `payment_logs` / `reseller_payouts`-এর `payment_method` **ছোঁয়া হয় না** — ওগুলো লাইসেন্স পেমেন্ট, দোকানের লেনদেন নয়
+- ⚠️ এই ট্যাবের ইনপুট `.form-group-field`-এর বাইরে, তাই app.css-এর ইনপুট স্টাইল পায় না — `.pay-input` ক্লাস ব্যবহার করতে হয় (নইলে ব্রাউজারের ডিফল্ট চৌকো কোনা দেখায়)
+
 ### ReportController
 - `salesReport()` — daily sales with standalone payments, no-item sales sections
 - `grandNoItemDueReduction` uses `min(paid, max(0, previous_due))` — handles negative previous_due

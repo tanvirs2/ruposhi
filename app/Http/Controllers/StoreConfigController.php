@@ -144,6 +144,75 @@ class StoreConfigController extends Controller
         return response()->json(['success' => true, 'methods' => $methods]);
     }
 
+    /* ── Edit a payment method (নাম ও গ্রুপ) ──────────────────── */
+    /**
+     * ⚠️ payment_method ডেটাবেসে টেক্সট হিসেবেই সেভ থাকে (আলাদা টেবিলের
+     * FK নয়)। তাই শুধু তালিকার নাম বদলালে পুরনো বিক্রয়/ক্রয়/জমার
+     * রেকর্ডে পুরনো নামটাই থেকে যেত — রিপোর্টে এক মোড দুই নামে ভাগ হয়ে
+     * যেত, আর নতুন নামটা ড্রপডাউনে থাকলেও পুরনো লেনদেন তার সাথে মিলত না।
+     * তাই নাম বদলালে চারটে টেবিলের পুরনো রেকর্ডও একসাথে আপডেট হয়।
+     *
+     * মডেলগুলো HasShopScope ব্যবহার করে, তাই আপডেট নিজের শপেই সীমিত —
+     * অন্য শপে একই নামের মোড থাকলে সেটা অক্ষত থাকে।
+     */
+    public function updatePaymentMethod(Request $request)
+    {
+        $request->validate([
+            'old_name' => 'required|string|max:100',
+            'name'     => 'required|string|max:100',
+            'group'    => 'required|string|max:100',
+        ]);
+
+        $oldName = trim($request->old_name);
+        $newName = trim($request->name);
+        $group   = trim($request->group);
+
+        $methods = self::getPaymentMethods();
+        $index   = collect($methods)->search(fn($m) => $m['name'] === $oldName);
+
+        if ($index === false) {
+            return response()->json([
+                'success' => false,
+                'message' => 'পদ্ধতিটি পাওয়া যায়নি — পেজ রিলোড করে আবার চেষ্টা করুন।',
+            ], 404);
+        }
+
+        // নতুন নাম অন্য কোনো পদ্ধতির সাথে মিলে গেলে দুটো এক হয়ে যেত
+        $clash = collect($methods)
+            ->reject(fn($m, $i) => $i === $index)
+            ->contains(fn($m) => $m['name'] === $newName);
+
+        if ($clash) {
+            return response()->json([
+                'success' => false,
+                'message' => '"' . $newName . '" নামে আরেকটি পদ্ধতি আছে।',
+            ], 422);
+        }
+
+        $methods[$index] = ['name' => $newName, 'group' => $group];
+        StoreConfig::set('payment_methods', json_encode(array_values($methods), JSON_UNESCAPED_UNICODE));
+
+        // পুরনো রেকর্ডে নাম বদল — নাম না বদলালে (শুধু গ্রুপ বদল) কিছু করার নেই
+        $renamed = 0;
+        if ($newName !== $oldName) {
+            foreach ([
+                \App\Models\Sale::class,
+                \App\Models\Purchase::class,
+                \App\Models\CustomerPayment::class,
+                \App\Models\SupplierPayment::class,
+            ] as $model) {
+                $renamed += $model::where('payment_method', $oldName)
+                    ->update(['payment_method' => $newName]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'methods' => array_values($methods),
+            'renamed' => $renamed,
+        ]);
+    }
+
     /* ── Delete a payment method ─────────────────────────────── */
     public function deletePaymentMethod(Request $request)
     {

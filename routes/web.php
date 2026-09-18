@@ -225,6 +225,7 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
         Route::get('/store-config', [StoreConfigController::class, 'index'])->name('store-config.index');
         Route::put('/store-config', [StoreConfigController::class, 'update'])->name('store-config.update');
         Route::post('/store-config/payment-method',        [StoreConfigController::class, 'addPaymentMethod'])->name('store-config.payment-method.add');
+        Route::put('/store-config/payment-method',         [StoreConfigController::class, 'updatePaymentMethod'])->name('store-config.payment-method.update');
         Route::delete('/store-config/payment-method',      [StoreConfigController::class, 'deletePaymentMethod'])->name('store-config.payment-method.delete');
         Route::post('/store-config/multimedia/toggle',     [StoreConfigController::class, 'toggleMultimedia'])->name('store-config.multimedia.toggle');
         Route::post('/store-config/multimedia/interval',   [StoreConfigController::class, 'updateMultimediaInterval'])->name('store-config.multimedia.interval');

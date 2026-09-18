@@ -126,13 +126,13 @@ $selfHostedFonts = [
                 text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">
                 <i class="fas fa-plus-circle" style="color:var(--accent)"></i> নতুন পদ্ধতি যোগ করুন
             </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <input type="text" id="newPayName"
+            <div class="pay-add-row">
+                <input type="text" id="newPayName" class="pay-input"
                     placeholder="পদ্ধতির নাম  যেমন: IDLC কিস্তি"
                     style="flex:2;min-width:180px"
                     onkeydown="if(event.key==='Enter'){event.preventDefault();addPayMethod();}">
-                <div style="flex:1;min-width:160px;position:relative">
-                    <input type="text" id="newPayGroup" list="groupOptions"
+                <div style="flex:1;min-width:160px;position:relative;display:flex">
+                    <input type="text" id="newPayGroup" list="groupOptions" class="pay-input"
                         placeholder="গ্রুপ  যেমন: ব্যাংক ট্রান্সফার"
                         style="width:100%">
                     <datalist id="groupOptions">
@@ -141,7 +141,7 @@ $selfHostedFonts = [
                         @endforeach
                     </datalist>
                 </div>
-                <button type="button" onclick="addPayMethod()" class="btn btn-primary" style="white-space:nowrap">
+                <button type="button" onclick="addPayMethod()" class="btn btn-primary">
                     <i class="fas fa-plus"></i> যোগ করুন
                 </button>
             </div>
@@ -151,7 +151,7 @@ $selfHostedFonts = [
         </div>
 
         {{-- Methods list grouped --}}
-        <div style="padding:20px" id="payMethodsContainer">
+        <div style="padding:20px" id="payMethodsContainer" class="pay-list">
             @php $grouped = collect($methods)->groupBy('group'); @endphp
             @foreach($grouped as $group => $items)
             <div class="pay-group-block" data-group="{{ $group }}">
@@ -163,12 +163,17 @@ $selfHostedFonts = [
                             <i class="fas fa-credit-card" style="color:#cbd5e1;margin-right:8px;font-size:.8rem"></i>
                             {{ $m['name'] }}
                         </span>
-                        <button type="button"
-                            onclick="deletePayMethod('{{ addslashes($m['name']) }}')"
-                            class="btn" style="padding:4px 12px;background:#fee2e2;color:#dc2626;
-                            border:1px solid #fecaca;font-size:.78rem">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <span class="pay-actions">
+                            <button type="button" onclick="startEditPay(this)"
+                                title="নাম / গ্রুপ বদলান" class="btn pay-btn-icon pay-btn-edit">
+                                <i class="fas fa-pen-to-square"></i>
+                            </button>
+                            <button type="button" title="মুছে ফেলুন"
+                                onclick="deletePayMethod('{{ addslashes($m['name']) }}')"
+                                class="btn pay-btn-icon pay-btn-del">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </span>
                     </div>
                     @endforeach
                 </div>
@@ -499,7 +504,43 @@ $selfHostedFonts = [
     background: var(--surface);
     transition: background .1s;
 }
-.pay-method-row:hover { background: var(--bg); }
+.pay-method-row:hover { background: var(--bg); border-color: #cbd5e1; }
+
+/* ⚠️ পরিশোধ মোড ট্যাবের ইনপুটগুলো `.form-group-field`-এর বাইরে, তাই
+   app.css-এর ইনপুট স্টাইল (radius/border/focus) পায় না — ব্রাউজারের
+   ডিফল্ট চৌকো কোনা দেখাত। এই ক্লাসটা ওই স্টাইলটাই হুবহু দেয়। */
+.pay-input {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    font-family: inherit;
+    font-size: .88rem;
+    color: var(--text-primary);
+    background: var(--surface);
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.pay-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+.pay-input::placeholder { color: var(--text-muted); }
+
+.pay-add-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; }
+.pay-add-row .btn { white-space: nowrap; }
+
+/* সারি ও যোগ-করার ফর্ম একই প্রস্থে — নইলে চওড়া স্ক্রিনে নামটা বাঁয়ে আর
+   বাটনগুলো অনেক দূরে ডানে গিয়ে সম্পর্কহীন দেখাত (স্ক্রিনশটের সমস্যা)। */
+.pay-list, .pay-add-row { max-width: 860px; }
+
+.pay-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.pay-btn-icon {
+    width: 32px; height: 32px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 8px; font-size: .78rem; line-height: 1;
+}
+.pay-btn-edit { background: #fef9c3; color: #92400e; border: 1px solid #fde68a; }
+.pay-btn-edit:hover { background: #fef08a; }
+.pay-btn-del  { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+.pay-btn-del:hover { background: #fecaca; }
+.pay-method-row[data-editing="1"] { background: #fffbeb; border-color: #fde68a; }
 .pay-method-name {
     font-size: .88rem;
     font-weight: 500;
@@ -738,6 +779,7 @@ function toggleRpNew() {
 
 var payAddUrl     = '{{ route("store-config.payment-method.add") }}';
 var payDeleteUrl  = '{{ route("store-config.payment-method.delete") }}';
+var payUpdateUrl  = '{{ route("store-config.payment-method.update") }}';
 var fontUpdateUrl = '{{ route("store-config.font") }}';
 var csrfToken     = '{{ csrf_token() }}';
 
@@ -796,6 +838,88 @@ async function deletePayMethod(name) {
     }
 }
 
+/* ══ পরিশোধ মোড এডিট (নাম + গ্রুপ) ══════════════════════════
+   সারিটাকেই ইনপুট বাক্সে বদলে ফেলা হয় — আলাদা মোডাল ছাড়া, তাই
+   যেটা বদলাচ্ছেন সেটা চোখের সামনেই থাকে। পুরনো নামটা সারির
+   data-name থেকে পড়া হয়, তাই onclick-এ নাম এস্কেপ করার দরকার নেই। */
+function escHtmlAttr(v) {
+    return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+                    .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function startEditPay(btn) {
+    const row = btn.closest('.pay-method-row');
+    if (!row || row.dataset.editing === '1') return;
+
+    const name  = row.dataset.name;
+    const group = row.closest('.pay-group-block').dataset.group;
+
+    row.dataset.editing = '1';
+    row._original = row.innerHTML;
+    row.innerHTML = `
+        <div style="display:flex;gap:8px;flex:1;flex-wrap:wrap;margin-right:8px">
+            <input type="text" class="pay-input pay-edit-name" value="${escHtmlAttr(name)}"
+                   style="flex:2;min-width:150px" onkeydown="payEditKey(event, this)">
+            <input type="text" class="pay-input pay-edit-group" list="groupOptions" value="${escHtmlAttr(group)}"
+                   style="flex:1;min-width:130px" onkeydown="payEditKey(event, this)">
+        </div>
+        <span class="pay-actions">
+            <button type="button" onclick="savePayEdit(this)" class="btn btn-primary"
+                style="padding:7px 14px;font-size:.8rem"><i class="fas fa-check"></i> সেভ</button>
+            <button type="button" onclick="cancelPayEdit(this)" title="বাতিল"
+                class="btn pay-btn-icon" style="background:var(--bg);border:1px solid var(--border)">✕</button>
+        </span>`;
+    row.querySelector('.pay-edit-name').focus();
+    row.querySelector('.pay-edit-name').select();
+}
+
+function payEditKey(e, el) {
+    if (e.key === 'Enter')  { e.preventDefault(); savePayEdit(el); }
+    if (e.key === 'Escape') { e.preventDefault(); cancelPayEdit(el); }
+}
+
+function cancelPayEdit(el) {
+    const row = el.closest('.pay-method-row');
+    if (!row || !row._original) return;
+    row.innerHTML = row._original;
+    row.dataset.editing = '0';
+}
+
+async function savePayEdit(el) {
+    const row     = el.closest('.pay-method-row');
+    const oldName = row.dataset.name;
+    const name    = row.querySelector('.pay-edit-name').value.trim();
+    const group   = row.querySelector('.pay-edit-group').value.trim();
+
+    if (!name)  { showToast('পদ্ধতির নাম লিখুন', 'warn');  return; }
+    if (!group) { showToast('গ্রুপের নাম লিখুন', 'warn'); return; }
+    if (name === oldName && group === row.closest('.pay-group-block').dataset.group) {
+        cancelPayEdit(el);
+        return;
+    }
+
+    const res = await fetch(payUpdateUrl, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        body:    JSON.stringify({ old_name: oldName, name, group })
+    });
+
+    let data = null;
+    try { data = await res.json(); } catch (e) { /* ignore */ }
+
+    if (!res.ok || !data || !data.success) {
+        showToast((data && (data.message || (data.errors && Object.values(data.errors)[0][0])))
+            || 'পরিবর্তন সংরক্ষণ করা যায়নি', 'warn');
+        return;
+    }
+
+    rebuildList(data.methods);
+    updateTabCount(data.methods.length);
+    showToast(data.renamed > 0
+        ? '✓ সংরক্ষিত — পুরনো ' + data.renamed + 'টি লেনদেনেও নাম বদলানো হয়েছে'
+        : '✓ সংরক্ষিত', 'success');
+}
+
 function rebuildList(methods) {
     const container = document.getElementById('payMethodsContainer');
 
@@ -826,12 +950,17 @@ function rebuildList(methods) {
                         <i class="fas fa-credit-card" style="color:#cbd5e1;margin-right:8px;font-size:.8rem"></i>
                         ${n}
                     </span>
-                    <button type="button"
-                        onclick="deletePayMethod('${n.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"
-                        class="btn" style="padding:4px 12px;background:#fee2e2;color:#dc2626;
-                        border:1px solid #fecaca;font-size:.78rem">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <span class="pay-actions">
+                        <button type="button" onclick="startEditPay(this)" title="নাম / গ্রুপ বদলান"
+                            class="btn pay-btn-icon pay-btn-edit">
+                            <i class="fas fa-pen-to-square"></i>
+                        </button>
+                        <button type="button" title="মুছে ফেলুন"
+                            onclick="deletePayMethod('${n.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"
+                            class="btn pay-btn-icon pay-btn-del">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </span>
                 </div>`).join('')}
             </div>
         </div>
