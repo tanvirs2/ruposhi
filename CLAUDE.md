@@ -358,6 +358,7 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 ### StoreConfigController — পরিশোধ মোড
 - `addPaymentMethod()` / `updatePaymentMethod()` / `deletePaymentMethod()` — তালিকা `store_config.payment_methods` কী-তে JSON (per-shop)
 - ⚠️ `updatePaymentMethod()` নাম বদলালে **পুরনো রেকর্ডেও** নাম আপডেট করে — `Sale`, `Purchase`, `CustomerPayment`, `SupplierPayment` (এই চারটেতেই `payment_method` কলাম আছে, আর টেক্সট হিসেবেই সেভ — FK নয়)। নইলে রিপোর্টে এক মোড দুই নামে ভাগ হয়ে যেত। মডেল দিয়ে আপডেট করা হয় বলে HasShopScope-এ নিজের শপেই সীমিত
+- ⚠️ **কোডে `?? 'নগদ'` হার্ডকোড করা নিষেধ** — `StoreConfigController::defaultPaymentMethod()` ব্যবহার করুন (তালিকার প্রথম মোড)। অ্যাডমিন "নগদ" রিনেম করলে পুরনো রেকর্ড বদলে যায়, কিন্তু হার্ডকোড ফলব্যাক পরের লেনদেনে আবার পুরনো নাম লিখত — এক মোড দুই নামে ভাগ, যেটা ঠেকাতেই রিনেম ফিচারটা। লেজারের মতো লুপে ব্যবহার করলে ভেরিয়েবলে হোল্ড করুন (প্রতি সারিতে কুয়েরি নয়)
 - `payment_logs` / `reseller_payouts`-এর `payment_method` **ছোঁয়া হয় না** — ওগুলো লাইসেন্স পেমেন্ট, দোকানের লেনদেন নয়
 - ⚠️ এই ট্যাবের ইনপুট `.form-group-field`-এর বাইরে, তাই app.css-এর ইনপুট স্টাইল পায় না — `.pay-input` ক্লাস ব্যবহার করতে হয় (নইলে ব্রাউজারের ডিফল্ট চৌকো কোনা দেখায়)
 

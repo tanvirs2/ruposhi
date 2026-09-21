@@ -586,8 +586,19 @@ class ReportController extends Controller
         // ⚠️ শেষ রেকর্ডের সময় সেভ করা হয়, `now()` নয় — এই মুহূর্তে চলতে
         // থাকা প্রিন্ট (যেটা পেজ লোডের পর সেকেন্ডেই জমা হতে পারে) যেন
         // না-দেখা অবস্থাতেই থেকে যায়।
-        $lastSeen = \App\Models\SalePrint::where('copy_no', '>', 1)->max('printed_at');
-        if ($lastSeen) {
+        // ⚠️ তারিখের ফিল্টারটা এখানেও লাগে। নইলে অ্যাডমিন পুরনো তারিখ দিয়ে
+        // পেজটা খুললে তালিকায় আজকের পুনঃমুদ্রণ দেখাত না, অথচ seen সময় আজকের
+        // সর্বশেষ রেকর্ডে গিয়ে বসত — বেলের ব্যাজ মুছে যেত, আর যে পুনঃমুদ্রণটা
+        // ধরার জন্য পুরো ফিচার, সেটাই চোখে না পড়েই "দেখা হয়েছে" হয়ে যেত।
+        // ⚠️ watermark শুধু সামনে এগোয়, কখনো পেছায় না — দুইটা কারণেই:
+        //  ১. ফিল্টার করা রেঞ্জের বাইরের রেকর্ড অ্যাডমিন দেখেইনি, তাই
+        //     `max()` পুরো টেবিল থেকে নিলে না-দেখা পুনঃমুদ্রণও "দেখা হয়েছে"
+        //     হয়ে যেত আর ব্যাজ মুছে যেত।
+        //  ২. উল্টোটাও — পুরনো তারিখ দিয়ে খুললে watermark পিছিয়ে গিয়ে আগেই
+        //     দেখে ফেলা পুনঃমুদ্রণগুলো আবার ব্যাজে গোনা হত।
+        $lastSeen = (clone $countBase)->max('printed_at');
+        $prevSeen = \App\Models\StoreConfig::get('reprint_alert_seen_at');
+        if ($lastSeen && (!$prevSeen || $lastSeen > $prevSeen)) {
             \App\Models\StoreConfig::set('reprint_alert_seen_at', $lastSeen);
         }
 
@@ -805,8 +816,13 @@ class ReportController extends Controller
         $monthly = DB::table('sales')
             ->whereBetween('sale_date', [$from, $to])
             ->where('shop_id', auth()->user()->shop_id)
+            // ⚠️ `total_amount`-এ অতিরিক্ত খরচ যোগ করা আছে, কিন্তু ওটা
+            // pass-through (কাস্টমারের কাছ থেকে নিয়ে আবার খরচ করা হয়) —
+            // উপরের সারাংশ `$netRevenue`-ও ওটা বাদ দেয়। এখানে বাদ না দিলে
+            // মাসিক সারির যোগফল সারাংশের "নিট বিক্রয় আয়"/গ্রস লাভের সাথে
+            // ঠিক অতিরিক্ত খরচের সমান পার্থক্যে মিলত না।
             ->selectRaw("DATE_FORMAT(sale_date,'%Y-%m') as month,
-                SUM(total_amount) as revenue,
+                SUM(total_amount - COALESCE(extra_cost, 0)) as revenue,
                 COUNT(*) as sale_count")
             ->groupBy('month')
             ->orderBy('month')

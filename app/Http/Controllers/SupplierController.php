@@ -95,6 +95,11 @@ class SupplierController extends Controller
             ->get();
 
         $rows = collect();
+
+        // payment_method খালি থাকলে যে নামটা দেখানো হবে — তালিকার প্রথম মোড।
+        // লুপের বাইরে একবারই পড়া হয়, নইলে প্রতি সারিতে একটা করে কুয়েরি হত।
+        $defaultMethod = StoreConfigController::defaultPaymentMethod();
+
         foreach ($purchases as $p) {
             $ts      = $p->created_at ? $p->created_at->timestamp : 0;
             $baseKey = sprintf('%010d_%06d', $ts, $p->id);
@@ -202,7 +207,7 @@ class SupplierController extends Controller
                     'date'        => $p->purchase_date,
                     'sort_key'    => $baseKey . '_4p',
                     'type'        => 'purchase_payment',
-                    'label'       => $p->payment_method ?? 'নগদ',
+                    'label'       => $p->payment_method ?? $defaultMethod,
                     'ref'         => '#PUR-' . str_pad($p->id, 4, '0', STR_PAD_LEFT),
                     'qty'         => 0,
                     'rate'        => 0,

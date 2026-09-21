@@ -148,7 +148,7 @@ class PurchaseController extends Controller
                 'paid_amount'    => $paid,
                 'deposit_amount' => $deposit,
                 'due_amount'     => $due,
-                'payment_method' => $request->payment_method ?? 'নগদ',
+                'payment_method' => $request->payment_method ?? StoreConfigController::defaultPaymentMethod(),
                 'notes'          => $request->notes,
                 'purchase_date'  => $request->purchase_date,
             ]);
@@ -287,7 +287,7 @@ class PurchaseController extends Controller
                 'paid_amount'    => $paid,
                 'deposit_amount' => $deposit,
                 'due_amount'     => $due,
-                'payment_method' => $request->payment_method ?? 'নগদ',
+                'payment_method' => $request->payment_method ?? StoreConfigController::defaultPaymentMethod(),
                 'notes'          => $request->notes,
                 'purchase_date'  => $request->purchase_date,
             ]);
@@ -518,7 +518,7 @@ class PurchaseController extends Controller
                 'paid_amount'    => $paid,
                 'deposit_amount' => $deposit,
                 'due_amount'     => $due,
-                'payment_method' => $d['payment_method'] ?? 'নগদ',
+                'payment_method' => $d['payment_method'] ?? StoreConfigController::defaultPaymentMethod(),
                 'notes'          => $d['notes'] ?? null,
                 'purchase_date'  => $d['purchase_date'],
             ]);
@@ -584,7 +584,7 @@ class PurchaseController extends Controller
         $proposed = [
             'purchase_date'  => $request->purchase_date,
             'supplier_id'    => $request->supplier_id ? (int) $request->supplier_id : null,
-            'payment_method' => $request->payment_method ?? 'নগদ',
+            'payment_method' => $request->payment_method ?? StoreConfigController::defaultPaymentMethod(),
             'notes'          => $request->notes ?? '',
             'paid_amount'    => round((float) $request->paid_amount, 2),
             'extra_costs'    => collect($request->extra_costs ?? [])->filter(fn($r) => !empty($r['category']) && ($r['amount'] ?? 0) > 0)->map(fn($r) => ['category' => $r['category'], 'amount' => round((float)$r['amount'], 2)])->sortBy('category')->values()->toArray(),

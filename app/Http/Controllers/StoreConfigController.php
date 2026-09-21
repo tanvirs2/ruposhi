@@ -48,6 +48,21 @@ class StoreConfigController extends Controller
         return self::$defaults;
     }
 
+    /* ── ফলব্যাক পরিশোধ মোড ───────────────────────────────────── */
+    /**
+     * ফর্ম থেকে payment_method না এলে (বা পুরনো রেকর্ডে NULL থাকলে) কোন
+     * নামটা ধরা হবে — তালিকার **প্রথম** মোড, ডিফল্টে "নগদ"।
+     *
+     * ⚠️ কোডে `?? 'নগদ'` হার্ডকোড করা যাবে না। অ্যাডমিন updatePaymentMethod()
+     * দিয়ে "নগদ" → অন্য নাম করলে পুরনো সব রেকর্ড নতুন নামে বদলে যায়, কিন্তু
+     * হার্ডকোড ফলব্যাক পরের লেনদেনে আবার "নগদ" লিখত — এক মোড দুই নামে ভাগ
+     * হয়ে যেত, যেটা ঠেকাতেই রিনেম ফিচারটা।
+     */
+    public static function defaultPaymentMethod(): string
+    {
+        return self::getPaymentMethods()[0]['name'] ?? 'নগদ';
+    }
+
     /* ── Grouped for Blade dropdowns: ['group' => ['name1','name2']] */
     public static function getGroupedPaymentMethods(): array
     {

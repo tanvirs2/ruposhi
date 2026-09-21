@@ -258,6 +258,10 @@ class CustomerController extends Controller
         $ledger   = collect();
         $deposits = collect();
 
+        // payment_method খালি থাকলে যে নামটা দেখানো হবে — তালিকার প্রথম মোড।
+        // লুপের বাইরে একবারই পড়া হয়, নইলে প্রতি সারিতে একটা করে কুয়েরি হত।
+        $defaultMethod = StoreConfigController::defaultPaymentMethod();
+
         foreach ($sales as $sale) {
             $saleTime = $sale->created_at ?? $sale->sale_date;
             // Running sum of what the rows below actually charge for this sale.
@@ -354,7 +358,7 @@ class CustomerController extends Controller
                     'sort_key' => $saleTime,
                     'datetime' => $saleTime,
                     'sale_id'  => $sale->id,
-                    'method'   => $sale->payment_method ?? 'নগদ',
+                    'method'   => $sale->payment_method ?? $defaultMethod,
                     'notes'    => null,
                     'amount'   => $sale->paid_amount,
                 ]);
@@ -390,7 +394,7 @@ class CustomerController extends Controller
             'datetime' => $d['datetime'],
             'sale_id'  => $d['sale_id'],
             'type'     => 'payment',
-            'label'    => $d['method'] ?: 'নগদ',
+            'label'    => $d['method'] ?: $defaultMethod,
             'qty'      => 0,
             'rate'     => 0,
             'debit'    => 0,
