@@ -24,7 +24,9 @@ class SalePrintController extends Controller
      * বড় হলে সত্যিকারের দুইবার প্রিন্ট (যেটা ধরাই আসল উদ্দেশ্য) এক কপি
      * হিসেবে গোনা হত।
      */
-    private const DEBOUNCE_SECONDS = 3;
+    // public — sales/show.blade.php এই মানটাই পড়ে ক্লায়েন্ট-সাইডে একই
+    // ডিবাউন্স নকল করে (নইলে কাগজে "কপি নং ২" ছাপত অথচ লগে কপি ১ থাকত)।
+    public const DEBOUNCE_SECONDS = 3;
 
     /** কপি নম্বরে সংঘর্ষ হলে সর্বোচ্চ কতবার আবার চেষ্টা করা হবে */
     private const MAX_ATTEMPTS = 5;

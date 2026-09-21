@@ -417,9 +417,32 @@ var _memoPrintCount = {{ (int) ($printCount ?? 0) }};
 var _memoPrintUrl   = @js(route('sales.print-log', $sale));
 var _memoPrintUser  = @js(auth()->user()->name);
 
-function markMemoCopy() {
-    var copyNo = _memoPrintCount + 1;
-    var stamp  = document.getElementById('reprintStamp');
+// সার্ভারের ডিবাউন্স উইন্ডো (SalePrintController::DEBOUNCE_SECONDS) —
+// দুই জায়গার মান এক রাখতে হবে।
+var _memoDebounceMs = {{ (int) \App\Http\Controllers\SalePrintController::DEBOUNCE_SECONDS * 1000 }};
+
+/**
+ * এবারের কাগজে কত নম্বর কপি ছাপা হবে।
+ *
+ * ⚠️ সার্ভার একই ইউজারের পরপর দুইটা ইভেন্ট ডিবাউন্স করে — উইন্ডোর ভেতরে
+ * নতুন নম্বর না দিয়ে আগের রেকর্ডটাই ফেরত দেয়। ক্লায়েন্ট সেটা না জানলে
+ * অন্ধভাবে `+1` করত, ফলে কাগজে "কপি নং ২" ছাপা হত অথচ লগে কপি ১-ই
+ * থাকত। তাই একই নিয়ম এখানেও: শেষ প্রিন্টটা উইন্ডোর ভেতরে হলে সেই
+ * নম্বরটাই আবার।
+ *
+ * হিসাবটা `window`-এ রাখা — Turbo নেভিগেশনে body বদলায়, window টেকে,
+ * তাই একই মেমোতে ফিরে এলেও শেষ প্রিন্টের কথা মনে থাকে।
+ */
+function memoNextCopyNo() {
+    var last = window._memoLastPrint;
+    if (last && last.url === _memoPrintUrl && (Date.now() - last.at) < _memoDebounceMs) {
+        return last.copyNo;          // সার্ভার নতুন নম্বর দেবে না
+    }
+    return _memoPrintCount + 1;
+}
+
+function markMemoCopy(copyNo) {
+    var stamp = document.getElementById('reprintStamp');
     if (!stamp) return;
     if (copyNo < 2) { stamp.style.display = 'none'; return; }
 
@@ -434,7 +457,7 @@ function markMemoCopy() {
 function logMemoPrint() {
     // keepalive — প্রিন্ট ডায়ালগ ব্রাউজারকে ব্লক করে রাখে, তাই সাধারণ
     // fetch মাঝপথে বাতিল হয়ে যেতে পারে।
-    fetch(_memoPrintUrl, {
+    return fetch(_memoPrintUrl, {
         method: 'POST',
         keepalive: true,
         headers: {
@@ -444,14 +467,34 @@ function logMemoPrint() {
         },
     })
     .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (d) { if (d && d.copy_no) _memoPrintCount = d.copy_no; })
+    .then(function (d) {
+        if (d && d.copy_no) {
+            _memoPrintCount = d.copy_no;
+            window._memoLastPrint = { url: _memoPrintUrl, copyNo: d.copy_no, at: Date.now() };
+            // সার্ভারের নম্বরই চূড়ান্ত — অনুমান ভুল হলে সীল শুধরে দেয়
+            // (হার্ড রিফ্রেশে window-এর স্মৃতি মুছে গেলে এটাই ভরসা)।
+            markMemoCopy(d.copy_no);
+        }
+        return d;
+    })
     .catch(function () { /* নেটওয়ার্ক ফেল — প্রিন্ট আটকানো হয় না */ });
 }
 
 function printMemo() {
-    // beforeprint নিজেই লগ করে, তাই এখানে আর ডাকা হয় না — সার্ভারে
-    // ডিবাউন্স থাকলেও দুইবার ডাকলে অকারণে দুইটা রিকোয়েস্ট যেত।
-    window.print();
+    // বাটনের পথে সার্ভারের উত্তরের জন্য অপেক্ষা করা যায়, তাই সীলে
+    // সবসময় নিশ্চিত নম্বরটাই বসে — কোনো অনুমান নয়।
+    // (Ctrl+P-তে এটা সম্ভব নয়: beforeprint সিঙ্ক্রোনাস, অপেক্ষা করলে
+    //  ডায়ালগ সীল বসার আগেই খুলে যেত।)
+    if (window._memoPrintBusy) return;
+    window._memoPrintBusy = true;
+
+    logMemoPrint().then(function () {
+        window._memoPrintBusy = false;
+        // নিচের beforeprint হ্যান্ডলার যেন আবার লগ না করে — এইমাত্র
+        // হয়ে গেছে (সার্ভার ডিবাউন্স করত ঠিকই, কিন্তু অকারণ রিকোয়েস্ট)।
+        window._memoPrintLogged = true;
+        window.print();
+    });
 }
 
 // লিসেনারটা window-এ একবারই বসে। Turbo নেভিগেশনে body বদলালেও window টিকে
@@ -464,7 +507,11 @@ if (!window._memoPrintHooked) {
         // অন্য পেজ থেকে Ctrl+P চাপলে যেন আগের মেমোর নামে লগ না হয় —
         // সীলটা এই পেজে আছে কি না দেখেই সিদ্ধান্ত।
         if (!document.getElementById('reprintStamp')) return;
-        markMemoCopy();
+
+        // printMemo() এইমাত্র লগ করে সীল বসিয়ে এসেছে — আবার কিছু নয়।
+        if (window._memoPrintLogged) { window._memoPrintLogged = false; return; }
+
+        markMemoCopy(memoNextCopyNo());
         logMemoPrint();
     });
 }
