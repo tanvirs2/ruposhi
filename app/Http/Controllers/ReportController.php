@@ -596,10 +596,13 @@ class ReportController extends Controller
         //     হয়ে যেত আর ব্যাজ মুছে যেত।
         //  ২. উল্টোটাও — পুরনো তারিখ দিয়ে খুললে watermark পিছিয়ে গিয়ে আগেই
         //     দেখে ফেলা পুনঃমুদ্রণগুলো আবার ব্যাজে গোনা হত।
+        // ⚠️ কী-টা প্রতি ইউজারে আলাদা (SalePrint::seenKey দেখুন) — নইলে এক
+        // অ্যাডমিন দেখলেই বাকি সবার ব্যাজ মুছে যেত।
+        $seenKey  = \App\Models\SalePrint::seenKey(auth()->id());
         $lastSeen = (clone $countBase)->max('printed_at');
-        $prevSeen = \App\Models\StoreConfig::get('reprint_alert_seen_at');
+        $prevSeen = \App\Models\StoreConfig::get($seenKey);
         if ($lastSeen && (!$prevSeen || $lastSeen > $prevSeen)) {
-            \App\Models\StoreConfig::set('reprint_alert_seen_at', $lastSeen);
+            \App\Models\StoreConfig::set($seenKey, $lastSeen);
         }
 
         return view('reports.print-logs', compact('logs', 'from', 'to', 'summary'));

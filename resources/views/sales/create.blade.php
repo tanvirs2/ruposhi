@@ -1567,7 +1567,7 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
     // and overpayment would be an অগ্রিম nobody can claim back. Both are
     // blocked here and again server-side.
     const noCustomer = !hasCustomer;
-    if (noCustomer && Math.abs(paid - net) > 0.009) {
+    if (noCustomer && Math.abs(paid - net) > 0.01) {
         e.preventDefault();
         document.getElementById('walkinWarning').style.display = 'block';
         paidEl.focus();

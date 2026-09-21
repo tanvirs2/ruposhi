@@ -50,7 +50,7 @@ class NotificationComposer
         // চিরকাল ঝুলে থাকে না। নিজের প্রিন্ট গোনা হয় না।
         $notifReprints = 0;
         if (Auth::check() && Auth::user()->canManageShop()) {
-            $seenAt = StoreConfig::get('reprint_alert_seen_at');
+            $seenAt = StoreConfig::get(SalePrint::seenKey(Auth::id()));
             $notifReprints = SalePrint::where('copy_no', '>', 1)
                 ->where('user_id', '!=', Auth::id())
                 ->when($seenAt, fn($q) => $q->where('printed_at', '>', $seenAt))

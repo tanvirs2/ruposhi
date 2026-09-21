@@ -115,8 +115,12 @@ class SaleController extends Controller
     }
 
     /**
-     * Net payable for an incoming sale request — same formula the store/update
-     * transactions use: items total − ছাড় + অতিরিক্ত খরচ, floored at 0.
+     * Net payable for an incoming sale request — items total − ছাড় + অতিরিক্ত খরচ.
+     *
+     * ⚠️ `max(0, ...)` **নয়** — store()/update()-এর `$net` যেভাবে হিসাব করে
+     * হুবহু সেভাবেই, নইলে ছাড় মোটের চেয়ে বেশি হলে দুই জায়গায় দুই সংখ্যা
+     * হত আর ওয়াক-ইন চেকটা ভুল অঙ্কের সাথে মেলাত। ঋণাত্মক নিটের কেসটা
+     * কলারের আলাদা গার্ডে ধরা হয়।
      */
     private function requestNetAmount(Request $request): float
     {
@@ -126,7 +130,39 @@ class SaleController extends Controller
             ->filter(fn($r) => !empty($r['category']) && isset($r['amount']) && $r['amount'] > 0)
             ->sum(fn($r) => (float) $r['amount']);
 
-        return max(0, $total - $discount + $extraCost);
+        return $total - $discount + $extraCost;
+    }
+
+    /**
+     * ওয়াক-ইন (কাস্টমার ছাড়া) বিক্রয়ে পরিশোধ নিট টাকার হুবহু সমান হতে হবে।
+     *
+     * ব্যালেন্স ধরে রাখার মতো কোনো কাস্টমার সারি নেই — কম দিলে এমন বাকী
+     * তৈরি হয় যার মালিক নেই, বেশি দিলে এমন অগ্রিম যা কেউ ফেরত চাইতে পারে
+     * না; দুটোই খাতা থেকে নিঃশব্দে হারিয়ে যায়। store() ও update() দুই
+     * জায়গাতেই লাগে, আর sales/create + sales/edit-এর ক্লায়েন্ট-সাইড চেকের
+     * হুবহু প্রতিফলন (টলারেন্সও এক: ০.০১)।
+     *
+     * @return string|null এরর বার্তা, নয়তো null
+     */
+    private function walkinPaymentError(Request $request): ?string
+    {
+        if (empty($request->items) || $request->customer_id) return null;
+
+        $net = $this->requestNetAmount($request);
+
+        // ছাড় মোট + অতিরিক্ত খরচের চেয়ে বেশি — নিট ঋণাত্মক। পরিশোধ কখনো
+        // ঋণাত্মক হতে পারে না (validation `min:0`), তাই "হুবহু সমান" বার্তা
+        // দিলে অসম্ভব একটা অঙ্ক চাইত; আসল ভুলটাই বলা হয়।
+        if ($net < 0) {
+            return 'ছাড় মোট টাকার চেয়ে বেশি — কাস্টমার ছাড়া বিক্রয়ে এটা সম্ভব নয়।';
+        }
+
+        if (abs((float) $request->paid_amount - $net) > 0.01) {
+            return 'কাস্টমার ছাড়া বিক্রয়ে পরিশোধ মোট ৳' . number_format($net, 0)
+                 . ' এর হুবহু সমান হতে হবে — কম বা বেশি নয়।';
+        }
+
+        return null;
     }
 
     public function store(Request $request)
@@ -148,20 +184,8 @@ class SaleController extends Controller
             return back()->withErrors(['paid_amount' => 'পরিশোধের পরিমাণ লিখুন।'])->withInput();
         }
 
-        // ওয়াক-ইন (কাস্টমার ছাড়া) বিক্রয়ে পরিশোধ মোট টাকার হুবহু সমান হতে হবে।
-        // No customer row exists to carry a balance, so a short payment would
-        // create a বাকী nobody owns and an overpayment an অগ্রিম nobody can
-        // claim back — both silently vanish from the ledger. Mirrors the
-        // client-side check in sales/create + sales/edit.
-        if (!empty($request->items) && !$request->customer_id) {
-            $walkinNet  = $this->requestNetAmount($request);
-            $walkinPaid = (float) $request->paid_amount;
-            if (abs($walkinPaid - $walkinNet) > 0.01) {
-                return back()->withErrors([
-                    'paid_amount' => 'কাস্টমার ছাড়া বিক্রয়ে পরিশোধ মোট ৳' . number_format($walkinNet, 0)
-                        . ' এর হুবহু সমান হতে হবে — কম বা বেশি নয়।',
-                ])->withInput();
-            }
+        if ($walkinError = $this->walkinPaymentError($request)) {
+            return back()->withErrors(['paid_amount' => $walkinError])->withInput();
         }
 
         // ডাবল-ক্লিক/ডাবল-ট্যাপ বা ধীরগতির নেটওয়ার্কে বাটনে দ্বিতীয়বার চাপ পড়ে
@@ -341,20 +365,8 @@ class SaleController extends Controller
             return back()->withErrors(['customer_id' => 'আইটেম ছাড়া বিক্রয়ে কাস্টমার নির্বাচন আবশ্যক।'])->withInput();
         }
 
-        // ওয়াক-ইন (কাস্টমার ছাড়া) বিক্রয়ে পরিশোধ মোট টাকার হুবহু সমান হতে হবে।
-        // No customer row exists to carry a balance, so a short payment would
-        // create a বাকী nobody owns and an overpayment an অগ্রিম nobody can
-        // claim back — both silently vanish from the ledger. Mirrors the
-        // client-side check in sales/create + sales/edit.
-        if (!empty($request->items) && !$request->customer_id) {
-            $walkinNet  = $this->requestNetAmount($request);
-            $walkinPaid = (float) $request->paid_amount;
-            if (abs($walkinPaid - $walkinNet) > 0.01) {
-                return back()->withErrors([
-                    'paid_amount' => 'কাস্টমার ছাড়া বিক্রয়ে পরিশোধ মোট ৳' . number_format($walkinNet, 0)
-                        . ' এর হুবহু সমান হতে হবে — কম বা বেশি নয়।',
-                ])->withInput();
-            }
+        if ($walkinError = $this->walkinPaymentError($request)) {
+            return back()->withErrors(['paid_amount' => $walkinError])->withInput();
         }
 
         // Staff: store as pending edit for admin approval

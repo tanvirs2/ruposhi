@@ -836,7 +836,7 @@ document.getElementById('saleForm').addEventListener('submit', function(e) {
     }
     // Walk-in: paid must equal net exactly — short payment leaves a বাকী
     // with no customer to own it, overpayment an অগ্রিম nobody can claim.
-    if (!hasCustomer && Math.abs(paid - net) > 0.009) {
+    if (!hasCustomer && Math.abs(paid - net) > 0.01) {
         e.preventDefault();
         document.getElementById('walkinWarning').style.display = 'block';
         paidEl.focus();
