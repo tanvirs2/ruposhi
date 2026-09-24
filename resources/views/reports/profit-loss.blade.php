@@ -221,10 +221,10 @@
 @endif
 
 {{-- ── Daily Detail Table (old-style per-row breakdown) ───────── --}}
-<div class="card" style="margin-top:24px">
+<div class="card" style="margin-top:24px" id="dailyDetail">
     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
         <h3><i class="fas fa-table-list"></i> বিক্রয় বিস্তারিত (তারিখ অনুযায়ী)</h3>
-        <span style="font-size:.8rem;color:#94a3b8">মোট {{ count($dailyDetail) }} টি লাইন আইটেম</span>
+        <span style="font-size:.8rem;color:#94a3b8">মোট {{ number_format($dailyDetail->total()) }} টি লাইন আইটেম@if($dailyDetail->hasPages()) — দেখাচ্ছে {{ $dailyDetail->firstItem() }}–{{ $dailyDetail->lastItem() }}@endif</span>
     </div>
     <div class="table-wrap">
         <table class="data-table pl-item-table">
@@ -247,7 +247,7 @@
                     $cls      = $profit >= 0 ? 'profit-good' : 'profit-poor';
                 @endphp
                 <tr>
-                    <td style="text-align:center;color:#94a3b8">{{ $i + 1 }}</td>
+                    <td style="text-align:center;color:#94a3b8">{{ $dailyDetail->firstItem() + $i }}</td>
                     <td style="color:#334155;font-size:.82rem">{{ $row->sale_date }}</td>
                     <td>{{ $row->name }}</td>
                     <td style="text-align:right">{{ number_format($row->qty, 0) }}</td>
@@ -263,14 +263,15 @@
                 <tr><td colspan="7" class="empty-row">এই সময়কালে কোনো বিক্রয় নেই</td></tr>
                 @endforelse
             </tbody>
-            @if(count($dailyDetail))
+            @if($dailyDetail->total())
+            {{-- মোট পুরো রেঞ্জের (আলাদা aggregate কুয়েরি), শুধু এই পেজের নয় --}}
             <tfoot>
                 <tr style="font-weight:700;background:var(--bg)">
-                    <td colspan="3">মোট</td>
-                    <td style="text-align:right">{{ number_format($dailyDetail->sum('qty'), 0) }}</td>
+                    <td colspan="3">মোট{{ $dailyDetail->hasPages() ? ' (সব পেজ)' : '' }}</td>
+                    <td style="text-align:right">{{ number_format($detailTotals->qty ?? 0, 0) }}</td>
                     <td style="text-align:right">—</td>
-                    <td style="text-align:right;color:{{ $dailyDetail->sum('discount') > 0 ? '#ea580c' : '#cbd5e1' }}">
-                        {{ $dailyDetail->sum('discount') > 0 ? '− '.number_format($dailyDetail->sum('discount'), 0) : '—' }}
+                    <td style="text-align:right;color:{{ ($detailTotals->discount ?? 0) > 0 ? '#ea580c' : '#cbd5e1' }}">
+                        {{ ($detailTotals->discount ?? 0) > 0 ? '− '.number_format($detailTotals->discount, 0) : '—' }}
                     </td>
                     <td style="text-align:right" class="{{ $grossProfit >= 0 ? 'profit-good' : 'profit-poor' }}">
                         {{ $grossProfit >= 0 ? '+' : '− ' }}{{ number_format(abs($grossProfit), 0) }}
@@ -280,6 +281,9 @@
             @endif
         </table>
     </div>
+    @if($dailyDetail->hasPages())
+    <div class="pagination-wrap no-print">{{ $dailyDetail->links() }}</div>
+    @endif
 </div>
 
 {{-- ── Item-wise Profit Breakdown ──────────────────────────────── --}}

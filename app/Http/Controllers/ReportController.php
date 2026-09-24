@@ -472,7 +472,10 @@ class ReportController extends Controller
     // ── কাস্টমার বাকী রিপোর্ট ─────────────────────────────────
     public function customerDue()
     {
-        $customers = Customer::where('due_amount', '>', 0)
+        // with('area') — আগে প্রতি সারিতে এলাকার আলাদা কুয়েরি হত (N+1):
+        // ২,০০০ বকেয়া কাস্টমারে ২,০০০+ কুয়েরি, ~১ সেকেন্ড
+        $customers = Customer::with('area:id,name')
+            ->where('due_amount', '>', 0)
             ->orderByDesc('due_amount')
             ->get();
         $totalDue = $customers->sum('due_amount');
@@ -955,12 +958,21 @@ class ReportController extends Controller
 
         // ── Daily detail rows (one row per sale item) ─────────────
         // লাভ থেকে ওই লাইনের ভাগে পড়া ছাড় বাদ (উপরের pro-rate নিয়ম)
-        $dailyDetail = DB::table('sale_items')
+        // ⚠️ পেজিনেটেড — আগে পুরো রেঞ্জের প্রতিটা লাইন একসাথে আসত: এক বছরের
+        // রেঞ্জে লাখের কাছাকাছি সারি, ~৬৮ MB পেজ, ব্রাউজার আটকে যেত। মোট ঘরগুলো
+        // আলাদা aggregate কুয়েরি থেকে, তাই পেজ যেটাই হোক মোট পুরো রেঞ্জের।
+        $detailBase = DB::table('sale_items')
             ->join('items', 'sale_items.item_id', '=', 'items.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->joinSub($saleSubtotals, 'st', fn($j) => $j->on('st.sale_id', '=', 'sales.id'))
             ->whereBetween('sales.sale_date', [$from, $to])
-            ->where('sales.shop_id', auth()->user()->shop_id)
+            ->where('sales.shop_id', auth()->user()->shop_id);
+
+        $detailTotals = (clone $detailBase)
+            ->selectRaw("SUM(sale_items.quantity) as qty, SUM({$lineDiscount}) as discount")
+            ->first();
+
+        $dailyDetail = (clone $detailBase)
             ->selectRaw("
                 sales.sale_date,
                 sales.id as sale_id,
@@ -975,7 +987,9 @@ class ReportController extends Controller
             ")
             ->orderBy('sales.sale_date')
             ->orderBy('sales.id')
-            ->get();
+            ->paginate(300, ['*'], 'detail_page')
+            ->withQueryString()
+            ->fragment('dailyDetail');
 
         return view('reports.profit-loss', compact(
             'from', 'to',
@@ -983,7 +997,7 @@ class ReportController extends Controller
             'cogs', 'grossProfit', 'grossMargin',
             'expenseCategories', 'totalExpenses',
             'netProfit', 'netMargin',
-            'monthly', 'itemBreakdown', 'dailyDetail', 'userPerformance'
+            'monthly', 'itemBreakdown', 'dailyDetail', 'detailTotals', 'userPerformance'
         ));
     }
 
