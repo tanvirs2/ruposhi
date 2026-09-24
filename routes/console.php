@@ -17,3 +17,6 @@ Artisan::command('inspire', function () {
 // had already been pruned. A gz dump is a couple of hundred KB, so three
 // months costs a few tens of MB and buys a real recovery window.
 Schedule::command('app:backup-db --keep=90')->dailyAt('03:00');
+
+// SMS সেফটি নেট — queue worker থেমে গেলে আটকে থাকা SMS সরাসরি পাঠায় (SmsSweep দেখুন)
+Schedule::command('app:sms-sweep')->everyMinute()->withoutOverlapping();

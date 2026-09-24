@@ -158,6 +158,9 @@ run "view ক্যাশ"    php artisan view:cache
 # ⚠️ কমান্ডগুলো root হিসেবে চলে, তাই ক্যাশ ফাইল root-owned হয়ে যায় আর
 # www-data লিখতে না পেরে ৫০০ দেয় — এই chown কখনো বাদ দেওয়া যাবে না।
 run "মালিকানা ঠিক করা" chown -R www-data:www-data storage bootstrap/cache
+# SMS queue worker নতুন কোড নিক — নইলে পুরনো কোড চালাতেই থাকে। worker না
+# চললেও নিরাপদ (শুধু ক্যাশে একটা সংকেত লেখে)।
+run "queue worker রিস্টার্ট" php artisan queue:restart
 
 STATUS="✅ সফল"
 finish

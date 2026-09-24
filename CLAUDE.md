@@ -288,10 +288,16 @@ This was a historical bug. Any cap on due_amount destroys the credit balance fea
 ### Sale Invoice Row Order (tfoot)
 Order: ছাড় → পূর্বের বাকী → অতিরিক্ত খরচ → শ্রমিক খরচ → বিক্রয় মোট (only if prev_due ≠ 0) → সর্বমোট → পরিশোধ → বাকী
 
-### SMS — রেসপন্সের পরে পাঠানো (`SmsService::sendLater()`)
-- `send()` গেটওয়েতে (`bulksmsbd.net`) সরাসরি HTTP কল করে, টাইমআউট ১৫ সেকেন্ড। বিক্রয়/পেমেন্টের রিকোয়েস্টের ভেতরে চললে গেটওয়ে ধীর হলে "সম্পন্ন" পেজ ততক্ষণ আটকে থাকত (মাপা: গেটওয়ে ২ সেকেন্ড ধীর → সেভ ২,০৫৭ ms; `sendLater` দিয়ে ৫৫ ms)
-- বিক্রয়, বিক্রয় সংশোধন/ডিলিট-অনুরোধ, কাস্টমার পেমেন্ট, ক্রয় সংশোধন/ডিলিট-অনুরোধ — সব `sendLater()` (Laravel `defer()`, PHP-FPM-এ রেসপন্স আগে যায়)। queue worker লাগে না; sms_logs আগের মতোই (শপ/ইউজার সঠিক)
-- যেখানে ফলাফল সাথে সাথে ব্যবহারকারীকে দেখাতে হয় (যেমন `PurchaseController` ম্যানুয়াল SMS) সেখানে `send()`
+### SMS — দুই পথ + সেফটি নেট (`SmsService::sendLater()`)
+- `send()` গেটওয়েতে (`bulksmsbd.net`) সরাসরি HTTP, টাইমআউট ১৫ সেকেন্ড — রিকোয়েস্টের ভেতরে চললে "বিক্রয় সম্পন্ন" আটকে থাকত (মাপা: গেটওয়ে ২ সেকেন্ড ধীর → সেভ ২,০৫৭ ms; এখন ~৫৫ ms)। শুধু যেখানে ফলাফল সাথে সাথে দেখাতে হয় (যেমন `PurchaseController` ম্যানুয়াল SMS) সেখানে `send()`
+- `sendLater()` (বিক্রয়, বিক্রয় সংশোধন/ডিলিট-অনুরোধ, কাস্টমার পেমেন্ট, ক্রয় সংশোধন/ডিলিট-অনুরোধ): লগ রিকোয়েস্টেই `pending` হিসেবে তৈরি, তারপর —
+  1. **Queue worker চালু** (heartbeat ≤৯০ সেকেন্ড, `AppServiceProvider`-এ `Queue::looping`) → `App\Jobs\SendSmsJob`; নেটওয়ার্ক ব্যর্থ হলে ৩০s/১২০s পরে আবার (মোট ৩ বার); গেটওয়ে নিজে "ব্যর্থ" বললে আবার চেষ্টা নয়
+  2. **worker বন্ধ / dispatch ব্যর্থ** → `defer()` (রেসপন্সের পরে একই FPM প্রসেসে)
+  3. **সেফটি নেট** `app:sms-sweep` (প্রতি মিনিটে, scheduler) — ৩ মিনিটের বেশি `pending` (শুধু গত ২ ঘণ্টার) SMS সরাসরি পাঠায়; ৩০ মিনিটের বেশি `sending`-এ আটকে থাকলে "অজানা" লিখে `failed` (আবার পাঠালে দুবার যেতে পারত)
+- ⚠️ **দুবার না যাওয়া:** `deliver()` আগে `UPDATE ... SET status='sending' WHERE status='pending'` দিয়ে দাবি করে — যে পথ দাবি পায় না সে কিছু পাঠায় না
+- ⚠️ **worker/scheduler-এ লগইন নেই → ShopScope ফিল্টার করে না** → `StoreConfig::get()` সব শপের প্রথম সারি দেয় (যাচাই করা: অন্য শপের key আসত)। তাই Job/sweeper সবসময় `new SmsService($shopId)` — সেই শপের key/sender সরাসরি পড়ে। worker-এ চলা যেকোনো নতুন কোডেও এটা মাথায় রাখুন
+- সার্ভারে worker: systemd সার্ভিস `ruposhi-queue` (`php artisan queue:work --sleep=3 --tries=3`), আর `deploy.sh` প্রতি ডিপ্লয়ে `queue:restart` চালায়। worker না থাকলেও SMS যায় (defer পথে)
+- sweeper-এর জন্য cron লাগে: `* * * * * cd /var/www/ruposhi_pos && php artisan schedule:run` (দৈনিক ব্যাকআপও এর ওপর নির্ভর করে)
 - একাধিক কাউন্টার থেকে একসাথে বিক্রয় পরীক্ষিত (৮ সেশন × ১০, আইটেম উল্টো ক্রমে): ডেডলক ০, স্টক নির্ভুল, গড় ০.৩ সেকেন্ড
 
 ### ⚠️ NEVER Cache Business Data
