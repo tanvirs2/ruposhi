@@ -425,10 +425,12 @@
                 <i class="fas fa-user-pen"></i>
             </a>
         </div>
-        <form method="POST" action="{{ route('logout') }}" style="margin-top:8px">
+        {{-- data-turbo="false": সাইডবার data-turbo-permanent — লগআউটে পুরো পেজ লোড,
+             যাতে পুরনো সাইডবার/চ্যাট/JS অবস্থা থেকে না যায় --}}
+        <form method="POST" action="{{ route('logout') }}" style="margin-top:8px" data-turbo="false">
             @csrf
-            <button type="submit" class="sidebar-logout-btn">
-                <i class="fas fa-right-from-bracket"></i> লগআউট
+            <button type="submit" class="sidebar-logout-btn" title="লগআউট">
+                <i class="fas fa-right-from-bracket"></i> <span class="logout-label">লগআউট</span>
             </button>
         </form>
     </div>

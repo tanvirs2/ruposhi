@@ -113,7 +113,11 @@ a { text-decoration: none; color: inherit; }
 /* ─── Sidebar ───────────────────────────────────────────────── */
 .sidebar {
     width: var(--sidebar-w);
-    min-height: 100vh;
+    /* উচ্চতা top+bottom:0 থেকে আসে। min-height:100vh দেবেন না — মোবাইলে 100vh
+       দৃশ্যমান স্ক্রিনের (অ্যাড্রেস বার) চেয়ে লম্বা, তাই ফুটারের লগআউট বাটন
+       স্ক্রিনের নিচে চলে যেত */
+    height: 100%;
+    height: 100dvh;
     background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
     display: flex;
     flex-direction: column;
@@ -181,6 +185,7 @@ a { text-decoration: none; color: inherit; }
 /* Nav */
 .sidebar-nav {
     flex: 1;
+    min-height: 0;          /* মেনু লম্বা হলে ছোট হয়ে স্ক্রল করে — ফুটারকে ঠেলে বের করে না */
     overflow-y: auto;
     overflow-x: hidden;
     padding: 12px 10px;
@@ -355,7 +360,9 @@ a { text-decoration: none; color: inherit; }
     color: #f87171;
     border-color: rgba(248,113,113,.3);
 }
-.sidebar.collapsed .sidebar-logout-btn { display: none; }
+/* কলাপসড সাইডবারে শুধু আইকন — লুকাবেন না, নইলে লগআউটের কোনো উপায় থাকে না */
+.sidebar.collapsed .sidebar-logout-btn { padding: 9px 0; gap: 0; }
+.sidebar.collapsed .sidebar-logout-btn .logout-label { display: none; }
 
 /* ─── Main Wrapper ──────────────────────────────────────────── */
 .main-wrapper {
