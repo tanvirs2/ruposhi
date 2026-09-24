@@ -561,7 +561,8 @@ class SaleController extends Controller
             }
             $sale->delete();
         });
-        return back()->with('success', 'বিক্রয় মুছে ফেলা হয়েছে।');
+        return $this->backAfterDelete(route('sales.show', $sale->id), 'sales.index')
+            ->with('success', 'বিক্রয় মুছে ফেলা হয়েছে।');
     }
 
     /**

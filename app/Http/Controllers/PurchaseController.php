@@ -464,7 +464,8 @@ class PurchaseController extends Controller
         });
         $msg = $hadItems ? 'রিসিভ মুছে ফেলা হয়েছে। স্টক কমানো হয়েছে।'
                          : 'পরিশোধ মুছে ফেলা হয়েছে।';
-        return back()->with('success', $msg);
+        return $this->backAfterDelete(route('purchases.show', $purchase->id), 'purchases.index')
+            ->with('success', $msg);
     }
 
     // ── Admin: reject pending deletion ───────────────────────
