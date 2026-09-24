@@ -981,8 +981,8 @@ function showStockToast(msg, type) {
     @endif
 })();
 
-document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'));
-document.addEventListener('turbo:load', () => bnWatchTakaWords('discountInput', 'discountWords'));
+document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'), { once: true });
+document.addEventListener('turbo:load', () => bnWatchTakaWords('discountInput', 'discountWords'), { once: true });
 </script>
 @endpush
 @endsection

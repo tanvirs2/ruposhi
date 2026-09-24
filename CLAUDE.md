@@ -542,6 +542,16 @@ Drop-in replacement for `<select>` area fields when there may be hundreds of are
 - Every tile has a ⭐ star (`toggleFavorite()`, POST `items/{item}/favorite` → `ItemFavoriteController::toggle`) that toggles without adding to cart (`event.stopPropagation()`); clicking the rest of the tile calls the same `addItem(id)` used by the search dropdown
 - `.picker-scroll` inside `.pos-picker` is the only scrolling element (heading stays fixed) — height must subtract topbar height AND `.content`'s 28px top padding, or the box overflows past the viewport bottom
 
+### ⚠️ Turbo gotcha — body স্ক্রিপ্টে লিসেনার/টাইমার/কানেকশন একবারই (লিক = "পুরনো ট্যাব স্লো")
+- body-র inline `<script>` (লেআউটেরগুলোও) **প্রতি Turbo ভিজিটে আবার চলে**। `document/window.addEventListener`, `setInterval`, `new Pusher` সরাসরি লিখলে প্রতিবার আরেকটা জমে
+- মাপা হয়েছে (২০২৬-০৯-২৪): ৩০ বিক্রয়ের সমান ব্যবহারে আগে ১,৮৯৩টা টাইমার, ২৪৭টা WebSocket, সেকেন্ডে ৬,৫৪৭ টাইমার-টিক → ফিক্সের পরে ৩, ২, ১৩৪। ক্লায়েন্টের "একটা ট্যাব স্লো, নতুন ট্যাব ফাস্ট" এটাই
+- নিয়ম: গ্লোবাল লিসেনার `if (!window._xyzHooked) { window._xyzHooked = true; ... }` দিয়ে; হ্যান্ডলারের ভেতরে ফাংশন **নাম ধরে** ডাকুন আর DOM ইভেন্টের মুহূর্তে খুঁজুন (পুরনো element ধরে রাখবেন না)
+- শুধু এই ভিজিটের কাজ হলে `document.addEventListener('turbo:load', fn, { once: true })`
+- `setInterval` দিলে element `isConnected` না থাকলে নিজে থামান (`bnWatchTakaWords` দেখুন); `var timer = null` দিয়ে পুনঃঘোষণা করবেন না — চলমান টাইমারের হ্যান্ডেল হারায়
+- Pusher: `window._ws` থাকলে নতুন কানেকশন নয়; মিনি চ্যাট IIFE `window._miniChatInit` দিয়ে একবারই
+- দেরিতে চলা `setTimeout` (যেমন ড্রাফট-সেভ) পেজ বদলের পর চলতে পারে — ফর্ম আছে কি না দেখে নিন
+- ⚠️ এখনো বাকি: কিছু পেজের ড্রপডাউন (`sales/create`, `customer-payments/create` ইত্যাদি) প্রতি ভিজিটে window scroll/resize/click লিসেনার যোগ করে — সস্তা, কিন্তু একই নিয়মে ঠিক করা উচিত
+
 ### ⚠️ Turbo gotcha — NEVER use top-level `const`/`let` in inline page `<script>`
 - Turbo re-evaluates body `<script>` on every visit. Top-level `const`/`let` survive in global scope, so the 2nd visit re-declares them → `SyntaxError: Identifier already declared` → **entire script aborts** ("JS dead until refresh").
 - **Rule:** all column-0 (top-level) declarations in inline page scripts MUST be `var` (redeclarable). `const`/`let` is fine ONLY inside functions/blocks.

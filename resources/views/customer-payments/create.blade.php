@@ -321,7 +321,7 @@ var pre = allCustomers.find(c => c.id == {{ $selectedId }});
 if (pre) { searchEl.value = pre.name; selectCustomer(pre.id); }
 @endif
 
-document.addEventListener('turbo:load', () => bnWatchTakaWords('amountInput', 'amountWords'));
+document.addEventListener('turbo:load', () => bnWatchTakaWords('amountInput', 'amountWords'), { once: true });
 </script>
 @endpush
 @endsection

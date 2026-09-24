@@ -1040,10 +1040,6 @@ function toggleNotif(e) {
 function closeNotif() {
     document.getElementById('notifDropdown').classList.remove('open');
 }
-document.addEventListener('click', function(e) {
-    var wrap = document.getElementById('notifWrap');
-    if (wrap && !wrap.contains(e.target)) closeNotif();
-});
 
 /* ── What's New panel ── */
 function toggleWhatsNew(e) {
@@ -1061,10 +1057,6 @@ function closeWhatsNew() {
     var dd = document.getElementById('whatsNewDropdown');
     if (dd) dd.classList.remove('open');
 }
-document.addEventListener('click', function(e) {
-    var wrap = document.getElementById('whatsNewWrap');
-    if (wrap && !wrap.contains(e.target)) closeWhatsNew();
-});
 function _syncWhatsNewDot() {
     var wrap = document.getElementById('whatsNewWrap');
     var dot  = document.getElementById('whatsNewDot');
@@ -1073,7 +1065,6 @@ function _syncWhatsNewDot() {
     var seen   = localStorage.getItem('whatsNewSeen');
     dot.style.display = (latest && latest !== seen) ? '' : 'none';
 }
-document.addEventListener('turbo:load', _syncWhatsNewDot);
 _syncWhatsNewDot();
 
 /* ── Sidebar active-link highlighter (runs on every Turbo navigation) ── */
@@ -1122,7 +1113,24 @@ function _syncSidebarActive() {
 }
 
 _syncSidebarActive(); // initial page load
-document.addEventListener('turbo:load', _syncSidebarActive);
+
+// ⚠️ এই body স্ক্রিপ্ট Turbo-তে প্রতি পেজ বদলে আবার চলে — লিসেনার সরাসরি বসালে
+// প্রতিবার আরেকটা জমত (দিনশেষে শত শত; পুরনো ট্যাব স্লো, নতুন ট্যাব ফাস্ট)।
+// তাই window-ফ্ল্যাগ দিয়ে একবারই বসে। হ্যান্ডলার ফাংশনগুলোকে নাম ধরে ডাকে,
+// তাই সবসময় সর্বশেষ সংজ্ঞাটাই চলে, আর DOM খোঁজে ক্লিকের মুহূর্তে।
+if (!window._layoutUiHooked) {
+    window._layoutUiHooked = true;
+    document.addEventListener('click', function(e) {
+        var wrap = document.getElementById('notifWrap');
+        if (wrap && !wrap.contains(e.target)) closeNotif();
+        var wn = document.getElementById('whatsNewWrap');
+        if (wn && !wn.contains(e.target)) closeWhatsNew();
+    });
+    document.addEventListener('turbo:load', function () {
+        _syncWhatsNewDot();
+        _syncSidebarActive();
+    });
+}
 </script>
 
 @stack('scripts')
@@ -1461,7 +1469,11 @@ window.setupCompactTables = function (root) {
         header.appendChild(btn);
     });
 };
-document.addEventListener('turbo:load', function () { window.setupCompactTables(document); });
+// একবারই বসে — উপরের _layoutUiHooked মন্তব্য দেখুন
+if (!window._compactTablesHooked) {
+    window._compactTablesHooked = true;
+    document.addEventListener('turbo:load', function () { window.setupCompactTables(document); });
+}
 </script>
 
 {{-- ══ Multimedia Popup Player ══════════════════════════════ --}}
@@ -1642,7 +1654,7 @@ document.addEventListener('turbo:load', function () { window.setupCompactTables(
 var mmSlides   = @json($mmFiles);
 var mmInterval = {{ $mmInterval * 1000 }};
 var mmCurrent    = 0;
-var mmTimer      = null;
+var mmTimer;        // ইচ্ছাকৃতভাবে `= null` নয় — স্ক্রিপ্ট প্রতি পেজে আবার চলে, null দিলে চলমান টাইমারের হ্যান্ডেল হারিয়ে যেত
 var mmDragging   = false;
 
 var MM_KEY      = 'mm_slide_idx';
@@ -1788,6 +1800,10 @@ function toggleFullscreen() {
     });
 })();
 
+// লিসেনার একবারই বসে (উপরের _layoutUiHooked মন্তব্য দেখুন) — প্রতি পেজে বসালে
+// প্রতিটা turbo:load-এ showSlide কয়েকবার চলত আর স্লাইডশো টাইমার জমত।
+if (!window._mmHooked) {
+window._mmHooked = true;
 // Save position before Turbo navigates away (beforeunload doesn't fire for Turbo)
 document.addEventListener('turbo:before-visit', () => {
     const current = document.getElementById('mmSlide_' + mmCurrent);
@@ -1810,6 +1826,7 @@ document.addEventListener('turbo:load', () => {
     // Pass savedTime only when > 0 so video/audio resumes at exact position
     showSlide(start, savedTime > 0 ? savedTime : undefined);
 });
+}
 </script>
 @endif
 
@@ -1823,6 +1840,11 @@ document.addEventListener('turbo:load', () => {
 @if($wsUseReverb || $wsUsePusher)
 <script>
 (function waitForPusher() {
+    // প্রতি ট্যাবে একটাই কানেকশন। এই স্ক্রিপ্ট Turbo-তে প্রতি পেজ বদলে আবার চলে —
+    // গার্ড না থাকলে প্রতিবার নতুন Pusher কানেকশন খুলত (২৫ বার পেজ বদলে ৩৯টা
+    // WebSocket মাপা হয়েছে), প্রতিটা মেসেজ বহুবার আসত আর ট্যাব ভারী হত।
+    // লগআউট পুরো পেজ রিলোড (data-turbo="false"), তাই অন্য ইউজারের চ্যানেলে থেকে যায় না।
+    if (window._ws) return;
     if (typeof Pusher === 'undefined') { return setTimeout(waitForPusher, 50); }
 
     @if($wsUseReverb)
@@ -2155,6 +2177,13 @@ body.txn-summary-active  #miniChatFab { bottom: 158px; }
 
 <script>
 (function () {
+    // একবারই চলে। #miniChatRoot data-turbo-permanent — DOM টিকে থাকে, তাই এর
+    // স্টেট আর টাইমারও একটাই থাকা উচিত। আগে প্রতি পেজ বদলে নতুন ক্লোজার তৈরি
+    // হত; চ্যাট খোলা থাকলে পুরনোটার ৮ সেকেন্ডের পোল টাইমার থামানোর কেউ থাকত
+    // না — প্রতিটা বাড়তি লুপ সার্ভারে আলাদা রিকোয়েস্ট পাঠাত।
+    if (window._miniChatInit) return;
+    window._miniChatInit = true;
+
     const ME       = {{ auth()->id() }};
     const CSRF     = document.querySelector('meta[name=csrf-token]').content;
     const CHAT_URL = '{{ route('chat.index') }}';

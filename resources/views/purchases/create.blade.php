@@ -1276,6 +1276,8 @@ function scheduleDraftSave() {
 }
 
 function saveDraft() {
+    // সেভের টাইমার চলার আগেই অন্য পেজে চলে গেলে এই ফর্ম আর নেই — কিছু না করে ফেরা
+    if (!document.getElementById('receiveForm')) return;
     if (cart.length === 0 && !document.getElementById('supplierIdInput').value) return;
 
     const extraCosts = [];
@@ -1502,7 +1504,7 @@ async function saveNewSupplier() {
     }
 }
 
-document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'));
+document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'), { once: true });
 
 // Guarded once — this body script re-runs on every Turbo visit to this page
 // (see the Turbo top-level const/let convention note elsewhere); an unguarded

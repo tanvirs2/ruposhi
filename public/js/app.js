@@ -1012,6 +1012,8 @@ function bnWatchTakaWords(inputId, targetId) {
     const el = document.getElementById(inputId);
     const t  = document.getElementById(targetId);
     if (!el || !t) return;
+    // একই ইনপুটে একটাই ওয়াচার — পেজের স্ক্রিপ্ট/turbo:load একাধিকবার ডাকলেও
+    if (el._bnWatchTimer) return;
     let last = null;
     const update = () => {
         if (el.value === last) return;
@@ -1021,7 +1023,14 @@ function bnWatchTakaWords(inputId, targetId) {
         t.style.display = w ? '' : 'none';
     };
     update();
-    setInterval(update, 300);
+    // ⚠️ পোলিং (JS দিয়ে value বসালে input ইভেন্ট আসে না), তাই setInterval —
+    // কিন্তু পেজ ছেড়ে গেলে (Turbo body বদলায়, ইনপুট DOM থেকে সরে যায়) নিজেই
+    // থামে। আগে কখনো থামত না: প্রতি বিক্রয়ে নতুন টাইমার জমত, দিনশেষে
+    // হাজারের বেশি টাইমার সেকেন্ডে ৩ বার চলত — পুরনো ট্যাব স্লো, নতুন ট্যাব ফাস্ট।
+    el._bnWatchTimer = setInterval(() => {
+        if (!el.isConnected) { clearInterval(el._bnWatchTimer); return; }
+        update();
+    }, 300);
 }
 
 window.bnNumWords       = bnNumWords;

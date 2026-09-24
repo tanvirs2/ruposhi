@@ -228,7 +228,7 @@ function setFullPay() {
     }
 }
 
-document.addEventListener('turbo:load', () => bnWatchTakaWords('amountField', 'amountWords'));
+document.addEventListener('turbo:load', () => bnWatchTakaWords('amountField', 'amountWords'), { once: true });
 </script>
 @endpush
 @endsection

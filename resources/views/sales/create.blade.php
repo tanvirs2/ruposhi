@@ -1851,6 +1851,9 @@ function scheduleDraftSave() {
 }
 
 function saveDraft() {
+    // সেভের টাইমার (১.৫ সেকেন্ড) চলার আগেই অন্য পেজে চলে গেলে এই ফর্ম আর নেই —
+    // তখন কিছু না করে ফেরা (নইলে null.value এরর)
+    if (!document.getElementById('saleForm')) return;
     // Don't save if form is completely empty
     if (cart.length === 0 && !document.getElementById('customerIdInput').value) return;
 
@@ -2121,11 +2124,16 @@ function syncSubmitBarSpacer() {
     const sp  = document.getElementById('submitBarSpacer');
     if (bar && sp) sp.style.height = (bar.offsetHeight + 24) + 'px';
 }
-window.addEventListener('resize', syncSubmitBarSpacer);
-document.addEventListener('turbo:load', syncSubmitBarSpacer);
+// resize লিসেনার একবারই (এই স্ক্রিপ্ট প্রতি ভিজিটে আবার চলে); ফাংশন নাম ধরে ডাকা,
+// আর অন্য পেজে .sale-submit-bar না থাকলে কিছুই করে না
+if (!window._submitBarSpacerBound) {
+    window._submitBarSpacerBound = true;
+    window.addEventListener('resize', function () { syncSubmitBarSpacer(); });
+}
+document.addEventListener('turbo:load', syncSubmitBarSpacer, { once: true });
 
-document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'));
-document.addEventListener('turbo:load', () => bnWatchTakaWords('discountInput', 'discountWords'));
+document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'), { once: true });
+document.addEventListener('turbo:load', () => bnWatchTakaWords('discountInput', 'discountWords'), { once: true });
 
 // Guarded once — this body script re-runs on every Turbo visit to this page;
 // an unguarded addEventListener here would stack a fresh listener per visit.

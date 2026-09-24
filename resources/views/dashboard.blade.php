@@ -123,6 +123,10 @@
 </style>
 <script>
 document.addEventListener('turbo:load', function() {
+    // Turbo প্রিভিউ + আসল রেন্ডারে স্ক্রিপ্ট দুবার চলে — একই পেজে একবারই আনা
+    var loaderEl = document.getElementById('dashUserSummaryLoader');
+    if (!loaderEl || loaderEl.dataset.fetching) return;
+    loaderEl.dataset.fetching = '1';
     fetch('{{ route('dashboard.user-summary') }}', {
         headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
     })

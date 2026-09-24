@@ -639,7 +639,7 @@ document.getElementById('receiveForm').addEventListener('submit',function(e){
     @endif
 })();
 
-document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'));
+document.addEventListener('turbo:load', () => bnWatchTakaWords('paidInput', 'paidWords'), { once: true });
 </script>
 @endpush
 @endsection

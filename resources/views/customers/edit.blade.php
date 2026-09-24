@@ -70,6 +70,6 @@
 
 @push('scripts')
 <script>
-document.addEventListener('turbo:load', () => bnWatchTakaWords('openingBalanceInput', 'openingBalanceWords'));
+document.addEventListener('turbo:load', () => bnWatchTakaWords('openingBalanceInput', 'openingBalanceWords'), { once: true });
 </script>
 @endpush
