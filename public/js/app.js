@@ -40,8 +40,21 @@ backdrop.addEventListener('click', () => {
     backdrop.classList.remove('visible');
 });
 
-const menuBtn = document.getElementById('menuBtn');
-[menuBtn, toggleBtn].forEach(btn => btn?.addEventListener('click', toggleSidebar));
+toggleBtn?.addEventListener('click', toggleSidebar);
+
+// টপবারের মেনু বাটন (#menuBtn, শুধু মোবাইলে দেখায়) — ক্লিক document-এ ডেলিগেট
+// করা। এই ফাইল একবারই চলে (data-turbo-eval="false"), অথচ Turbo প্রতি পেজে
+// body বদলায় — সরাসরি বাটনে লিসেনার বসালে প্রথম পেজের পরেই বাটন মরে যেত।
+document.addEventListener('click', function (e) {
+    if (e.target.closest('#menuBtn')) toggleSidebar();
+});
+
+// মোবাইলে মেনু থেকে কোনো পেজে গেলে সাইডবার বন্ধ হোক — সাইডবার
+// data-turbo-permanent, তাই নিজে থেকে বন্ধ হত না, নতুন পেজ ঢেকে রাখত।
+document.addEventListener('turbo:visit', function () {
+    sidebar?.classList.remove('mobile-open');
+    backdrop.classList.remove('visible');
+});
 
 /* ── Nav-group accordion ─────────────────────────────────────── */
 function toggleNavGroup(id) {

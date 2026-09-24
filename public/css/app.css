@@ -405,6 +405,8 @@ a { text-decoration: none; color: inherit; }
     transition: background var(--transition), color var(--transition);
 }
 .menu-btn:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+/* শুধু মোবাইলে দেখায় (নিচের ≤768px মিডিয়া কুয়েরি) — ডেস্কটপে সাইডবারের নিজের টগল আছে */
+.topbar .menu-btn { display: none; }
 
 .page-title h1 {
     font-size: 1.1rem;
@@ -1148,6 +1150,7 @@ a.shortcut-link:hover { background: var(--bg); }
         z-index: 100;
     }
     .sidebar.mobile-open { transform: translateX(0); }
+    .topbar .menu-btn { display: flex; flex-shrink: 0; }
     .main-wrapper { margin-left: 0 !important; }
     .form-grid { grid-template-columns: 1fr; }
     .form-card { padding: 18px; }

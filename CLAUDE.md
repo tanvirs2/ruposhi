@@ -411,6 +411,8 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 - `resources/views/layouts/super.blade.php` — dark control panel layout for super admin
 - Sidebar JS uses `window.location.pathname` for active state
 - Admin-only sidebar link: "ব্যবহারকারী" — guarded by `@if(auth()->user()->canManageShop())`
+- ⚠️ মোবাইলে (≤768px) সাইডবার লুকানো থাকে — টপবারের `#menuBtn` (`.menu-btn`, শুধু মোবাইলে দেখায়) ছাড়া মেনু **ও লগআউটে** পৌঁছানোর পথ নেই। এটা সরাবেন না। ক্লিক `app.js`-এ document-এ ডেলিগেট করা (app.js একবারই চলে, Turbo টপবার বদলায়); `turbo:visit`-এ মোবাইল সাইডবার বন্ধ হয়
+- কলাপসড সাইডবারে লগআউট বাটন শুধু আইকন (`.logout-label` লুকায়) — কখনো `display:none` নয়
 
 ### Sale Invoice (`sales/show.blade.php`)
 - Store name as SVG arc (`partials/store-name-arc.blade.php`)

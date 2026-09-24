@@ -458,6 +458,12 @@
 
     <header class="topbar">
         <div class="topbar-left">
+            {{-- মোবাইলে সাইডবার (মেনু + লগআউট) খোলার একমাত্র পথ — এটা না থাকলে ফোনে
+                 লগআউটেই পৌঁছানো যেত না। ডেস্কটপে লুকানো (সাইডবারের নিজের টগল আছে)।
+                 ক্লিক app.js-এ document-এ ডেলিগেট করা, কারণ Turbo প্রতি পেজে টপবার বদলায়। --}}
+            <button type="button" class="menu-btn" id="menuBtn" title="মেনু" aria-label="মেনু">
+                <i class="fas fa-bars"></i>
+            </button>
             <div class="page-title">
                 <h1>@yield('page-title', 'ড্যাশবোর্ড')</h1>
                 <span class="breadcrumb">@hasSection('breadcrumb') @yield('breadcrumb') @else স্বাগতম, <strong>{{ auth()->user()->name }}</strong>&nbsp;<span style="display:inline-block;padding:1px 8px;border-radius:20px;font-size:.66rem;font-weight:700;vertical-align:middle;background:{{ in_array(auth()->user()->role, ['admin','super_admin']) ? '#dcfce7' : '#fef3c7' }};color:{{ in_array(auth()->user()->role, ['admin','super_admin']) ? '#15803d' : '#b45309' }}">{{ auth()->user()->role === 'super_admin' ? 'সুপার অ্যাডমিন' : (auth()->user()->role === 'admin' ? 'অ্যাডমিন' : 'স্টাফ') }}</span>@if(auth()->user()->shop) &nbsp;·&nbsp; <i class="fas fa-store" style="font-size:.72rem;opacity:.7"></i> {{ auth()->user()->shop->name }} @endif @endif</span>
