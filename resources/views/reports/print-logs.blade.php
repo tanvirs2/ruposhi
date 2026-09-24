@@ -16,6 +16,7 @@
     প্রতিটা মেমোর <strong>প্রথম প্রিন্ট স্বাভাবিক কাজ</strong>, তাই এখানে আসে না।
     একই মেমোর দ্বিতীয় বা তার পরের কপি প্রিন্ট হলেই সেটা এখানে জমা হয় — কে, কখন, কোন কপি।
     ওই কপিগুলোর কাগজের উপরে <strong>"পুনঃমুদ্রণ — কপি নং X"</strong> ছাপা থাকে।
+    <strong>"এই মেমোর সব প্রিন্ট"</strong> কলামে মূল কপিসহ প্রতিটা প্রিন্টের সময় আর কে করেছেন দেখা যায়।
 </div>
 
 {{-- Filter --}}
@@ -70,6 +71,7 @@
                     <th class="tr">মেমোর মোট</th>
                     <th class="tc">বিক্রয়ের তারিখ</th>
                     <th class="tc">কে প্রিন্ট করেছেন</th>
+                    <th>এই মেমোর সব প্রিন্ট</th>
                     <th class="tc">IP</th>
                     <th class="tc">মেমো</th>
                 </tr>
@@ -78,7 +80,8 @@
                 @forelse($logs as $log)
                 <tr>
                     <td class="tc" style="font-size:.78rem;white-space:nowrap;color:#334155">
-                        {{ $log->printed_at->format('d/m/Y h:i a') }}
+                        {{ $log->printed_at->format('d/m/Y') }}<br>
+                        <strong>{{ $log->printed_at->format('h:i:s a') }}</strong>
                     </td>
                     <td class="tc mono">#{{ str_pad($log->sale_id, 6, '0', STR_PAD_LEFT) }}</td>
                     <td class="tc">
@@ -91,6 +94,15 @@
                     </td>
                     <td class="tc" style="font-size:.8rem;font-weight:600;color:#334155">
                         {{ $log->user?->name ?? 'অজানা' }}
+                    </td>
+                    <td style="font-size:.74rem;line-height:1.55;white-space:nowrap">
+                        @foreach($salePrints[$log->sale_id] ?? [] as $p)
+                        <div style="{{ $p->id == $log->id ? 'font-weight:700;color:#dc2626' : 'color:#475569' }}">
+                            কপি {{ $p->copy_no }}{{ $p->copy_no == 1 ? ' (মূল)' : '' }} —
+                            {{ $p->printed_at->isSameDay($log->printed_at) ? '' : $p->printed_at->format('d/m/Y') . ' ' }}{{ $p->printed_at->format('h:i:s a') }}
+                            · {{ $p->user?->name ?? 'অজানা' }}
+                        </div>
+                        @endforeach
                     </td>
                     <td class="tc mono" style="font-size:.72rem;color:#94a3b8">{{ $log->ip ?? '—' }}</td>
                     <td class="tc">
@@ -105,7 +117,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="9" class="empty-row">এই সময়কালে কোনো পুনঃমুদ্রণ হয়নি</td></tr>
+                <tr><td colspan="10" class="empty-row">এই সময়কালে কোনো পুনঃমুদ্রণ হয়নি</td></tr>
                 @endforelse
             </tbody>
         </table>

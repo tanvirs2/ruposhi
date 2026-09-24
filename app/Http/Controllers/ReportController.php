@@ -605,7 +605,16 @@ class ReportController extends Controller
             \App\Models\StoreConfig::set($seenKey, $lastSeen);
         }
 
-        return view('reports.print-logs', compact('logs', 'from', 'to', 'summary'));
+        // এই পেজের মেমোগুলোর **সব** প্রিন্ট (কপি ১ সহ, তারিখের ফিল্টার ছাড়া) —
+        // প্রতিটা সারিতে পুরো টাইমলাইন দেখাতে, যাতে মালিক মূল প্রিন্ট আর প্রতিটা
+        // পুনঃমুদ্রণের সময় পাশাপাশি মিলিয়ে দেখতে পারেন। এক কুয়েরিতে, সারি-প্রতি নয়।
+        $salePrints = \App\Models\SalePrint::with('user:id,name')
+            ->whereIn('sale_id', $logs->pluck('sale_id')->unique())
+            ->orderBy('copy_no')
+            ->get()
+            ->groupBy('sale_id');
+
+        return view('reports.print-logs', compact('logs', 'from', 'to', 'summary', 'salePrints'));
     }
 
     // ── গ্রহণ (রিসিভ) সংশোধন ও মুছে ফেলার লগ ────────────────────

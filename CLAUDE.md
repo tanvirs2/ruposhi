@@ -372,6 +372,7 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 - `saleLogs()` — audit log of sale edits and deletions
 - `purchaseLogs()` — audit log of purchase/receive edits and deletions, exact mirror of `saleLogs()` (`PurchaseLog` model, `reports/purchase-logs.blade.php`)
 - `printLogs()` — মেমো পুনঃমুদ্রণের হিস্টরি; **শুধু `copy_no > 1`** (প্রথম প্রিন্ট স্বাভাবিক কাজ, তালিকায় আসে না), route-এ `shop.admin`
+  - প্রতিটা সারিতে "এই মেমোর সব প্রিন্ট" কলাম — ওই মেমোর কপি ১ (মূল) সহ সব প্রিন্টের সময় (সেকেন্ডসহ) + কে; `$salePrints` এক কুয়েরিতে `groupBy('sale_id')`, তারিখ-ফিল্টার ছাড়া
 - All date defaults: `now()->toDateString()` (today, NOT startOfMonth)
 - ⚠️ All `DB::table()` raw queries manually filtered with `->where('sales.shop_id', auth()->user()->shop_id)`
 
