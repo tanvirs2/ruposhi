@@ -288,6 +288,12 @@ This was a historical bug. Any cap on due_amount destroys the credit balance fea
 ### Sale Invoice Row Order (tfoot)
 Order: ছাড় → পূর্বের বাকী → অতিরিক্ত খরচ → শ্রমিক খরচ → বিক্রয় মোট (only if prev_due ≠ 0) → সর্বমোট → পরিশোধ → বাকী
 
+### SMS — রেসপন্সের পরে পাঠানো (`SmsService::sendLater()`)
+- `send()` গেটওয়েতে (`bulksmsbd.net`) সরাসরি HTTP কল করে, টাইমআউট ১৫ সেকেন্ড। বিক্রয়/পেমেন্টের রিকোয়েস্টের ভেতরে চললে গেটওয়ে ধীর হলে "সম্পন্ন" পেজ ততক্ষণ আটকে থাকত (মাপা: গেটওয়ে ২ সেকেন্ড ধীর → সেভ ২,০৫৭ ms; `sendLater` দিয়ে ৫৫ ms)
+- বিক্রয়, বিক্রয় সংশোধন/ডিলিট-অনুরোধ, কাস্টমার পেমেন্ট, ক্রয় সংশোধন/ডিলিট-অনুরোধ — সব `sendLater()` (Laravel `defer()`, PHP-FPM-এ রেসপন্স আগে যায়)। queue worker লাগে না; sms_logs আগের মতোই (শপ/ইউজার সঠিক)
+- যেখানে ফলাফল সাথে সাথে ব্যবহারকারীকে দেখাতে হয় (যেমন `PurchaseController` ম্যানুয়াল SMS) সেখানে `send()`
+- একাধিক কাউন্টার থেকে একসাথে বিক্রয় পরীক্ষিত (৮ সেশন × ১০, আইটেম উল্টো ক্রমে): ডেডলক ০, স্টক নির্ভুল, গড় ০.৩ সেকেন্ড
+
 ### ⚠️ NEVER Cache Business Data
 - `due_amount`, prices, stock, config values update frequently
 - Caching any business data causes wrong values — NEVER use `Cache::remember()` for these

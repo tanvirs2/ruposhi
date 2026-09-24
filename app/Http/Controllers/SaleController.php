@@ -304,7 +304,7 @@ class SaleController extends Controller
                     . "\nপরিশোধ: ৳" . number_format($sale->paid_amount, 0)
                     . "\nধন্যবাদ।";
             }
-            app(SmsService::class)->send($sale->customer->phone, $msg, $sale->customer->name);
+            app(SmsService::class)->sendLater($sale->customer->phone, $msg, $sale->customer->name);
         }
 
         return redirect()->route('sales.show', $sale)->with('success', 'বিক্রয় সফলভাবে সম্পন্ন হয়েছে।');
@@ -474,7 +474,7 @@ class SaleController extends Controller
                 . "\nসংশোধনকারী: " . (auth()->user()->name)
                 . "\nনতুন মোট: ৳" . number_format($sale->total_amount, 0);
             if ($request->edit_note) $msg .= "\nকারণ: {$request->edit_note}";
-            app(SmsService::class)->send($adminPhone, $msg);
+            app(SmsService::class)->sendLater($adminPhone, $msg);
         }
 
         // Log the completed change (after the transaction, so the "after" side of
@@ -540,7 +540,7 @@ class SaleController extends Controller
                 . "\nমোট: ৳" . number_format($sale->total_amount, 0)
                 . "\nঅনুরোধ করেছেন: " . auth()->user()->name
                 . "\nলিংক: {$link}";
-            app(SmsService::class)->send($adminPhone, $msg);
+            app(SmsService::class)->sendLater($adminPhone, $msg);
         }
 
         return back()->with('success', 'ডিলিট অনুরোধ পাঠানো হয়েছে। অ্যাডমিনের অনুমোদনের অপেক্ষায়।');

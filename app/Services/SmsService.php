@@ -72,6 +72,21 @@ class SmsService
     }
 
     /**
+     * ব্যবহারকারীকে উত্তর পাঠানোর **পরে** SMS পাঠায় (Laravel defer)।
+     *
+     * ⚠️ send() গেটওয়েতে সরাসরি HTTP কল করে (টাইমআউট ১৫ সেকেন্ড), আর আগে
+     * সেটা বিক্রয়/পেমেন্টের রিকোয়েস্টের ভেতরেই চলত — গেটওয়ে ধীর হলে
+     * "বিক্রয় সম্পন্ন" পেজ আসতে ততক্ষণ দেরি হত। এখন রেসপন্স আগে যায়
+     * (PHP-FPM-এ fastcgi_finish_request), তারপর SMS। আলাদা queue worker লাগে না।
+     * লগ (sms_logs) আগের মতোই হয় — শুধু সময়টা রেসপন্সের পরে।
+     * যেখানে ফলাফল সাথে সাথে ব্যবহারকারীকে দেখাতে হয়, সেখানে send()-ই ব্যবহার করুন।
+     */
+    public function sendLater(string $number, string $message, ?string $recipientName = null): void
+    {
+        defer(fn () => $this->send($number, $message, $recipientName));
+    }
+
+    /**
      * Send SMS to multiple numbers.
      * Returns ['sent' => int, 'failed' => int, 'results' => array]
      */

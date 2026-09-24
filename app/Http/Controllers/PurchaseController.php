@@ -343,7 +343,7 @@ class PurchaseController extends Controller
                 . " | " . ($purchase->supplier?->name ?? 'সরবরাহকারী নেই')
                 . "\nসংশোধনকারী: " . auth()->user()->name
                 . "\nনতুন মোট: ৳" . number_format($purchase->total_amount, 0);
-            app(SmsService::class)->send($adminPhone, $msg);
+            app(SmsService::class)->sendLater($adminPhone, $msg);
         }
 
         // Log the completed change (after the transaction, so the "after" side of
@@ -433,7 +433,7 @@ class PurchaseController extends Controller
                 . "\nমোট: ৳" . number_format($purchase->total_amount, 0)
                 . "\nঅনুরোধ করেছেন: " . auth()->user()->name
                 . "\nলিংক: {$link}";
-            app(SmsService::class)->send($adminPhone, $msg);
+            app(SmsService::class)->sendLater($adminPhone, $msg);
         }
 
         return back()->with('success', 'ডিলিট অনুরোধ পাঠানো হয়েছে। অ্যাডমিনের অনুমোদনের অপেক্ষায়।');

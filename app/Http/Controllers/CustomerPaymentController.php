@@ -108,7 +108,7 @@ class CustomerPaymentController extends Controller
             if ($newDue > 0)       $msg .= "\nবাকী: ৳" . number_format($newDue, 0);
             elseif ($newDue <= 0)  $msg .= "\nসম্পূর্ণ পরিশোধিত। ধন্যবাদ।";
             $msg .= "\nধন্যবাদ।";
-            app(SmsService::class)->send($sale->customer->phone, $msg, $sale->customer->name);
+            app(SmsService::class)->sendLater($sale->customer->phone, $msg, $sale->customer->name);
         }
 
         return redirect()->route('sales.show', $sale)->with('success', 'কাস্টমার পরিশোধ সম্পন্ন হয়েছে। বিক্রয় তালিকায় যোগ হয়েছে।');
