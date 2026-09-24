@@ -60,7 +60,7 @@
     </div>
     <div class="pl-kpi {{ $grossProfit >= 0 ? 'pl-kpi-green' : 'pl-kpi-red' }}">
         <div class="pl-kpi-label"><i class="fas fa-chart-line"></i> গ্রস লাভ</div>
-        <div class="pl-kpi-value">{{ $grossProfit >= 0 ? '+' : '' }}৳ {{ number_format($grossProfit, 0) }}</div>
+        <div class="pl-kpi-value">{{ $grossProfit >= 0 ? '+' : '− ' }}৳ {{ number_format(abs($grossProfit), 0) }}</div>
         <div class="pl-kpi-sub">মার্জিন {{ $grossMargin }}%</div>
     </div>
     <div class="pl-kpi pl-kpi-purple">
@@ -69,7 +69,7 @@
     </div>
     <div class="pl-kpi {{ $netProfit >= 0 ? 'pl-kpi-net-profit' : 'pl-kpi-net-loss' }}">
         <div class="pl-kpi-label"><i class="fas fa-scale-balanced"></i> নিট {{ $netProfit >= 0 ? 'লাভ' : 'লোকসান' }}</div>
-        <div class="pl-kpi-value">{{ $netProfit >= 0 ? '+' : '' }}৳ {{ number_format($netProfit, 0) }}</div>
+        <div class="pl-kpi-value">{{ $netProfit >= 0 ? '+' : '− ' }}৳ {{ number_format(abs($netProfit), 0) }}</div>
         <div class="pl-kpi-sub">নিট মার্জিন {{ $netMargin }}%</div>
     </div>
 </div>
@@ -133,7 +133,10 @@
                         {{ $userPerformance->sum('discount') > 0 ? '− ৳ '.number_format($userPerformance->sum('discount'), 0) : '—' }}
                     </td>
                     <td class="tr" style="color:#94a3b8;font-weight:700">৳ {{ number_format($userPerformance->sum('cost'), 0) }}</td>
-                    <td class="tr" style="font-weight:800;color:#16a34a">৳ {{ number_format($userPerformance->sum('profit'), 0) }}</td>
+                    @php $upProfit = $userPerformance->sum('profit'); @endphp
+                    <td class="tr" style="font-weight:800;color:{{ $upProfit >= 0 ? '#16a34a' : '#dc2626' }}">
+                        {{ $upProfit >= 0 ? '' : '− ' }}৳ {{ number_format(abs($upProfit), 0) }}
+                    </td>
                     <td></td>
                 </tr>
             </tfoot>
@@ -181,10 +184,10 @@
                     <td style="text-align:right">৳ {{ number_format($m->revenue, 0) }}</td>
                     <td style="text-align:right;color:#94a3b8">৳ {{ number_format($m->cost, 0) }}</td>
                     <td style="text-align:right" class="{{ $mGross >= 0 ? 'profit-good' : 'profit-poor' }}">
-                        {{ $mGross >= 0 ? '+' : '' }}৳ {{ number_format($mGross, 0) }}
+                        {{ $mGross >= 0 ? '+' : '− ' }}৳ {{ number_format(abs($mGross), 0) }}
                     </td>
                     <td style="text-align:right;color:#dc2626">৳ {{ number_format($m->expenses, 0) }}</td>
-                    <td style="text-align:right" class="{{ $cls }}">{{ $mNet >= 0 ? '+' : '' }}৳ {{ number_format($mNet, 0) }}</td>
+                    <td style="text-align:right" class="{{ $cls }}">{{ $mNet >= 0 ? '+' : '− ' }}৳ {{ number_format(abs($mNet), 0) }}</td>
                     <td style="text-align:right">
                         <span class="margin-badge {{ $mMargin >= 8 ? 'good' : ($mMargin >= 4 ? 'med' : 'poor') }}">
                             {{ $mMargin }}%
@@ -199,11 +202,11 @@
                     <td style="text-align:right">৳ {{ number_format($netRevenue, 0) }}</td>
                     <td style="text-align:right;color:#94a3b8">৳ {{ number_format($cogs, 0) }}</td>
                     <td style="text-align:right" class="{{ $grossProfit >= 0 ? 'profit-good' : 'profit-poor' }}">
-                        {{ $grossProfit >= 0 ? '+' : '' }}৳ {{ number_format($grossProfit, 0) }}
+                        {{ $grossProfit >= 0 ? '+' : '− ' }}৳ {{ number_format(abs($grossProfit), 0) }}
                     </td>
                     <td style="text-align:right;color:#dc2626">৳ {{ number_format($totalExpenses, 0) }}</td>
                     <td style="text-align:right" class="{{ $netProfit >= 0 ? 'profit-good' : 'profit-poor' }}">
-                        {{ $netProfit >= 0 ? '+' : '' }}৳ {{ number_format($netProfit, 0) }}
+                        {{ $netProfit >= 0 ? '+' : '− ' }}৳ {{ number_format(abs($netProfit), 0) }}
                     </td>
                     <td style="text-align:right">
                         <span class="margin-badge {{ $netMargin >= 8 ? 'good' : ($netMargin >= 4 ? 'med' : 'poor') }}">
@@ -253,7 +256,7 @@
                         {{ $rowDisc > 0 ? '− '.number_format($rowDisc, 0) : '—' }}
                     </td>
                     <td style="text-align:right" class="{{ $cls }}">
-                        {{ $profit >= 0 ? '+' : '' }}{{ number_format($profit, 0) }}
+                        {{ $profit >= 0 ? '+' : '− ' }}{{ number_format(abs($profit), 0) }}
                     </td>
                 </tr>
                 @empty
@@ -270,7 +273,7 @@
                         {{ $dailyDetail->sum('discount') > 0 ? '− '.number_format($dailyDetail->sum('discount'), 0) : '—' }}
                     </td>
                     <td style="text-align:right" class="{{ $grossProfit >= 0 ? 'profit-good' : 'profit-poor' }}">
-                        {{ $grossProfit >= 0 ? '+' : '' }}{{ number_format($grossProfit, 0) }}
+                        {{ $grossProfit >= 0 ? '+' : '− ' }}{{ number_format(abs($grossProfit), 0) }}
                     </td>
                 </tr>
             </tfoot>
@@ -321,7 +324,7 @@
                         {{ ($row->discount ?? 0) > 0 ? '− ৳ '.number_format($row->discount, 0) : '—' }}
                     </td>
                     <td style="text-align:right;color:#94a3b8">৳ {{ number_format($row->cost, 0) }}</td>
-                    <td style="text-align:right" class="{{ $cls }}">{{ $row->profit >= 0 ? '+' : '' }}৳ {{ number_format($row->profit, 0) }}</td>
+                    <td style="text-align:right" class="{{ $cls }}">{{ $row->profit >= 0 ? '+' : '− ' }}৳ {{ number_format(abs($row->profit), 0) }}</td>
                     <td style="text-align:right">
                         <span class="margin-badge {{ $pct >= 8 ? 'good' : ($pct >= 4 ? 'med' : 'poor') }}">
                             {{ $pct }}%
@@ -343,7 +346,7 @@
                     </td>
                     <td style="text-align:right;color:#94a3b8">৳ {{ number_format($itemBreakdown->sum('cost'), 0) }}</td>
                     <td style="text-align:right" class="{{ $grossProfit >= 0 ? 'profit-good' : 'profit-poor' }}">
-                        {{ $grossProfit >= 0 ? '+' : '' }}৳ {{ number_format($grossProfit, 0) }}
+                        {{ $grossProfit >= 0 ? '+' : '− ' }}৳ {{ number_format(abs($grossProfit), 0) }}
                     </td>
                     <td style="text-align:right">
                         <span class="margin-badge {{ $grossMargin >= 8 ? 'good' : ($grossMargin >= 4 ? 'med' : 'poor') }}">
@@ -398,7 +401,7 @@
     </div>
     <div class="pl-row pl-row-total {{ $grossProfit >= 0 ? 'pl-positive' : 'pl-negative' }}">
         <span>গ্রস লাভ (Gross Profit)</span>
-        <span>{{ $grossProfit >= 0 ? '+' : '' }}৳ {{ number_format($grossProfit) }}
+        <span>{{ $grossProfit >= 0 ? '+' : '− ' }}৳ {{ number_format(abs($grossProfit)) }}
             <small style="font-weight:500;font-size:.8rem;opacity:.75">({{ $grossMargin }}%)</small>
         </span>
     </div>
@@ -423,7 +426,7 @@
     {{-- Net profit --}}
     <div class="pl-net {{ $netProfit >= 0 ? 'pl-net-profit' : 'pl-net-loss' }}">
         <span>নিট {{ $netProfit >= 0 ? 'লাভ' : 'লোকসান' }} (Net {{ $netProfit >= 0 ? 'Profit' : 'Loss' }})</span>
-        <span>{{ $netProfit >= 0 ? '+' : '' }}৳ {{ number_format($netProfit) }}
+        <span>{{ $netProfit >= 0 ? '+' : '− ' }}৳ {{ number_format(abs($netProfit)) }}
             <small style="font-size:.82rem;font-weight:500;opacity:.8">({{ $netMargin }}%)</small>
         </span>
     </div>
@@ -452,10 +455,10 @@
 .pl-kpi-blue   { background:#eff6ff; border-color:#bfdbfe; color:#1e40af; }
 .pl-kpi-orange { background:#fff7ed; border-color:#fed7aa; color:#c2410c; }
 .pl-kpi-green  { background:#f0fdf4; border-color:#bbf7d0; color:#15803d; }
-.pl-kpi-red    { background:#fef2f2; border-color:#fecaca; color:#b91c1c; }
+.pl-kpi-red    { background:#fef2f2; border-color:#fecaca; color:#dc2626; }
 .pl-kpi-purple { background:#faf5ff; border-color:#e9d5ff; color:#7e22ce; }
 .pl-kpi-net-profit { background:#ecfdf5; border-color:#6ee7b7; color:#065f46; }
-.pl-kpi-net-loss   { background:#fff1f2; border-color:#fda4af; color:#9f1239; }
+.pl-kpi-net-loss   { background:#fef2f2; border-color:#fca5a5; color:#dc2626; }
 
 /* ── Formal P&L statement ─────────────────────────────── */
 .pl-statement {
@@ -499,7 +502,7 @@
     border-bottom: 1px solid #e2e8f0;
 }
 .pl-positive { color: #15803d; }
-.pl-negative { color: #b91c1c; }
+.pl-negative { color: #dc2626; }
 .pl-net {
     display: flex;
     justify-content: space-between;
@@ -509,7 +512,7 @@
     border-top: 2px solid;
 }
 .pl-net-profit { background: #f0fdf4; border-color: #16a34a; color: #15803d; }
-.pl-net-loss   { background: #fef2f2; border-color: #dc2626; color: #b91c1c; }
+.pl-net-loss   { background: #fef2f2; border-color: #dc2626; color: #dc2626; }
 
 /* ── Numeric table alignment ─────────────────────────── */
 .pl-item-table td,
