@@ -27,6 +27,16 @@ class Customer extends Model
     }
 
     /**
+     * কোনো বিক্রয় বা পেমেন্ট হয়েছে কি না — হলে পুরনো বাকী শুধু অ্যাডমিন
+     * কারণসহ বদলাতে পারেন (GuardsOpeningBalance দেখুন)।
+     */
+    public function hasTransactions(): bool
+    {
+        return Sale::where('customer_id', $this->id)->exists()
+            || CustomerPayment::where('customer_id', $this->id)->exists();
+    }
+
+    /**
      * Canonical due formula — the ONE place it lives.
      *
      *   due = opening_balance + all sales − all paid-on-sale − all payments

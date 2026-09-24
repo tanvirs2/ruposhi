@@ -134,6 +134,8 @@
     </button>
 </div>
 
+@include('partials.opening-balance-history', ['obLabel' => 'পুরনো দেনা'])
+
 {{-- ══════════ OLD VIEW — single combined table (default) ══════════ --}}
 <div id="supplierViewOld">
 {{-- ── Ledger Table ──────────────────────────────────────────────── --}}

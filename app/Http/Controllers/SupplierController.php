@@ -2,14 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\GuardsOpeningBalance;
+use App\Models\OpeningBalanceLog;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Models\Purchase;
 use App\Models\PurchaseDeposit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SupplierController extends Controller
 {
+    use GuardsOpeningBalance;
+
     public function index(Request $request)
     {
         $status = $request->get('status', 'active');     // active|due|advance|clean|all
@@ -309,9 +314,12 @@ class SupplierController extends Controller
             return response()->stream($callback, 200, $headers);
         }
 
+        $obLogs = OpeningBalanceLog::forParty('supplier', $supplier->id);
+
         return view('suppliers.ledger', compact(
             'supplier', 'combined', 'bills', 'deposits', 'from', 'to',
-            'openingBalance', 'totalDebit', 'totalCredit', 'totalDeposits', 'realTotalDue', 'receiptCount'
+            'openingBalance', 'totalDebit', 'totalCredit', 'totalDeposits', 'realTotalDue', 'receiptCount',
+            'obLogs'
         ));
     }
 
@@ -366,7 +374,8 @@ class SupplierController extends Controller
 
     public function edit(Supplier $supplier)
     {
-        return view('suppliers.edit', compact('supplier'));
+        $obLocked = $supplier->hasTransactions();   // লেনদেন শুরু → শুধু অ্যাডমিন, কারণসহ
+        return view('suppliers.edit', compact('supplier', 'obLocked'));
     }
 
     public function update(Request $request, Supplier $supplier)
@@ -375,11 +384,21 @@ class SupplierController extends Controller
             'name'            => 'required|string|max:255',
             'opening_balance' => 'nullable|numeric',
         ]);
-        // পুরনো দেনা — staff can also set this; blank field means "no old due" = 0.
+        // পুরনো দেনা — blank field means "no old due" = 0. লেনদেন শুরুর আগে যে কেউ
+        // বদলাতে পারে; পরে শুধু অ্যাডমিন, কারণসহ — আর প্রতিটা পরিবর্তন লগ হয়।
         $request->merge([
             'opening_balance' => $request->opening_balance ?? 0,
         ]);
-        $supplier->update($request->only('name', 'proprietor', 'phone', 'email', 'address', 'opening_balance'));
+
+        $oldOpening = (float) $supplier->opening_balance;
+        if ($reject = $this->guardOpeningBalance($request, $oldOpening, $supplier->hasTransactions(), 'পুরনো দেনা')) {
+            return $reject;
+        }
+
+        DB::transaction(function () use ($request, $supplier, $oldOpening) {
+            $supplier->update($request->only('name', 'proprietor', 'phone', 'email', 'address', 'opening_balance'));
+            $this->logOpeningBalance($request, 'supplier', $supplier->id, $oldOpening, (float) $supplier->opening_balance);
+        });
 
         // opening_balance may have changed — resync due_amount from the full
         // formula so the list is correct without waiting for the ledger.

@@ -128,6 +128,8 @@
     </button>
 </div>
 
+@include('partials.opening-balance-history', ['obLabel' => 'পুরনো বাকী'])
+
 {{-- ══════════ OLD VIEW — single combined table (default) ══════════ --}}
 <div id="ledgerViewOld">
 <div class="card">

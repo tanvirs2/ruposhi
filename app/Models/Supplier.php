@@ -22,6 +22,16 @@ class Supplier extends Model
     }
 
     /**
+     * কোনো ক্রয় বা পেমেন্ট হয়েছে কি না — হলে পুরনো দেনা শুধু অ্যাডমিন
+     * কারণসহ বদলাতে পারেন (GuardsOpeningBalance দেখুন)।
+     */
+    public function hasTransactions(): bool
+    {
+        return Purchase::where('supplier_id', $this->id)->exists()
+            || SupplierPayment::where('supplier_id', $this->id)->exists();
+    }
+
+    /**
      * Canonical due formula — the ONE place it lives.
      *
      *   due = opening_balance + all purchases − all paid − all deposits − all payments

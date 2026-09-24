@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\GuardsOpeningBalance;
 use App\Models\Customer;
 use App\Models\CustomerArea;
 use App\Models\CustomerPayment;
+use App\Models\OpeningBalanceLog;
 use App\Models\Sale;
 use App\Models\StoreConfig;
 use App\Services\SmsService;
@@ -13,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 
 class CustomerController extends Controller
 {
+    use GuardsOpeningBalance;
+
     public function index(Request $request)
     {
         $status = $request->get('status', 'active');     // active|due|advance|clean|all
@@ -147,8 +151,9 @@ class CustomerController extends Controller
 
     public function edit(Customer $customer)
     {
-        $areas = CustomerArea::orderBy('name')->get();
-        return view('customers.edit', compact('customer', 'areas'));
+        $areas    = CustomerArea::orderBy('name')->get();
+        $obLocked = $customer->hasTransactions();   // লেনদেন শুরু → শুধু অ্যাডমিন, কারণসহ
+        return view('customers.edit', compact('customer', 'areas', 'obLocked'));
     }
 
     public function update(Request $request, Customer $customer)
@@ -160,12 +165,21 @@ class CustomerController extends Controller
             'opening_balance' => 'nullable|numeric',
         ]);
 
-        // পুরনো বাকী — staff can also set this; blank field means "no old due" = 0.
+        // পুরনো বাকী — blank field means "no old due" = 0. লেনদেন শুরুর আগে যে কেউ
+        // বদলাতে পারে; পরে শুধু অ্যাডমিন, কারণসহ — আর প্রতিটা পরিবর্তন লগ হয়।
         $request->merge([
             'opening_balance' => $request->opening_balance ?? 0,
         ]);
 
-        $customer->update($request->only('name', 'proprietor', 'phone', 'address', 'area_id', 'credit_limit', 'opening_balance'));
+        $oldOpening = (float) $customer->opening_balance;
+        if ($reject = $this->guardOpeningBalance($request, $oldOpening, $customer->hasTransactions(), 'পুরনো বাকী')) {
+            return $reject;
+        }
+
+        DB::transaction(function () use ($request, $customer, $oldOpening) {
+            $customer->update($request->only('name', 'proprietor', 'phone', 'address', 'area_id', 'credit_limit', 'opening_balance'));
+            $this->logOpeningBalance($request, 'customer', $customer->id, $oldOpening, (float) $customer->opening_balance);
+        });
 
         // opening_balance may have changed — resync due_amount from the full
         // formula (this customer may already have transactions) so the list is
@@ -463,9 +477,12 @@ class CustomerController extends Controller
             return response()->stream($callback, 200, $headers);
         }
 
+        $obLogs = OpeningBalanceLog::forParty('customer', $customer->id);
+
         return view('customers.ledger', compact(
             'customer', 'ledger', 'deposits', 'combined', 'from', 'to',
-            'openingBalance', 'totalSales', 'totalDiscount', 'totalCredits', 'totalDeposits', 'periodBalance', 'realTotalDue'
+            'openingBalance', 'totalSales', 'totalDiscount', 'totalCredits', 'totalDeposits', 'periodBalance', 'realTotalDue',
+            'obLogs'
         ));
     }
 }

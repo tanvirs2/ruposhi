@@ -144,8 +144,8 @@ Each **super_admin** is a business owner who can own multiple branches (shops).
 5. **`orWhere` in search must be wrapped** — `$q->where(fn($s) => $s->whereHas(...)->orWhere('id', ...))` to avoid bypassing shop_id scope
 6. **`canManageShop()` not `role !== 'admin'`** — super_admin inside a shop must pass admin-only gates; use `User::canManageShop()` everywhere
 
-### Models with `HasShopScope` (25 total)
-Item, Sale, Purchase, Customer, Supplier, Category, Brand, Stock, Employee, ExtraExpense, CustomerArea, CustomerPayment, SupplierPayment, SaleLog, PurchaseLog, SmsLog, ChatMessage, GroupChatMessage, ExtraCostCategory, StoreConfig, SaleItem, PurchaseItem, SaleExtraCost, PurchaseExtraCost, ItemFavorite
+### Models with `HasShopScope` (26 total)
+Item, Sale, Purchase, Customer, Supplier, Category, Brand, Stock, Employee, ExtraExpense, CustomerArea, CustomerPayment, SupplierPayment, SaleLog, PurchaseLog, SmsLog, ChatMessage, GroupChatMessage, ExtraCostCategory, StoreConfig, SaleItem, PurchaseItem, SaleExtraCost, PurchaseExtraCost, ItemFavorite, OpeningBalanceLog
 
 ### Middleware
 | Alias | File | Purpose |
@@ -245,6 +245,13 @@ Switch user contexts with `Auth::loginUsingId(N)` to verify shop isolation.
 - Positive due shown as: 🔴 "৳X" badge (red)
 - `SaleController`, `PurchaseController`, `CustomerPaymentController`, `SupplierPaymentController` all use this formula — no cap
 
+### পুরনো বাকী/দেনা (opening_balance) — বদলানোর নিয়ম
+- মোট বাকীর সূত্রে সরাসরি যোগ হয়, তাই চুপচাপ বদলালে হিসাব উল্টাপাল্টা হয় — নিয়ম `app/Http/Controllers/Concerns/GuardsOpeningBalance.php`-এ, `CustomerController`/`SupplierController` `update()` দুটোতেই
+- লেনদেন শুরুর **আগে** (`Customer/Supplier::hasTransactions()` = false) — যে কেউ বদলাতে পারে (খাতা থেকে তোলার ভুল শোধরাতে)
+- লেনদেন শুরুর **পরে** — শুধু `canManageShop()`, আর `opening_balance_reason` বাধ্যতামূলক; স্টাফের এডিট পেজে ফিল্ড readonly (সার্ভারেও আটকানো)
+- প্রতিটা পরিবর্তন `opening_balance_logs`-এ (আগের/নতুন মান, কে, কখন, কারণ) — লেজারে "সংশোধনের ইতিহাস" কার্ড (`partials/opening-balance-history.blade.php`, no-print — কাস্টমারকে দেওয়া প্রিন্টে যায় না)
+- `store()` আর CSV ইমপোর্ট শুধু নতুন কন্টাক্ট বানায় — ওখানে লগ লাগে না
+
 ### ⚠️ NEVER use max(0, ...) on due amounts
 This was a historical bug. Any cap on due_amount destroys the credit balance feature.
 - `CustomerPaymentController::store()` → `due = previousDue - amount` (no cap)
@@ -321,6 +328,7 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 | `resellers` | Reseller profile — commission, max_clients, can_extend_license |
 | `brands` | `shop_id`, `name`, `description` — optional per-item brand tag, mirrors `categories`; unique `(shop_id, name)` |
 | `item_favorites` | `user_id`, `item_id` — per-user starred items for the sale-create item picker; unique `(user_id, item_id)` |
+| `opening_balance_logs` | `shop_id`, `party_type` (customer/supplier), `party_id`, `old_value`, `new_value`, `reason`, `user_id` — পুরনো বাকী/দেনা বদলানোর অডিট |
 | `sale_prints` | `shop_id`, `sale_id`, `user_id`, `copy_no`, `printed_at`, `ip` — মেমো প্রিন্ট-লগ; copy_no 1 = মূল কপি, 2+ = পুনঃমুদ্রণ |
 
 ---
