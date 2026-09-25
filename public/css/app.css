@@ -368,6 +368,7 @@ a { text-decoration: none; color: inherit; }
 .main-wrapper {
     margin-left: var(--sidebar-w);
     flex: 1;
+    min-width: 0;           /* নইলে চওড়া টেবিলে পুরো পেজ পাশে বাড়ে — র‍্যাপারের নিজের স্ক্রল কাজ করে না */
     display: flex;
     flex-direction: column;
     min-height: 100vh;
@@ -1763,9 +1764,10 @@ input[type="time"].form-select {
 /* ─── Supplier/purchase index (reused customer styles) ──────── */
 
 /* ─── Profit / Margin styles ────────────────────────────────── */
-.profit-good { color: #16a34a; font-weight: 600; }
-.profit-med  { color: #d97706; font-weight: 600; }
-.profit-poor { color: #dc2626; font-weight: 600; }
+/* td-সহ সিলেক্টর: নইলে `.data-table td { color }` বেশি specific হওয়ায় রং চাপা পড়ত */
+.profit-good, .data-table td.profit-good { color: #16a34a; font-weight: 600; }
+.profit-med,  .data-table td.profit-med  { color: #d97706; font-weight: 600; }
+.profit-poor, .data-table td.profit-poor { color: #dc2626; font-weight: 600; }
 
 .margin-badge {
     display: inline-block;
