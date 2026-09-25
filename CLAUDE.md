@@ -613,3 +613,5 @@ a short per-session summary so `CLAUDE.md` stays light to load every session.
 | `super@admin.com` | `password` | super_admin | Owns প্রধান শাখা (id=1) |
 | existing admin | (original) | admin | প্রধান শাখা (id=1) |
 | `mirpur@shop.com` | `secret123` | admin | মিরপুর শাখা (id=2) |
+
+- লোকালে প্রোডাকশন DB তোলার পর ডেমো প্যানেল কাজ করে না (আসল পাসওয়ার্ড থাকে) → `php artisan app:dev-reset-passwords` চালান, সবার পাসওয়ার্ড `password` হয়। শুধু `APP_ENV=local`-এ চলে। **আসল পাসওয়ার্ড কখনো `login.blade.php`-তে লিখবেন না** — ফাইলটা GitHub-এ যায়
