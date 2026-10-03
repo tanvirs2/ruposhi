@@ -50,7 +50,18 @@ return [
     |
     */
 
+    // LogSlowRequests middleware — এর চেয়ে বেশি সময় নিলে slow_requests চ্যানেলে লেখে
+    'slow_request_ms' => (int) env('SLOW_REQUEST_MS', 1000),
+
     'channels' => [
+
+        'slow_requests' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/slow-requests.log'),
+            'level' => 'warning',
+            'days' => 14,
+            'replace_placeholders' => true,
+        ],
 
         'stack' => [
             'driver' => 'stack',

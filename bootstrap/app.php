@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\NoCacheHeaders::class,
         ]);
 
+        // ধীর রিকোয়েস্ট লগ — storage/logs/slow-requests-*.log, দেখতে: php artisan app:slow-requests
+        $middleware->append(\App\Http\Middleware\LogSlowRequests::class);
+
         // Named middleware aliases
         $middleware->alias([
             'super_admin'        => \App\Http\Middleware\SuperAdmin::class,

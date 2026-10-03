@@ -300,6 +300,14 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 - sweeper-এর জন্য cron লাগে: `* * * * * cd /var/www/ruposhi_pos && php artisan schedule:run` (দৈনিক ব্যাকআপও এর ওপর নির্ভর করে)
 - একাধিক কাউন্টার থেকে একসাথে বিক্রয় পরীক্ষিত (৮ সেশন × ১০, আইটেম উল্টো ক্রমে): ডেডলক ০, স্টক নির্ভুল, গড় ০.৩ সেকেন্ড
 
+### ধীর রিকোয়েস্ট লগ (`LogSlowRequests` middleware)
+- গ্লোবাল middleware (`bootstrap/app.php`-এ `append`) — `SLOW_REQUEST_MS` (ডিফল্ট ১০০০) পেরোলে `storage/logs/slow-requests-<তারিখ>.log`-এ এক লাইন JSON, ১৪ দিন রাখে
+- তিনটা সময় আলাদা: `boot_ms` (Laravel চালু — OPcache বন্ধ হলে বড়), `response_ms` (ইউজার যতক্ষণ অপেক্ষা করে), `total_ms` (worker মুক্ত হওয়া পর্যন্ত, `defer()` SMS সহ — `app()->terminating()` থেকে মাপা)। সাথে কুয়েরি সংখ্যা, DB ms, user/shop
+- দেখতে: `php artisan app:slow-requests [--days=7] [--recent=30]`
+- কুয়েরি স্ট্রিং লগ হয় না (সার্চের লেখা/ফোন নম্বর যেন না যায়)
+- ⚠️ FPM-এর লাইনে অপেক্ষা (সব worker ব্যস্ত) PHP দেখতে পায় না — লগে সময় কম অথচ ব্রাউজারে ধীর হলে সমস্যা FPM pool/নেটওয়ার্কে
+- সীমা বদলালে সার্ভারে `.env`-এ `SLOW_REQUEST_MS=…` তারপর `php artisan config:cache`
+
 ### ⚠️ NEVER Cache Business Data
 - `due_amount`, prices, stock, config values update frequently
 - Caching any business data causes wrong values — NEVER use `Cache::remember()` for these
