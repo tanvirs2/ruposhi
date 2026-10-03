@@ -9,4 +9,5 @@
 // into a single new entry at the top of whats_new.php (version +0.1, today's
 // date) and empty this array back out.
 return [
+    'অনেকক্ষণ পর লগআউট চাপলে "৪১৯ — সেশনের মেয়াদ শেষ" পেজ আর আসবে না, সরাসরি লগইন পেজে চলে যাবে',
 ];
