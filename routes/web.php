@@ -144,17 +144,22 @@ Route::middleware(['auth', 'shop.scope', 'check.subscription'])->group(function 
 
     /* Supplier Payments */
     Route::resource('supplier-payments', SupplierPaymentController::class)->only('index', 'create', 'store', 'destroy');
-    Route::resource('sales',     SaleController::class);
-    Route::post('sales/{sale}/request-delete',  [SaleController::class, 'requestDelete'])->name('sales.request-delete');
-    Route::post('sales/{sale}/approve-delete',  [SaleController::class, 'approveDelete'])->name('sales.approve-delete');
-    Route::post('sales/{sale}/reject-delete',   [SaleController::class, 'rejectDelete'])->name('sales.reject-delete');
+    // ->missing(): মুছে যাওয়া রেকর্ডে ৪০৪-এর বদলে তালিকায় ফেরত, কে কখন মুছেছে সহ
+    // (App\Support\MissingRecordRedirect)। print-log JSON রুট, তাই ওটায় নয়।
+    $missingSale     = [\App\Support\MissingRecordRedirect::class, 'sale'];
+    $missingPurchase = [\App\Support\MissingRecordRedirect::class, 'purchase'];
+
+    Route::resource('sales',     SaleController::class)->missing($missingSale);
+    Route::post('sales/{sale}/request-delete',  [SaleController::class, 'requestDelete'])->name('sales.request-delete')->missing($missingSale);
+    Route::post('sales/{sale}/approve-delete',  [SaleController::class, 'approveDelete'])->name('sales.approve-delete')->missing($missingSale);
+    Route::post('sales/{sale}/reject-delete',   [SaleController::class, 'rejectDelete'])->name('sales.reject-delete')->missing($missingSale);
     // মেমো প্রিন্ট-লগ — প্রিন্ট ডায়ালগ খুললেই ব্রাউজার থেকে POST হয়
     Route::post('sales/{sale}/print-log', [App\Http\Controllers\SalePrintController::class, 'store'])->name('sales.print-log');
 
-    Route::resource('purchases', PurchaseController::class);
-    Route::post('purchases/{purchase}/request-delete', [PurchaseController::class, 'requestDelete'])->name('purchases.request-delete');
-    Route::post('purchases/{purchase}/approve-delete', [PurchaseController::class, 'approveDelete'])->name('purchases.approve-delete');
-    Route::post('purchases/{purchase}/reject-delete',  [PurchaseController::class, 'rejectDelete'])->name('purchases.reject-delete');
+    Route::resource('purchases', PurchaseController::class)->missing($missingPurchase);
+    Route::post('purchases/{purchase}/request-delete', [PurchaseController::class, 'requestDelete'])->name('purchases.request-delete')->missing($missingPurchase);
+    Route::post('purchases/{purchase}/approve-delete', [PurchaseController::class, 'approveDelete'])->name('purchases.approve-delete')->missing($missingPurchase);
+    Route::post('purchases/{purchase}/reject-delete',  [PurchaseController::class, 'rejectDelete'])->name('purchases.reject-delete')->missing($missingPurchase);
 
     // Pending edit approval (shared for both sales and purchases)
     Route::post('pending-edits/{pendingEdit}/approve', [SaleController::class, 'approveEdit'])->name('pending-edits.approve-sale');

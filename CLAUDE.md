@@ -498,6 +498,12 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
 
 ## Important Patterns
 
+### মুছে যাওয়া রেকর্ডে ৪০৪ নয় (`App\Support\MissingRecordRedirect`)
+- `routes/web.php`-এ `sales`/`purchases` resource আর request/approve/reject-delete রুটে `->missing()` — রেকর্ড না পেলে তালিকায় ফেরত, `sale_logs`/`purchase_logs`-এর `deleted` লগ থেকে "কে, কখন মুছেছে"; লগ না থাকলে "পাওয়া যায়নি"
+- কারণ (প্রোডাকশন, রিসিভ #১৩৯৫, ২০২৬-১০-০২): স্টাফ ডিলিট-অনুরোধ পাঠিয়ে পেজেই ছিল, অ্যাডমিন iPhone থেকে অনুমোদন দিল → স্টাফের পরের ক্লিকে ৪০৪
+- লগ মডেল HasShopScope-এ, তাই অন্য শাখার নম্বরে শুধু "পাওয়া যায়নি" — তথ্য ফাঁস নয় (যাচাই করা)
+- `print-log` JSON রুটে লাগানো হয়নি; নতুন রুট `{sale}`/`{purchase}` নিলে `$missingSale`/`$missingPurchase` জুড়ে দিন
+
 ### Bengali digit conversion
 All inputs use `toEnglishDigits()` JS helper to convert Bengali numerals to ASCII before parsing.
 
