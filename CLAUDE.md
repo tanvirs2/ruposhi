@@ -296,8 +296,17 @@ Order: ছাড় → পূর্বের বাকী → অতিরি�
   3. **সেফটি নেট** `app:sms-sweep` (প্রতি মিনিটে, scheduler) — ৩ মিনিটের বেশি `pending` (শুধু গত ২ ঘণ্টার) SMS সরাসরি পাঠায়; ৩০ মিনিটের বেশি `sending`-এ আটকে থাকলে "অজানা" লিখে `failed` (আবার পাঠালে দুবার যেতে পারত)
 - ⚠️ **দুবার না যাওয়া:** `deliver()` আগে `UPDATE ... SET status='sending' WHERE status='pending'` দিয়ে দাবি করে — যে পথ দাবি পায় না সে কিছু পাঠায় না
 - ⚠️ **worker/scheduler-এ লগইন নেই → ShopScope ফিল্টার করে না** → `StoreConfig::get()` সব শপের প্রথম সারি দেয় (যাচাই করা: অন্য শপের key আসত)। তাই Job/sweeper সবসময় `new SmsService($shopId)` — সেই শপের key/sender সরাসরি পড়ে। worker-এ চলা যেকোনো নতুন কোডেও এটা মাথায় রাখুন
-- সার্ভারে worker: systemd সার্ভিস `ruposhi-queue` (`php artisan queue:work --sleep=3 --tries=3`), আর `deploy.sh` প্রতি ডিপ্লয়ে `queue:restart` চালায়। worker না থাকলেও SMS যায় (defer পথে)
-- sweeper-এর জন্য cron লাগে: `* * * * * cd /var/www/ruposhi_pos && php artisan schedule:run` (দৈনিক ব্যাকআপও এর ওপর নির্ভর করে)
+- সার্ভারে worker: systemd সার্ভিস `ruposhi-queue` — `/etc/systemd/system/ruposhi-queue.service`, `User=www-data`, `php artisan queue:work --sleep=3 --tries=3 --max-time=3600`, `Restart=always`, enabled। `deploy.sh` প্রতি ডিপ্লয়ে `queue:restart` চালায়
+  - ⚠️ **২০২৬-১০-০৩-এর আগে এই সার্ভিস আসলে ছিলই না** (`not-found`) — সব SMS defer পথে গিয়ে FPM worker আটকে রাখত, সাথে `pm.max_children = 5` → "সেভের পরে মেমো দেরিতে খোলে"। দেখতে: `systemctl is-active ruposhi-queue`
+  - ⚠️ কখনো root হিসেবে চালাবেন না — ক্যাশ/লগ ফাইল root-owned হয়ে ৫০০
+- sweeper ও দৈনিক ব্যাকআপের cron আছে **www-data-র crontab-এ** (root-এর নয়): `* * * * * cd /var/www/ruposhi_pos && php artisan schedule:run` — দেখতে `crontab -u www-data -l`
+
+### প্রোডাকশন সার্ভার টিউনিং (২০২৬-১০-০৩)
+- PHP-FPM `/etc/php/8.2/fpm/pool.d/www.conf`: `pm.max_children = 10`, start 3, spare 2–5 (আগে 5; RAM ২ GB, প্রতি worker ~৪০ MB)। OPcache চালু ছিল
+- Nginx gzip: `/etc/nginx/conf.d/ruposhi-gzip.conf` (`gzip_types` — আগে শুধু HTML gzip হত, CSS/JS ~৫০০ KB পুরো যেত → এখন ~১১০ KB)
+- Nginx স্ট্যাটিক cache: `/etc/nginx/snippets/ruposhi-static.conf` (সাইট কনফিগে `include`) — css/js/ফন্টে `expires 30d`; `sw.js`-এ `no-cache`। ছবি/লোগোতে নয়
+  - ⚠️ ৩০ দিনের cache-এর কারণে **নিজের CSS/JS ফাইলে সবসময় `?v={{ filemtime(...) }}` দিন** (`app.css`, `app.js`, `offline-sales.js`-এ আছে) — নইলে বদলানো ফাইল ক্লায়েন্টের কাছে ৩০ দিন পুরনোটাই থাকবে
+- আগের কনফিগের ব্যাকআপ: `/etc/nginx/sites-available/ruposhi_pos.bak-202610030826`, `www.conf.bak-<ts>`
 - একাধিক কাউন্টার থেকে একসাথে বিক্রয় পরীক্ষিত (৮ সেশন × ১০, আইটেম উল্টো ক্রমে): ডেডলক ০, স্টক নির্ভুল, গড় ০.৩ সেকেন্ড
 
 ### ধীর রিকোয়েস্ট লগ (`LogSlowRequests` middleware)
