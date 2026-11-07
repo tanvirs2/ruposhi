@@ -213,8 +213,7 @@
                 <tr class="{{ $rowClass }} {{ $isNewGroup ? 'sl-new-group' : '' }}">
 
                     {{-- চালান নং (receive/purchase number) — own column, like the customer ledger.
-                         purchase_payment rows have purchase_id but no link (controller sets link=null
-                         for that type), so link (not purchase_id) decides whether it's clickable. --}}
+                         Standalone supplier payments have no purchase → link=null, plain "—". --}}
                     <td class="tc mono" style="font-size:.82rem">
                         @if($row->link)
                             <a href="{{ $row->link }}" class="link-primary" title="রিসিভ দেখুন">{{ $row->ref }}</a>

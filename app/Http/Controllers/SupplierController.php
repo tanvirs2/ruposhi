@@ -219,7 +219,9 @@ class SupplierController extends Controller
                     'debit'       => 0,
                     'credit'      => $p->paid_amount,
                     'purchase_id' => $p->id,
-                    'link'        => null,
+                    // কাস্টমার লেজারের মতোই — রিসিভের সাথে দেওয়া পেমেন্ট থেকেও
+                    // চালানে ঢুকে এডিট করা যায় (আগে null ছিল, ক্লিক হত না)
+                    'link'        => route('purchases.show', $p),
                 ]);
             }
         }
