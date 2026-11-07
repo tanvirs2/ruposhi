@@ -1201,6 +1201,17 @@ document.getElementById('receiveForm').addEventListener('submit', function(e) {
         return;
     }
 
+    // ক্রয়মূল্য খালি থাকলে এখানেই থামানো — নইলে সার্ভার ইংরেজি এরর দিয়ে
+    // ফেরত পাঠায় (আর নিচের লিসেনার ততক্ষণে ড্রাফট মুছে ফেলত)
+    var blankPrice = Array.from(this.querySelectorAll('input[name^="items["][name$="[price]"]'))
+        .find(function (inp) { return inp.value.trim() === ''; });
+    if (blankPrice) {
+        e.preventDefault();
+        alert('প্রতিটা আইটেমের ক্রয়মূল্য লিখুন।');
+        blankPrice.focus();
+        return;
+    }
+
     // Allow no-item submit (pure advance payment to supplier)
 });
 

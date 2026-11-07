@@ -376,9 +376,12 @@ function replaceItem(idx, newId) {
     const newItem = allItems.find(i => i.id === newId);
     if (!newItem) return;
     const old = cart[idx];
+    // আগের দাম রেখে দেওয়া হয় — আগে 0/খালি হত, তখন সার্ভার ভ্যালিডেশনে
+    // ("price required") ফেরত পাঠাত আর পেজ DB থেকে পুরনো আইটেম নিয়েই খুলত,
+    // ইউজারের মনে হত আইটেম বদলায় না। দাম আলাদা হলে ইউজার নিজে বদলাবে।
     cart[idx] = {
         id: newItem.id, name: newItem.name,
-        price: 0, priceEntered: false,
+        price: old.price, priceEntered: old.priceEntered,
         lastPrice: parseFloat(newItem.purchase_price) || 0,
         syncPrice: false,
         qty: old.qty,   // keep same received quantity
@@ -609,6 +612,16 @@ document.getElementById('receiveForm').addEventListener('submit',function(e){
         e.preventDefault();
         alert('সরবরাহকারী নির্বাচন করুন।');
         supplierSearch.focus();
+        return;
+    }
+    // ক্রয়মূল্য খালি থাকলে এখানেই থামানো — নইলে সার্ভার ইংরেজি এরর দিয়ে
+    // ফেরত পাঠায় আর পেজ DB থেকে আগের আইটেম নিয়ে খোলে (করা বদল হারিয়ে যায়)
+    var blankPrice = Array.from(this.querySelectorAll('input[name^="items["][name$="[price]"]'))
+        .find(function (inp) { return inp.value.trim() === ''; });
+    if (blankPrice) {
+        e.preventDefault();
+        alert('প্রতিটা আইটেমের ক্রয়মূল্য লিখুন।');
+        blankPrice.focus();
     }
 });
 
